@@ -1,0 +1,85 @@
+[logic]
+active = {+esc_proverb_task_done} walker@rest, {+esc_flashes_dead} walker@2_0, walker@1
+;on_hit = hit
+on_death = death
+threshold = threshold@proverb
+
+[threshold@proverb]
+max_ignore_distance = 2
+ignore_monster = 0
+
+[death]
+on_info = %+esc_proverb_dead%
+
+[hit]
+on_info = %+esc_proverb_dead%
+
+[combat_ignore]
+
+[meet@proverb0]
+abuse = false
+use = {-esc_proverb_start_0} self, {+esc_proverb_start_0} true
+use_wpn = {-esc_proverb_start_0} self, {+esc_proverb_start_0} true
+victim 			=  10|actor|5|actor
+victim_wpn 		= 10|actor|5|actor
+meet_state = 10|hello@hail|5|guard@wait
+allow_break = false
+trade_enable = false
+
+[walker@1]
+path_walk = esc_proverb_walk1
+path_look = esc_proverb_look1
+on_info = {+esc_proverb_start_talk} walker@1_0
+meet = meet@proverb0
+invulnerable = true
+
+[walker@1_0]
+path_walk = esc_proverb_walk1_0
+path_look = esc_proverb_look1_0
+on_info = {+esc_proverb_0_task_0} walker@1_1 %-esc_proverb_start_0%
+invulnerable = true
+
+[walker@1_1]
+path_walk = esc_proverb_walk1
+path_look = esc_proverb_look1
+on_info = {+esc_proverb_1_task} walker@2
+meet = meet@proverb0
+invulnerable = true
+
+[walker@2]
+path_walk = esc_proverb_walk2
+meet = no_meet
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+on_signal = point1|	%+esc_proverb_point_1%
+on_info = {+esc_flashes_dead} walker@2_0
+invulnerable = true
+
+[walker@2_0]
+path_walk = esc_proverb_walk2_0
+path_look = esc_proverb_look2_0
+on_info = {+esc_proverb_2_task} walker@2_2
+invulnerable = true
+
+[walker@2_2]
+path_walk = esc_proverb_walk2_2
+meet = no_meet
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+on_signal = point2|	%+esc_proverb_point_2%
+on_info = {+esc_boars_dead} walker@2_3
+invulnerable = true
+
+[walker@2_3]
+path_walk = esc_proverb_walk2_3
+path_look = esc_proverb_look2_3
+on_info = {+esc_proverb_task_done} walker@rest
+invulnerable = true
+
+[walker@rest]
+path_walk = esc_proverb_walk1_0
+path_look = esc_proverb_look1_0
+invulnerable = true
+;meet = meet@default

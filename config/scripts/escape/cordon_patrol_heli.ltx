@@ -1,0 +1,48 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = heli_idle
+engine_sound = false
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 20
+on_info = {+esc_factory_cleaned} heli_move@day
+
+[heli_move@day]
+path_move = heli_path_day
+engine_sound = true
+combat_safe_altitude = 50
+combat_use_rocket = true
+combat_use_mgun = true
+default_velocity = 30
+on_timer = 180000| heli_move@wait_day
+
+[heli_move@wait_day]
+path_move = heli_idle
+engine_sound = false
+;combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 20
+on_timer = 360000| heli_move@night
+
+[heli_move@night]
+path_move = heli_path_night
+engine_sound = true
+combat_safe_altitude = 50
+combat_use_rocket = false
+combat_use_mgun = false
+combat_ignore = true
+default_velocity = 30
+on_timer = 180000| heli_move@wait_night
+
+[heli_move@wait_night]
+path_move = heli_idle
+engine_sound = false
+;combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 20
+on_timer = 360000| heli_move@day

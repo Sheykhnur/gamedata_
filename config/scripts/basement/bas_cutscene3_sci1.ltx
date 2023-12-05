@@ -1,0 +1,68 @@
+[combat_ignore@sc3]
+
+[danger@bas_sc3]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_sc3]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = walker@sc3_to_panel
+combat_ignore = combat_ignore@sc3
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+
+[walker@sc3_to_panel]
+path_walk = bas_cs3_sci1_walk0
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+on_signal = sc3r | remark@sc3_lab_work1
+meet = no_meet
+
+[remark@sc3_lab_work1]
+anim = sci_panel_full
+snd = bas_replics29
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+target = bas_cs3_sci1_walk0_look, 0
+on_signal = sound_end | remark@sc3_lab_work2
+meet = no_meet
+
+[remark@sc3_lab_work2]
+anim = sci_panel_left_rotate
+snd = bas_replics30
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+target = bas_cs3_sci1_walk0_look, 0
+on_signal = sound_end | remark@sc3_lab_work2 %+bas_cs3_info_1%
+on_info = {+bas_cs3_info_2} remark@sc3_lab_work3
+meet = no_meet
+
+[remark@sc3_lab_work3]
+anim = sci_panel_left_rotate
+snd = bas_replics32
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+target = bas_cs3_sci1_walk0_look, 0
+on_signal = sound_end | walker@sc3_lab_end %+bas_cs3_info_3 =run_postprocess(old_cinema) =play_snd(ambient\x16\x16_psy)%
+meet = no_meet
+
+[walker@sc3_lab_end]
+path_walk = bas_cs3_sci1_walk_away
+path_look = bas_cs3_sci1_walk_away_look
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+meet = no_meet
+def_state_standing = oso_flying
+def_state_moving = sci_ghost_fly
+def_state_moving1 = sci_ghost_fly
+def_state_moving2 = sci_ghost_fly
+def_state_moving3 = sci_ghost_fly
+on_signal = sc31rl | %=release%

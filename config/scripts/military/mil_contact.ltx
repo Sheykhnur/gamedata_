@@ -1,0 +1,75 @@
+;[spawner]
+;cond = {+mil_contact_arrived}
+
+[danger@mil_contact]
+ignore_distance = 10
+
+[danger@mil_contact2]
+ignore_distance = 0
+
+[threshold@mil_contact]
+ignore_monster = 1
+
+[combat_ignore@mil_contact]
+
+[logic]
+active = remark@mil_contact
+threshold = threshold@mil_contact
+combat_ignore = combat_ignore@mil_contact
+
+[remark@mil_contact]
+no_move = true
+target = actor
+meet = meet@mil_contact
+danger = danger@mil_contact2
+combat_ignore_cond = always
+threshold = threshold@mil_contact
+invulnerable = true
+on_info = {+mil_actor_talked_contact -mil_wave_trigger} %+mil_wave_trigger%
+on_info2 = {+monsters_wave_end} walker@2
+
+[meet@mil_contact]
+use = true
+use_wpn = true
+abuse = true
+precond = visibility
+meet_talk_enabled = true
+meet_state 		= 10|hello|3|wait
+meet_state_wpn 	= 10|hello_wpn|3|wait
+victim = 10|actor
+victim_wpn = 10|actor
+use_medkit = true
+
+[walker@2]
+path_walk = army_contact_path_walk2
+def_state_moving1  = assault ;rush
+def_state_moving2  = assault ;rush
+def_state_moving3  = assault ;rush
+meet = no_meet
+danger = danger@mil_contact
+threshold = threshold@mil_contact
+on_info = {-mil_contact_tele +mil_tele_contact} %=teleport_npc(army_contact_force_point_look) +mil_contact_tele%
+on_info2 = {+mil_tele_contact} remark@2
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(2)}
+invulnerable = true
+
+[remark@2]
+no_move = true
+anim = mil_psycho_pain
+on_info = {+mil_blowout_finished} remark@3
+target = army_contact_force_point_look, 0
+danger = danger@mil_contact2
+threshold = threshold@mil_contact
+combat_ignore_cond = always
+meet = no_meet
+
+[remark@3]
+no_move = true
+anim = wounded_pornosh
+snd = mil_contact_wounded
+target = army_contact_force_point_look, 0
+danger = danger@mil_contact2
+threshold = threshold@mil_contact
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | nil %=kill_npc +mil_contact_died =enable_ui_elements(input:weapon)%

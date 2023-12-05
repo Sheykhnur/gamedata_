@@ -1,0 +1,473 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_pda_skills.script
+ Description: PDA: Game Skills
+ Copyright  : 2009 © LA-team
+ Author     : Gr1ph00n (19.04.2009)
+ Editors    : gr1ph00n (21.08.2010), SkyLoader(06.05.2013)
+ Last edit  : 07.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+points_amount = -1
+skills_values = {}
+local skills = { "speech", "natural_sense", "barter", "repair", "lockpick", "aid", "sneaking", "luck" }
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule, tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Initialization and preset module
+--/ -----------------------------------------------------------------
+function load_module()
+	init_if_needed()
+	get_event(game_callbacks.on_presets):Attach(presets)
+end
+--/ --------------------------
+function presets()
+	--get_event(game_callbacks.on_actor_update):Attach(process_skills) --#-# SkyLoader: disabled because actor skills are not used in storyline
+	get_event(game_callbacks.on_obj_use):Attach(on_obj_used)
+	get_event(game_callbacks.on_actor_load):Attach(load)
+	get_event(game_callbacks.on_actor_save):Attach(save)
+	get_event(game_callbacks.on_stalker_death):Attach(add_killed_npcs)
+	get_event(game_callbacks.on_monster_death):Attach(add_killed_mobs)
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function init_if_needed()
+	for _,v in pairs(skills) do
+		if skills_values[v] == nil then
+			skills_values[v] = 1
+		end
+	end
+	if points_amount < 0 then
+		points_amount = 10
+	end
+end
+
+function on_obj_used(e, obj, who)
+	if obj and obj:section() == "inventory_box" then
+		if not next(skills_values) then init_if_needed() end --/ подстраховка
+		local luck = skills_values["luck"]
+		local lockpick = skills_values["lockpick"]
+		if (lockpick % math.random(2, 11) == 0) or ((luck / 100) >= math.random()) then
+			treasure_manager.force_give_trasure( obj:story_id() ) --/#?# not function 'spawn_stuff'
+		end
+	end
+end
+
+function save()
+	--[[
+	set_save_marker(pk, "save", false, "pda_skills") --/#+#
+	pk:w_u8(points_amount)
+	pk:w_u8(skills_values.speech)
+	pk:w_u8(skills_values.natural_sense)
+	pk:w_u8(skills_values.barter)
+	pk:w_u8(skills_values.lockpick)
+	pk:w_u8(skills_values.aid)
+	pk:w_u8(skills_values.sneaking)
+	pk:w_u8(skills_values.luck)
+	local size = set_save_marker(pk, "save", true, "pda_skills") --/#+#
+	return size --/> for debug
+	--]]
+	local tbl = table.copy(skills_values)
+	tbl.points_amount = points_amount
+	SetVar("pda_skills_sav", tbl)
+end
+
+function load()
+	--[[
+	set_save_marker(pk, "load", false, "pda_skills") --/#+#
+	points_amount               = pk:r_u8()
+	skills_values.speech        = pk:r_u8()
+	skills_values.natural_sense = pk:r_u8()
+	skills_values.barter        = pk:r_u8()
+	skills_values.lockpick      = pk:r_u8()
+	skills_values.aid           = pk:r_u8()
+	skills_values.sneaking      = pk:r_u8()
+	skills_values.luck          = pk:r_u8()
+	local size = set_save_marker(pk, "load", true, "pda_skills") --/#+#
+	return size --/> for debug
+	--]]
+	local tbl = GetVar("pda_skills_sav", nil)
+	if tbl then
+		if tbl.points_amount then
+			points_amount = tbl.points_amount
+			tbl.points_amount = nil
+			skills_values = table.copy(tbl)
+		end
+		DelVar("pda_skills_sav") --/ clear
+	end
+end
+
+function get_reputation(num)
+	if num >= -10000 and num <= -1000 then
+		return game.translate_string("terrible")
+	elseif num <= -150 then
+		return game.translate_string("very_bad")
+	elseif num <= -50 then
+		return game.translate_string("bad")
+	elseif num <= 50 then
+		return game.translate_string("neutral")
+	elseif num <= 150 then
+		return game.translate_string("good")
+	else
+		return game.translate_string("very_good")
+	--else --/??? It will never go to this condition!
+		--return game.translate_string("excellent")
+	end
+end
+
+function get_rank(num)
+	if num <= 300 then
+		return game.translate_string("novice")
+	elseif num <= 600 then
+		return game.translate_string("experienced")
+	elseif num <= 900 then
+		return game.translate_string("veteran")
+	end
+	return game.translate_string("master")
+end
+
+function get_completed_quests()
+	local sum = 0
+	for k, v in pairs(task_manager.get_random_task().task_info) do
+		if v.status == "completed" then
+			sum = sum + 1
+		end
+	end
+	return string.format("%d", sum)
+end
+
+function edit_skill(skill, value)
+	skills_values[skill] = skills_values[skill] + value
+	points_amount = points_amount - value
+end
+function get_points_amount()
+	return string.format("%d", points_amount)
+end
+function add_killed_npcs(e)
+	if e.who and e.who:id() == db.actor:id() then
+		SetVar("killed_npcs", GetVar("killed_npcs", 0) + 1)
+	end
+end
+function get_killed_npcs()
+	return string.format("%d", GetVar("killed_npcs", 0))
+end
+function add_killed_mobs(e)
+	if e.who and e.who:id() == db.actor:id() then
+		SetVar("killed_mobs", GetVar("killed_mobs", 0) + 1)
+	end
+end
+function get_killed_mobs()
+	return string.format("%d", GetVar("killed_mobs", 0))
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaSkills" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaSkills:__init(xml,pos) super()
+	self:SetWindowName("pda_skills")
+	self:InitControls(xml,pos)
+	self:InitCallBacks()
+	self:CheckButtons()
+	self:ShowDescription(nil)
+end
+
+function uiPdaSkills:__finalize()
+end
+
+function uiPdaSkills:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPdaSkills:InitControls(xml,pos)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(unpack(pos))
+	
+	local wn, dlg = self:WindowName(), nil
+	
+	xml:InitFrame(wn .. ":left_frame", self)
+	xml:InitFrameLine(wn .. ":left_frame_line", self)
+	for i = 1, 2 do
+		xml:InitFrame(wn .. ":right_frame" .. i, self)
+		xml:InitFrameLine(wn .. ":right_frame_line" .. i, self)
+	end
+	
+	self:Register(xml:InitAnimStatic(wn .. ":anim", self), "anim")
+	self:Register(xml:InitList(wn .. ":description", self), "description")
+	
+	local controls = 
+	{ 
+		["name"]          = { game.translate_string("pda_name"), db.actor:character_name() },
+		["rank"]          = { game.translate_string("pda_rank"), get_rank(db.actor:character_rank()) },
+		["rep"]           = { game.translate_string("st_pda_statistic_reputation"), get_reputation(db.actor:character_reputation()) },
+		["comm"]          = { game.translate_string("ui_st_community"), game.translate_string(db.actor:character_community()) },
+		["quests_done"]   = { game.translate_string("st_detail_list_for_quests"), get_completed_quests() },
+		["killed_npcs"]   = { game.translate_string("st_detail_list_for_stalkerkills"), get_killed_npcs() },
+		["killed_mob"]    = { game.translate_string("st_detail_list_for_monsterkills"), get_killed_mobs() },
+		["points_amount"] = { game.translate_string("points_amount"), get_points_amount() }
+	}
+	
+	for k, v in pairs(controls) do
+		for i = 1, 2 do
+			dlg = xml:InitStatic(wn .. ":" .. k .. i, self)
+			dlg:SetText(v[i])
+			self:Register(dlg, k .. i)
+		end
+	end
+	
+	for _, v in pairs(skills) do
+		for i = 1, 2 do
+			dlg = xml:InitStatic(wn .. ":" .. v .. i, self)
+			if i == 1 then
+				dlg:SetText(game.translate_string(v))
+			else
+				dlg:SetText(string.format("%d", skills_values[v]))
+			end
+			self:Register(dlg, v .. i)
+		end
+		dlg = xml:InitButton(wn .. ":param_" .. v .. "1", self)
+		dlg:Show(true)
+		self:Register(dlg, "param_" .. v .. "1")
+		dlg = xml:InitProgressBar(wn .. ":param_" .. v .. "2", self)
+		dlg:SetProgressPos(skills_values[v])
+		dlg:Show(true)
+		self:Register(dlg, "bar_" .. v)
+		self:Register(xml:Init3tButton(wn .. ":btn_" .. v .. "_minus", self), "btn_" .. v .. "_minus")
+		self:Register(xml:Init3tButton(wn .. ":btn_" .. v .. "_plus", self), "btn_" .. v .. "_plus")
+	end
+	
+end
+
+function uiPdaSkills:CheckButtons()
+	for _, v in pairs(skills) do
+		self:GetButton("btn_" .. v .. "_plus"):Enable(points_amount > 0 and skills_values[v] < 100)
+		self:GetButton("btn_" .. v .. "_minus"):Enable(skills_values[v] > 0)
+	end
+end
+
+function uiPdaSkills:InitCallBacks()
+	self:AddCallback("btn_speech_minus",        ui_events.BUTTON_CLICKED, self.OnSpeechMinus,         self)
+	self:AddCallback("btn_speech_plus",         ui_events.BUTTON_CLICKED, self.OnSpeechPlus,          self)
+	self:AddCallback("btn_natural_sense_minus", ui_events.BUTTON_CLICKED, self.OnNaturalSenseMinus,   self)
+	self:AddCallback("btn_natural_sense_plus",  ui_events.BUTTON_CLICKED, self.OnNaturalSensePlus,    self)
+	self:AddCallback("btn_barter_minus",        ui_events.BUTTON_CLICKED, self.OnBarterMinus,         self)
+	self:AddCallback("btn_barter_plus",         ui_events.BUTTON_CLICKED, self.OnBarterPlus,          self)
+	self:AddCallback("btn_repair_minus",        ui_events.BUTTON_CLICKED, self.OnRepairMinus,         self)
+	self:AddCallback("btn_repair_plus",         ui_events.BUTTON_CLICKED, self.OnRepairPlus,          self)
+	self:AddCallback("btn_lockpick_minus",      ui_events.BUTTON_CLICKED, self.OnLockpickMinus,       self)
+	self:AddCallback("btn_lockpick_plus",       ui_events.BUTTON_CLICKED, self.OnLockpickPlus,        self)
+	self:AddCallback("btn_aid_minus",           ui_events.BUTTON_CLICKED, self.OnAidMinus,            self)
+	self:AddCallback("btn_aid_plus",            ui_events.BUTTON_CLICKED, self.OnAidPlus,             self)
+	self:AddCallback("btn_sneaking_minus",      ui_events.BUTTON_CLICKED, self.OnSneakingMinus,       self)
+	self:AddCallback("btn_sneaking_plus",       ui_events.BUTTON_CLICKED, self.OnSneakingPlus,        self)
+	self:AddCallback("btn_luck_minus",          ui_events.BUTTON_CLICKED, self.OnLuckMinus,           self)
+	self:AddCallback("btn_luck_plus",           ui_events.BUTTON_CLICKED, self.OnLuckPlus,            self)
+	self:AddCallback("param_speech1",           ui_events.BUTTON_CLICKED, self.ShowSpeechDescr,       self)
+	self:AddCallback("param_natural_sense1",    ui_events.BUTTON_CLICKED, self.ShowNaturalSenseDescr, self)
+	self:AddCallback("param_barter1",           ui_events.BUTTON_CLICKED, self.ShowBarterDescr,       self)
+	self:AddCallback("param_repair1",           ui_events.BUTTON_CLICKED, self.ShowRepairDescr,       self)
+	self:AddCallback("param_lockpick1",         ui_events.BUTTON_CLICKED, self.ShowLockpickDescr,     self)
+	self:AddCallback("param_aid1",              ui_events.BUTTON_CLICKED, self.ShowAidDescr,          self)
+	self:AddCallback("param_sneaking1",         ui_events.BUTTON_CLICKED, self.ShowSneakingDescr,     self)
+	self:AddCallback("param_luck1",             ui_events.BUTTON_CLICKED, self.ShowLuckDescr,         self)
+end
+
+function uiPdaSkills:ShowDescription(skill)
+	local list = self:GetListWnd("description")
+	local descr = nil
+	if not skill then
+		descr = game.translate_string("select_skill")
+	else
+		descr = game.translate_string(skill .. "_descr")
+	end
+	list:RemoveAll()
+	pcTextViewer.AddText(list, 55, descr, false, "letterica18", "full_white")
+end
+
+
+function uiPdaSkills:ShowSpeechDescr()
+	self:ShowDescription("speech")
+end
+
+function uiPdaSkills:ShowNaturalSenseDescr()
+	self:ShowDescription("natural_sense")
+end
+
+function uiPdaSkills:ShowBarterDescr()
+	self:ShowDescription("barter")
+end
+
+function uiPdaSkills:ShowRepairDescr()
+	self:ShowDescription("repair")
+end
+
+function uiPdaSkills:ShowLockpickDescr()
+	self:ShowDescription("lockpick")
+end
+
+function uiPdaSkills:ShowAidDescr()
+	self:ShowDescription("aid")
+end
+
+function uiPdaSkills:ShowSneakingDescr()
+	self:ShowDescription("sneaking")
+end
+
+function uiPdaSkills:ShowLuckDescr()
+	self:ShowDescription("luck")
+end
+
+
+function uiPdaSkills:UpdateUi()
+	self:GetStatic("points_amount2"):SetText(get_points_amount())
+	for _, v in pairs(skills) do
+		self:GetStatic(v .. "2"):SetText(string.format("%d", skills_values[v]))
+		self:GetProgressBar("bar_" .. v):SetProgressPos(skills_values[v])
+	end
+	self:CheckButtons()
+end
+
+function uiPdaSkills:OnSpeechMinus()
+	edit_skill("speech", -1)
+	self:ShowDescription("speech")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnSpeechPlus()
+	edit_skill("speech", 1)
+	self:ShowDescription("speech")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnNaturalSenseMinus()
+	edit_skill("natural_sense", -1)
+	self:ShowDescription("natural_sense")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnNaturalSensePlus()
+	edit_skill("natural_sense", 1)
+	self:ShowDescription("natural_sense")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnBarterMinus()
+	edit_skill("barter", -1)
+	self:ShowDescription("barter")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnBarterPlus()
+	edit_skill("barter", 1)
+	self:ShowDescription("barter")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnRepairMinus()
+	edit_skill("repair", -1)
+	self:ShowDescription("repair")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnRepairPlus()
+	edit_skill("repair", 1)
+	self:ShowDescription("repair")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnLockpickMinus()
+	edit_skill("lockpick", -1)
+	self:ShowDescription("lockpick")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnLockpickPlus()
+	edit_skill("lockpick", 1)
+	self:ShowDescription("lockpick")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnWindowHide()
+end
+
+function uiPdaSkills:OnWindowShow()
+end
+
+function uiPdaSkills:OnAidMinus()
+	edit_skill("aid", -1)
+	self:ShowDescription("aid")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnAidPlus()
+	edit_skill("aid", 1)
+	self:ShowDescription("aid")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnSneakingMinus()
+	edit_skill("sneaking", -1)
+	self:ShowDescription("sneaking")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnSneakingPlus()
+	edit_skill("sneaking", 1)
+	self:ShowDescription("sneaking")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnLuckMinus()
+	edit_skill("luck", -1)
+	self:ShowDescription("luck")
+	self:UpdateUi()
+end
+
+function uiPdaSkills:OnLuckPlus()
+	edit_skill("luck", 1)
+	self:ShowDescription("luck")
+	self:UpdateUi()
+end
+
+--/ -----------------------------------------------------------------------------------------------
+local trigger = time_global()
+
+function process_skills(e, time, delta)
+	if db.actor.health < 0.99 then
+		if time > trigger then
+			local skills_value = skills_values["aid"]
+			if skills_value < 25 then
+				trigger = time + math.random(20000, 30000)
+			else
+				if skills_value < 50 then
+					trigger = time + math.random(15000, 20000)
+				elseif skills_value >= 50 and skills_value < 75 then
+					trigger = time + math.random(7500, 15000)
+				else
+					trigger = time + math.random(1000, 7500)
+				end
+			end
+			--#~# SkyLoader: the code copied from my project and it works later. Maybe client_spawn_manager() is wrong now
+			local obj = alife():create("fake_medkit", db.actor:position(),db.actor:level_vertex_id(),  db.actor:game_vertex_id(), db.actor:id())
+			level.client_spawn_manager():add(obj.id, 0, this.eat_fake_medikit)
+		end
+	end
+end
+
+function eat_fake_medikit(arg, id, obj)
+	if db.actor:alive() then
+		if obj:parent() and obj:parent():id() == db.actor:id() then
+			db.actor:eat(obj)
+		else
+			log("wrong spawn fake_medkit")
+		end
+	else
+		log("actor is dead :(")
+	end
+end

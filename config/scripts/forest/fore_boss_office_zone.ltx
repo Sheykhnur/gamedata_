@@ -1,0 +1,15 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {=actor_has_item(fore_bandit_pda) =actor_has_item(fore_bandit_notebook) !actor_has_item(fore_bandit_flash)} sr_tip
+on_info = {=actor_has_item(fore_bandit_pda) =actor_has_item(fore_bandit_notebook) =actor_has_item(fore_bandit_flash)} nil %=release%
+
+[sr_tip]
+header = hmm
+name = fore_found_flash
+sender = actor
+cond = {=actor_has_item(fore_bandit_pda) =actor_has_item(fore_bandit_notebook)} 
+single = true
+showtime = 7000
+on_signal = tip_sended| nil %=release%

@@ -1,0 +1,137 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : stalker_generic.script
+ Description: stalker generic
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : Barin, Skyloader
+ Last edit  : 21.08.2013 [SkyLoader]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local bShowZombies = false
+local bOptShow = true
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function ReInit_Options()
+--	log("ReInit_Options:%s:[%s]", bOptShow, ">") --/#~#
+	bOptShow = GetVar("opt_spots", true)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ STALKER NPC INFO
+--/ -----------------------------------------------------------------------------------------------
+function set_npc_info(npc, ini, scheme, section)
+	log("set_npc_info:NPC=[%s],section=[%s]:(%s)", npc:name(), section, "?") --/#~#
+	xr_info.set_sheme(npc, ini, scheme, section) --/> redirect
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ STALKER IGNORE MONSTER THRESHOLD
+--/ -----------------------------------------------------------------------------------------------
+--/ Called when switching to new section (do subtraction of settings from section).
+function reset_threshold(oNPC, scheme, stor, section)
+	local threshold_section
+	if scheme and scheme ~= "nil" and section then
+		threshold_section = Get_Cfg_String(stor.ini, section, "threshold", nil)
+	else
+		threshold_section = Get_Cfg_String(stor.ini, stor.section_logic, "threshold", nil)
+	end
+	if threshold_section then
+		local iThreshold = Get_Cfg_Number(stor.ini, threshold_section, "ignore_monster", nil)
+		if iThreshold and iThreshold >= 0 and iThreshold <= 1 then
+			oNPC:ignore_monster_threshold(iThreshold)
+		else
+			oNPC:restore_ignore_monster_threshold()
+		end
+		local iDistance = Get_Cfg_Num32(stor.ini, threshold_section, "max_ignore_distance", nil)
+		if iDistance then
+			oNPC:max_ignore_monster_distance(iDistance)
+		else
+			oNPC:restore_max_ignore_monster_distance()
+		end
+--		log("reset_threshold:NPC=[%s],Scheme=[%s],Section=[%s],Threshold=[%s/%s/%s]", oNPC:name(), scheme, stor.section_logic or section, threshold_section, iThreshold, iDistance, "") --/#~#
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ STALKER MAP SHOW
+--/ -----------------------------------------------------------------------------------------------
+--/ Called when switching to new section (do subtraction of settings from section).
+function reset_show_spot(oNPC, scheme, stor, section)
+	local idNPC = oNPC and oNPC:id()
+	local soNPC = idNPC and alife():object(idNPC)
+	if soNPC then
+		local bShowSpot = bOptShow
+		local spot_section,sShowSpot = "true","true"
+		if bOptShow == false and (
+			 level.map_has_object_spot(idNPC, "green_location") ~= 0 or
+			 level.map_has_object_spot(idNPC, "blue_location") ~= 0
+			) then
+			bShowSpot = true
+		end
+		if bShowSpot then
+			if scheme and scheme ~= "nil" then
+				spot_section = Get_Cfg_String(stor.ini, section, "show_spot", sShowSpot)
+			else
+				spot_section = Get_Cfg_String(stor.ini, stor.section_logic, "show_spot", sShowSpot)
+			end
+			
+			if bShowZombies or oNPC:character_community() ~= "zombied" then
+				local tCondlist = xr_logic.parse_condlist(oNPC, section, "show_spot", spot_section)
+				local spot_string = xr_logic.pick_section_from_condlist(db.actor, oNPC, tCondlist)
+				if spot_string == "if_friend" then
+					if oNPC:relation(db.actor) == game_object.friend then
+						bShowSpot = true
+--						log("true")
+					else
+						bShowSpot = false
+--						log("false")
+					end
+				else
+					bShowSpot = spot_string ~= "false"
+				end
+--		log("reset_show_spot:NPC=[%s], Scheme=[%s], Section=[%s], SpotSection=[%s], Show=[%s/%s], Opt=[%s], %s", oNPC:name(), scheme, section, spot_section, sShowSpot, bShowSpot, bOptShow, spot_string, "")
+			end
+		end
+		if bShowSpot then
+			soNPC:visible_for_map(true) --/ show
+		else
+			soNPC:visible_for_map(false) --/ hide
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ INVULNERABILITY (reserved)
+--/ -----------------------------------------------------------------------------------------------
+function is_need_invulnerability(oNPC, scheme, stor, section)
+	local st = oNPC and db.storage[oNPC:id()]
+	if st then
+		local sInvulnerability
+		if scheme and scheme ~= "nil" then
+			sInvulnerability = Get_Cfg_String(stor.ini, section, "invulnerable", nil)
+		end
+		if not sInvulnerability then
+			sInvulnerability = Get_Cfg_String(stor.ini, stor.section_logic, "invulnerable", nil)
+		end
+		if sInvulnerability then
+			tCondlist = xr_logic.parse_condlist(oNPC, "invulnerable", "invulnerable", sInvulnerability)
+			return xr_logic.pick_section_from_condlist(db.actor, oNPC, tCondlist) == "true" --/>
+		end
+	end
+	return oNPC:default_invulnerable()
+end
+
+--/ Called when switching to new section (do subtraction of settings from section).
+function reset_invulnerability(oNPC, scheme, stor, section)
+	local bInvulnerability = is_need_invulnerability(oNPC, scheme, stor, section)
+--	log("reset_invulnerability:NPC[%s]=[%s]", oNPC:name(), bInvulnerability, "") --/#~#
+	if oNPC:invulnerable() ~= bInvulnerability then
+		oNPC:invulnerable(bInvulnerability)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,41 @@
+[smart_terrains]
+none = true
+
+[hit@country_blockpost_soldier1]
+on_info = {=hit_by_actor} %+country_military_hostile%
+
+[logic]
+active = follower@country_blockpost_soldier1
+combat_ignore = combat_ignore
+on_hit = hit@country_blockpost_soldier1
+
+[follower@country_blockpost_soldier1]
+formation_line = true
+leader = 8716
+distance = 2
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_info = {+country_major_third_mutant_quest_start00} camper@country_blockpost_soldier1
+
+[camper@country_blockpost_soldier1]
+path_walk = patrol2_atack_stay_walk
+path_look = country_blockpost_atack_look
+team = count_blokpost
+def_state_moving = rush
+def_state_moving_fire = sneak_fire
+meet = no_meet
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_soldier1
+
+[remark@country_blockpost_soldier1]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} | follower@country_blockpost_soldier12
+
+[follower@country_blockpost_soldier12]
+formation_line = true
+leader = 8716
+distance = 2
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+

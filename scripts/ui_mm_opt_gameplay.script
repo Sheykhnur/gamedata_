@@ -1,0 +1,54 @@
+-- Last edit  : 08.03.2017 (by SkyLoader)
+
+class "opt_gameplay" (CUIWindow)
+
+function opt_gameplay:__init() super()
+end
+
+function opt_gameplay:__finalize()
+
+end
+
+function opt_gameplay:InitControls(x, y, xml, handler)
+
+	self:Init(x,y, 738, 416)
+	self:SetAutoDelete(true)
+	
+	self.bk = xml:InitFrame("frame", self)
+
+	--xml:InitStatic("tab_gameplay:screen_static_main", self)
+	
+	xml:InitStatic("tab_gameplay:cap_difficulty",		self)
+	xml:InitStatic("tab_gameplay:cap_language",		self)
+	xml:InitStatic("tab_gameplay:cap_hud_type",		self)
+	xml:InitStatic("tab_gameplay:cap_crosshair_type",	self)
+	
+	xml:InitCheck("tab_gameplay:check_tips",			self)
+	xml:InitCheck("tab_gameplay:check_crosshair",		self)
+	xml:InitCheck("tab_gameplay:check_show_weapon", 	self)
+	xml:InitCheck("tab_gameplay:check_dist", 			self)
+	xml:InitCheck("tab_gameplay:check_show_clock", 		self)
+	xml:InitCheck("tab_gameplay:check_show_hud",		self)
+
+	xml:InitCheck("tab_gameplay:check_nointro",			self)
+	xml:InitCheck("tab_gameplay:check_show_actor_body",	self)
+
+	xml:InitStatic   ("tab_gameplay:cap_cam_inert",		self)
+	xml:InitTrackBar ("tab_gameplay:track_cam_inert",	self)
+
+	xml:InitStatic   ("tab_gameplay:cap_FOV",        	self)
+	xml:InitTrackBar ("tab_gameplay:track_FOV",      	self)
+
+	xml:InitStatic   ("tab_gameplay:cap_HUD_FOV",        self)
+	xml:InitTrackBar ("tab_gameplay:track_HUD_FOV",      self)
+
+	xml:InitComboBox("tab_gameplay:list_hud_type",	self)
+	self.language = xml:InitComboBox("tab_gameplay:list_language",	self)
+
+	if level.present() and db.actor and db.actor:alive() then
+		self.language:Enable(false)
+		self.language:SetText(game.translate_string(get_console():get_string("language")))
+	end
+	xml:InitComboBox("tab_gameplay:list_difficulty",	self)
+	xml:InitComboBox("tab_gameplay:list_crosshair_type",	self)
+end

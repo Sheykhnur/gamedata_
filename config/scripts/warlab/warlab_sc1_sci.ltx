@@ -1,0 +1,57 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc1_sci
+combat_ignore = combat_ignore
+
+[remark@war_sc1_sci]
+anim = probe
+target = war_scene1_sci1, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_talk1} remark@war_sc1_sci2
+
+[remark@war_sc1_sci2]
+anim = wait
+snd = war_replics2
+target = war_scene1_commander_walk, 3
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc1_talk2% remark@war_sc1_sci2_synth
+
+[remark@war_sc1_sci2_synth]
+anim = sci_think
+target = war_scene1_burer3, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_talk3} remark@war_sc1_sci3
+
+[remark@war_sc1_sci3]
+anim = probe
+snd = war_replics4
+target = war_scene1_commander_walk, 3
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc1_talk4%
+on_info = {+war_sc1_talk5} remark@war_sc1_sci4
+
+[remark@war_sc1_sci4]
+anim = ordinary_talk3
+snd = war_replics6
+target = war_scene1_commander_walk, 3
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc1_talk6% remark@war_sc1_sci4_synth
+
+[remark@war_sc1_sci4_synth]
+anim = stand_wait
+target = war_scene1_commander_walk, 3
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_talk8} walker@sc1_sci_away
+
+[walker@sc1_sci_away]
+path_walk = war_sc1_sci_walk_away
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sc1srelease | %=release%

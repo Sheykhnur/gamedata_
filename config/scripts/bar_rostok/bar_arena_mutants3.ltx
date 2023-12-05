@@ -1,0 +1,25 @@
+[death@bar_arena_mostr]
+on_info = %+bar_arena_monstr_dead +bar_arena_bloodsucker_defeated +bar_arena_door_1_open%
+
+[logic]
+active = mob_remark@bar_arena_monstr
+on_death = death@bar_arena_mostr
+
+[mob_remark@bar_arena_monstr]
+target = ros_kamp_lager1_walker1_walk, 3
+braindead = true
+friendly = true
+actor_friendly = true
+npc_friendly = true
+on_info = {+bar_arena_fight} mob_home@bar_arena_monstr
+
+[mob_home@bar_arena_monstr]
+path_home = bar_arena_mutants_home2
+aggressive_home = true
+braindead = true
+friendly = true
+actor_friendly = false
+npc_friendly = true
+home_min_radius = 5
+home_max_radius = 7
+panic = 0

@@ -1,0 +1,241 @@
+
+-- file: ui_wheel.script
+-- author: Nova ( Props to Gr1ph00n for the safe layout tho )
+-- date: 2009-08-22
+-- edited by: Nova
+-- last edited: 2013-02-16
+-- edit reason: changed behavior so it operates like a real safe, why wasnt this done sooner?
+
+local MODE_MINUS = 1
+local MODE_PLUS = 2
+
+local MAX_NUM = 15 --30
+
+function load_ui(code, f)
+	level.start_stop_menu(uiSafeWheel(code, f), true)
+end
+
+class "uiSafeWheel" (CUIScriptWnd)
+
+function uiSafeWheel:__init(code, func) super()
+	la_utils.custom_ui_usage("show", script_name())
+	
+	self.correct_code = code
+	self.current_code = {}
+	self.action = func
+	self.current_num = 0
+	self.current_block = 1
+	self.clockwise = 1; --Current Wheel rotation, Number is locked in when direction is swapped... Realism :P
+	self.wheel_frames = {}
+	for i = 1, 16 do
+		self.wheel_frames[i] = "ui\\wheel\\codewheel_" .. i
+	end
+	self.current_frame = 1
+	self.max_num = MAX_NUM
+	self:InitControls()
+	self:InitCallBacks()
+	self:GetStatic("codewheel"):InitTexture(self.wheel_frames[self.current_frame])
+end
+
+function uiSafeWheel:__finalize()
+end
+
+function uiSafeWheel:InitControls()
+	local widescreen_pos_fix = 0
+	local widescreen_width_fix = 1
+	if(device().width/device().height>(1024/768+0.01)) then
+	  widescreen_pos_fix = 102
+	  widescreen_width_fix = 0.8
+	end
+	self:Init(0, 0, device().width, device().height)
+	local xml = CScriptXmlInit()
+	local dlg = nil
+	xml:ParseFile("ui_wnd\\ui_wheel.xml") 
+
+	dlg = xml:InitStatic("background", self)
+	dlg:SetWndPos(widescreen_pos_fix,0)
+	dlg:SetWidth(1024*widescreen_width_fix)
+
+	self.wheel = xml:InitStatic("wheel", self)
+	self.wheel:SetWidth(self.wheel:GetWidth() * widescreen_width_fix)
+	self.wheel:SetWndPos((1024 / 2 - self.wheel:GetWidth() / 2), 768 / 2 - self.wheel:GetHeight() / 2)
+
+	dlg = xml:InitStatic("wheel:codewheel", self.wheel)
+	dlg:SetWidth(dlg:GetWidth() * widescreen_width_fix)
+	self:Register(dlg, "codewheel")
+
+	dlg = xml:InitButton("wheel:codewheel_button_1", self.wheel)
+	dlg:SetWidth(dlg:GetWidth() * widescreen_width_fix)
+	self:Register(dlg, "wheel1")
+
+	dlg = xml:InitButton("wheel:codewheel_button_2", self.wheel)
+	dlg:SetWidth(dlg:GetWidth() * widescreen_width_fix)
+	dlg:SetWndPos(dlg:GetWidth(), 0)
+	self:Register(dlg, "wheel2")
+	
+	dlg = xml:InitButton("btn_open", self)
+	dlg:SetWidth(dlg:GetWidth() * widescreen_width_fix)
+	dlg:SetWndPos(1024 / 2 - dlg:GetWidth() / 2 - dlg:GetWidth() - 20 * widescreen_width_fix, (768 / 2 + self.wheel:GetHeight() / 2) + 50)
+	self:Register(dlg, "btn_open")
+	
+	dlg = xml:InitButton("btn_reset", self)
+	dlg:SetWidth(dlg:GetWidth() * widescreen_width_fix)
+	dlg:SetWndPos(1024 / 2 - dlg:GetWidth() / 2, (768 / 2 + self.wheel:GetHeight() / 2) + 50)
+	self:Register(dlg, "btn_reset")
+	
+	dlg = xml:InitButton("btn_quit", self)
+	dlg:SetWidth(dlg:GetWidth() * widescreen_width_fix)
+	dlg:SetWndPos(1024 / 2 - dlg:GetWidth() / 2 + dlg:GetWidth() + 20 * widescreen_width_fix, (768 / 2 + self.wheel:GetHeight() / 2) + 50)
+	self:Register(dlg, "btn_quit")
+	
+	self.code_blocks = xml:InitStatic("code_blocks", self)
+	
+	local new_x = 0
+	for i = 1, #self.correct_code do
+		dlg = xml:InitStatic("code_blocks:number" .. i, self.code_blocks)
+		dlg:SetWidth(dlg:GetWidth() * widescreen_width_fix)
+		dlg:SetWndPos(new_x, 0)
+		dlg:SetText("--")
+		new_x = new_x + dlg:GetWidth() + 20 * widescreen_width_fix
+		self:Register(dlg, "block" .. i)
+	end
+
+	self.code_blocks:SetWidth(new_x - 20 * widescreen_width_fix)
+	self.code_blocks:SetWndPos(1024 / 2 - self.code_blocks:GetWidth() / 2, (768 / 2 - self.wheel:GetHeight() / 2) - 100)
+	
+	self:GetStatic("block1"):SetText(string.format("%d", self.current_num))
+	self.current_code[1] = self.current_num
+end
+
+function uiSafeWheel:InitCallBacks()
+	self:AddCallback("btn_open", ui_events.BUTTON_CLICKED, self.OnOpen, self)
+	self:AddCallback("btn_quit", ui_events.BUTTON_CLICKED, self.OnQuit, self)
+	self:AddCallback("wheel1", ui_events.BUTTON_CLICKED, self.OnWheelMinClicked, self)
+	self:AddCallback("wheel2", ui_events.BUTTON_CLICKED, self.OnWheelMaxClicked, self)
+	self:AddCallback("btn_reset", ui_events.BUTTON_CLICKED, self.OnResetBtnClicked, self)
+end
+
+function uiSafeWheel:OnQuit()
+	la_utils.custom_ui_usage("hide", script_name())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiSafeWheel:OnWheelMinClicked()
+	self:Execute(MODE_MINUS)
+end
+
+function uiSafeWheel:OnWheelMaxClicked()
+	self:Execute(MODE_PLUS)
+end
+
+function uiSafeWheel:OnResetBtnClicked()
+	self.current_block = 1
+	self.current_num = 0
+	self.current_frame = 1
+	self.current_code = {} -- reset the code
+	for i = 1, #self.correct_code do
+		self:GetStatic("block" .. i):SetText("--")
+	end
+	self.clockwise = 1
+	self:GetStatic("block1"):SetText(string.format("%d", self.current_num))
+	self:GetStatic("codewheel"):InitTexture(self.wheel_frames[self.current_frame])
+end
+
+function uiSafeWheel:OnOpen()
+	if self.current_block >= #self.correct_code then
+		
+		local correct = true;
+		for i = 1, #self.correct_code do
+			if self.current_code[i] ~= self.correct_code[i] then
+				correct = false
+			end
+		end
+		
+		if correct then
+			self.action:unlock_safe()
+			local snd_obj = xr_sound.get_safe_sound_object([[device\metal_small_open]])
+			snd_obj:play(db.actor, 0, sound_object.s2d)
+			self:GetHolder():start_stop_menu(self, true)
+		else
+			local snd_obj = xr_sound.get_safe_sound_object([[device\door_locked]]) -- I need the locked door sound
+			snd_obj:play(db.actor, 0, sound_object.s2d)
+			return
+		end
+	else
+		local snd_obj = xr_sound.get_safe_sound_object([[device\door_locked]])
+		snd_obj:play(db.actor, 0, sound_object.s2d)
+	end
+end
+
+function uiSafeWheel:Execute(mode)
+	if self.current_block <= #self.correct_code then
+		if mode == MODE_PLUS then
+		
+			self.current_frame = self.current_frame + 1
+			
+			if self.clockwise == 0 then
+			self:NextBlock()
+			self.clockwise = 1
+			end
+			
+			if self.current_frame > #self.wheel_frames then 
+				self.current_frame = 1 
+			end
+			
+			if self.current_num >= self.max_num then
+				self.current_num = 0
+			else
+				self.current_num = self.current_num + 1
+			end	
+			
+		elseif mode == MODE_MINUS then
+		
+			self.current_frame = self.current_frame - 1
+			
+			if self.clockwise == 1 then
+			self:NextBlock()
+			self.clockwise = 0
+			end
+			
+			if self.current_frame < 1 then 
+				self.current_frame = #self.wheel_frames
+			end
+			
+			if self.current_num <= 0 then
+				self.current_num = self.max_num
+			else
+				self.current_num = self.current_num - 1
+			end
+			
+		end
+		
+		if self.current_block <= #self.correct_code then --Dont accidently update a ui that dosnt exist.
+		self:GetStatic("codewheel"):InitTexture(self.wheel_frames[self.current_frame])
+		self:GetStatic("block" .. self.current_block):SetText(string.format("%d", self.current_num))
+		self.current_code[self.current_block] = self.current_num
+		end
+	end
+end
+
+function uiSafeWheel:NextBlock()
+	
+	if self.current_block > #self.correct_code then
+		return
+	end
+	
+	self.current_block = self.current_block + 1
+	
+	local snd_obj = xr_sound.get_safe_sound_object([[weapons\gen_empty]])
+	snd_obj:play(db.actor, 0, sound_object.s2d)
+end
+
+function uiSafeWheel:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnQuit()
+		end
+	end
+	
+	return true
+end

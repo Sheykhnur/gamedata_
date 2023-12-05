@@ -1,0 +1,116 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : pdaGames.script
+ Description: PDA "Games" field (4)
+ Copyright  : 2009 © LA-team
+ Author     : barin (19.04.2009)
+ Editors    : barin(09.09.2009)
+ Last edit  : 22.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaGames" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaGames:__init(name,rect,active) super()
+	self:SetWindowName("pda_"..name)
+	self:SetAutoDelete(true)
+	self.rect = rect
+	self.active = active
+	self.initialized = false
+end
+
+function uiPdaGames:initialize()
+	self:InitControls()
+	self:InitCallBacks()
+	self.initialized = true
+end
+
+function uiPdaGames:InitControls()
+	self:Init( unpack(self.rect) )
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_"..self:WindowName()..".xml")
+	xml:InitFrame("frame_window", self)
+	xml:InitFrameLine("frame_header", self) --/#?#
+	--xml:InitAnimStatic("anim_static", self) --/#?#
+	
+	self.puzzles = pcPuzzle.uiPuzzles(self)
+	self.puzzles:SetAutoDelete(true)
+	self:AttachChild(self.puzzles)
+	self.puzzles:Show(false)
+	
+	local dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("puzzles")
+	dlg:Init("ui\\pc\\ui_pda_games_puzzles", 100, 120, 250, 230)
+	self:AttachChild(dlg)
+	
+	local btn = CUI3tButton()
+	btn:SetAutoDelete(true)
+	btn:SetWindowName("btn_puzzles")
+	btn:Init("ui_button_ordinary", 130, 360, 117, 29)
+	btn:SetText("Puzzles 1.0")
+	btn:SetTextColor(GetColourByName("yellow"))
+	self:AttachChild(btn)
+	
+	self.tetris = pcTetris.uiTetris(self, 150, 3)
+	self.tetris:SetAutoDelete(true)
+	self:AttachChild(self.tetris)
+	self.tetris:Show(false)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("tetris")
+	dlg:Init("ui\\pc\\ui_pda_games_tetris", 390, 120, 250, 230)
+	self:AttachChild(dlg)
+	
+	btn = CUI3tButton()
+	btn:SetAutoDelete(true)
+	btn:SetWindowName("btn_tetris")
+	btn:Init("ui_button_ordinary", 400, 360, 117, 29)
+	btn:SetText("Tetris 2.0 (beta)")
+	btn:SetTextColor(GetColourByName("yellow"))
+	self:AttachChild(btn)
+end
+
+function uiPdaGames:InitCallBacks()
+	self:AddCallback("btn_puzzles", ui_events.BUTTON_CLICKED, self.PlayPuzzle, self)
+	self:AddCallback("btn_tetris",  ui_events.BUTTON_CLICKED, self.PlayTetris, self)
+end
+
+function uiPdaGames:DisplayGamesMenu()
+	self:GetStatic("puzzles"):Show(true)
+	self:GetButton("btn_puzzles"):Show(true)
+	self.puzzles:Show(false)
+	
+	self:GetStatic("tetris"):Show(true)
+	self:GetButton("btn_tetris"):Show(true)
+	self.tetris:Show(false)
+end
+
+function uiPdaGames:PlayPuzzle()
+	self:GetStatic("tetris"):Show(false)
+	self:GetButton("btn_tetris"):Show(false)
+	self.tetris:Show(false)
+	
+	self:GetStatic("puzzles"):Show(false)
+	self:GetButton("btn_puzzles"):Show(false)
+	self.puzzles:Show(true)
+end
+
+function uiPdaGames:PlayTetris()
+	self:GetStatic("puzzles"):Show(false)
+	self:GetButton("btn_puzzles"):Show(false)
+	self.puzzles:Show(false)
+	
+	self:GetStatic("tetris"):Show(false)
+	self:GetButton("btn_tetris"):Show(false)
+	self.tetris:Show(true)
+end
+
+function uiPdaGames:OnShow(show)
+	if show and not self.initialized then
+		self:initialize()
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

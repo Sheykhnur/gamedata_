@@ -1,0 +1,97 @@
+[combat_ignore]
+
+[logic]
+active = walker@war_sc4_tehnic2
+combat_ignore = combat_ignore
+
+[walker@war_sc4_tehnic2]
+path_walk = war_sc4_teh2_walk1
+meet = no_meet
+combat_ignore_cond = always
+team = war_tehnics
+on_signal = rebreached2 | remark@war_sc4_wait2
+
+[remark@war_sc4_wait2]
+anim = wait
+target = war_sc4_teh1_walk2, 1
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc4_walk} walker@war_sc4_tehnic2_go
+on_timer = 16000 | walker@war_sc4_tehnic2_go
+
+[walker@war_sc4_tehnic2_go]
+path_walk = war_sc4_teh2_walk2
+path_look = war_sc4_teh2_walk2_look
+meet = no_meet
+combat_ignore_cond = always
+team = war_tehnics
+on_signal = sc4t2rch | remark@war_sc4_info
+
+[remark@war_sc4_info]
+anim = ordinary_talk
+snd = war_replics32
+target = war_sc4_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_sc4_info_synth
+
+[remark@war_sc4_info_synth]
+anim = wait
+target = war_sc4_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 2000 | %+war_sc4_talk2%
+on_info = {+war_sc4_talk3} remark@war_sc4_info2
+
+[remark@war_sc4_info2]
+anim = caution
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh2_look, 0
+on_info = {+war_sc4_sparks} remark@war_sc4_th2_synth
+
+[remark@war_sc4_th2_synth]
+anim = wait
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh1_look, 0
+on_info = {+war_sc4_toxic} remark@war_sc4_scared
+
+[remark@war_sc4_scared]
+anim = sci_worried
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh1_look, 0
+on_info = {+war_sc4_talk4} remark@war_sc4_watafaka
+
+[remark@war_sc4_watafaka]
+anim = sci_suprised
+snd= war_replics37
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh1_walk2, 1
+on_signal = sound_end | %+war_sc4_talk5% 
+on_info = {+war_sc4_knock} walker@war_sc4_tehnic2_run
+
+[walker@war_sc4_tehnic2_run]
+path_walk = war_sc4_teh2_run
+meet = no_meet
+combat_ignore_cond = always
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_signal = sc4teh2tried | remark@war_sc4_teh2_predeath
+
+[remark@war_sc4_teh2_predeath]
+anim = war_knocking
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_door_knock, 0
+on_timer = 16500 | remark@war_sc4_teh2_death2
+
+[remark@war_sc4_teh2_death2]
+anim = war_cough
+meet = no_meet
+combat_ignore_cond = always
+target = war_sparks, 0
+on_info = {+war_sc4_dead} nil %=kill_npc%

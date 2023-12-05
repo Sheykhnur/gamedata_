@@ -1,0 +1,67 @@
+[combat_ignore@ghost]
+
+
+[danger_condition@ghost]
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+
+
+[logic]
+active = remark@start
+combat_ignore = combat_ignore@ghost
+danger = danger_condition@ghost
+
+[remark@start]
+anim = ispug
+no_move = true
+no_rotate = true
+meet = no_meet
+on_timer = 15000 | remark@ghost_timeout
+combat_ignore_cond = always
+danger = danger_condition@ghost
+target = bunker_ghost_56_walk1_look, 0
+
+;zaglushka
+on_info = {+bun_ghost_2_done} remark@ghost_med %-bun_ghost_2_done%
+on_info2 = {+bun_ghost_2_1_done} remark@start_continue %-bun_ghost_2_1_done%
+on_info3 = {+deactivate_radar_done} %=release%
+
+[remark@start_continue]
+anim = ispug
+no_move = true
+no_rotate = true
+meet = no_meet
+on_timer = 15000 | remark@ghost_timeout
+on_info = {+deactivate_radar_done} %=release%
+combat_ignore_cond = always
+danger = danger_condition@ghost
+target = bunker_ghost_56_walk1_look, 0
+
+[remark@ghost_timeout]
+anim = ispug
+snd = bun_replics5
+no_move = true
+no_rotate = true
+meet = no_meet
+combat_ignore_cond = always
+danger = danger_condition@ghost
+target = bunker_ghost_56_walk1_look, 0
+on_signal = sound_end | %+bun_ghost_2_done -bun_ghost_2%
+on_info = {+bun_ghost_2_done -bun_ghost_2} %=teleport_npc(bunker_ghost_6_walk2:bun_ghost_2)%
+on_info2 = {+deactivate_radar_done} %=release%
+
+[remark@ghost_med]
+anim = search
+snd = bun_replics7
+on_info = {+bun_ghost_2_1_done -bun_ghost_2_1} %=teleport_npc(bunker_ghost_6_walk1:bun_ghost_2_1)%
+on_info2 = {+bun_ghost_3_1_done} %+bun_ghost_2_1_done -bun_ghost_2_1%
+on_info3 = {+deactivate_radar_done} %=release%
+target = bunker_ghost_56_walk2_look, 0
+combat_ignore_cond = always
+danger = danger_condition@ghost
+meet = no_meet
+no_move = true
+no_rotate = true

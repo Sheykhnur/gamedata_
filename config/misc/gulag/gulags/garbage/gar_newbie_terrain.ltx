@@ -1,0 +1,170 @@
+[death@gar_dram_novice]
+on_info = %+gar_dm_novice_dead =tasks_garbage.gar_dm_bandits_fight +sar_newbie_died%
+
+[death@dram_novice]
+on_info = %+sar_newbie_died%
+
+[combat@gar_dram_novice]
+on_info = remark@after_fight_gar_dram_novice %=disable_combat_handler =tasks_garbage.gar_dm_bandits_fight%
+
+[hit@gar_dram_novice]
+on_info = remark@after_fight_gar_dram_novice %=tasks_garbage.gar_dm_bandits_fight%
+
+[hit@gar_dram_novice2]
+on_info = {=hit_by_actor} $+gar_novice_attacked2$
+
+[danger@gar_dram_novice]
+ignore_distance = 1
+
+[danger@gar_dram_novice_hide]
+ignore_distance = 0
+
+[actor_dialogs@gar_dram_novice]
+id = gar_dram_novice_dialog
+
+[threshold@gar_dram_novice]max_ignore_distance = 5
+
+;*************************************************
+[logic@gar_newbie_terrain_novice_off]
+active = walker@gar_dram_novice_off
+on_death = death@gar_dram_novice
+on_combat = combat@gar_dram_novice
+combat_ignore = true
+
+[walker@gar_dram_novice_off]
+path_walk = walk
+path_look = look
+combat_ignore_cond = {-gar_novice_attacked}
+meet = no_meet
+
+[logic@gar_newbie_terrain_novice]
+active = walker10@gar_dram_novice 
+on_death = death@gar_dram_novice
+on_combat = combat@gar_dram_novice
+on_hit = hit@gar_dram_novice
+;actor_dialogs = actor_dialogs@gar_dram_novice
+combat_ignore = true
+
+[walker10@gar_dram_novice]
+path_walk = walk
+path_look = look
+combat_ignore_cond = {-gar_novice_attacked}
+on_actor_dist_le_nvis = 40 | walker1@gar_dram_novice %=tasks_garbage.gar_dm_bandit_demand%
+meet = no_meet
+
+[walker1@gar_dram_novice]
+path_walk = walk
+path_look = look
+combat_ignore_cond = {-gar_novice_attacked}
+on_actor_dist_le_nvis = 12 | remark1@gar_dram_novice
+on_info = {+gar_dm_newbie_no_money} remark@no_money_gar_dram_novice %-gar_dm_newbie_no_money%
+on_info2 = {+gar_bandits_attacked} remark@after_fight_gar_dram_novice ;gar_dm_bandit4_dead
+on_info3 = {+gar_dm_end} %=tasks_garbage.gar_dm_bandits_fight%
+on_info4 = {=dialog_garbage.dram_bandits_dead} remark@after_fight_gar_dram_finish
+reactions = ignore
+danger = danger@gar_dram_novice
+meet = no_meet
+def_state_standing = wait_na
+
+[remark@no_money_gar_dram_novice]
+anim = refuse
+snd = gar_dm_newbie_no_money
+target = gar_dram_moment_terrain_walk1, 0
+combat_ignore_cond = {-gar_novice_attacked}
+on_signal = action_end | walker1@gar_dram_novice %=tasks_garbage.gar_dm_bandit_demand%
+on_info = {+gar_bandits_attacked} remark@after_fight_gar_dram_novice ;gar_dm_bandit4_dead
+on_info2 = {+gar_dm_end} %+gar_bandits_attacked =tasks_garbage.gar_dm_bandits_fight%
+on_info3 = {=dialog_garbage.dram_bandits_dead} remark@after_fight_gar_dram_finish
+on_actor_dist_le_nvis = 25 | remark1@gar_dram_novice
+reactions = ignore
+danger = danger@gar_dram_novice
+meet = no_meet
+
+[remark1@gar_dram_novice]
+anim = hello
+snd = gar_dm_newbie_help_me
+target = actor
+combat_ignore_cond = {-gar_novice_attacked}
+on_signal = sound_end | remark2@gar_dram_novice %+gar_dm_novice_asked_for_help%
+on_info = {+gar_bandits_attacked} remark@after_fight_gar_dram_novice ;gar_dm_bandit4_dead
+on_info2 = {+gar_dm_end} %=tasks_garbage.gar_dm_bandits_fight%
+on_info3 = {=dialog_garbage.dram_bandits_dead} remark@after_fight_gar_dram_finish
+reactions = ignore
+danger = danger@gar_dram_novice
+meet = no_meet
+
+[remark2@gar_dram_novice]
+anim = wait
+target = actor
+combat_ignore_cond = {-gar_novice_attacked}
+on_actor_dist_le_nvis = 25 | remark3@gar_dram_novice ;%=tasks_garbage.gar_dm_bandits_fight%
+;on_actor_dist_ge_nvis = 25 | %=tasks_garbage.gar_dm_bandits_fight%
+on_info2 = {+gar_bandits_attacked} remark@after_fight_gar_dram_novice ;gar_dm_bandit4_dead
+on_info3 = {+gar_dm_end} %=tasks_garbage.gar_dm_bandits_fight%
+on_info4 = {=dialog_garbage.dram_bandits_dead} remark@after_fight_gar_dram_finish
+on_timer = 15000 | %=tasks_garbage.gar_dm_bandits_fight%
+reactions = ignore
+danger = danger@gar_dram_novice
+meet = no_meet
+
+[remark3@gar_dram_novice]
+anim = wait
+snd = help
+target = actor
+arrival_timeout = 1500
+combat_ignore_cond = {-gar_novice_attacked}
+on_signal = move_end | remark@after_fight_gar_dram_novice %=tasks_garbage.gar_dm_bandits_fight%
+on_info = {+gar_bandits_attacked} remark@after_fight_gar_dram_novice ;gar_dm_bandit4_dead
+on_info2 = {=dialog_garbage.dram_bandits_dead} remark@after_fight_gar_dram_finish
+reactions = ignore
+danger = danger@gar_dram_novice
+meet = no_meet
+
+[remark@after_fight_gar_dram_novice]
+anim = hide_no_wpn
+combat_ignore_cond = {-gar_novice_attacked}
+danger = danger@gar_dram_novice_hide
+meet = no_meet
+on_actor_dist_le_nvis = 15 | {=gar_bandits_novice_check} remark@after_fight_gar_dram_finish
+on_actor_dist_ge_nvis = 150 | nil
+on_info = {+gar_dm_bandit1_dead +gar_dm_bandit2_dead +gar_dm_bandit3_dead} remark@after_fight_gar_dram_finish
+on_info2 = {=dialog_garbage.dram_bandits_dead} remark@after_fight_gar_dram_finish
+
+[remark@after_fight_gar_dram_finish]
+anim = guard
+target = actor
+snd = gar_dm_newbie_thank_you
+combat_ignore_cond = {-gar_novice_attacked}
+on_timer = 30000 | {-gar_dm_novice_saved} walker2@gar_dram_novice %=actor_friend%
+on_info = {+gar_dm_novice_saved} walker2@gar_dram_novice %=actor_friend%
+danger = danger@gar_dram_novice
+meet = meet@gar_dram_novice
+
+[walker2@gar_dram_novice]
+path_walk = walk_after
+on_hit = hit@gar_dram_novice2
+meet = meet@gar_dram_novice
+threshold = threshold@gar_dram_novice
+combat_ignore_cond = {-gar_novice_attacked2}
+on_signal = new_gulag | walker3@gar_dram_novice_bridge %+gar_dm_novice_change_st%
+;on_actor_dist_ge_nvis = 60 | nil
+
+[walker3@gar_dram_novice_bridge]
+path_walk = walk_to_bridge_lager
+meet = no_meet
+on_hit = hit@gar_dram_novice2
+threshold = threshold@gar_dram_novice
+combat_ignore_cond = {-gar_novice_attacked2}
+on_signal = rest | %+gar_dm_novice_change_st%
+def_state_moving1 = run
+;on_info = {+gar_dm_novice_change_st}
+;on_info2 = {+gar_novice_attacked2 -gar_dm_novice_change_st} %+gar_dm_novice_change_st%
+
+[meet@gar_dram_novice]
+meet_state = 3|guard@wait
+meet_state_wpn = 3|guard@wait
+victim = 3|actor
+victim_wpn = 3|actor
+use = true
+use_wpn = true
+meet_dialog	= {!is_wounded} gar_dram_novice_dialog

@@ -1,0 +1,64 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_turret.script
+ Description: MountedTurret binding
+ Copyright  : 2011 © LA-team
+ Author     : Gr1ph00n(04/11/11)
+ Editors    : gr1ph00n(13.07.2012)
+ Last edit  : 27.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Binding - registering of objects in binder
+--/ -----------------------------------------------------------------
+function init(obj)
+--	log("init:Obj=[%s],ID=[%s],sid=[%s],cid=[%s]%s", obj:name(), obj:id(), obj:story_id(), obj:clsid(), "") --/#~#
+	obj:bind_object( this.mounted_turret_binder(obj) )
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "mounted_turret_binder" (object_binder)
+--/ -----------------------------------------------------------------------------------------------
+function mounted_turret_binder:__init(obj) super(obj)
+	self.initialized = false
+	self.obj_id  = obj:id() --/#+#
+	self.obj_cid = obj:clsid() --/#+#
+	self.obj_sid = obj:story_id() --/#+#
+end
+
+function mounted_turret_binder:reinit()
+	object_binder.reinit(self)
+	
+	db.storage[self.obj_id] = {}
+	self.st = db.storage[self.obj_id]
+end
+
+function mounted_turret_binder:net_spawn(se_obj)
+	if not object_binder.net_spawn(self, se_obj) then
+		return false
+	end
+	return true
+end
+
+function mounted_turret_binder:net_destroy()
+	db.storage[self.obj_id] = nil
+	object_binder.net_destroy(self)
+end
+
+function mounted_turret_binder:update(delta)
+	object_binder.update(self, delta)
+	if not self.initialized then
+		self.initialized = true
+		xr_logic.initialize_obj(self.object, self.st, false, db.actor, modules.stype_heli) --/#?#
+	end
+end
+
+function mounted_turret_binder:net_save_relevant()
+	return true
+end
+--/ -----------------------------------------------------------------------------------------------

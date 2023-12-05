@@ -1,0 +1,486 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : pda_talk_dialogs.script (~> pdaDialogs.script)
+ Description: PDA: talk dialogs (for pdaContacts.script)
+ Copyright  : 2009 © LA-team
+ Author     : barin (31.05.2009)
+ Editors    : barin (17.08.2010)
+ Last edit  : 29.11.2013 [vintar]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ TODO: перенести диалоги из 'la_pda_talk_dialogs.xml' и 'la_dialogs.xml' в скрипт!
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local icon_task_type = {
+	eliminate_lager = "ui_sm_mapQuest_camp_destroy",
+	defend_lager    = "ui_sm_mapQuest_camp_defend",
+	kill_stalker    = "ui_sm_mapQuest_stalker_destroy",
+	find_item       = "ui_sm_mapQuest_item",
+	monster_part    = "ui_sm_mapQuest_monster_find",
+	artefact        = "ui_sm_mapQuest_artefact"
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function vendor_can_task(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	--[[
+	local tm = task_manager.get_random_task()
+	if tm:parent_can_task(npc,parent) then
+		for _,task_id in pairs(tm.task_id_by_parent[parent]) do
+			if tm:task_avail(t.init_phrase_id) then
+				return true --/>
+			end
+		end
+	end
+	return false --/>
+	--
+	tm:task_avail(actor, npc, nil, nil, nil, "reset")
+	for _,task_id in pairs(tm.task_id_by_parent[parent]) do
+		if tm:task_avail(actor, npc, nil, nil, tm.task_info[task_id].init_phrase_id, true) then
+			return true --/>
+		end
+	end
+	return false --/>
+	--]]
+	return task_manager.precondition_vendor_can_task(actor, npc) --/>
+end
+
+function vendor_cannot_task(...)
+	return not vendor_can_task(...)
+end
+
+function task_avail(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local p2 = string.gsub(prev_phrase, "phrase_", "")
+	local p3 = string.gsub(curr_phrase, "phrase_", "")
+	return task_manager.precondition_task_avail(actor, npc, dialog_id, tonumber(p2), tonumber(p3))
+end
+
+function vendor_list_tasks(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local tm = task_manager.get_random_task()
+	if tm.task_id_by_parent[parent] then
+		local t, str, line
+		for _,task_id in pairs(tm.task_id_by_parent[parent]) do
+			t = tm.task_info[task_id]
+			if tm:task_avail(t.init_phrase_id) then
+				str = string.rep(" ", 2) .. game.translate_string(t.name)
+				line = pcTextViewer.TextLine(str, "letterica16", "light_grey")
+				line.task_icon = CUIStatic()
+				line.task_icon:SetAutoDelete(true)
+				line:AttachChild(line.task_icon)
+				--[[
+				line.task_icon:Init(icon_task_type[tm.task_info[v].type], 0, 1, 11, 11)
+				line.task_icon:Init("ui_iconsTotal_"..tm.task_info[v].type, 17, 0, 35, 20)
+				line.task_icon:Init("ui_iconsTotal_locations", 17, 0, 35, 20)
+				line.task_icon:SetStretchTexture(true)
+				--]]
+				line.task_icon:Init("ui\\ui_mini_af_spot_new", 0, 3, 10, 10)
+				line.task_icon:SetStretchTexture(true)
+				
+				pdaContacts.GetNpcDialogList():AddItem(line)
+			end
+		end
+	end
+end
+
+function give_task(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local s = string.match(curr_phrase, "phrase_(%d+)") -- string.gsub(curr_phrase, "phrase_", "")
+	local p2 = tonumber(s)
+	local tm = task_manager.get_random_task()
+	local task_id = tm.task_id_by_yes_phrase_id[tostring(p2)]
+	local t = task_id and tm.task_info[task_id]
+	if t then
+		local str = string.format("%s%s %s", string.rep(" ", 2), game.translate_string("general_new_task"), game.translate_string(t.type))
+		local line = pcTextViewer.TextLine(str, "letterica16", "green")
+		line.task_icon = CUIStatic()
+		line.task_icon:SetAutoDelete(true)
+		line:AttachChild(line.task_icon)
+		line.task_icon:Init("ui\\ui_pda_contacts_online", 0, 3, 16, 16)
+		line.task_icon:SetStretchTexture(true)
+		
+		pdaContacts.GetNpcDialogList():AddItem(line)
+		pdaContacts.GetNpcDialogList():ScrollToEnd()
+		
+		task_manager.action_give_task(actor, npc, dialog_id, p2)
+	end
+end
+
+function has_active_vendor_task(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local tm = task_manager.get_random_task()
+	for _,task_id in pairs(tm.active_task_by_type) do
+		local t = tm.task_info[task_id]
+		if t and t.parent == parent and t.status == "selected" then --/ or t.status == "completed"
+			return true --/>
+		end
+	end
+	return false --/>
+end
+
+function have_completed_job(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local tm = task_manager.get_random_task()
+	for _,task_id in pairs(tm.active_task_by_type) do
+		local t = tm.task_info[task_id]
+		if t and t.parent == parent and t.status == "completed" then
+			return true --/>
+		end
+	end
+	return false --/>
+end
+function dont_have_completed_job(...)
+	return not have_completed_job(...)
+end
+
+function active_task(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local p2 = string.gsub(prev_phrase, "phrase_", "")
+	local p3 = string.gsub(curr_phrase, "phrase_", "")
+	return task_manager.precondition_active_task(actor, npc, dialog_id, tonumber(p2), tonumber(p3))
+end
+
+function action_refuse_task(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local p2 = tonumber(string.gsub(curr_phrase, "phrase_", ""))
+	local tm = task_manager.get_random_task()
+	local task_id = tm.task_id_by_yes_phrase_id[tostring(p2)]
+	local t = task_id and tm.task_info[task_id]
+	if t then
+		local str = string.format("%s%s %s", string.rep(" ", 2), game.translate_string("general_fail_task"), game.translate_string(t.type))
+		local line = pcTextViewer.TextLine(str, "letterica16", "red")
+		line.task_icon = CUIStatic()
+		line.task_icon:SetAutoDelete(true)
+		line:AttachChild(line.task_icon)
+		line.task_icon:Init("ui\\ui_pda_contacts_offline", 0, 3, 16, 16)
+		
+		pdaContacts.GetNpcDialogList():AddItem(line)
+		pdaContacts.GetNpcDialogList():ScrollToEnd()
+		
+		task_manager.action_refuse_task(actor, npc, dialog_id, p2)
+	end
+end
+
+function pda_meet_dlg_not_set()
+	return pdaContacts.has_pda_meet_dlg(nil) --/>
+end
+function pda_meet_dlg_is_set(actor, npc)
+	return pdaContacts.has_pda_meet_dlg( npc:id() ) --/>
+end
+
+function has_enough_cash(to_pay)
+	if type(to_pay) == 'number' then
+		return db.actor:money() >= to_pay --/>
+	end
+	return false --/>
+end
+
+function can_finish_meet_dlg_task()
+	local id = pdaContacts.get_pda_meet_dlg()
+	local dlg_type = pdaContacts.get_pda_meet_dlg_type()
+	
+	if id and dlg_type then
+		local dlg_id = pdaContacts.GetMeetDialog(id, dlg_type)
+		if dlg_id then
+			if dlg_type == "npc_know" or dlg_type == "npc_sell" then
+				return has_enough_cash(pdaContacts.GetPrice(dlg_id))
+			elseif dlg_type == "npc_buy" then
+				local items = pdaContacts.GetItems(dlg_id)
+				if items then
+					for sect,num in pairs(items) do
+						if not Has_Items(sect,num) then
+							return false
+						end
+					end
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+function cannot_finish_meet_dlg_task()
+	return not can_finish_meet_dlg_task()
+end
+
+local pda_meet_dlg_task_done = false
+local pda_meet_dlg_task_fail = false
+local pda_meet_dlg_refused   = false
+
+function precond_npc_can_sell(actor, npc)
+	return not pda_meet_dlg_task_done and pdaContacts.has_pda_meet_dlg(npc:id()) and pdaContacts.is_pda_meet_dlg_type_set("npc_sell")
+end
+
+function precond_npc_can_buy(actor, npc)
+	return not pda_meet_dlg_task_done and pdaContacts.has_pda_meet_dlg(npc:id()) and pdaContacts.is_pda_meet_dlg_type_set("npc_buy")
+end
+
+function precond_npc_knows(actor, npc)
+	if pdaContacts.has_pda_meet_dlg(npc:id()) and pdaContacts.is_pda_meet_dlg_type_set("npc_know") then
+		local meet_dlg = pdaContacts.GetMeetDialog(npc:id(), "npc_know")
+		local info = pdaContacts.GetInfo(meet_dlg)
+		if info then
+			return not has_info(info)
+		end
+		return true
+	end
+	return false
+end
+
+function is_pda_meet_dialog_enabled(actor, npc, parent, dialog_id)
+	if pdaContacts.has_pda_meet_dlg(npc:id()) then
+		local dlg_type = pdaContacts.GetDialogType(dialog_id)
+		return not pda_meet_dlg_refused and pdaContacts.is_pda_meet_dlg_type_set(dlg_type)
+	end
+	return pdaContacts.has_pda_meet_dlg(nil)
+end
+
+function pda_meet_task_complete()
+	return pda_meet_dlg_task_done
+end
+
+function disable_pda_meet_dlg()
+	pda_meet_dlg_task_done = false
+	pda_meet_dlg_task_fail = false
+	pda_meet_dlg_refused = false
+	pdaContacts.disable_pda_meet_dlg()
+end
+
+function pda_meet_task_fail()
+	if pda_meet_dlg_task_fail then
+		return true --/> failed
+	end
+	local npc_id = pdaContacts.get_pda_meet_dlg()
+	if npc_id then
+		local sobj = alife():object(npc_id)
+		if sobj and sobj.alive and IsHuman(sobj) then
+			if sobj.online then
+				if not sobj:alive() then
+					return true --/> failed
+				end
+				local npc = level.object_by_id(npc_id)
+				if npc and db.actor and npc:relation(db.actor) == game_object.enemy then
+					return true --/> failed
+				end
+			end
+			return not sobj:alive() --/>
+		end
+		return true --/> failed
+	end
+	return false --/>
+end
+
+function give_pda_meet_task(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local dlg_type = pdaContacts.GetDialogType(dialog_id)
+	pdaContacts.set_pda_meet_dlg(npc:id())
+	pdaContacts.set_pda_meet_dlg_id(dlg_type)
+	
+	local task = CGameTask()
+	task:load("task_pda_meet_" .. dlg_type)
+	local task_title = game.translate_string("task_pda_meet_with_npc")
+	task_title = string.format("%s %s", task_title, npc:character_name())
+	task:set_title(task_title)
+	
+	local objective = task:get_objective(0)
+	objective:set_article_id(dialog_id .. "_article")
+	
+	local str = string.format("%s", game.translate_string("task_pda_meet_with_" .. dlg_type))
+	local price = string.format("%s: %d RU", game.translate_string("ui_st_price"), pdaContacts.GetPrice(dialog_id))
+	
+	if dlg_type == "npc_buy" or dlg_type == "npc_sell" then
+		str = str .. pdaContacts.GetItemsStr(dialog_id)
+	end
+	
+	local hint = string.format("%s %s %s\\n%s", npc:character_name(), game.translate_string("pda_waiting"), str, price)
+	
+	objective = SGameTaskObjective(task, 1)
+	objective:set_description(str)
+	objective:set_map_location("blue_location")
+	objective:set_map_hint(hint)
+	objective:set_object_id(npc:id())
+	task:add_objective(objective)
+	
+	str = string.format("%s%s %s", string.rep(" ", 2), game.translate_string("general_new_task"), task_title)
+	local line = pcTextViewer.TextLine(str, "letterica16", "green")
+	line.task_icon = CUIStatic()
+	line.task_icon:SetAutoDelete(true)
+	line:AttachChild(line.task_icon)
+	line.task_icon:Init("ui\\ui_pda_contacts_online", 0, 3, 16, 16)
+	line.task_icon:SetStretchTexture(true)
+	
+	local list = pdaContacts.GetNpcDialogList()
+	if list then
+		list:AddItem(line)
+		list:ScrollToEnd()
+	end
+	actor:give_task(task, 0, false)
+end
+
+function pda_meet_actor_reject()
+	pda_meet_dlg_task_fail = true
+end
+
+function pda_meeting_refuse()
+	local npc_name = pdaContacts.GetNpcName(pdaContacts.get_pda_meet_dlg())
+	local task_title = game.translate_string("task_pda_meet_with_npc")
+	task_title = string.format("%s %s", task_title, npc_name)
+	
+	local str = string.format("%s%s %s", string.rep(" ", 2), game.translate_string("general_fail_task"), task_title)
+	local line = pcTextViewer.TextLine(str, "letterica16", "red")
+	line.task_icon = CUIStatic()
+	line.task_icon:SetAutoDelete(true)
+	line:AttachChild(line.task_icon)
+	line.task_icon:Init("ui\\ui_pda_contacts_offline", 0, 3, 16, 16)
+	
+	pdaContacts.GetNpcDialogList():AddItem(line)
+	pdaContacts.GetNpcDialogList():ScrollToEnd()
+	
+	pda_meet_actor_reject()
+	pda_meet_dlg_refused = true
+end
+
+function pda_npc_sell_actor_buy(npc)
+	local dlg_type = pdaContacts.get_pda_meet_dlg_type()
+	local meet_dlg = pdaContacts.GetMeetDialog(npc:id(), dlg_type)
+	--log("pda npc sell actor buy type = %s and meet_dlg = %s", tostring(dlg_type), tostring(meet_dlg))
+	for sect,num in pairs(pdaContacts.GetItems(meet_dlg)) do
+		Spawn_ItemsInInv(sect,num,db.actor)
+		news_manager.relocate_item(npc, "in", sect, num)
+	end
+	
+	dialogs.relocate_money(npc, pdaContacts.GetPrice(meet_dlg), "out")
+	pda_meet_dlg_task_done = true
+end
+
+function pda_npc_buy_actor_sell(npc)
+	local dlg_type = pdaContacts.get_pda_meet_dlg_type()
+	local meet_dlg = pdaContacts.GetMeetDialog(npc:id(), dlg_type)
+	
+	for sect,num in pairs(pdaContacts.GetItems(meet_dlg)) do
+		Lost_Items(sect,num,npc)
+		--news_manager.relocate_item(npc, "out", sect, num)
+	end
+	
+	dialogs.relocate_money(npc, pdaContacts.GetPrice(meet_dlg), "in")
+	pda_meet_dlg_task_done = true
+end
+
+function pda_actor_buy_story(actor, npc)
+	local dlg_type = pdaContacts.get_pda_meet_dlg_type()
+	local meet_dlg = pdaContacts.GetMeetDialog(npc:id(), dlg_type)
+	
+	local info = pdaContacts.GetInfo(meet_dlg)
+	if info then
+		give_info(info)
+	end
+	
+	dialogs.relocate_money(npc, pdaContacts.GetPrice(meet_dlg), "out")
+	pda_meet_dlg_task_done = true
+end
+
+function pda_chitchat_dlg_enabled(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local info = pdaContacts.GetInfo(dialog_id)
+	if info then
+		return not has_info(info)
+	end
+	return true
+end
+
+function pda_chitchat_dlg_disable(actor, npc, parent, dialog_id, prev_phrase, curr_phrase)
+	local info = pdaContacts.GetInfo(dialog_id)
+	if info then
+		give_info(info)
+	end
+end
+function is_npc_info_enabled(actor, npc, parent, dialog_id)
+	return is_pda_meet_dialog_enabled(actor, npc, parent, dialog_id) and
+		pda_chitchat_dlg_enabled(actor, npc, parent, dialog_id)
+end
+
+function pda_display_npc_info(npc)
+	local dlg_type = pdaContacts.get_pda_meet_dlg_type()
+	local meet_dlg = pdaContacts.GetMeetDialog(npc:id(), dlg_type)
+	local article  = game.translate_string(pdaContacts.GetArticle(meet_dlg))
+	
+	if article then
+		local task_texture, task_rect = get_texture_info("ui_iconsTotal_locations", "ui_iconsTotal_locations")
+		db.actor:give_talk_message(article, task_texture, task_rect, "iconed_answer_item")
+	end
+end
+
+function pda_npc_know_get_article()
+	local dlg_type = pdaContacts.get_pda_meet_dlg_type()
+	local npc_id   = pdaContacts.get_pda_meet_dlg()
+	local meet_dlg = pdaContacts.GetMeetDialog(npc_id, dlg_type)
+	local article  = pdaContacts.GetArticle(meet_dlg)
+	
+	if article then
+		return article
+	end
+	
+	return "Shit I forgot, sorry. But I'll keep money anyway."
+end
+
+local g_phrase_id = 1000
+local npc_know_dlgs = {}
+
+function npc_has_know_dlg(npc, actor, dialog_id, parent_phrase, curr_phrase)
+	local meet_dlg = pdaContacts.GetMeetDialog(npc:id(), "npc_know")
+	return npc_know_dlgs[meet_dlg] == curr_phrase
+end
+
+function add_phrases(dlg, parent, text)
+	local phrase_id = g_phrase_id
+	local c_phrase_id = g_phrase_id + 3
+	local d_phrase_id = g_phrase_id + 4
+	g_phrase_id = g_phrase_id + 10
+	
+	local phr = dlg:AddPhrase("pda_talk_npc_know_dialog_2", phrase_id, parent, -10000)
+	local phrase = phr:GetPhraseScript()
+	phrase:AddPrecondition(sModule..".can_finish_meet_dlg_task")
+	phrase:AddAction(sModule..".pda_actor_buy_story")
+	dlg:AddPhrase(text, c_phrase_id, phrase_id, -10000)
+	
+	phrase_id = phrase_id + 1
+	phr = dlg:AddPhrase("pda_talk_npc_know_dialog_3", phrase_id, parent, -10000)
+	phr:GetPhraseScript():AddPrecondition(sModule..".cannot_finish_meet_dlg_task")
+	dlg:AddPhrase("pda_talk_npc_know_dialog_31", d_phrase_id, phrase_id, -10000)
+	
+	phrase_id = phrase_id + 1
+	dlg:AddPhrase("pda_talk_npc_know_dialog_4", phrase_id, parent, -10000)
+	dlg:AddPhrase("pda_talk_npc_know_dialog_41", phrase_id + 3, phrase_id, -10000)
+	
+	phrase_id = phrase_id + 3
+	phr = dlg:AddPhrase("pda_talk_npc_know_dialog_412", phrase_id + 1, phrase_id, -10000)
+	phrase = phr:GetPhraseScript()
+	phrase:AddPrecondition(sModule..".can_finish_meet_dlg_task")
+	phrase:AddAction(sModule..".pda_actor_buy_story")
+	dlg:AddPhrase("", c_phrase_id, phrase_id + 1, -10000)
+	
+	phr = dlg:AddPhrase("pda_talk_npc_know_dialog_413", phrase_id + 2, phrase_id, -10000)
+	phr:GetPhraseScript():AddPrecondition(sModule..".cannot_finish_meet_dlg_task")
+	dlg:AddPhrase("", d_phrase_id, phrase_id + 2, -10000)
+	
+	dlg:AddPhrase("pda_talk_npc_know_dialog_414", phrase_id + 3, phrase_id, -10000)
+	phr = dlg:AddPhrase("pda_talk_npc_know_dialog_4141", phrase_id + 4, phrase_id + 3, -10000)
+	phr:GetPhraseScript():AddAction(sModule..".pda_meet_actor_reject")
+end
+function init_npc_know_dialog(dlg)
+	dlg:AddPhrase("pda_talk_npc_know_dialog_0", 0, -1, -10000)
+	local phr, phrase = nil, nil
+	
+	local phrase_id = 1
+	local dlg_mgr = pdaContacts.get_DialogManager()
+	for k,v in pairs(dlg_mgr.dlg_by_type["npc_know"]) do
+		phr = dlg:AddPhrase("pda_talk_npc_know_dialog_1", phrase_id, 0, -10000)
+		phrase = phr:GetPhraseScript()
+		phrase:AddDontHasInfo(dlg_mgr.dialog_list[v].info)
+		phrase:AddPrecondition(sModule..".npc_has_know_dlg")
+		
+		add_phrases(dlg, phrase_id, dlg_mgr.dialog_list[v].article)
+		
+		npc_know_dlgs[v] = phrase_id
+		phrase_id = phrase_id + 1
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

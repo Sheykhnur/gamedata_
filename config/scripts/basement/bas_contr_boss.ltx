@@ -1,0 +1,16 @@
+[logic]
+active = mob_home@kon
+on_death = death@kon
+on_hit = hit@kon
+
+[death@kon]
+on_info = {=killed_by_actor -bas_switcher_off} %=kill_actor%
+on_info2 = {+bas_switcher_off} %=set_weather(indoor) =psy_hit(0.2)%
+
+[hit@kon]
+on_info = {=hit_by_actor -bas_switcher_off} %=run_postprocess(psi4:1000:false) =psy_hit(0.25)%
+
+[mob_home@kon]
+path_home = bas_contr_boss_home
+home_min_radius = 15
+home_max_radius = 25

@@ -1,0 +1,80 @@
+[combat_ignore]
+
+[logic]
+active = walker@war_sc2_cleaner2
+combat_ignore = combat_ignore
+
+[walker@war_sc2_cleaner2]
+path_walk = war_sc2_cleaner_walk
+path_look = war_sc2_cleaner_look
+meet = no_meet
+combat_ignore_cond = always
+on_signal = morg | %+war_sc2_talk1%
+on_info = {+war_sc2_talk2} remark@war_sc2_cleaner21
+
+[remark@war_sc2_cleaner21]
+anim = ordinary_talk5
+snd = war_replics14
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc2_talk3% remark@war_sc2_cleaner20_synth
+
+[remark@war_sc2_cleaner20_synth]
+anim = ward
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc2_talk4} remark@war_sc2_cleaner21_synth
+
+[remark@war_sc2_cleaner21_synth]
+anim = ward
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 2000 | remark@war_sc2_cleaner22
+
+[remark@war_sc2_cleaner22]
+anim = smeh_simple
+snd = war_replics16
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_sc2_cleaner22_synth %+war_sc2_talk5%
+
+[remark@war_sc2_cleaner22_synth]
+anim = guard
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc2_talk6} remark@war_sc2_cleaner23
+
+[remark@war_sc2_cleaner23]
+anim = ordinary_talk7_specific
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_sc2_cleaner23_synth %+war_sc2_talk7%
+
+[remark@war_sc2_cleaner23_synth]
+anim = wait
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc2_talk8} remark@war_sc2_cleaner24
+
+[remark@war_sc2_cleaner24]
+anim = guard
+snd = war_replics20
+target = war_sc2_cleaner2_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | walker@war_sc2_cleaner22
+
+[walker@war_sc2_cleaner22]
+path_walk = war_sc2_cleaner_walk_away
+path_look = war_sc2_cleaner_look_away
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc2_end} %=release%
+

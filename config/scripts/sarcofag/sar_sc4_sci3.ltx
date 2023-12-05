@@ -1,0 +1,66 @@
+[combat_ignore@sci3]
+
+[danger@sar_sci3_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sci_3
+combat_ignore = combat_ignore@sci3
+danger = danger@sar_sci3_sc4
+
+[remark@sci_3]
+anim = sci_laboratory_4
+target = sar_scene_4_sci3_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_8} remark@sci_3_2
+
+[remark@sci_3_2]
+anim = sci_laboratory_3
+snd = sar_replics8
+target = sar_scene_4_sci3_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_9%
+on_info = {+sar_scene4_info_23} remark@sci_3_timer
+
+[remark@sci_3_timer]
+anim = wait
+target = sar_scene_4_sci3_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 500 | remark@sci_3_3
+
+[remark@sci_3_3]
+anim = ordinary_talk2
+snd = sar_replics23
+target = sar_scene_4_boss_walk, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@sci_3_4_synth %+sar_scene4_info_24%
+
+[remark@sci_3_4_synth]
+anim = wait
+target = sar_scene_4_boss_walk, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_27} remark@sci_3_w %=sar_reactor_earthquakes1%
+
+[remark@sci_3_w]
+anim = sci_worried
+target = sar_scene4_launch_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_29} walker@sci_3_5
+
+[walker@sci_3_5]
+path_walk = sar_scene4_launch_look
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+sar_scene4_info_30} %=release%
+
+ ;;earthquake

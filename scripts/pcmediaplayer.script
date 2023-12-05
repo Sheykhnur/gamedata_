@@ -1,0 +1,230 @@
+
+-- file: pcMediaPlayer.script
+-- author: barin
+-- date: 2008-12-16
+-- edited by: barin
+-- last edited: 2012-09-02
+
+function CalcLength(len)
+	local h = math.floor(len / 3600000)
+	local m = math.floor(len / 60000 - h * 60)
+	local s = len / 1000 - m * 60 - h * 36000
+	
+	local i, f = math.modf(s)
+	if f > 0.5 then
+		i = i + 1
+	end
+	
+	s = i
+	
+	if s >= 60 then
+		s = s % 60
+		m = m + 1
+		if m >= 60 then
+			m = m % 60
+			h = h + 1
+		end
+	end
+	
+	return string.format("%s%02d:%02d", if_then_else(h > 0, string.format("%02d:", h), ""), m, s)
+end
+
+-- ***************************************************************************************** --
+
+class "uiMediaPlayer" (CUIScriptWnd)
+
+function uiMediaPlayer:__init(parent, x, y) super()
+	self:SetWindowName("uiMediaPlayer")
+	self.owner = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 320
+	self.wnd_height = 300
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+end
+
+function uiMediaPlayer:__finalize()
+end
+
+function uiMediaPlayer:reset(m_type, m_data)
+	local caption = game.translate_string("ui_pc_static_media_player")
+	caption = caption .. " - " .. game.translate_string(m_data.name)
+	self.wnd_frame:SetCaption(caption)
+	
+	self.media_type = m_type
+	self.video = m_data.video
+	self.video_width = m_data.video_width
+	self.video_height = m_data.video_height
+	self.snd = xr_sound.get_safe_sound_object(m_data.snd)
+	self.stc_duration = CalcLength(self.snd:length())
+	self.time_tick = self.snd:length() / 100
+	
+	self:StartStopMedia(true)
+end
+
+function uiMediaPlayer:OnChildDialogExit(child_name)
+end
+
+function uiMediaPlayer:Update()
+	CUIScriptWnd.Update(self)
+	
+	if self.snd:playing() then
+		if time_global() >= self.upd_timer then
+			self.time_elapsed = self.time_elapsed + 1
+			self.pbar:SetProgressPos(self.time_elapsed)
+			self.duration:SetText(string.format("%s / %s", CalcLength(self.time_elapsed * self.time_tick), self.stc_duration))
+			--self.duration:SetText(string.format("%s / %s", CalcLength(self.time_elapsed * 1000), self.stc_duration))
+			self.upd_timer = time_global() + self.time_tick
+		end
+		
+		if self.media_type == "audio" then
+			if time_global() >= self.visual_upd then
+				self.visual_style = self.visual_style + 1
+				if self.visual_style > 15 then
+					self.visual_style = 1
+				end
+				self:GetStatic("stc_media"):InitTexture(self.visual_texture .. self.visual_style)
+				self.visual_upd = time_global() + 1000
+			end
+		end
+	elseif self.is_playing then
+		self:StartStopMedia(false)
+	end
+end
+
+function uiMediaPlayer:InitControls()	
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_media_player"))
+	self.wnd_frame:Show(true)
+	
+	local dlg = nil
+	local left_margin = self.wnd_x + 18
+	local top_margin = self.wnd_y + 40
+	local ctrl_width = 287
+	local ctrl_height = 204
+	
+	dlg = CUIFrameWindow()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("media_frame")
+	dlg:Init("ui_tablist_textbox", left_margin, top_margin, ctrl_width, ctrl_height)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("stc_media")
+	dlg:SetWndPos(left_margin + 3, top_margin + 3)
+	dlg:SetWidth(ctrl_width - 10)
+	dlg:SetHeight(ctrl_height - 10)
+	dlg:InitTexture("ui\\ui_noise")
+	dlg:SetStretchTexture(true)
+	self:AttachChild(dlg)
+	
+	dlg = self.owner.xml:InitStatic("media_player:duration_slot", self)
+	dlg:SetWndPos(left_margin - 1, top_margin + ctrl_height - 3)
+	
+	self.pbar = self.owner.xml:InitProgressBar("media_player:duration_bar", self)
+	self.pbar:SetWndPos(left_margin + 8, top_margin + ctrl_height)
+	
+	self.duration = CUIStatic()
+	self.duration:SetAutoDelete(true)
+	self.duration:SetWindowName("stc_duration")
+	self.duration:SetWndPos(left_margin + 8, top_margin + ctrl_height)
+	self.duration:SetWndRect(left_margin + 8, top_margin + ctrl_height, self.pbar:GetWidth(), 10)
+	self.duration:SetFont(pcTextViewer.get_font("small"))
+	self.duration:SetTextColor(pcTextViewer.get_colour("white"))
+	self.duration:SetTextAlign(CGameFont.alCenter)
+	self.duration:SetText("00:00 / 00:00")
+	self:AttachChild(self.duration)
+	
+	local x = left_margin + ctrl_width / 2 - 58
+	local y = top_margin + ctrl_height + 17
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_action")
+	dlg:Init("ui_button_ordinary", x, y, 117, 29)
+	dlg:SetText(game.translate_string("ui_pc_static_play"))
+	self:AttachChild(dlg)
+end
+
+function uiMediaPlayer:InitCallBacks()
+	self:AddCallback("btn_action", ui_events.BUTTON_CLICKED, self.OnActionBtnClicked, self)
+end
+
+function uiMediaPlayer:OnExit()
+	self:StartStopMedia(false)
+	self.snd = nil
+	self.owner:OnChildDialogExit(self:WindowName())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiMediaPlayer:OnActionBtnClicked()
+	if self.snd:playing() then
+		self:StartStopMedia(false)
+	else
+		self:StartStopMedia(true)
+	end
+end
+
+function uiMediaPlayer:StartStopMedia(action)
+	if not action then
+		if self.snd:playing() then
+			self.snd:stop()
+		end
+		self:GetButton("btn_action"):SetText(game.translate_string("ui_pc_static_play"))
+		self:GetStatic("stc_media"):InitTexture("ui\\ui_noise")
+		
+		self.pbar:SetProgressPos(0)
+		self.duration:SetText(string.format("00:00 / %s", self.stc_duration))
+		
+		self.visual_texture = string.format("ui_mplayer_visual_%d_", math.random(1, 4))
+		self.visual_style = 1
+		
+		self.is_playing = false
+	else
+		self:GetButton("btn_action"):SetText(game.translate_string("ui_pc_static_stop"))
+		self.duration:SetText(string.format("00:00 / %s", self.stc_duration))
+		
+		self.visual_texture = string.format("ui_mplayer_visual_%d_", math.random(1, 4))
+		self.visual_style = 1
+		
+		self.time_elapsed = 0
+		self.upd_timer = time_global() + self.time_tick
+		
+		self.snd:play(db.actor, 0, sound_object.s2d)
+		self.is_playing = true
+		
+		if self.media_type == "video" then
+			local vids = self:GetStatic("stc_media")
+			if vids and self.video and self.video_width and self.video_height then 
+				vids:InitTexture(self.video)
+				vids:SetOriginalRect(4, 4, self.video_width - 4, self.video_height - 4) 
+			end
+		else
+			self:GetStatic("stc_media"):InitTexture(self.visual_texture .. self.visual_style)
+			self.visual_upd = time_global() + 1000
+		end
+	end
+end
+
+function uiMediaPlayer:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+	
+	return true
+end

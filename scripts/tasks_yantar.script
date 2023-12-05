@@ -1,0 +1,77 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_yantar.script
+ Description: Tasks yantar
+ Copyright  : 2010 © LA-team
+ Author     : vintar
+ Editors    : vintar(11.02.2013), lox(12.02.2013)
+ Last edit  : 23.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if not has_info("yan_got_badge") then
+		if db.actor:object("yan_badge") then
+			local snd = xr_sound.get_safe_sound_object("device\\pda\\pda_objective")
+			snd:play(db.actor, 0, sound_object.s2d)
+			give_info("yan_got_badge")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^yan_') then
+		return false --/>
+	end
+	if info_id == "yan_scientist_bad_helmet_done" then
+		start_real_timer(10, nil, {tip = {game.translate_string("petrenko_message_header"), game.translate_string("yan_help_bar_duty"), "petrenko"}})
+		start_real_timer(15, nil, {info_id = "yan_bar_help_start"}) --/ ~ 15sec (real-time)
+		return true
+	end
+	if info_id == "yan_sakharov_talk_done" then
+		start_real_timer(1, nil, {info_id = "yan_scientist_kruglov_start"})
+		return true
+	end
+	if info_id == "yan_scientist_artefact_done" then
+		start_real_timer(1, nil, {info_id = "yan_scientist_kruglov_second"})
+		return true
+	end
+	if info_id == "yan_sakharov_talk_start" then
+		news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("yan_sakharov_talk_message"), "sid", 8)
+		local snd = xr_sound.get_safe_sound_object("script_replics\\trader\\ecologistsinyantar")
+		snd:play(db.actor, 0, sound_object.s2d)
+		return true
+	end
+	if info_id == "yan_scientist_kruglov_second_done" then
+		start_real_timer(4, nil, {tip = {"st_tip","yan_sakh_pda_message","saharov"}})
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function has_guitar_and_case()
+	return (db.actor:object("yan_drug_case") ~= nil and db.actor:object("yan_favor_guitar") ~= nil)
+end
+
+function has_pda_parts()
+	return db.actor:object("yan_pda_wires") ~= nil
+end
+
+function has_scientist_package()
+	return db.actor:object("scientist_package") ~= nil
+end
+
+function has_scientist_music()
+	return db.actor:object("forest_sheet_music") ~= nil
+end
+
+--/ -----------------------------------------------------------------------------------------------

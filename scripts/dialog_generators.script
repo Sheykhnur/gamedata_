@@ -1,0 +1,41 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_generators.script
+ Description: Dialog & InfoPortions Function for Generators
+ Copyright  : 2010 © LA-team
+ Author     : lox
+ Editors    : vintar(27.02.2013)
+ Last edit  : 27.02.2013 (by ...) [...]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function gen_ghost_help()
+	dialogs.give_items("medkit", 2)
+	dialogs.give_items("bandage", 2)
+	dialogs.give_items("antirad", 1)
+	dialogs.give_items("ammo_5.45x39_fmj", 3)
+end
+
+function gen_ghost_cutscene(oSpeaker1, oSpeaker2)
+	oSpeaker1:stop_talk()
+	oSpeaker2:stop_talk()
+	xr_effects.gen_freeplay_prep()
+	give_info("gen2_cutscene_good_ending")
+	give_info("esc_freeplay_rotate_actor")
+end
+
+function gen_ghost_dead()
+	return has_info("mil_ghost_dead")
+end
+
+function gen_tunnel_task_failed()
+	return has_info("gen_actor_in_zone") and not has_info("gen_walkthrough_tunnel_done")
+end
+--/ --------------------------------------------------------------------------------------------------

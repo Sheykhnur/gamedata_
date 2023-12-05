@@ -1,0 +1,101 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_5.45x39_fmj]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_5.45x39_fmj"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_545x39_fmj.ogf
+wm_size                     = 0.07
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 31
+inv_grid_y                  = 25
+
+; Text
+inv_name                    = ammo-5.45x39-fmj
+inv_name_short              = ammo-5.45x39-fmj_s
+description                 = enc_weapons1_ammo_ammo-5.45x39-fmj
+
+; Economy
+cost                        = 270
+inv_weight                  = .32
+box_size                    = 30
+
+; Impact
+k_hit                       = 0.78
+k_ap                        = 0.31
+k_pierce                    = 0.31
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 1.0
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.70
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_5.45x39_ap]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_5.45x39_ap"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_545x39_ap.ogf
+wm_size                     = 0.07
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 33
+inv_grid_y                  = 25
+
+; Text
+inv_name                    = ammo-5.45x39-ap
+inv_name_short              = ammo-5.45x39-ap_s
+description                 = enc_weapons1_ammo_ammo-5.45x39-ap
+
+; Economy
+cost                        = 400
+inv_weight                  = .32
+box_size                    = 30
+
+; Impact
+k_hit                       = 0.72
+k_ap                        = 0.63
+k_pierce                    = 0.63
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 1.0
+k_disp                      = 1.2
+k_dist                      = 1
+k_speed                     = 0.70
+
+
+[weapon_5.45x39]
+; Effects
+shell_particles             = amik\weapons\5.45x39_shells_r
+
+; Ammo
+ammo_class                  = ammo_5.45x39_fmj, ammo_5.45x39_ap ; types of ammo usable on the weapon
+
+; Features
+silencer_name               = wpn_addon_silencer_545 ; silencer section
+
+; Ballistics
+bullet_speed                = 880     ; starting speed of bullet in m/s (multiplied by ammo k_speed)
+
+; Impact
+hit_impulse                 = 120     ; physical impulse of the bullet upon hitting an object

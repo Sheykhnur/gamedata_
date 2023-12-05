@@ -1,0 +1,44 @@
+[combat_ignore@sci6]
+
+[danger@sar_sci6_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sci_6
+combat_ignore = combat_ignore@sci6
+danger = danger@sar_sci6_sc4
+
+[remark@sci_6]
+anim = sci_laboratory_4
+target = sar_scene_4_sci5_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_7} remark@sci_6_2
+
+[remark@sci_6_2]
+anim = sci_laboratory_3
+snd = sar_replics7
+target = sar_scene_4_sci5_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_8%
+on_info = {+sar_scene4_info_26} remark@sci_6_3
+
+[remark@sci_6_3]
+anim = sar_incident
+snd = sar_replics26
+target = sar_scene_4_boss_walk, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_27%
+on_info = {+sar_scene4_info_28} walker@sar_sci6_finale
+
+[walker@sar_sci6_finale]
+path_walk = sar_scene4_random6
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_info = {+sar_scene4_info_30} %=release%

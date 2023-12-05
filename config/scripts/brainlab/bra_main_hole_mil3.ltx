@@ -1,0 +1,22 @@
+[combat_ignore]
+
+[logic]
+active = follower@bra_generator
+combat_ignore = combat_ignore
+
+[patrol@bra_generator]
+path_walk = x16_patrol_gen
+path_look = x16_patrol_gen_look
+combat_ignore_cond = always
+meet = no_meet
+commander = false
+formation = line
+on_info = {+x16_start_waves} nil %=kill_npc%
+
+[follower@bra_generator]
+formation_line = true
+leader = 6931
+distance = 1
+on_info = {+x16_start_waves} nil %=kill_npc%
+meet = no_meet
+combat_ignore_cond = always

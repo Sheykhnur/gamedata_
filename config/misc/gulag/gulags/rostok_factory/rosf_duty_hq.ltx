@@ -1,0 +1,53 @@
+;***************************state 0*********************************************
+
+[logic@rosf_duty_hq_off_sleeper1]
+active = sleeper@rosf_duty_sleeper1_off
+
+[sleeper@rosf_duty_sleeper1_off]
+path_main = sleeper
+
+[logic@rosf_duty_hq_off_kamper1]
+active = kamper@rosf_duty_kamper1_off
+
+[kamper@rosf_duty_kamper1_off]
+path_walk = kamper_walk
+path_look = kamper_look
+kamp_name = kamp1
+
+[logic@rosf_duty_hq_off_fixer]
+active = walker@rosf_duty_hq_off_fixer
+
+[walker@rosf_duty_hq_off_fixer]
+path_walk = fixer_walk
+path_look = fixer_look
+
+
+;***************************state 1**********************************************
+
+[logic@rosf_duty_hq_sleeper1]
+active = sleeper@rosf_duty_sleeper1
+
+[sleeper@rosf_duty_sleeper1]
+path_main = sleeper
+wakeable = false
+
+[logic@rosf_duty_hq_kamper1]
+active = kamper@rosf_duty_kamper1
+
+[kamper@rosf_duty_kamper1]
+path_walk = kamper_walk
+path_look = kamper_look
+kamp_name = kamp1
+
+[logic@rosf_duty_hq_fixer]
+active = walker@rosf_duty_hq_fixer
+combat_ignore = combat_ignore@duty_hq_fixer
+
+[walker@rosf_duty_hq_fixer]
+path_walk = fixer_walk
+path_look = fixer_look
+;def_state_standing = weapon_cleaning
+combat_ignore_cond = always
+
+[combat_ignore@duty_hq_fixer]
+

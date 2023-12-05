@@ -1,0 +1,718 @@
+[combat_ignore@agr_factory_assault]
+
+;[death@agr_factory_assault]
+;setting spawn probability
+;on_info = {=gulag_casualities_ge(agr_factory_assault:2) -agr_spawned} %+agr_assault_3_dead%
+;on_info2 = {=gulag_casualities_ge(agr_factory_assault:4) -agr_spawned} %+agr_assault_5_dead%
+;on_info3 = {=gulag_casualities_ge(agr_factory_assault:7) -agr_spawned} %+agr_assault_8_dead%
+;on_info4 = {=gulag_casualities_ge(agr_factory_assault:4) =gulag_casualities_le(agr_factory_defence:3) -agr_spawned} %+agr_assault_too_good%
+;setting results depending on spawn
+;on_info5 = {=gulag_casualities_ge(agr_factory_assault:11)  +agr_actor_close -agr_assault_3_dead} %+agr_assault_cleared%
+;on_info6 = {=gulag_casualities_ge(agr_factory_assault:14) +agr_assault_3_dead -agr_assault_too_good -agr_assault_5_dead -agr_assault_8_dead} %+agr_assault_cleared%
+;on_info7 = {=gulag_casualities_ge(agr_factory_assault:15) +agr_assault_5_dead -agr_assault_too_good -agr_assault_8_dead} %+agr_assault_cleared%
+;on_info8 = {=gulag_casualities_ge(agr_factory_assault:17) -agr_assault_too_good +agr_assault_8_dead} %+agr_assault_cleared%
+;on_info9 = {=gulag_casualities_ge(agr_factory_assault:17) +agr_assault_too_good} %+agr_assault_cleared%
+
+[death@agr_factory_assault]
+on_info = {=gulag_inactive(agr_factory_assault)} %+agr_assault_cleared%
+
+[death@agr_factory_assault1]
+on_info = %+agr_factory_assault1_dead%
+
+[death@agr_factory_assault2]
+on_info = %+agr_factory_assault2_dead%
+
+[death@agr_factory_assault3]
+on_info = %+agr_factory_assault3_dead%
+
+[death@agr_factory_assault4]
+on_info = %+agr_factory_assault4_dead%
+
+[death@agr_factory_assault5]
+on_info = %+agr_factory_assault5_dead%
+
+[death@agr_factory_assault6]
+on_info = %+agr_factory_assault6_dead%
+
+[death@agr_factory_assault7]
+on_info = %+agr_factory_assault7_dead%
+
+[death@agr_factory_assault8]
+on_info = %+agr_factory_assault8_dead%
+
+[death@agr_factory_assault9]
+on_info = %+agr_factory_assault9_dead%
+
+[death@agr_factory_assault10]
+on_info = %+agr_factory_assault10_dead%
+
+[death@agr_factory_assault11]
+on_info = %+agr_factory_assault11_dead%
+
+[danger@agr_factory_assault_ignore_corpses]
+;ignore_distance_corpse = 0
+;ignore_distance_sound = 0
+;ignore_distance = 0
+;danger_inertion_time_grenade = 0
+;danger_inertion_time_hit = 4000
+;danger_inertion_time_ricochet = 0
+;danger_inertion_time_corpse = 0
+;danger_inertion_time_sound = 0
+
+[danger@agr_factory_assault_battle]
+;ignore_distance = 100
+;ignore_distance_sound = 100
+;ignore_distance_corpse = 0
+;danger_inertion_time_grenade = 2000
+;danger_inertion_time_hit = 4000
+;danger_inertion_time_ricochet = 1000
+;danger_inertion_time_corpse = 0
+
+;******************************run to stalkers state 0************************************
+[hit@agr_factory_assault]
+on_info = {=hit_by_actor} %=disable_invulnerability%
+
+[logic@agr_factory_assault_walker1]
+active = walker1@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker1@agr_factory_assault]
+path_walk = walk1
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+invulnerable = {!hit_by_actor} true
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+on_info = {+agr_scene_completed} walker1@agr_factory_assault_skirmish
+
+[walker1@agr_factory_assault_skirmish]
+path_walk = battle_walk1
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+team = agr_assault
+combat_ignore_cond = always
+invulnerable = {!hit_by_actor} true
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = s | walker1@agr_factory_assault_battle
+
+[walker1@agr_factory_assault_battle]
+path_walk = soldier_walk2 ;skirmish_battle1
+soundgroup = agr_factory_assault
+team = agr_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker2]
+active = walker2@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker2@agr_factory_assault]
+path_walk = walk2
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+invulnerable = {-agr_actor_close !hit_by_actor} true 
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+on_info = {+agr_scene_completed} walker2@agr_factory_assault_skirmish
+
+[walker2@agr_factory_assault_skirmish]
+path_walk = battle_walk2
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+team = agr_assault
+combat_ignore_cond = always
+invulnerable = {!hit_by_actor} true
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = s | walker2@agr_factory_assault_battle
+
+[walker2@agr_factory_assault_battle]
+path_walk = skirmish_battle2
+soundgroup = agr_factory_assault
+team = agr_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker3]
+active = walker3@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker3@agr_factory_assault]
+path_walk = walk3
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+invulnerable = {!hit_by_actor} true 
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+on_info = {+agr_scene_completed} walker3@agr_factory_assault_skirmish
+
+[walker3@agr_factory_assault_skirmish]
+path_walk = battle_walk3
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+team = agr_assault
+combat_ignore_cond = always
+invulnerable = {!hit_by_actor} true
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = s | walker3@agr_factory_assault_battle
+
+[walker3@agr_factory_assault_battle]
+path_walk = skirmish_battle3
+soundgroup = agr_factory_assault
+team = agr_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker4]
+active = walker4@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker4@agr_factory_assault]
+path_walk = walk4
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+invulnerable = {!hit_by_actor} true 
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+on_info = {+agr_scene_completed} walker4@agr_factory_assault_skirmish
+
+[walker4@agr_factory_assault_skirmish]
+path_walk = battle_walk4
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+team = agr_assault
+combat_ignore_cond = always
+invulnerable = {!hit_by_actor} true
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = s | walker4@agr_factory_assault_battle
+
+[walker4@agr_factory_assault_battle]
+path_walk = skirmish_battle9
+soundgroup = agr_factory_assault
+team = agr_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+;******************************************************************
+
+[logic@agr_factory_assault_walker5]
+active = walker5@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker5@agr_factory_assault]
+path_walk = walk5
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker6]
+active = walker6@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker6@agr_factory_assault]
+path_walk = walk6
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker7]
+active = walker7@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker7@agr_factory_assault]
+path_walk = walk7
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker8]
+active = walker8@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker8@agr_factory_assault]
+path_walk = walk8
+combat_ignore_cond = {-agr_spawn_defence}
+team = agr_assault
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker9]
+active = walker9@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker9@agr_factory_assault]
+path_walk = walk9
+combat_ignore_cond = {-agr_spawn_defence}
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+team = agr_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker10]
+active = walker10@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker10@agr_factory_assault]
+path_walk = walk10
+combat_ignore_cond = {-agr_spawn_defence}
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+team = agr_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+[logic@agr_factory_assault_walker11]
+active = walker11@agr_factory_assault
+combat_ignore = combat_ignore@agr_factory_assault
+on_hit = hit@agr_factory_assault
+on_death = death@agr_factory_assault
+
+[walker11@agr_factory_assault]
+path_walk = walk11
+combat_ignore_cond = {-agr_spawn_defence}
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault
+team = agr_assault
+;invulnerable = {+agr_scene_completed -agr_actor_close !hit_by_actor} true
+
+;************************assault soldiers state 1********************************************
+
+[logic@agr_factory_assault_skirmish_walker1]
+active = walker1@agr_factory_assault_fight
+on_death = death@agr_factory_assault
+combat_ignore = true
+
+[walker1@agr_factory_assault_fight]
+path_walk = soldier_walk2 ;skirmish_battle1
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker2]
+active = walker2@agr_factory_assault_fight
+on_death = death@agr_factory_assault
+combat_ignore = true
+
+[walker2@agr_factory_assault_fight]
+path_walk = skirmish_battle2
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker3]
+active = walker3@agr_factory_assault_fight
+on_death = death@agr_factory_assault
+combat_ignore = true
+
+[walker3@agr_factory_assault_fight]
+path_walk = skirmish_battle3
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker4]
+active = walker4@agr_factory_assault_fight
+on_death = death@agr_factory_assault
+combat_ignore = true
+
+[walker4@agr_factory_assault_fight]
+path_walk = skirmish_battle9
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+;**************************************************************************************
+
+[logic@agr_factory_assault_skirmish_walker5]
+active = walker5@agr_factory_assault_skirmish
+on_death = death@agr_factory_assault
+
+[walker5@agr_factory_assault_skirmish]
+path_walk = skirmish_walk5
+;danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker6]
+active = walker6@agr_factory_assault_skirmish
+on_death = death@agr_factory_assault
+
+[walker6@agr_factory_assault_skirmish]
+path_walk = skirmish_walk6
+;danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker7]
+active = walker7@agr_factory_assault_skirmish
+on_death = death@agr_factory_assault
+
+[walker7@agr_factory_assault_skirmish]
+path_walk = skirmish_walk7
+;danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker8]
+active = walker8@agr_factory_assault_skirmish
+on_death = death@agr_factory_assault
+
+[walker8@agr_factory_assault_skirmish]
+path_walk = skirmish_walk8
+;danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker9]
+active = walker9@agr_factory_assault_skirmish
+on_death = death@agr_factory_assault
+
+[walker9@agr_factory_assault_skirmish]
+path_walk = skirmish_walk9
+;danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker10]
+active = walker9@agr_factory_assault_skirmish
+on_death = death@agr_factory_assault
+
+[walker10@agr_factory_assault_skirmish]
+path_walk = skirmish_walk10
+;danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_walker11]
+active = walker11@agr_factory_assault_skirmish
+on_death = death@agr_factory_assault
+
+[walker11@agr_factory_assault_skirmish]
+path_walk = skirmish_walk11
+;danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+;on_info = {+agr_scene_completed} walker11@agr_factory_assault_fight
+
+[walker11@agr_factory_assault_fight]
+path_walk = skirmish_walk11
+;danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+
+;************************assault stalkers state 1********************************************
+
+[danger@agr_factory_assault]
+ignore_distance = 10
+
+[logic@agr_factory_assault_bld_walker1]
+active = walker1@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker1@agr_factory_assault_bld]
+path_walk = bld_walk1
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker2]
+active = walker2@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker2@agr_factory_assault_bld]
+path_walk = bld_walk2
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker3]
+active = walker3@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker3@agr_factory_assault_bld]
+path_walk = bld_walk3
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker4]
+active = walker4@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker4@agr_factory_assault_bld]
+path_walk = bld_walk4
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker5]
+active = walker5@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker5@agr_factory_assault_bld]
+path_walk = bld_walk5
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker6]
+active = walker6@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker6@agr_factory_assault_bld]
+path_walk = bld_walk6
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker7]
+active = walker7@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker7@agr_factory_assault_bld]
+path_walk = bld_walk7
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker8]
+active = walker8@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker8@agr_factory_assault_bld]
+path_walk = bld_walk8
+danger = danger@agr_factory_assault
+soundgroup = agr_factory_assault_bld
+team = agr_assault_bld
+
+[logic@agr_factory_assault_bld_walker9]
+active = walker9@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker9@agr_factory_assault_bld]
+path_walk = bld_walk9
+danger = danger@agr_factory_assault
+
+[logic@agr_factory_assault_bld_walker10]
+active = walker10@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker10@agr_factory_assault_bld]
+path_walk = bld_walk10
+danger = danger@agr_factory_assault
+
+[logic@agr_factory_assault_bld_walker11]
+active = walker11@agr_factory_assault_bld
+on_death = death@agr_factory_assault
+
+[walker11@agr_factory_assault_bld]
+path_walk = bld_walk11
+danger = danger@agr_factory_assault
+
+;***************************************************************************************
+[logic@agr_factory_assault_skirmish_survivor_off]
+active = walker@agr_factory_assault_skirmish_survivor_off
+
+[walker@agr_factory_assault_skirmish_survivor_off]
+path_walk = skirmish_walk12
+danger = danger@agr_factory_assault_ignore_corpses
+
+[logic@agr_factory_assault_skirmish_survivor]
+active = walker@agr_factory_assault_skirmish_survivor
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_survivor]
+path_walk = skirmish_walk12
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+;***************************************************************************************
+
+[logic@agr_factory_assault_skirmish_battle1]
+active = walker@agr_factory_assault_skirmish_battle1
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle1]
+path_walk = skirmish_battle1
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle2]
+active = walker@agr_factory_assault_skirmish_battle2
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle2]
+path_walk = skirmish_battle2
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle3]
+active = walker@agr_factory_assault_skirmish_battle3
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle3]
+path_walk = skirmish_battle3
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle4]
+active = walker@agr_factory_assault_skirmish_battle4
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle4]
+path_walk = skirmish_battle4
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle5]
+active = walker@agr_factory_assault_skirmish_battle5
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle5]
+path_walk = skirmish_battle5
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle6]
+active = walker@agr_factory_assault_skirmish_battle6
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle6]
+path_walk = skirmish_battle6
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle7]
+active = walker@agr_factory_assault_skirmish_battle7
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle7]
+path_walk = skirmish_battle7
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle8]
+active = walker@agr_factory_assault_skirmish_battle8
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle8]
+path_walk = skirmish_battle8
+danger = danger@agr_factory_assault_battle
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+;***************************************************************************************
+
+[logic@agr_factory_assault_skirmish_battle1_off]
+active = walker@agr_factory_assault_skirmish_battle_off1
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off1]
+path_walk = skirmish_battle1
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle2_off]
+active = walker@agr_factory_assault_skirmish_battle_off2
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off2]
+path_walk = skirmish_battle2
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle3_off]
+active = walker@agr_factory_assault_skirmish_battle_off3
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off3]
+path_walk = skirmish_battle3
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle4_off]
+active = walker@agr_factory_assault_skirmish_battle_off4
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off4]
+path_walk = skirmish_battle4
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle5_off]
+active = walker@agr_factory_assault_skirmish_battle_off5
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off5]
+path_walk = skirmish_battle5
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle6_off]
+active = walker@agr_factory_assault_skirmish_battle_off6
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off6]
+path_walk = skirmish_battle6
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle7_off]
+active = walker@agr_factory_assault_skirmish_battle_off7
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off7]
+path_walk = skirmish_battle7
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish
+
+[logic@agr_factory_assault_skirmish_battle8_off]
+active = walker@agr_factory_assault_skirmish_battle_off8
+on_death = death@agr_factory_assault
+
+[walker@agr_factory_assault_skirmish_battle_off8]
+path_walk = skirmish_battle8
+danger = danger@agr_factory_assault_ignore_corpses
+soundgroup = agr_factory_assault_skirmish
+team = agr_assault_skirmish

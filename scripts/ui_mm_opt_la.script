@@ -1,0 +1,292 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_mm_opt_la.script
+ Description: Menu additional options
+ Copyright  : 2012 © LA
+ Author     : ...
+ Last edit  : 01.08.2012 (by ...)
+--]] ----------------------------------------------------------------------------------------------
+--/ Note: in development!
+-- Gr1ph to ALL: do we really need this??
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tab_menu = nil
+local sModule = script_name() --/ string name of file-module
+--/ -----------------------------------------------------------------
+--/ Print-Log (output of debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+class "UIOptAdd1" (CUIWindow) --/ Menu of additional options-1
+--/------------------------------------------------------------------------------------------------
+function UIOptAdd1:__init() super() end
+function UIOptAdd1:__finalize() end
+function UIOptAdd1:InitControls(xml, handler)
+	handler.rad_hud = xml:InitTab("tab1:radio_hud", self) --/ button mode of interactive HUD
+	handler.rad_trs = xml:InitTab("tab1:radio_trs", self) --/ button mode of кнопка caches
+	handler.btn_dtm = xml:InitCheck("tab1:btn_dtm", self) --/ button mode of time indicator (day time)
+	handler.btn_mus = xml:InitCheck("tab1:btn_mus", self) --/ button mode of dynamic music
+	--/ setting values
+	self:SetValues(handler)
+end
+function UIOptAdd1:SetValues(handler)
+	handler.btn_dtm:SetCheck(GetVar("opt_dtm",true))
+	handler.btn_mus:SetCheck(GetVar("opt_mus",false))
+	handler.rad_hud:SetNewActiveTab(GetVar("opt_hud",1))
+	handler.rad_trs:SetNewActiveTab(GetVar("opt_trs",3))
+end
+function UIOptAdd1:GetValues(handler)
+	--/ запись
+	SetVar("opt_mus", handler.btn_mus:GetCheck() ) --/ dynamic music mode
+	SetVar("opt_dtm", handler.btn_dtm:GetCheck() ) --/ time indicator mode
+	SetVar("opt_hud", handler.rad_hud:GetActiveIndex() ) --/ interactive HUD mode
+	SetVar("opt_trs", handler.rad_trs:GetActiveIndex() ) --/ caches mode
+end
+function UIOptAdd1:Update(handler)
+	self:GetValues(handler)
+	self:SetValues(handler) --/ updating values
+end
+--/------------------------------------------------------------------------------------------------
+class "UIOptAdd2" (CUIWindow) --/ Menu of additional options-2
+--/------------------------------------------------------------------------------------------------
+function UIOptAdd2:__init() super() end
+function UIOptAdd2:__finalize() end
+function UIOptAdd2:InitControls(xml, handler)
+	handler.rad_spawn = xml:InitTab("tab2:radio_spawn", self) --/ spawn button mode
+	handler.rad_bwt   = xml:InitTab("tab2:radio_bwt",   self) --/ "Blowout period" button mode
+	--/ установка значений
+	self:SetValues(handler)
+end
+function UIOptAdd2:SetValues(handler)
+	handler.rad_bwt:SetNewActiveTab(GetVar("opt_bwt",2))
+	handler.rad_spawn:SetNewActiveTab(GetVar("opt_spawn",2))
+end
+function UIOptAdd2:GetValues(handler)
+	SetVar("opt_bwt",   handler.rad_bwt:GetActiveIndex() ) --/ record of "Blowout period" mode
+	SetVar("opt_spawn", handler.rad_spawn:GetActiveIndex() ) --/ record of spawn mode
+end
+function UIOptAdd2:Update(handler)
+	self:GetValues(handler)
+end
+--/------------------------------------------------------------------------------------------------
+class "UIOptAdd3" (CUIWindow) --/ Menu of additional options-3
+--/------------------------------------------------------------------------------------------------
+function UIOptAdd3:__init() super() end
+function UIOptAdd3:__finalize() end
+function UIOptAdd3:InitControls(xml, handler)
+	handler.btn_tasks = xml:InitCheck("tab3:btn_tasks", self) --/ button "Auto-quests"
+	handler.btn_spots = xml:InitCheck("tab3:btn_spots", self) --/ button "Show marks"
+	--/ установка значений
+	self:SetValues(handler)
+end
+function UIOptAdd3:SetValues(handler)
+	handler.btn_tasks:SetCheck(GetVar("opt_tasks",true))
+	handler.btn_spots:SetCheck(GetVar("opt_spots",true))
+end
+function UIOptAdd3:GetValues(handler)
+	SetVar("opt_tasks", handler.btn_tasks:GetCheck() ) --/ record "Auto-quests"
+	SetVar("opt_spots", handler.btn_spots:GetCheck() ) --/ record "Show marks"
+end
+function UIOptAdd3:Update(handler)
+	self:GetValues(handler)
+end
+--/------------------------------------------------------------------------------------------------
+class "UIOptAdd0" (CUIWindow) --/ Menu of additional options-0
+--/------------------------------------------------------------------------------------------------
+function UIOptAdd0:__init() super() end
+function UIOptAdd0:__finalize() end
+function UIOptAdd0:InitControls(xml, handler)
+	--/ pic (texture)
+	local pic = xml:InitStatic("tab0:picture", self)
+	pic:InitTexture("ui\\ui_skull")
+	if handler.wide then --/ selecting offset and width of pic
+		--pic:SetWndPos(10,20) --/SHOC
+		pic:SetWidth(64)
+	end
+	handler.btn_dbg1 = xml:InitCheck("tab0:btn_dbg1",  self) --/ button "Debug-1"
+	handler.btn_dbg2 = xml:InitCheck("tab0:btn_dbg2",  self) --/ button "Debug-2"
+	handler.btn_dbg3 = xml:InitCheck("tab0:btn_dbg3",  self) --/ button "Debug-3"
+	handler.btn_fps  = xml:InitCheck("tab0:btn_fps",   self) --/ button "Show FPS"
+	handler.btn_smrt = xml:InitCheck("tab0:btn_smrt",  self) --/ button "Show gulags marks"
+	handler.btn_fps:SetText("Show FPS")
+	handler.btn_smrt:SetText("Show Smarts")
+	--/ установка значений
+	self:SetValues(handler)
+end
+function UIOptAdd0:SetValues(handler)
+	local iOptDbg = GetVar("opt_dbg",0)
+	handler.btn_dbg1:SetCheck( bit_and(iOptDbg, 1) ==  1 or db.is_dbg1) --/ reading bit of 1st option
+	handler.btn_dbg2:SetCheck( bit_and(iOptDbg, 2) ==  2) --/ reading bit of 2nd option
+	handler.btn_dbg3:SetCheck( bit_and(iOptDbg, 4) ==  4) --/ reading bit of 3rd option
+	handler.btn_fps:SetCheck ( bit_and(iOptDbg, 8) ==  8) --/ reading bit
+	handler.btn_smrt:SetCheck( bit_and(iOptDbg,16) == 16) --/ reading bit
+end
+function UIOptAdd0:GetValues(handler)
+	local iOptDbg = 0
+	if handler.btn_dbg1:GetCheck() then iOptDbg = bit_or(iOptDbg, 1) end --/ remembering bit of 1st option
+	if handler.btn_dbg2:GetCheck() then iOptDbg = bit_or(iOptDbg, 2) end
+	if handler.btn_dbg3:GetCheck() then iOptDbg = bit_or(iOptDbg, 4) end
+	if handler.btn_fps:GetCheck()  then iOptDbg = bit_or(iOptDbg, 8) end
+	if handler.btn_smrt:GetCheck() then iOptDbg = bit_or(iOptDbg,16) end
+	SetVar("opt_dbg", (iOptDbg > 0 and iOptDbg) or nil)  --/ record "Debug"
+--	log("%s:UIOptAdd0:GetValues:OptDbg=[%s/%s]:[%s]", sModule, GetVar("opt_dbg",nil), iOptDbg, "i")--/#~#
+end
+function UIOptAdd0:Update(handler)
+	self:GetValues(handler)
+end
+--/------------------------------------------------------------------------------------------------
+class "UI_TabController" ( CUIScriptWnd ) --/ Menu of additional options (оболочка)
+--/------------------------------------------------------------------------------------------------
+function UI_TabController:__init() super()
+	self:SetFont(GetFontMedium()) --/ set base font for 'main'
+	self.wide = device().width/device().height > 1.333
+	self.active_id = 1
+	self.tm_upd = 0
+	self:InitControls()
+	self:InitCallBacks()
+	--self.owner = get_hud()
+end
+
+function UI_TabController:__finalize()
+end
+
+function UI_TabController:InitControls()
+	self:SetWndRect(Frect():set(0,0,1024,768)) --/SHOC
+	self:Enable(true)
+	self:SetAutoDelete(true)
+	--/ widget class
+	local xml = CScriptXmlInit()
+	--/ description-file of elements
+	xml:ParseFile("ui_mm_opt_la.xml")
+	--/ textur&video
+	xml:InitStatic("back_video", self)
+	xml:InitStatic("background", self)
+	xml:InitStatic("rug_video", self)
+	--/ window menu
+	local menu = xml:InitStatic("main:menu", self)
+	--/ frame
+	xml:InitFrame("main:frame", menu)
+	--/ title of window
+	xml:InitStatic("main:title", menu)
+	--/ initialization of tab-menu
+	self.tab = xml:InitTab("main:tab", menu)
+	self:Register(self.tab, "tab")
+	--/ initialization of frames
+	self.wnds = {
+		[1] = UIOptAdd1(), --/ mm_opt_la1
+		[2] = UIOptAdd2(), --/ mm_opt_la2
+		[3] = UIOptAdd3(), --/ mm_opt_la3
+		[0] = UIOptAdd0()  --/ mm_opt_la0 (if db.is_debug)
+	}
+	for k,v in pairs(self.wnds) do
+		v:Init(55,75,510,375) --/SHOC (frames size)
+		v:InitControls(xml, self)
+		v:SetAutoDelete(true)
+		v:Show(false)
+		if k == 0 and db.is_debug then
+			local btn = self.tab:GetButtonByIndex(0) --/SHOC
+			btn:SetText("Debug Options")
+		end
+		menu:AttachChild(v)
+	end
+	--/ activation of frame
+	self.tab:SetNewActiveTab(self.active_id) --/SHOC
+	self.wnds[self.active_id]:Show(true)
+	--/ exit button
+	self:Register(xml:Init3tButton("main:btn_exit", menu), "btn_exit")
+end
+
+function UI_TabController:InitCallBacks()
+	--/ interactive elements, with certain action executes specified function
+	self:AddCallback("tab",         ui_events.TAB_CHANGED,    self.OnTabChange,  self)
+	self:AddCallback("btn_exit",    ui_events.BUTTON_CLICKED, self.OnBtnExit,    self)
+end
+
+function UI_TabController:OnTabChange()
+	local idActive = self.tab:GetActiveIndex() --/SHOC
+	if idActive ~= 0 or db.is_debug then
+		self.active_id = idActive
+	end
+	for k,v in pairs(self.wnds) do
+		if k == self.active_id then
+			v:Show(true) --/ showing active window
+		else --/ the rest hide
+			v:Show(false)
+		end
+	end
+end
+
+function UI_TabController:OnBtnExit()
+	for k,v in pairs(self.wnds) do
+		v:GetValues(self)
+	end
+	event("options"):trigger() --/ updating variables in game
+	self:GetHolder():start_stop_menu(self.owner, true) --/ show main window
+	self:GetHolder():start_stop_menu(self, true)
+	self.owner:Show(true)
+	if level.present() and db.actor and db.actor:alive() then
+		get_console():execute("main_menu off") --/ closing also parent main_menu
+		event("main_menu_off"):trigger() --/#+#
+	end
+end
+
+function UI_TabController:OnKeyboard(dik, keyboard_action)
+	local bRes = CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if bRes == false then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED and dik == DIK_keys.DIK_ESCAPE then
+			self:OnBtnExit()
+		end
+	end
+	return bRes --/>
+end
+
+function UI_TabController:Update()
+	CUIScriptWnd.Update(self)
+	if self.tm_upd <= time_global() then
+		self.tm_upd = time_global() + 250
+		for k,v in pairs(self.wnds) do
+			v:Update(self)
+		end
+		event("options"):trigger() --/ updating variables in game
+	end
+end
+
+--/ ---------------------------------------------
+function UI_TabController:OnBtnClicked()
+	self.wnds[self.active_id]:Update()
+end
+
+function UI_TabController:OnBtnClicked_news()
+	if not self.btn_news_s:GetCheck() then
+		self.btn_mat:SetCheck(false)
+	end
+end
+
+function UI_TabController:OnBtnClicked_mat()
+	if self.btn_mat:GetCheck() then
+		self.btn_news_s:SetCheck(true)
+	end
+end
+
+function UI_TabController:OnBtnClicked_vpr()
+	if not self.btn_vpr:GetCheck() then
+		self.btn_vpw:SetCheck(false)
+	end
+end
+
+function UI_TabController:OnBtnClicked_vpw()
+	if self.btn_vpw:GetCheck() then
+		self.btn_vpr:SetCheck(true)
+	end
+end
+
+--/ -----------------------------------------------------------------
+function get_ui_menu()
+	if not tab_menu then
+		tab_menu = UI_TabController()
+	end
+	return tab_menu
+end
+--/------------------------------------------------------------------------------------------------

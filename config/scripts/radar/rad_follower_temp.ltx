@@ -1,0 +1,35 @@
+[danger@rad_follower]
+ignore_types = sound
+ignore_distance = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+
+[threshold@rad_follower]
+max_ignore_distance = 0
+
+[combat_ignore@rad_follower]
+
+[logic]
+active = walker@rad_follower
+combat_ignore = combat_ignore@rad_follower
+danger = danger@rad_follower
+threshold = threshold@rad_follower
+
+[walker@rad_follower]
+path_walk = radar_monolith_base_follower_walk
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@rad_follower
+threshold = threshold@rad_follower
+meet = no_meet
+on_signal = hereiam | remark@rad_follower
+
+[remark@rad_follower]
+anim = wait
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@rad_follower
+threshold = threshold@rad_follower
+meet = no_meet
+target = radar_monolith_base_troops_look, 0
+on_timer = 2000 | nil

@@ -1,0 +1,10 @@
+[logic]
+active = sr_idle@1
+
+[sr_idle@1]
+on_info = {+dol_reach_dscape_start} sr_idle@in
+on_info2 = {+dol_white_niva_dead} nil %=release%
+
+[sr_idle@in]
+on_actor_inside = {+dol_reach_dscape_start} nil %+dol_find_white_niva =release%
+on_info = {+dol_white_niva_dead} nil %=release%

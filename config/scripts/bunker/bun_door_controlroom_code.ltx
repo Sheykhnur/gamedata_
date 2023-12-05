@@ -1,0 +1,12 @@
+;CONTROL ROOM DOOR CODE PANEL
+[logic]
+active = ph_idle@security ;ph_code@lock
+ 
+[ph_idle@security]
+nonscript_usable = true
+tooltip = tips_labx10_need_turnoff
+on_info = {+bunker_security_off} ph_code@lock
+
+[ph_code@lock]
+code    = 3823
+on_code = %+bunker_code_entered%

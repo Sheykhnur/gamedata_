@@ -1,0 +1,190 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_lost_factory.script
+ Description: Gulags lost_factory
+ Copyright  : 2004 © LA-team
+ Author     : vintar
+ Editors    : vintar(12.09.2012), loxotron(23.02.2013)
+ Last edit  : 26.03.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	lost_ecolog_terrain1       = {comm = {"ecolog"}, in_rest = "lost_ecolog_terrain1_in_rest"},
+	--/ for monsters ------------------------------
+	lost_boar_terrain1         = {comm = {"boar"}},
+	lost_boar_terrain2         = {comm = {"boar"}},
+	lost_dog_terrain1          = {comm = {"dog"}},
+	lost_dog_terrain2          = {comm = {"dog"}},
+	lost_dog_terrain3          = {comm = {"dog"}},
+	lost_rat_terrain1          = {comm = {"rat","tushkano"}},
+	lost_rat_terrain2          = {comm = {"rat","tushkano"}},
+	lost_rat_terrain3          = {comm = {"rat","tushkano"}},
+	lost_zombied_terrain       = {comm = {"zombied"}},
+	lost_zombie_terrain1       = {comm = {"zombie"}},
+	lost_zombie_terrain2       = {comm = {"zombie"}},
+	lost_tunnel_zombie_terrain = {comm = {"zombied"}},
+	lost_burer_terrain         = {comm = {"burer"}},
+	lost_snork_terrain         = {comm = {"snork"}}
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ ecologs
+--/ ---------------------------------------------
+gulags.lost_ecolog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("ecolog" .. i, 0, 5, {0}, squad, groups[1], gulags.lost_ecolog_terrain1.in_rest, "", nil, type, on_level_pred))
+	end
+end
+
+
+
+--/ ---------------------------------------------
+--/ boars
+--/ ---------------------------------------------
+gulags.lost_boar_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.lost_boar_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.lost_dog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.lost_dog_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.lost_dog_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.lost_rat_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.lost_rat_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.lost_rat_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snorks
+--/ ---------------------------------------------
+gulags.lost_snork_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("snork" .. i, 0, 5, {0}, squad, groups[1], "lost_bunker_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ burers
+--/ ---------------------------------------------
+gulags.lost_burer_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off_burer1", 0, 5, {0}, squad, groups[1], "lost_bunker_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("burer1",     0, 5, {1}, squad, groups[1], "lost_bunker_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.lost_burer_terrain.state = function(gulag)
+	if has_info("lost_scientist_talked") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.lost_zombie_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.lost_zombie_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.lost_zombied_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("off_zombied" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("zombied" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.lost_zombied_terrain.state = function(gulag)
+	if has_info("lost_scientist_talked") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ tunnel zombies
+--/ ---------------------------------------------
+gulags.lost_tunnel_zombie_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("off_zombie" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.lost_tunnel_zombie_terrain.state = function(gulag)
+	if has_info("lost_scientist_talked") then
+		return 1
+	end
+	return 0
+end
+--/ ------------------------------------------------------------------------------------------------

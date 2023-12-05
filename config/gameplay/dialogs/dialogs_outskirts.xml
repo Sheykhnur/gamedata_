@@ -1,0 +1,934 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+
+<game_dialogs>
+	<dialog id="out_barman_talk">
+		<dont_has_info>out_barman_talked</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+				<text>out_barman_talk_2</text>
+				<next>21</next>
+			</phrase>
+			<phrase id="21">
+			    <text>out_barman_talk_21</text>
+				<next>211</next>
+			</phrase>
+			<phrase id="211">
+			    <text>out_barman_talk_211</text>
+                <next>2111</next>
+			</phrase>
+			<phrase id="2111">
+			    <text>out_barman_talk_2111</text>
+                <next>21111</next>
+			</phrase>
+			<phrase id="21111">
+			    <text>out_barman_talk_21111</text>
+				<give_info>out_barman_talked</give_info>
+                <next>211111</next>
+			</phrase>
+			<phrase id="211111">
+			    <text>out_barman_talk_211111</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="out_barman_after_talk">
+		<has_info>out_barman_talked</has_info>
+        <phrase_list>	
+			<phrase id="0">
+				<text>out_barman_talk_0</text>
+				<next>31</next>
+				<next>32</next>
+				<next>32b</next>
+				<next>33</next>
+				<next>34</next>
+			</phrase>
+			<phrase id="31">
+				<dont_has_info>deactivate_radar_done</dont_has_info>
+			    <text>out_barman_talk_31</text>
+				<next>311</next>
+			</phrase>
+			<phrase id="311">
+				<text>out_barman_talk_311</text>
+			</phrase>
+			<phrase id="32">
+				<has_info>deactivate_radar_done</has_info>
+				<dont_has_info>out_barman_radar_talked</dont_has_info>
+				<dont_has_info>bas_switcher_off</dont_has_info>
+			    <text>out_barman_talk_32</text>
+				<next>321</next>
+			</phrase>
+			<phrase id="321">
+				<text>out_barman_talk_321</text>
+				<next>3211</next>
+			</phrase>
+			<phrase id="3211">
+				<text>out_barman_talk_3211</text>
+				<next>32111</next>
+			</phrase>
+			<phrase id="32111">
+				<text>out_barman_talk_32111</text>
+				<give_info>out_barman_radar_talked</give_info>
+			</phrase>
+			<phrase id="32b">
+				<has_info>deactivate_radar_done</has_info>
+				<has_info>out_barman_radar_talked</has_info>
+				<dont_has_info>bas_switcher_off</dont_has_info>
+			    <text>out_barman_talk_32b</text>
+			</phrase>
+			<phrase id="33">
+				<has_info>bas_switcher_off</has_info>
+				<dont_has_info>out_barman_x7_switcher_talked</dont_has_info>
+				<text>out_barman_talk_33</text>
+				<next>331</next>
+			</phrase>
+			<phrase id="331">
+				<text>out_barman_talk_331</text>
+				<give_info>out_barman_x7_switcher_talked</give_info>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="34">
+				<has_info>out_barman_x7_switcher_talked</has_info>
+				<text>out_barman_talk_34</text>
+				<next>341</next>
+			</phrase>
+			<phrase id="341">
+				<text>out_barman_talk_341</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	
+	<dialog id="out_veronin_talk">
+	</dialog>
+	
+	<dialog id="out_doorman_talk">
+		<phrase_list>
+            <phrase id="0">
+                <text></text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text></text>
+                <next>2</next>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="2">
+				<dont_has_info>out_doorman_talked</dont_has_info>
+				<dont_has_info>out_door_unlocked</dont_has_info>
+				<text>out_doorman_talk_2</text>
+				<next>21</next>
+				<next>22</next>
+			</phrase>
+			<phrase id="21">
+				<precondition>dialog_outskirts.check_actor_bad_community.ReturnReverse</precondition>
+			    <text>out_doorman_talk_21</text>
+				<next>211</next>
+			</phrase>
+			<phrase id="211">
+			    <text>out_doorman_talk_211</text>
+				<give_info>out_doorman_talked</give_info>
+				<give_info>out_door_unlocked</give_info>
+				<next>2111</next>
+			</phrase>
+			<phrase id="2111">
+			    <text>out_doorman_talk_2111</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="22">
+				<precondition>dialog_outskirts.check_actor_bad_community</precondition>
+			    <text>out_doorman_talk_22</text>
+				<next>221</next>
+			</phrase>
+			<phrase id="221">
+			    <text>out_doorman_talk_221</text>
+				<give_info>out_doorman_talked</give_info>
+				<next>2211</next>
+			</phrase>
+			<phrase id="2211">
+			    <text>out_doorman_talk_2211</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="3">
+				<has_info>out_doorman_talked</has_info>
+				<dont_has_info>out_door_unlocked</dont_has_info>
+				<text>out_doorman_talk_3</text>
+				<next>31</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="31">
+				<precondition>dialog_outskirts.check_actor_bad_community</precondition>
+			    <text>out_doorman_talk_31</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="32">
+				<precondition>dialog_outskirts.check_actor_bad_community.ReturnReverse</precondition>
+			    <text>out_doorman_talk_32</text>
+				<next>321</next>
+			</phrase>
+			<phrase id="321">
+			    <text>out_doorman_talk_321</text>
+				<give_info>out_door_unlocked</give_info>
+				<next>3211</next>
+			</phrase>
+			<phrase id="3211">
+			    <text>out_doorman_talk_3211</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="4">
+				<has_info>out_door_unlocked</has_info>
+				<text>out_doorman_talk_4</text>
+				<next>41</next>
+			</phrase>
+			<phrase id="41">
+				<text>out_doorman_talk_41</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="out_guide_dialog">
+		<dont_has_info>out_guide_ready_to_go</dont_has_info>
+		<phrase_list>
+			<phrase id="0">
+                <text />
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+                <text />
+                <next>2</next>
+				<next>3</next>
+				<next>4</next>
+				<next>5</next>
+			</phrase>
+			<phrase id="2">
+				<dont_has_info>out_spoke_to_guide</dont_has_info>
+				<text>out_guide_talk_2</text>
+				<next>21</next>
+			</phrase>
+			<phrase id="21">
+			    <text>out_guide_talk_21</text>
+				<next>211</next>
+			</phrase>
+			<phrase id="211">
+			    <text>out_guide_talk_211</text>
+				<give_info>out_guide_help_spoke</give_info>
+				<next>2111</next>
+			</phrase>
+			<phrase id="2111">
+			    <text>out_guide_talk_2111</text>
+				<next>21111</next>
+			</phrase>
+			<phrase id="21111">
+			    <text>out_guide_talk_21111</text>
+				<give_info>out_spoke_to_guide</give_info>
+				<next>211111</next>
+			</phrase>
+			<phrase id="211111">
+			    <text>out_guide_talk_211111</text>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="3">
+		        <has_info>out_spoke_to_guide</has_info>
+				<dont_has_info>out_guide_spoke_all</dont_has_info>
+			    <text>out_guide_talk_3</text>
+				<next>22</next>
+				<next>23</next>
+				<next>24</next>
+			</phrase>
+			<phrase id="22">
+				<dont_has_info>out_guide_center_spoke</dont_has_info>
+			    <text>out_guide_talk_22</text>
+				<next>221</next>
+			</phrase>
+			<phrase id="221">
+			    <text>out_guide_talk_221</text>
+				<give_info>out_guide_center_spoke</give_info>
+				<next>2211</next>
+			</phrase>
+			<phrase id="2211">
+			    <text>out_guide_talk_2211</text>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="23">
+				<dont_has_info>out_guide_scorcher_spoke</dont_has_info>
+			    <text>out_guide_talk_23</text>
+				<next>231</next>
+			</phrase>
+			<phrase id="231">
+			    <text>out_guide_talk_231</text>
+				<give_info>out_guide_scorcher_spoke</give_info>
+				<next>2311</next>
+			</phrase>
+			<phrase id="2311">
+			    <text>out_guide_talk_2311</text>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="24">
+				<dont_has_info>out_guide_zone_spoke</dont_has_info>
+			    <text>out_guide_talk_24</text>
+				<next>241</next>
+			</phrase>
+			<phrase id="241">
+			    <text>out_guide_talk_241</text>
+				<give_info>out_guide_zone_spoke</give_info>
+				<next>2411</next>
+			</phrase>
+			<phrase id="2411">
+			    <text>out_guide_talk_2411</text>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="4">
+				<dont_has_info>out_guide_bas_switcher</dont_has_info>
+				<has_info>out_guide_spoke_all</has_info>
+			    <text>out_guide_talk_4</text>
+				<next>41</next>
+			</phrase>
+			<phrase id="5">
+				<has_info>out_guide_bas_switcher</has_info>
+			    <text>out_guide_talk_5</text>
+				<next>51</next>
+				<next>52</next>
+			</phrase>
+			<phrase id="51">
+				<dont_has_info>bas_switcher_off</dont_has_info>
+			    <text>out_guide_talk_51</text>
+			</phrase>
+			<phrase id="52">
+				<has_info>bas_switcher_off</has_info>
+			    <text>out_guide_talk_52</text>
+				<next>411</next>
+			</phrase>
+			<phrase id="41">
+			    <text>out_guide_talk_41</text>
+				<next>411</next>
+				<next>412</next>
+			</phrase>
+			<phrase id="412">
+				<dont_has_info>bas_switcher_off</dont_has_info>
+			    <text>out_guide_talk_412</text>
+				<next>4121</next>
+				<give_info>out_guide_bas_switcher</give_info>
+			</phrase>
+			<phrase id="4121">
+			    <text>out_guide_talk_4121</text>
+			</phrase>
+			<phrase id="411">
+				<has_info>bas_switcher_off</has_info>
+			    <text>out_guide_talk_411</text>
+				<give_info>out_guide_ready_to_go</give_info>
+				<next>4111a</next>
+				<next>4111b</next>
+				<next>4111c</next>
+			</phrase>
+			<phrase id="4111a">
+			    <text>out_guide_talk_4111a</text>
+				<next>41111a</next>
+			</phrase>
+			<phrase id="41111a">
+			    <text>out_guide_talk_41111</text>
+				<next>411111a</next>
+			</phrase>
+			<phrase id="411111a">
+			    <text>out_guide_talk_411111</text>
+				<give_info>out_guide_prepared_for_damned</give_info>
+				<give_info>dam_guide_spawn</give_info>
+				<action>dialog_outskirts.give_compass</action>
+				<action>dialogs.break_dialog</action>
+				<action>dialog_outskirts.teleport_to_damned</action>
+			</phrase>
+			<phrase id="4111b">
+			    <text>out_guide_talk_4111b</text>
+				<next>411111b</next>
+			</phrase>
+			<phrase id="411111b">
+			    <text>out_guide_talk_411111b</text>
+			</phrase>
+			<phrase id="4111c">
+			    <text>out_guide_talk_4111c</text>
+				<next>41111c</next>
+			</phrase>
+			<phrase id="41111c">
+			    <text>out_guide_talk_41111</text>
+				<next>411111c</next>
+			</phrase>
+			<phrase id="411111c">
+			    <text>out_guide_talk_411111</text>
+				<give_info>out_guide_prepare_for_damned_skipped</give_info>
+				<give_info>dam_guide_spawn</give_info>
+				<action>dialog_outskirts.give_compass</action>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+
+	<dialog id="out_guide_dialog_go">
+		<dont_has_info>dam_guide_spawn</dont_has_info>
+		<has_info>out_guide_ready_to_go</has_info>
+		<has_info>bas_switcher_off</has_info>
+		<phrase_list>
+			<phrase id="0">
+			    <text>out_guide_talk_go_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+			    <text>out_guide_talk_go_1</text>
+				<next>4111a</next>
+				<next>4111b</next>
+				<next>4111c</next>
+			</phrase>
+			<phrase id="4111a">
+			    <text>out_guide_talk_4111a</text>
+				<next>41111a</next>
+			</phrase>
+			<phrase id="41111a">
+			    <text>out_guide_talk_41111</text>
+				<next>411111a</next>
+			</phrase>
+			<phrase id="411111a">
+			    <text>out_guide_talk_411111</text>
+				<give_info>out_guide_prepared_for_damned</give_info>
+				<give_info>dam_guide_spawn</give_info>
+				<action>dialog_outskirts.give_compass</action>
+				<action>dialogs.break_dialog</action>
+				<action>dialog_outskirts.teleport_to_damned</action>
+			</phrase>
+			<phrase id="4111b">
+			    <text>out_guide_talk_4111b</text>
+				<next>411111b</next>
+			</phrase>
+			<phrase id="411111b">
+			    <text>out_guide_talk_411111b</text>
+			</phrase>
+			<phrase id="4111c">
+			    <text>out_guide_talk_4111c</text>
+				<next>41111c</next>
+			</phrase>
+			<phrase id="41111c">
+			    <text>out_guide_talk_41111</text>
+				<next>411111c</next>
+			</phrase>
+			<phrase id="411111c">
+			    <text>out_guide_talk_411111</text>
+				<give_info>dam_guide_spawn</give_info>
+				<give_info>out_guide_prepare_for_damned_skipped</give_info>
+				<action>dialog_outskirts.give_compass</action>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+
+	<dialog id="out_guard_conversation">
+		<dont_has_info>out_had_password</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>out_guard_conversation_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>out_guard_conversation_1</text>
+                <next>11</next>
+                <next>12</next>
+                <next>13</next>
+			</phrase>
+			<phrase id="12">
+		   <precondition>tasks_outskirts.check_duty_suit</precondition>
+				<dont_has_info>out_guard_saw</dont_has_info>
+				<text>out_guard_conversation_21</text>
+				<give_info>out_guard_saw</give_info>
+			</phrase>
+			<phrase id="13">
+				<has_info>out_guard_saw</has_info>
+				<text>out_guard_conversation_22</text>
+			</phrase>
+			<phrase id="11">
+		   <precondition>tasks_outskirts.check_duty_suit.ReturnReverse</precondition>
+				<dont_has_info>out_guard_saw</dont_has_info>
+				<text>out_guard_conversation_2</text>
+                <next>111</next>
+			</phrase>
+			<phrase id="111">
+				<text>out_guard_conversation_3</text>
+                <next>1111</next>
+			</phrase>
+			<phrase id="1111">
+				<text>out_guard_conversation_4</text>
+				<give_info>out_had_password</give_info>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="out_guard_flashcard">
+		<has_info>out_guard_here</has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>out_guard_flashcard_1</text>
+				<next>1</next>
+				<next>2</next>
+				<next>3</next>
+			</phrase>
+			<phrase id="1">
+				<text>out_guard_flashcard_11</text>
+				<action>dialog_outskirts.break_dialog_set_enemy</action>
+			</phrase>
+			<phrase id="2">
+				<text>out_guard_flashcard_12</text>
+                <next>21</next>
+			</phrase>
+			<phrase id="21">
+				<text>out_guard_flashcard_121</text>
+				<action>dialog_outskirts.out_freedom_hate</action>
+				<give_info>bar_out_task_half_failed</give_info>
+                <next>211</next>
+			</phrase>
+			<phrase id="211">
+				<text>out_guard_flashcard_1211</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="3">
+				<text>out_guard_flashcard_13</text>
+				<next>31</next>
+			</phrase>
+			<phrase id="31">
+				<text>out_guard_flashcard_131</text>
+				<next>311</next>
+			</phrase>
+			<phrase id="311">
+				<text>out_guard_flashcard_1311</text>
+				<give_info>out_drunken_scene</give_info>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="out_merc_talk">
+		<has_info>out_actor_left</has_info>
+		<dont_has_info>out_merc_ambush_start</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>out_merc_robbery_0</text>
+				<next>1</next>
+				<next>2</next>
+			</phrase>
+			<phrase id="1">
+				<text>out_merc_robbery_1</text>
+				<next>11</next>
+			</phrase>
+			<phrase id="11">
+				<text>out_merc_robbery_11</text>
+				<action>dialog_outskirts.out_give_flashcard_merc</action>
+			</phrase>
+			<phrase id="2">
+				<text>out_merc_robbery_2</text>
+				<give_info>out_merc_ambush_start</give_info>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+
+	<dialog id="out_lukash_start">
+		<dont_has_info>out_spoke_lukash</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text/>
+				<next>00a</next>
+				<next>00b</next>
+			</phrase>
+            <phrase id="00b">
+				<has_info>out_freedom_lead_invite</has_info>
+                <text/>
+				<next>2</next>
+			</phrase>
+            <phrase id="2">
+                <text>out_lukash_start_2</text>
+				<next>3</next>
+			</phrase>
+            <phrase id="3">
+                <text>out_lukash_start_3</text>
+				<next>4</next>
+			</phrase>
+            <phrase id="4">
+                <text>out_lukash_start_4</text>
+				<next>5</next>
+			</phrase>
+            <phrase id="5">
+                <text>out_lukash_start_5</text>
+				<next>6</next>
+			</phrase>
+            <phrase id="6">
+                <text>out_lukash_start_6</text>
+				<next>7</next>
+			</phrase>
+            <phrase id="7">
+                <text>out_lukash_start_7</text>
+				<next>8</next>
+			</phrase>
+            <phrase id="8">
+                <text>out_lukash_start_8</text>
+				<next>9</next>
+			</phrase>
+            <phrase id="9">
+                <text>out_lukash_start_9</text>
+				<next>10</next>
+			</phrase>
+            <phrase id="10">
+                <text>out_lukash_start_10</text>
+				<give_info>out_lukash_meet_task_complete</give_info>
+				<give_info>out_spoke_lukash</give_info>
+			</phrase>
+            <phrase id="00a">
+				<dont_has_info>out_freedom_lead_invite</dont_has_info>
+                <text/>
+				<next>000</next>
+			</phrase>
+            <phrase id="000">
+                <text>out_lukash_start_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>out_lukash_start_1</text>
+				<next>11</next>
+			</phrase>
+			<phrase id="11">
+				<text>out_lukash_start_11</text>
+				<next>111</next>
+			</phrase>
+			<phrase id="111">
+				<text>out_lukash_start_111</text>
+				<next>1111</next>
+			</phrase>
+			<phrase id="1111">
+				<text>out_lukash_start_1111</text>
+				<next>11111</next>
+			</phrase>
+			<phrase id="11111">
+				<text>out_lukash_start_11111</text>
+				<next>111111</next>
+			</phrase>
+			<phrase id="111111">
+				<text>out_lukash_start_111111</text>
+				<next>1111111</next>
+			</phrase>
+			<phrase id="1111111">
+				<text>out_lukash_start_1111111</text>
+				<next>11111111</next>
+			</phrase>
+			<phrase id="11111111">
+				<text>out_lukash_start_11111111</text>
+				<give_info>out_spoke_lukash</give_info>
+				<next>111111111</next>
+			</phrase>
+			<phrase id="111111111">
+				<text>out_lukash_start_111111111</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+
+	<dialog id="out_lukash_invite">
+		<has_info>out_freedom_lead_invite</has_info>
+		<dont_has_info>out_lukash_meet_task_complete</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text>out_lukash_invite_0</text>
+				<next>1</next>
+			</phrase>
+            <phrase id="1">
+                <text>out_lukash_invite_1</text>
+				<next>2</next>
+			</phrase>
+            <phrase id="2">
+                <text>out_lukash_invite_2</text>
+				<next>3</next>
+			</phrase>
+            <phrase id="3">
+                <text>out_lukash_invite_3</text>
+				<next>4</next>
+			</phrase>
+            <phrase id="4">
+                <text>out_lukash_invite_4</text>
+				<next>5</next>
+			</phrase>
+            <phrase id="5">
+                <text>out_lukash_invite_6</text>
+				<next>6</next>
+			</phrase>
+            <phrase id="6">
+                <text>out_lukash_invite_6</text>
+				<give_info>out_lukash_meet_task_complete</give_info>
+			</phrase>
+		</phrase_list>
+	</dialog>
+
+	<dialog id="out_lukash_bas_reward">
+		<has_info>bas_switcher_off</has_info>
+		<has_info>out_lukash_meet_task_complete</has_info>
+		<dont_has_info>out_give_bas_reward</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text>out_lukash_bas_reward_0</text>
+				<next>1</next>
+			</phrase>
+            <phrase id="1">
+                <text>out_lukash_bas_reward_1</text>
+				<next>2</next>
+			</phrase>
+            <phrase id="2">
+                <text>out_lukash_bas_reward_2</text>
+				<next>3</next>
+			</phrase>
+            <phrase id="3">
+                <text>out_lukash_bas_reward_3</text>
+				<action>dialog_outskirts.out_give_bas_reward</action>
+				<give_info>out_give_bas_reward</give_info>
+			</phrase>
+		</phrase_list>
+	</dialog>
+
+	<dialog id="out_lukash_task">
+		<has_info>out_spoke_lukash</has_info>
+		<dont_has_info>out_lukash_task_start</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text>out_lukash_task_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>out_lukash_task_1a</text>
+				<next>11</next>
+				<next>12</next>
+			</phrase>
+			<phrase id="12">
+				<text>out_lukash_task_12</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="11">
+				<text>out_lukash_task_11</text>
+				<next>111</next>
+			</phrase>
+			<phrase id="111">
+				<text>out_lukash_task_111</text>
+				<next>1111</next>
+			</phrase>
+			<phrase id="1111">
+				<text>out_lukash_task_1111</text>
+				<next>11111</next>
+			</phrase>
+			<phrase id="11111">
+				<text>out_lukash_task_11111</text>
+				<next>111111</next>
+				<next>111112</next>
+			</phrase>
+			<phrase id="111112">
+				<has_info>forg_has_password</has_info>
+				<text>out_lukash_task_111112</text>
+				<next>1111121</next>
+			</phrase>
+			<phrase id="1111121">
+				<text>out_lukash_task_1111121</text>
+				<next>11111211</next>
+			</phrase>
+			<phrase id="11111211">
+				<text>out_lukash_task_11111211</text>
+				<next>1111111</next>
+			</phrase>
+			<phrase id="111111">
+				<dont_has_info>forg_has_password</dont_has_info>
+				<text>out_lukash_task_111111</text>
+				<next>1111111</next>
+			</phrase>
+			<phrase id="1111111">
+				<text>out_lukash_task_1111111</text>
+				<next>11111111</next>
+			</phrase>
+			<phrase id="11111111">
+				<text>out_lukash_task_11111111</text>
+				<give_info>out_spoke_lukash</give_info>
+				<next>111111111</next>
+			</phrase>
+			<phrase id="111111111">
+				<text>out_lukash_task_111111111</text>
+				<next>1111111111</next>
+			</phrase>
+			<phrase id="1111111111">
+				<text>out_lukash_task_1111111111</text>
+				<give_info>forg_spawn_key</give_info>
+				<give_info>out_lukash_task_start</give_info>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="out_lukash_task_during">
+		<has_info>out_spoke_lukash</has_info>
+		<has_info>out_lukash_task_start</has_info>
+		<dont_has_info>out_lukash_task_complete</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text>out_lukash_task_during_0</text>
+				<next>3</next>
+			</phrase>
+			<phrase id="1">
+				<dont_has_info>out_lukash_gave_pass</dont_has_info>
+				<text>out_lukash_task_during_1</text>
+				<next>11</next>
+				<next>12</next>
+			</phrase>
+			<phrase id="12">
+				<dont_has_info>forg_has_password</dont_has_info>
+				<text>out_lukash_task_during_12</text>
+			</phrase>
+			<phrase id="11">
+				<has_info>forg_has_password</has_info>
+				<give_info>out_lukash_gave_pass</give_info>
+				<text>out_lukash_task_during_11</text>
+				<next>111</next>
+			</phrase>
+			<phrase id="111">
+				<text>out_lukash_task_during_111</text>
+				<next>1111</next>
+			</phrase>
+			<phrase id="1111">
+				<text>out_lukash_task_during_1111</text>
+			</phrase>
+			<phrase id="2">
+				<has_info>out_lukash_gave_pass</has_info>
+				<dont_has_info>out_lukash_gave_key</dont_has_info>
+				<text>out_lukash_task_during_2</text>
+				<next>21</next>
+				<next>22</next>
+			</phrase>
+			<phrase id="22">
+				<dont_has_info>forg_has_key</dont_has_info>
+				<text>out_lukash_task_during_22</text>
+			</phrase>
+			<phrase id="21">
+				<precondition>tasks_forgotten.forg_has_key</precondition>
+				<text>out_lukash_task_during_21</text>
+				<give_info>out_lukash_gave_key</give_info>
+				<next>211</next>
+			</phrase>
+			<phrase id="211">
+				<text>out_lukash_task_during_211</text>
+				<next>2111</next>
+			</phrase>
+			<phrase id="2111">
+				<text>out_lukash_task_during_2111</text>
+			</phrase>
+			<phrase id="3">
+				<text>out_lukash_task_during_3</text>
+				<next>31</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="32">
+				<dont_has_info>rad_has_anom_machine</dont_has_info>
+				<text>out_lukash_task_during_32</text>
+			</phrase>
+			<phrase id="31">
+				<has_info>rad_has_anom_machine</has_info>
+				<action>dialog_outskirts.give_machine</action>
+				<text>out_lukash_task_during_31</text>
+				<next>311</next>
+			</phrase>
+			<phrase id="311">
+				<text>out_lukash_task_during_311</text>
+				<next>3111</next>
+			</phrase>
+			<phrase id="3111">
+				<text>out_lukash_task_during_3111</text>
+				<next>31111</next>
+			</phrase>
+			<phrase id="31111">
+				<text>out_lukash_task_during_31111</text>
+				<give_info>out_lukash_task_complete</give_info>
+				<action>dialog_outskirts.give_lukash_reward</action>
+				<next>311111</next>
+			</phrase>
+			<phrase id="311111">
+				<text>out_lukash_task_during_311111</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="out_lukash_join">
+		<precondition>dialog_outskirts.can_join_freedom</precondition>
+		<dont_has_info>out_freedom_joined</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text>out_lukash_join_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1">
+				<text>out_lukash_join_1</text>
+				<next>11</next>
+				<next>12</next>
+			</phrase>
+			<phrase id="12">
+				<text>out_lukash_join_12</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+			<phrase id="11">
+				<text>out_lukash_join_11</text>
+				<next>111</next>
+			</phrase>
+			<phrase id="111">
+				<action>dialog_outskirts.join_freedom</action>
+				<give_info>out_freedom_joined</give_info>
+				<text>out_lukash_join_111</text>
+				<next>1111</next>
+			</phrase>
+			<phrase id="1111">
+				<text>out_lukash_join_1111</text>
+				<next>11111</next>
+			</phrase>
+			<phrase id="11111">
+				<text>out_lukash_join_11111</text>
+				<next>111111</next>
+			</phrase>
+			<phrase id="111111">
+				<text>out_lukash_join_111111</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	<dialog id="out_hunter_start">
+		<dont_has_info>out_hunter_spoke</dont_has_info>
+		<has_info>bar_hunter_told_weapon</has_info>
+		<has_info>bar_hunter_task_finished</has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text>out_hunter_start_0</text>
+				<next>1</next>
+				<!--next>2</next-->
+			</phrase>
+			<phrase id="1">
+				<text>out_hunter_start_1</text>
+				<next>11</next>
+			</phrase>
+			<phrase id="11">
+				<text>out_hunter_start_11</text>
+				<next>111</next>
+			</phrase>
+			<phrase id="111">
+				<give_info>out_hunter_spoke</give_info>
+				<text>out_hunter_start_111</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>	
+			<phrase id="2">
+				<dont_has_info>bar_hunter_task_finished</dont_has_info>
+				<text>out_hunter_start_2</text>
+				<next>21</next>
+			</phrase>
+			<phrase id="21">
+				<text>out_hunter_start_21</text>
+				<next>211</next>
+			</phrase>
+			<phrase id="211">
+				<give_info>out_hunter_spoke</give_info>
+				<text>out_hunter_start_211</text>
+				<action>dialogs.break_dialog</action>
+			</phrase>			
+		</phrase_list>
+	</dialog>
+</game_dialogs>

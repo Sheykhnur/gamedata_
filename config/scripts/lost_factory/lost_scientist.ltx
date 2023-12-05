@@ -1,0 +1,44 @@
+[smart_terrains]
+none = true
+
+[combat_ignore@yan_bunker]
+
+[logic]
+active = walker@lost_bunker_scientist_wait
+combat_ignore = combat_ignore@yan_bunker
+trade = misc\trade\trade_deedee.ltx
+inv_max_weight = 10000
+
+[walker@lost_bunker_scientist_wait]
+path_walk = lost_bunker_scientist_wait_walk
+path_look = lost_bunker_scientist_wait_look
+def_state_standing = probe
+on_info = {+lost_scan_cleared} walker@lost_bunker_scientist_talk
+on_info2 = {+country_blowout_start} walker@lost_bunker_scientist_talk
+on_info3 = {=dist_to_actor_ge(50) +lost_decon_reset} %+lost_decon_distance_check%
+on_actor_dist_le_nvis = 10| {-country_blowout_start} walker@lost_bunker_scientist_talk
+combat_ignore_cond = always
+
+[walker@lost_bunker_scientist_talk]
+path_walk = lost_bunker_scientist_walk
+path_look = lost_bunker_scientist_look
+combat_ignore_cond = always
+on_signal = talk| remark@lost_bunker_scientist_talk
+on_info = {=dist_to_actor_ge(50) +lost_decon_reset} %+lost_decon_distance_check%
+
+[remark@lost_bunker_scientist_talk]
+anim = yan_professor_wait
+target = actor
+combat_ignore_cond = always
+meet = meet@lost_bunker_scientist_talk
+on_info = {=dist_to_actor_ge(50) +lost_decon_reset} %+lost_decon_distance_check%
+
+[meet@lost_bunker_scientist_talk]
+meet_state = 1| yan_professor_wait
+meet_state_wpn = 1| yan_professor_wait
+victim = 3| actor   
+victim_wpn = 3| actor   
+use = true
+use_wpn = false
+meet_dialog = lost_scientist_talk
+combat_ignore_cond = always

@@ -1,0 +1,335 @@
+[combat_ignore@lager1]
+
+[death@radar_monolith_follower]
+on_info = %+rad_actor_attacks_monolith%
+
+[hit@radar_monolith_lager1]
+on_info = {=hit_by_actor} %+rad_actor_attacks_monolith%
+
+[hit@radar_monolith_follower]
+on_info = {=hit_by_actor} %+rad_actor_attacks_monolith =actor_enemy%
+
+[danger@radar_monolith_lager1_follower]
+ignore_distance = 0
+danger_inertion_time = 2000
+
+[danger@radar_monolith_lager1_follower_monst]
+ignore_distance = 10
+danger_inertion_time = 2000
+
+[danger@monolith_lager1_scene]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+
+[threshold@monolith_lager1_scene]
+max_ignore_distance = 10
+
+[threshold@monolith_lager1_follower]
+max_ignore_distance = 5
+
+[combat_ignore@radar_monolith_lager1_follower]
+
+[logic@radar_monolith_lager1_follower]
+active = walker@radar_monolith_lager1_follower_fake
+combat_ignore = combat_ignore@radar_monolith_lager1_follower
+danger = danger@radar_monolith_lager1_follower
+on_hit = hit@radar_monolith_follower
+on_death = death@radar_monolith_follower
+
+[walker@radar_monolith_lager1_follower_fake]
+path_walk = prearrival
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+on_info = {-rad_premature_blow} walker@radar_monolith_lager1_wait
+on_info2 = {+rad_premature_blow -rad_reached_base} %=teleport_npc(radar_monolith_base_follower_walk) +rad_reached_base%
+threshold = threshold@monolith_lager1_scene
+meet = no_meet
+
+[walker@radar_monolith_lager1_wait]
+path_walk = prearrival
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+on_info = {+rad_meeting_actor} walker@radar_monolith_lager1_start
+on_info2 = {+rad_actor_attacks_monolith} %=actor_enemy%
+on_info3 = {+rad_monolith_outpost_welcome} walker@radar_monolith_gulag_control
+danger = danger@radar_monolith_lager1_follower
+threshold = threshold@monolith_lager1_scene
+meet = no_meet
+
+[walker@radar_monolith_lager1_start]
+path_walk = arrival_commander
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+meet = meet@radar_monolith_lager1_follower
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+;def_state_standing = guard
+threshold = threshold@monolith_lager1_scene
+on_info = {+rad_actor_attacks_monolith} %=actor_enemy%
+on_info2 = {+rad_monolith_outpost_welcome} walker@radar_monolith_gulag_control
+
+[meet@radar_monolith_lager1_follower]
+precond = visibility
+meet_state = 10|claim@rad_replics1|3|guard
+meet_state_wpn = 10|claim@rad_replics1|3|guard
+abuse = false
+victim = 10|actor|3|actor
+victim_wpn = 10|actor|3|actor
+use = true
+use_wpn = true
+
+[walker@radar_monolith_gulag_control]
+path_walk = prearrival
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+meet = no_meet
+on_info = {+radar_hermit_beloning_quest_start} walker@radar_monolith_lager1_to_actor
+on_info2 = {+rad_actor_attacks_monolith} %=actor_enemy%
+
+[remark@radar_monolith_lager1_premeet]
+target = actor
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+meet = no_meet
+on_info = {+rad_monolith_outpost_welcome} walker@radar_monolith_gulag_control
+on_info2 = {+rad_actor_attacks_monolith} %=actor_enemy%
+
+[remark@radar_monolith_lager1_meet]
+target = actor
+;anim = assault
+danger = danger@monolith_lager1_scene
+threshold = threshold@monolith_lager1_scene
+meet = meet@radar_monolith_lager1_follower
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+on_info = {+radar_monolith_base_quest_start} walker@radar_monolith_lager1_to_actor
+on_info2 = {+rad_actor_attacks_monolith} walker@radar_monolith_gulag_control %=actor_enemy%
+
+[walker@radar_monolith_lager1_to_actor]
+path_walk = commander_to_player
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+threshold = threshold@monolith_lager1_follower
+on_signal = actor | walker@radar_monolith_lager1_reached_actor
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+meet = no_meet
+
+[walker@radar_monolith_lager1_reached_actor]
+path_walk = com_wait_actor
+path_look = com_wait_actor_look
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+threshold = threshold@monolith_lager1_follower
+meet = meet@radar_monolith_lager1_follower2
+def_state_moving1 = walk
+def_state_moving2 = walk
+def_state_moving3 = walk
+on_info = {=dist_to_actor_ge(57) +rad_pl_run_away} %=actor_enemy +rad_actor_attacks_monolith%
+on_info2 = {+radar_monolith_base_quest_start} walker@radar_monolith_lager1_to_base_0
+
+[meet@radar_monolith_lager1_follower2]
+;precond = visibility
+meet_state = 50|threat_fire %+rad_pl_run_away%|50|guard_na|19|press@rad_replics2|3|wait
+meet_state_wpn = 50|threat_fire %+rad_pl_run_away%|50|guard_na|19|press@rad_replics2|3|wait
+victim = 50|actor|50|actor|19|actor|3|actor
+victim_wpn = 50|actor|50|actor|19|actor|3|actor
+use = true
+use_wpn = true
+meet_dialog = rad_monolith_outpost_letsgo
+meet_dialog_enabled = true
+abuse = false
+
+[walker@radar_monolith_lager1_to_base_0]
+path_walk = commander_to_base0
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+threshold = threshold@monolith_lager1_follower
+on_info = {+rad_actor_attacks_monolith} %=actor_enemy%
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = militaries | {-rad_rpg_given} %+rad_heli_message% 
+on_signal2 = hideme | walker@radar_monolith_lager1_to_base_hide %=play_snd(characters_voice\scenario\aes\aes_second_desant_wave)% 
+
+[walker@radar_monolith_lager1_to_base_hide]
+path_walk = hide
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+meet = no_meet
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_actor_dist_le_nvis = 4| {!is_wounded +rad_heli_dead -rad_move_on} remark@radar_monolith_lager1_letsgo
+;on_info = {+rad_heli_dead} walker@radar_monolith_lager1_to_base
+on_signal = anmmyass | remark@radar_monolith_lager1_to_base_hide
+
+[remark@radar_monolith_lager1_letsgo]
+snd = rad_move_on
+on_signal = sound_end| walker@radar_monolith_lager1_to_base %+rad_move_on%
+target = actor
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+meet = no_meet
+
+[remark@radar_monolith_lager1_to_base_hide]
+no_move = true
+anim = psycho_pain
+danger = danger@monolith_lager1_scene
+threshold = threshold@monolith_lager1_scene
+meet = no_meet
+invulnerable = true
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+;on_info = {+heli_help_done} walker@radar_monolith_lager1_to_base
+on_actor_dist_le_nvis = 4| {!is_wounded +rad_heli_dead -rad_move_on} remark@radar_monolith_lager1_letsgo
+
+[walker@radar_monolith_lager1_to_base]
+path_walk = commander_to_base1
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+on_info = {+rad_actor_attacks_monolith} %=actor_enemy%
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = frontline | {-rad_monsters_help_start_message} %+rad_monsters_help_start_message%
+on_signal2 = help | remark@radar_monolith_lager1_help_check
+
+[remark@radar_monolith_lager1_help_check]
+on_actor_dist_le_nvis = 15 | walker@radar_monolith_lager1_help %+rad_monsters_help_start%
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+meet = no_meet
+on_info = {+rad_monsters_help_start} walker@radar_monolith_lager1_help
+
+[walker@radar_monolith_lager1_help]
+path_walk = wave_help
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+on_info = {+rad_outpost_mutants_help_quest_done} walker@radar_monolith_lager1_to_base2
+on_info2 = {+rad_actor_attacks_monolith} %=actor_enemy%
+meet = meet@radar_monolith_lager1_after_wave
+
+[meet@radar_monolith_lager1_after_wave]
+meet_state		= 5|guard
+meet_state_wpn	= 5|guard
+victim		= 5|actor
+victim_wpn		= 5|actor
+use			= true
+use_wpn		= true
+
+[walker@radar_monolith_lager1_to_base2]
+path_walk = commander_to_base2
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+;on_signal = badidea | %+radar_binocle_finished%
+on_signal = point | remark@radar_monolith_lager1_follower_check
+
+[remark@radar_monolith_lager1_follower_check]
+on_actor_dist_le_nvis = 15 | remark@radar_monolith_lager1_follower
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+meet = no_meet
+
+[remark@radar_monolith_lager1_follower]
+anim = binocular
+snd = rad_replics5
+target = rad_snorks_lair_base_rush3, 0
+danger = danger@monolith_lager1_scene
+threshold = threshold@monolith_lager1_scene
+meet = no_meet
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+on_timer = 300 | %+radar_binocle_finished%
+on_signal = sound_end | walker@radar_monolith_lager1_snorks
+
+[walker@radar_monolith_lager1_snorks]
+path_walk = snorks
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+;danger = danger@radar_monolith_lager1_follower_monst
+danger = danger@monolith_lager1_scene
+on_info = {+rad_snorks_lair_base_done} walker@radar_monolith_lager1_to_base3
+on_info2 = {+rad_actor_attacks_monolith} %=actor_enemy%
+on_timer = 25000 | walker@radar_monolith_lager1_to_base3
+meet = no_meet
+
+[walker@radar_monolith_lager1_to_base3]
+path_walk = commander_to_base3
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+danger = danger@radar_monolith_lager1_follower
+on_info = {+rad_actor_attacks_monolith} %=actor_enemy%
+meet = no_meet
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+on_signal = finally | remark@radar_monolith_lager1_follower_wait_actor
+
+[remark@radar_monolith_lager1_follower_wait_actor]
+anim = guard
+target = actor
+meet = no_meet
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@monolith_lager1_scene
+threshold = threshold@monolith_lager1_scene
+on_actor_dist_le_nvis = 15 | remark@radar_monolith_lager1_follower2
+on_actor_dist_ge_nvis = 80 | walker@radar_monolith_lager1_to_base4 %+rad_actor_attacks_monolith%
+;on_info = {+rad_scene_start} %=teleport_npc(radar_monolith_base_follower_walk:radar_monolith_base_leader_look) +rad_actor_followed +rad_reached_base%
+
+[remark@radar_monolith_lager1_follower2]
+snd = rad_replics6
+target = actor
+meet = no_meet
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@monolith_lager1_scene
+threshold = threshold@monolith_lager1_scene
+on_signal = sound_end | walker@radar_monolith_lager1_to_base4 %+rad_actor_followed%
+on_timer = 13000 | walker@radar_monolith_lager1_to_base4 %+rad_actor_followed%
+
+[walker@radar_monolith_lager1_to_base4]
+path_walk = commander_to_base4
+combat_ignore_cond = always
+danger = danger@monolith_lager1_scene
+threshold = threshold@monolith_lager1_scene
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+rad_actor_attacks_monolith} %=actor_enemy%
+;on_signal = approachbase | %+rad_starting_replics%
+on_signal = basereached | %+rad_reached_base%
+;on_info2 = {+rad_scene_start -rad_monolith_follower_teleported} %+rad_actor_followed +rad_reached_base =teleport_npc(radar_monolith_base_follower_walk:rad_monolith_follower_teleported)% 
+;=teleport_npc_dir(radar_monolith_base_follower_walk:radar_monolith_base_follower_walk:radar_monolith_base_leader_look)
+
+[logic@radar_monolith_lager1_guard1]
+active = walker@radar_monolith_lager1_guard1
+combat_ignore = combat_ignore@lager1
+on_hit = hit@radar_monolith_lager1
+
+[walker@radar_monolith_lager1_guard1]
+path_walk = guard1
+combat_ignore_cond = {-rad_actor_attacks_monolith} true
+
+[logic@radar_monolith_lager1_guard2]
+active = walker@radar_monolith_lager1_guard2
+combat_ignore = combat_ignore@lager1
+on_hit = hit@radar_monolith_lager1
+
+[walker@radar_monolith_lager1_guard2]
+path_walk = guard2
+combat_ignore_cond = {-rad_actor_attacks_monolith} true
+
+[logic@radar_monolith_lager1_patrol]
+active = walker@radar_monolith_lager1_patrol
+combat_ignore = combat_ignore@lager1
+on_hit = hit@radar_monolith_lager1
+
+[walker@radar_monolith_lager1_patrol]
+path_walk = patrol
+combat_ignore_cond = {-rad_actor_attacks_monolith} true

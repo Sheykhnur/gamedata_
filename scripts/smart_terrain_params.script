@@ -1,0 +1,95 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : smart_terrain_params.script
+ Description: Parsing and storing smart terrain parameters
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Last edit  : 07.07.2013 [...]
+ Comment    : !doesn't work without simulation!
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local tPresets = {}
+local tStayTimes
+local bParams_Loaded = false
+--/ --------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+
+--[[ cached presettings of ranks and communities -----------------
+format:
+	tPresets = {
+		preset_name1 = {
+			community1 = {rank_min1,rank_max1},
+			community2 = {rank_min2,rank_max2},
+			...
+		},
+		preset_name2 = false,
+		...
+	}
+false - means, that tried to read, but didn't found such presetting
+--]] -----------------------------------------------------------------
+
+--/ returns table with presetting or false
+function read_preset( preset_name )
+	local ltx = ini_file( "misc\\smart_terrain_presets.ltx" )
+	if ltx and ltx:section_exist( preset_name ) then
+		local tPreset,tT = {},nil
+		local rank_min,rank_max,rank_interval
+		local result,field,str
+		local iCnt = ltx:line_count( preset_name )
+		for i=0, iCnt-1 do
+			rank_min, rank_max = 10000, 0
+			result,field,str = ltx:r_line( preset_name, i, "", "" )
+			tT = parse_names( str )
+			for _,rank_name in ipairs( tT ) do
+				rank_interval = ranks.get_rank_interval( rank_name )
+				if rank_interval[1] < rank_min then
+					rank_min = rank_interval[1]
+				end
+				if rank_interval[2] > rank_max then
+					rank_max = rank_interval[2]
+				end
+			end
+			tPreset[field] = { rank_min, rank_max }
+		end
+		return tPreset --/>
+	end
+	return false --/>
+end
+
+--/ get presetting
+function get_preset( preset_name )
+	if tPresets[preset_name] == nil then
+		tPresets[preset_name] = read_preset( preset_name )
+	end
+	return tPresets[preset_name] --/>
+end
+
+--/ load different common settings for all smarts
+function load_params()
+	tStayTimes = {}
+	local ltx = system_ini()
+	local result, field, str
+	local iCnt = ltx:line_count("smart_terrain_stay_time")
+	for i=0, iCnt-1 do
+		result, field, str = ltx:r_line("smart_terrain_stay_time", i, "", "")
+		tStayTimes[field] = parse_nums( str )
+	end
+	bParams_Loaded = true
+end
+
+--/ get time interval
+function get_stay_time_interval( field ) --/< field = "default"
+	if not bParams_Loaded then
+		load_params() --print_table( tStayTimes )
+	end
+	if field and tStayTimes[field] then
+		return tStayTimes[field][1], tStayTimes[field][2] --/>
+	end
+	abort(sModule..":get_stay_time_interval:unknown stay_time interval=["..tostring(field).."]")
+end
+--/ -----------------------------------------------------------------------------------------------

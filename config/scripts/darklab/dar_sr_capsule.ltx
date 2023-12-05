@@ -1,0 +1,22 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+dar_sci2_info_0} sr_particle@dark %+dar_bumps%
+
+[sr_idle@2]
+on_info = {+dar_sci2_info_2} sr_particle@dark2 %+dar_bumps2%
+
+[sr_particle@dark]
+name = anomaly2\electra2_blast
+;name = anomaly2\generator\emiters\generator_glow_02
+path = dar_scene2_tele
+mode = 2
+looped = false
+on_info = {+dar_sci2_info_2} sr_idle@2
+
+[sr_particle@dark2]
+name = anomaly2\electra2_blast
+path = dar_scene2_tele
+mode = 2
+looped = false

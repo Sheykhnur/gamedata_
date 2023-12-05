@@ -1,0 +1,581 @@
+;------------------ Памятка
+; _affected_stat                  = 1 = Здоровье
+; _affected_stat                  = 2 = Кровотечение
+; _affected_stat                  = 3 = Радиация
+; _affected_stat                  = 4 = Пси-здоровье
+; _affected_stat                  = 5 = Еда
+; _affected_stat                  = 6 = Вода
+; _affected_stat                  = 7 = Энергия
+; _affected_stat                  = 8 = Алкоголь
+
+;------------------
+[med_base]:identity_immunities
+$prefetch                       = 32
+class                           = II_ANTIR
+cform                           = skeleton
+animation_slot                  = 4
+hud                             = hud_food_base
+
+inv_grid_width                  = 1
+inv_grid_height                 = 1
+
+eat_health                      = 0
+eat_satiety                     = 0
+eat_thirst                      = 0
+eat_alcohol                     = 0
+eat_psy_health                  = 0
+eat_radiation                   = 0
+eat_power                       = 0
+eat_max_power                   = 0
+wounds_heal_perc                = 0
+
+script_loot_class               = aid
+
+use_prolonged_effect            = true
+
+[medkit_base]:med_base
+$prefetch                       = 8
+class                           = II_MEDKI
+use_prolonged_effect            = true
+item_use_time                   = 5.5
+effector_blocking_group         = 1
+
+[booster_base]:med_base
+$prefetch                       = 8
+class                           = II_ANTIR
+item_use_time                   = 4.5
+effector_blocking_group         = 7
+
+;------------------
+
+[antirad]:med_base
+$spawn                          = "items\drugs\med_antirad"
+visual							= dynamics\weapons\wpn_eat\world_models\injectors\injector_big_world.ogf
+
+description                     = enc_antirad_descr
+inv_name                        = enc_antirad_name
+inv_name_short                  = enc_antirad_name
+
+inv_weight                      = 0.2
+inv_grid_x                      = 16
+inv_grid_y                      = 28
+
+cost                            = 400
+item_use_time                   = 6
+
+eat_health                      = 0
+eat_satiety                     = 0
+eat_power                       = 0
+eat_radiation                   = -1.0
+wounds_heal_perc                = 0
+
+use_prolonged_effect            = true
+effector_blocking_group         = 3
+
+effects_list                    = antirad_restore, rad_booster
+
+antirad_restore_affected_stat   = 3
+antirad_restore_rate            = -0.053
+antirad_restore_dur             = 15.0
+
+rad_booster_dur                 = 10.0
+rad_booster_is_booster          = true
+rad_booster_hit_absorbation_sect= absorbation_rad_protection
+
+bonus_radiation       			= 50
+
+;------------------
+
+[antirad_pils]:med_base
+$spawn                          = "items\drugs\med_antirad_pils"
+visual							= dynamics\weapons\wpn_eat\world_models\injectors\injector_big_world.ogf
+
+inv_name                        = enc_antirad_pils
+inv_name_short                  = enc_antirad_pils
+description                     = enc_antirad_pils_descr
+
+inv_weight                      = 0.02
+inv_grid_x                      = 16
+inv_grid_y                      = 28
+
+cost                            = 180
+item_use_time                   = 6
+
+eat_health                      = 0
+eat_satiety                     = 0
+eat_power                       = 0
+eat_radiation                   = -1.0
+wounds_heal_perc                = 0
+
+use_prolonged_effect            = true
+effector_blocking_group         = 3
+
+effects_list                    = antirad_restore, rad_booster, dehidration
+
+antirad_restore_affected_stat   = 3
+antirad_restore_rate            = -0.025
+antirad_restore_dur             = 30.0
+
+rad_booster_dur                 = 10.0
+rad_booster_is_booster          = true
+rad_booster_hit_absorbation_sect= absorbation_rad_protection
+
+dehidration_affected_stat		= 6
+dehidration_rate            	= -0.07
+dehidration_dur       		    = 15.0
+
+bonus_radiation       			= 50
+
+;------------------
+[bandage]:med_base
+$spawn                          = "items\drugs\med_bandage"
+class                           = II_BANDG
+visual							= dynamics\weapons\wpn_eat\world_models\bints\bint_basic_world.ogf
+
+description                     = enc_bandage_descr
+inv_name                        = enc_bandage_name
+inv_name_short                  = enc_bandage_name
+
+inv_weight                      = 0.015
+inv_grid_x                      = 19
+inv_grid_y                      = 27
+
+cost                            = 20
+item_use_time                   = 4.5
+
+auto_attach                     = false
+attach_bone_name                = bip01_l_hand
+attach_angle_offset             = 0.000000, 3.050000, 0.200000
+attach_position_offset          = 0.087266, 0.078540, 0.050000
+
+eat_health                      = 0.0
+eat_satiety                     = 0
+eat_power                       = 0.0
+eat_radiation                   = 0.0
+wounds_heal_perc                = 1.0
+
+use_prolonged_effect            = true
+effector_blocking_group         = 2
+effects_list                    = bleeding_restore
+
+bleeding_restore_affected_stat  = 2
+bleeding_restore_rate           = 0.03
+bleeding_restore_dur            = 33.0
+
+use_sound						=  
+
+;------------------
+[dolg_bandage]:bandage
+$spawn                          = "items\drugs\med_bandage_elite"
+visual							= dynamics\weapons\wpn_eat\world_models\bints\bint_dolg_world.ogf
+
+description                     = enc_bandage2_descr
+inv_name                        = enc_bandage2_name
+inv_name_short                  = enc_bandage2_name
+
+inv_weight                      = 0.015
+inv_grid_x         = 20
+inv_grid_y         = 27
+
+cost                            = 40
+item_use_time                   = 4.5
+
+wounds_heal_perc                = 1.0
+
+use_prolonged_effect            = true
+effector_blocking_group         = 2
+effects_list                    = bleeding_restore
+
+use_sound						=  
+
+bleeding_restore_affected_stat  = 2
+bleeding_restore_rate           = 0.036
+bleeding_restore_dur            = 33.0
+
+;------------------
+[medkit]:medkit_base
+$spawn                          = "items\drugs\med_medkit_normal"
+visual							= dynamics\weapons\wpn_eat\world_models\aptechki\aptechka_basic_world.ogf
+
+description                     = enc_equipment_medi_medkit1
+inv_name                        = Medkit
+inv_name_short                  = Medkit
+
+inv_weight                      = 0.25
+inv_grid_x                      = 16
+inv_grid_y                      = 27
+
+cost                            = 150
+item_use_time                   = 5.8
+
+eat_health                      = 0.5
+eat_radiation                   = -0.1
+wounds_heal_perc                = 0.3
+eat_max_power                   = 0.1
+
+use_prolonged_effect            = true
+effector_blocking_group         = 1
+effects_list                    = health_restore, bleeding_restore, antirad_restore, dehidration
+
+health_restore_affected_stat    = 1
+health_restore_rate             = 0.023
+health_restore_dur              = 25.0
+
+bleeding_restore_affected_stat  = 2
+bleeding_restore_rate           = 0.01
+bleeding_restore_dur            = 20.0
+
+antirad_restore_affected_stat   = 3
+antirad_restore_rate            = -0.005
+antirad_restore_dur             = 25.0
+
+dehidration_affected_stat		= 6
+dehidration_rate            	= -0.015
+dehidration_dur       		    = 10.0
+
+;------------------
+[medkit_army]:medkit_base
+$spawn                          = "items\drugs\med_medkit_army"
+visual							= dynamics\weapons\wpn_eat\world_models\aptechki\aptechka_army_world.ogf
+
+description                     = enc_equipment_medi_medkit2
+inv_name                        = Medkit_army
+inv_name_short                  = Medkit_army
+
+inv_weight                      = 0.27
+inv_grid_x                      = 17
+inv_grid_y                      = 27
+
+cost                            = 350
+item_use_time                   = 5.8
+
+eat_health                      = 0.9
+eat_satiety                     = 0
+eat_power                       = 0.0
+eat_radiation                   = -0.15
+wounds_heal_perc                = 0.6
+eat_max_power                   = 0.1
+
+effects_list                    = health_restore, bleeding_restore, antirad_restore
+
+health_restore_affected_stat    = 1
+health_restore_rate             = 0.0263
+health_restore_dur              = 38.0
+
+bleeding_restore_affected_stat  = 2
+bleeding_restore_rate           = 0.02
+bleeding_restore_dur            = 20.0
+
+antirad_restore_affected_stat   = 3
+antirad_restore_rate            = -0.008
+antirad_restore_dur             = 20.0
+
+;------------------
+[medkit_scientic]:medkit_base
+$spawn                          = "items\drugs\med_medkit_scient"
+visual							= dynamics\weapons\wpn_eat\world_models\aptechki\aptechka_scientific_world.ogf
+
+description                     = enc_equipment_medi_medkit3
+inv_name                        = Medkit_scientific
+inv_name_short                  = Medkit_scientific
+
+inv_weight                      = 0.25
+inv_grid_x                      = 18
+inv_grid_y                      = 27
+
+cost                            = 400
+item_use_time                   = 5.8
+
+eat_health                      = 0.75
+eat_satiety                     = 0
+eat_power                       = 0.0
+eat_radiation                   = -0.7
+wounds_heal_perc                = 0.3
+eat_max_power                   = 0.1
+
+effects_list                    = health_restore, bleeding_restore, antirad_restore
+
+health_restore_affected_stat    = 1
+health_restore_rate             = 0.0315
+health_restore_dur              = 30.0
+
+bleeding_restore_affected_stat  = 2
+bleeding_restore_rate           = 0.015
+bleeding_restore_dur            = 20.0
+
+antirad_restore_affected_stat   = 3
+antirad_restore_rate            = -0.01
+antirad_restore_dur             = 35.0
+
+
+;-- Лекарство автолечения script_medkit (xr_wounded.script & pdaSkills.script)
+[medkit_a]:medkit
+$spawn                 			= ""
+
+visual                          = equipments\drink_medkit.ogf
+inv_weight                      = 0
+cost                            = 0
+can_trade                       = false
+
+eat_health                      = 0.1
+eat_radiation                   = -0.1
+wounds_heal_perc                = 0.1
+
+auto_attach                     = false
+attach_bone_name                = bip01_r_hand
+attach_angle_offset             = -0.287979, 0, 0
+attach_position_offset          = 0.096910, -0.013594, 0.04
+
+use_prolonged_effect            = false
+
+;------------------
+[booster_antipsy]:booster_base
+$spawn                          = "items\drugs\med_booster_psy"
+visual							= dynamics\weapons\wpn_eat\world_models\tabletki\tabletki_psi_world.ogf
+
+description                     = enc_equipment_anti_psy_booster
+inv_name                        = anti_psy_booster
+inv_name_short                  = anti_psy_booster
+
+inv_weight                      = 0.01
+inv_grid_x                      = 19
+inv_grid_y                      = 28
+
+cost                            = 350
+
+use_prolonged_effect            = true
+item_use_time                   = 4.5
+effector_blocking_group         = 8
+effects_list                    = psy_booster, energy_affect, dehidration
+
+psy_booster_dur                 = 150.0
+psy_booster_is_booster          = true
+psy_booster_hit_absorbation_sect= absorbation_psy_protection
+
+energy_affect_affected_stat     = 7
+energy_affect_rate              = -0.01
+energy_affect_dur               = 40.0
+
+dehidration_affected_stat       = 6
+dehidration_rate                = -0.015
+dehidration_dur                 = 50.0
+
+bonus_psy             			= 50
+
+;------------------
+[booster_antirad]:booster_base
+$spawn                          = "items\drugs\med_booster_radio"
+visual							= dynamics\weapons\wpn_eat\world_models\tabletki\tabletki_radioprotector_world.ogf
+
+description                     = enc_equipment_antirad_booster
+inv_name                        = antirad_booster
+inv_name_short                  = antirad_booster
+
+inv_weight                      = 0.01
+inv_grid_x                      = 20
+inv_grid_y                      = 28
+
+cost                            = 160
+
+use_prolonged_effect            = true
+item_use_time                   = 4.5
+effector_blocking_group         = 9
+effects_list                    = rad_booster, dehidration
+
+rad_booster_dur                 = 200.0
+rad_booster_is_booster          = true
+rad_booster_hit_absorbation_sect= absorbation_rad_protection
+
+dehidration_affected_stat       = 6
+dehidration_rate                = -0.01
+dehidration_dur                 = 60.0
+
+
+bonus_radiation       = 50
+
+
+;------------------
+[booster_weight]:booster_base
+$spawn                          = "items\drugs\med_booster_weight"
+visual							= dynamics\weapons\wpn_eat\world_models\drinks\wpn_drug_booster.ogf
+
+inv_name                        = st_med_booster_weight
+inv_name_short                  = st_med_booster_weight
+description                     = st_med_booster_weight_descr
+
+inv_weight                      = 0.15
+inv_grid_x                      = 20
+inv_grid_y                      = 21
+
+cost                            = 410
+
+use_prolonged_effect            = true
+item_use_time                   = 4.5
+effector_blocking_group         = 10
+effects_list                    = weight_booster, dehidration, energy_restore
+
+weight_booster_dur              = 600.0
+weight_booster_is_booster       = true
+weight_booster_hit_absorbation_sect= nobonus_protection
+weight_booster_additional_weight= 16.0
+
+dehidration_affected_stat		= 6
+dehidration_rate            	= -0.01
+dehidration_dur       		    = 30.0
+
+energy_restore_affected_stat    = 7
+energy_restore_rate             = 0.03
+energy_restore_dur              = 10.0
+
+use_sound						=  
+
+;------------------
+[booster_antchemical]:booster_base
+$spawn                          = "items\drugs\med_booster_chemic"
+visual							= dynamics\weapons\wpn_eat\world_models\tabletki\tabletki_hemical_world.ogf
+
+description                     = enc_equipment_antchemical_booster
+inv_name                        = antchemical_booster
+inv_name_short                  = antchemical_booster
+
+inv_weight                      = 0.01
+inv_grid_x                      = 18
+inv_grid_y                      = 28
+
+cost                            = 190
+
+use_prolonged_effect            = true
+item_use_time                   = 4.5
+effector_blocking_group         = 11
+effects_list                    = antchemical, dehidration
+
+antchemical_dur                 = 240.0
+antchemical_is_booster          = true
+antchemical_hit_absorbation_sect= absorbation_antchemical_protection
+
+dehidration_affected_stat     = 6
+dehidration_rate              = -0.015
+dehidration_dur               = 20.0
+
+use_sound						=  
+
+bonus_chemical        = 50
+
+;------------------
+[booster_coagulant]:booster_base
+$spawn                          = "items\drugs\med_booster_bleed"
+visual							= dynamics\weapons\wpn_eat\world_models\tabletki\tabletki_coagulant_world.ogf
+
+class                           = II_BANDG
+
+description                     = enc_equipment_coagulant_booster
+inv_name                        = coagulant_booster
+inv_name_short                  = coagulant_booster
+
+inv_weight                      = 0.01
+inv_grid_x                      = 17
+inv_grid_y                      = 28
+
+cost                            = 130
+
+use_prolonged_effect            = true
+item_use_time                   = 4.5
+effector_blocking_group         = 12
+effects_list                    = bleeding_restore, dehidration
+
+bleeding_restore_affected_stat  = 2
+bleeding_restore_rate           = 0.04
+bleeding_restore_dur            = 120
+
+dehidration_affected_stat     = 6
+dehidration_rate              = -0.01
+dehidration_dur               = 15.0
+
+;------------------
+[booster_coagulant_mega]:booster_base
+$spawn                          = "items\drugs\med_booster_bleed_mega"
+visual							= dynamics\weapons\wpn_eat\world_models\tabletki\tabletki_coagulant_world.ogf
+
+class                           = II_BANDG
+
+description                     = enc_equipment_coagulant_booster2
+inv_name                        = coagulant_booster2
+inv_name_short                  = coagulant_booster2
+
+inv_weight                      = 0.01
+inv_grid_x                      = 20
+inv_grid_y                      = 29
+
+cost                            = 300
+
+use_prolonged_effect            = true
+item_use_time                   = 4.5
+effector_blocking_group         = 12
+effects_list                    = bleeding_restore, dehidration
+
+bleeding_restore_affected_stat  = 2
+bleeding_restore_rate           = 0.1
+bleeding_restore_dur            = 100
+
+dehidration_affected_stat     = 6
+dehidration_rate              = -0.03
+dehidration_dur               = 30.0
+
+
+
+[med_antialco]:booster_base
+$spawn                          = "items\drugs\med_antialco"
+visual							= dynamics\weapons\wpn_eat\world_models\drinks\wpn_med_antialco.ogf
+
+inv_name                        = st_med_antialco
+inv_name_short                  = st_med_antialco
+description                     = st_med_antialco_descr
+
+inv_weight                      = 0.15
+inv_grid_x                      = 16
+inv_grid_y                      = 22
+
+cost                            = 300
+
+item_use_time                   = 4.5
+effector_blocking_group         = 13
+
+effects_list                    = alkaseltzer_minus, dehidration
+
+alkaseltzer_minus_affected_stat	= 8
+alkaseltzer_minus_rate			= -0.022
+alkaseltzer_minus_dur			= 30.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.01
+dehidration_dur					= 10.0
+
+;------------------ Иммунитеты для эффектов бустеров ------------------
+
+[booster_protection_base] ;Default section for engine, don't rename
+burn_immunity                   = 1.0
+strike_immunity                 = 1.0
+shock_immunity                  = 1.0
+wound_immunity                  = 1.0
+radiation_immunity              = 1.0
+telepatic_immunity              = 1.0
+chemical_burn_immunity          = 1.0
+explosion_immunity              = 1.0
+fire_wound_immunity             = 1.0
+
+[absorbation_psy_protection]:booster_protection_base
+telepatic_immunity              = 0.5
+
+[absorbation_psy_protection_light]:booster_protection_base
+telepatic_immunity              = 0.8
+
+[absorbation_antchemical_protection]:booster_protection_base
+chemical_burn_immunity          = 0.5
+
+[absorbation_rad_protection]:booster_protection_base
+radiation_immunity              = 0.5
+
+[absorbation_psy_affect]:booster_protection_base
+telepatic_immunity              = 1.2
+
+[nobonus_protection]:booster_protection_base

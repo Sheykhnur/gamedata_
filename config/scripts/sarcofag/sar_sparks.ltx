@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+sar_sparks} sr_particle@sar_sparks %=play_snd(ambient\x16\x16_sparks) =play_snd(ambient\x18\cooling_stop)%
+
+[sr_particle@sar_sparks]
+name = explosions\expl_car_smoke_small
+path = sar_break
+mode = 2
+looped = false
+on_info = {+sar_power_level_restored} %=play_snd(ambient\random\gen_on)% nil

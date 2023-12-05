@@ -1,0 +1,410 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_sound.script
+ Description: Scheme: VA
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan  (Stohe) (update: Chugai Alexander (Chugai))
+ Editors    : gr1ph00n(26.09.2012)
+ Last edit  : 25.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+key_by_id  = {}
+group_idle = {}
+
+sound_object_by_theme = {} --/ table to store created sound objects.
+local sound_object_by_path = {}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+function get_sound(tTheme, tSnd, npc)
+	if tTheme then
+		if tTheme.exec then
+			get_sound(tTheme.types[tTheme.exec(tTheme.types, npc)], tSnd, npc) --/> recursive call
+		else
+			ASSERT(type(tTheme.max_ids) == 'table', "get_sound: wrong subtable 'max_ids' for NPC=[%s]", npc:name())
+			local npc_id = npc:id()
+			--/ reading of scheme settings
+			tSnd.into_id   = tTheme.into_id
+			tSnd.into_max  = tTheme.max_ids[npc_id].into_max
+			tSnd.into_last = nil
+			
+			tSnd.rnd_id   = tTheme.rnd_id
+			tSnd.rnd_max  = tTheme.max_ids[npc_id].rnd_max
+			tSnd.rnd_last = nil
+			
+			tSnd.min_snd = tTheme.min_snd
+			tSnd.max_snd = tTheme.max_snd
+			tSnd.rnd_snd = tTheme.rnd_snd
+		end
+	end
+end
+--/ Forming of character(npc) key
+function get_key(npc)
+	local npc_id = npc:id()
+	local tOverrides = xr_logic.generic_scheme_overrides(npc)
+	local key
+	if tOverrides and tOverrides.soundgroup then
+		key = tOverrides.soundgroup
+	else
+		key = tostring(npc_id)
+	end
+	--/ tables update
+	if key_by_id[npc_id] ~= key then
+		if group_idle[ key_by_id[npc_id] ] then
+			group_idle[ key_by_id[npc_id] ].num_in_group = group_idle[ key_by_id[npc_id] ].num_in_group - 1
+		end
+		if group_idle[key] then
+			group_idle[key].num_in_group = group_idle[key].num_in_group + 1
+		else
+			group_idle[key] = {num_in_group = 1}
+		end
+		key_by_id[npc_id] = key
+	end
+	return key --/>
+end
+
+-----------------------------------------------------------------------------------------------------------------------------------
+--/ Setting and parsing sound schemes to files.
+-----------------------------------------------------------------------------------------------------------------------------------
+function set_sound(oNPC, sSound, bNow, into_timeout)
+--	log("set_sound:NPC=[%s]~try to change SND=[%s]", oNPC:name(), sSound, "") --/#~#
+	local idNPC = oNPC:id()
+	local tStorSnd = db.sound[idNPC]
+	if not (tStorSnd and tStorSnd.theme == sSound) or bNow then
+		--[[
+		if tStorSnd then
+			log("set_sound: change [%s] to [%s] for [%s]", tStorSnd.theme, sSound, oNPC:name()) --/#~#
+		else
+			log("set_sound: [%s] for [%s]", sSound, oNPC:name()) --/#~#
+		end
+		--]]
+		--/ There need to parse names of theme's in their id
+		if not tStorSnd then
+			log("set_sound: [%s] for [%s] :<%s>", sSound, oNPC:name(), "Info") --/#~#
+			this.load_sound(oNPC) --/#fix#
+			tStorSnd = db.sound[idNPC]
+		end
+		if sSound then
+			tStorSnd.theme = sSound
+			tStorSnd.snd = parse_names(sSound)
+		else
+			tStorSnd.theme = ""
+			tStorSnd.snd = {}
+		end
+		if tStorSnd.last_snd then
+			local tSnd,iCnt = {}, 0
+			for _,v in pairs(tStorSnd.snd) do
+				tSnd[iCnt] = {}
+				this.get_sound(sound_theme.theme[v], tSnd[iCnt], oNPC)
+				iCnt = iCnt +1
+			end
+			for _,v in pairs(tSnd) do
+				if v.into_id then tStorSnd.last_snd[v.into_id] = nil end
+				if v.rnd_id  then tStorSnd.last_snd[v.rnd_id]  = nil end
+			end
+		else
+			tStorSnd.last_snd = {}
+		end
+		--/ Setting input pause
+		local key = get_key(oNPC)
+		group_idle[key].begin = time_global()
+		if into_timeout then
+			group_idle[key].idle = into_timeout
+		else
+			group_idle[key].idle = 0
+		end
+		
+		if bNow then
+			stop_play_sound(oNPC)
+		end
+	end
+end
+
+function set_sound_play(oNPC, sSound, iTimeOut)
+--	log("set_sound_play:=[%s],NPC=[%s]", sSound, oNPC and oNPC:name(), "") --/#~#
+	if type(sSound) ~= "string" then
+		abort("sound is not a string")
+	end
+	local tStorSnd = db.sound[oNPC:id()]
+	if not tStorSnd then
+		log("set_sound_play: [%s] for [%s] :<%s>", sSound, oNPC:name(), "Info") --/#~#
+		this.load_sound(oNPC) --/#fix#
+		db.sound[oNPC:id()].last_snd = {}
+	elseif not tStorSnd.last_snd then
+		tStorSnd.last_snd = {}
+	end
+	stop_play_sound(oNPC)
+	this.play_sound(oNPC, parse_names(sSound), iTimeOut)
+end
+
+function update(oNPC)
+	if oNPC:active_sound_count() ~= 0 then return end --/>
+	local idNPC = oNPC:id()
+	local tStorSnd = db.sound[idNPC]
+	--/ If scheme setted, need to play it.
+	--/ If not setted, need to play idle, with condition that we have no enemies and dangers.
+	if not (tStorSnd and tStorSnd.snd) then
+		return --/>
+	end
+	
+	local key = get_key(oNPC)
+	local tGroup = group_idle[key]
+	if tGroup == nil then
+		return --/>
+	end
+	
+	if tGroup.busy == true then
+		if tGroup.last_npc ~= idNPC then
+			return --/>
+		end
+		if oNPC:active_sound_count() == 0 then
+			tGroup.busy = false
+		end
+	end
+	
+	if tGroup.num_in_group > 1 and tGroup.last_npc == idNPC then
+		return --/>
+	end
+
+	if #tStorSnd.snd == 0 then
+		return --/>
+	end
+	
+--	log("update:key=[%s],begin=[%s],idle=[%s]", key, tGroup.begin, tGroup.idle) --/#~#
+	if not (tGroup.begin and tGroup.begin + tGroup.idle > time_global()) then
+		this.play_sound(oNPC, tStorSnd.snd)
+		tGroup.busy     = true
+		tGroup.begin    = time_global()
+		tGroup.last_npc = idNPC
+		if not tGroup.idle then
+			tGroup.idle = 0
+		end
+	end
+end
+
+function play_sound(oNPC, tThemes, iTimeOut)
+	--/ need to make a list of themes
+	local tSounds, iCnt = {}, 0
+	for _,v in pairs(tThemes) do
+		tSounds[iCnt] = {}
+		if sound_theme.theme[v] then
+			tSounds[iCnt].theme = v
+			this.get_sound(sound_theme.theme[v], tSounds[iCnt], oNPC)
+		else
+			log("play_sound: Illegal field=[%s] for NPC=[%s] :<%s>", v, oNPC:name(), "Error!")
+		end
+		iCnt = iCnt + 1
+	end
+	--table.print(tSounds) --/#~#
+	if iCnt == 0 then return end --/>
+	--/ from list of schemes select one.
+	local tSnd = tSounds[math.random(0, iCnt-1)]
+--	table.print(tSnd or {}, "play_sound:" .. oNPC:name())
+	if tSnd then
+		--table.print(tSnd) --/#~#
+		if tSnd.min_snd == nil then return end
+		local idNPC = oNPC:id()
+		local tGroup = group_idle[get_key(oNPC)]
+		tGroup.idle = math.random(tSnd.min_snd, tSnd.max_snd)*1000
+		if tGroup.last_snd	== nil then
+			tGroup.last_snd = {}
+		end
+		--/do we need to play into or rnd sounds
+		if tSnd.into_max and tSnd.into_max > 0 then
+			local tStorSnd = db.sound[idNPC]
+			if tStorSnd.last_snd[tSnd.into_id] == tSnd.into_max - 1 then
+				if tSnd.into_cycled == true then
+					tStorSnd.last_snd[tSnd.into_id] = nil
+				else
+					return --/>
+				end
+			end
+			
+			--/ playing input
+			if tStorSnd.last_snd[tSnd.into_id] == nil then tStorSnd.last_snd[tSnd.into_id] = -1 end
+	--		log("*SND* play seq [%d] for [%s]>", tStorSnd.last_snd[tSnd.into_id]+1, oNPC:name()) --/#~#
+			process_tutor_on_sound(tSnd.theme)
+			oNPC:play_sound(tSnd.into_id, 1, 0, 1, 0, tStorSnd.last_snd[tSnd.into_id]+1)
+			tStorSnd.last_snd[tSnd.into_id] = tStorSnd.last_snd[tSnd.into_id] + 1
+	--		log("*SND* play seq [%d] for [%s]<", tStorSnd.last_snd[tSnd.into_id], oNPC:name()) --/#~#
+--			return --/>
+		elseif tSnd.rnd_max ~= nil and tSnd.rnd_max > 0 then
+			--/ playing random
+			local s = 0
+			if tSnd.rnd_max == 1 then
+				s = 0
+			else
+				--/ If last time played same set of themes we need to consider last sound for group.
+				--if db.sound[idNPC].last_snd[tSnd.rnd_id] ~= nil then
+				if tGroup.last_snd[tSnd.rnd_id] ~= nil then
+					s = math.random(0, tSnd.rnd_max-2)
+					if s >= tGroup.last_snd[tSnd.rnd_id] then s = s + 1 end
+				else
+					s = math.random(0, tSnd.rnd_max-1)
+				end
+			end
+			
+			if iTimeOut == nil then
+				iTimeOut = 0
+			end
+	--		log("*SND* play rnd [%d][%d] for [%s], timeout=[%d]>", tSnd.rnd_id, s, oNPC:name(), iTimeOut) --/#~#
+			process_tutor_on_sound(tSnd.theme)
+			oNPC:play_sound(tSnd.rnd_id, iTimeOut+1, iTimeOut, 1, 0, s)
+			--db.sound[idNPC].last_snd[tSnd.rnd_id] = s
+			tGroup.last_snd[tSnd.rnd_id] = s
+		end
+	end
+end
+
+function get_last_IDS(npc, sTheme)
+	local tLastSounds = db.sound[npc:id()].last_snd
+	local tSnd = {}
+	if sound_theme.theme[sTheme] then
+		this.get_sound(sound_theme.theme[sTheme], tSnd, npc)
+	end
+--	log("get_last_IDS:LAST INTO ID for=[%s]=[%s],max=[%s]", sTheme, tLastSounds[tSnd.into_id], tSnd.into_max) --/#~#
+	return tLastSounds[tSnd.into_id], tSnd.into_max
+end
+
+function load_sound(npc)
+	sound_theme.load_sound(npc)
+end
+
+function process_tutor_on_sound(theme)
+end
+
+--/ Actor sound player
+local tActorSound = {}
+
+function set_actor_sound(sSound)
+--	log("*ACTOR SND* try to change SND to [%s]", sSound) --/#~#
+	if tActorSound.theme ~= sSound then
+		--/ There need to parse names of themes in there id's
+		if not sSound then sSound = "" end
+		tActorSound.theme = sSound
+		tActorSound.begin = nil
+		
+		this.set_actor_sound_factor(1)
+	end
+end
+
+function set_actor_sound_factor(iFactor)
+	local tTheme = sound_theme.actor_theme[tActorSound.theme]
+	if tTheme then
+		tActorSound.min_snd = tTheme.min_snd * iFactor
+		tActorSound.max_snd = tTheme.max_snd * iFactor
+	end
+end
+
+function update_actor()
+	local tTheme = sound_theme.actor_theme[tActorSound.theme]
+	if tTheme and next(tTheme.sounds) then
+		if not (tActorSound.begin and tActorSound.begin + tActorSound.idle > time_global()) then
+			tActorSound.begin = time_global()
+			--/ Need to play sound there
+			local oSnd = tTheme.sounds[math.random(#tTheme.sounds)]
+			if oSnd then
+				oSnd:play(db.actor, 0, sound_object.s2d)
+			end
+			tActorSound.idle = math.random(tActorSound.min_snd, tActorSound.max_snd)
+		end
+	end
+end
+
+--/ type = [random|seq|looped]
+function get_sound_object(theme, t_type)
+	if sound_theme.ph_snd_themes[theme] == nil then
+		abort("%s:get_sound_object:theme=[%s]", sModule, theme)
+		return --/>
+	end
+	
+	if not sound_object_by_theme[theme] then
+		sound_object_by_theme[theme] = {}
+	end
+	
+	if t_type == nil then
+		t_type = "random"
+	end
+	
+	--/ Selecting next ID
+	local play_id = -1
+	local iSize = #sound_theme.ph_snd_themes[theme]
+	if sound_object_by_theme[theme].last_id == nil then
+		if t_type == "random" then
+			if iSize >= 2 then
+				play_id = math.random(1, iSize)
+			else
+				play_id = 1
+			end
+		else
+			play_id = 1
+		end
+	else
+		if t_type == "random" then
+			if iSize >= 2 then
+				play_id = math.random(1, iSize - 1)
+				if play_id >= sound_object_by_theme[theme].last_id then play_id = play_id + 1 end
+			else
+				play_id = 1
+			end
+		else
+			if sound_object_by_theme[theme].last_id < iSize then
+				play_id = sound_object_by_theme[theme].last_id + 1
+			else
+				if t_type == "looped" then --/#fix#
+					play_id = 1
+				end
+			end
+		end
+	end
+	
+--	log("SOUND_OBJECT: selected id [%s] for theme [%s], type [%s], size [%s]", tostring(play_id), tostring(theme), tostring(type), iSize) --/#~#
+	if play_id == -1 then
+		return --/>
+	end
+	--/ Checking if we have created corresponding sound object or we need to create it
+	if sound_object_by_theme[theme][play_id] == nil then
+		if type(sound_theme.ph_snd_themes[theme][play_id]) == "table" then
+			sound_object_by_theme[theme][play_id.."_r"] = get_safe_sound_object(sound_theme.ph_snd_themes[theme][play_id][1].."_r")
+			sound_object_by_theme[theme][play_id.."_l"] = get_safe_sound_object(sound_theme.ph_snd_themes[theme][play_id][1].."_l")
+		else
+			sound_object_by_theme[theme][play_id] = get_safe_sound_object(sound_theme.ph_snd_themes[theme][play_id])
+		end
+	end
+	
+	sound_object_by_theme[theme].last_id = play_id
+	
+	--/ Return sound object
+	if type(sound_theme.ph_snd_themes[theme][play_id]) == "table" then
+		return sound_object_by_theme[theme][play_id.."_r"], sound_object_by_theme[theme][play_id.."_l"] --/>
+	else
+		return sound_object_by_theme[theme][play_id] --/>
+	end
+end
+
+--/ Wrap around function, which return sound object.
+function get_safe_sound_object(path)
+	if not sound_object_by_path[path] then
+		sound_object_by_path[path] = sound_object(path)
+	end
+	return sound_object_by_path[path] --/>
+end
+
+function stop_all_sound_object()
+	for _,v in pairs(sound_object_by_path) do
+		if v:playing() then
+			v:stop()
+		end
+	end
+end
+function clear_all_sound_object()
+	sound_object_by_theme = {}
+	sound_object_by_path = {}
+end
+--/ -----------------------------------------------------------------------------------------------

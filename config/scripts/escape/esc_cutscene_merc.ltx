@@ -1,0 +1,113 @@
+[hit@merc]
+on_info = %+esc_merc_attacked%
+
+[danger@esc_client]
+ignore_types = grenade, corpse, sound, hit
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+danger_inertion_time_grenade = 1
+danger_inertion_time_corpse  = 1
+danger_inertion_time_hit     = 1 
+danger_inertion_time_sound   = 1
+
+[danger@esc_client2]
+
+[combat_ignore@esc_client]
+
+[logic]
+active = walker@stay_merc
+on_hit = hit@merc
+combat_ignore = combat_ignore@esc_client
+invulnerable = true
+
+[walker@stay_merc]
+path_walk = basic_way_merc_client
+on_timer = 5 | %=shut_up_npc% remark@wait
+combat_ignore_cond = always
+danger = danger@esc_client
+
+[remark@wait]
+on_info = {+scene_start -client_teleported} remark@0
+on_info2 = {+client_teleported} walker@run_away3
+combat_ignore_cond = always
+danger = danger@esc_client
+target = basic_way_maddog, 0
+
+[remark@0]
+on_timer = 2000 | remark@1
+combat_ignore_cond = always
+danger = danger@esc_client
+target = basic_way_maddog, 0
+
+[remark@1]
+snd = esc_merc_dialog1
+combat_ignore_cond = always
+on_signal = sound_end | %+esc_merc_talk_1%
+on_info = {+esc_merc_talk_2} remark@2
+target = basic_way_maddog, 0
+danger = danger@esc_client
+
+[remark@2]
+snd = esc_merc_dialog3
+combat_ignore_cond = always
+on_signal = sound_end | remark@3
+danger = danger@esc_client
+target = basic_way_maddog, 0
+
+[remark@3]
+snd = esc_merc_dialog4
+combat_ignore_cond = always
+on_signal = sound_end | %+esc_merc_talk_4%
+on_info = {+esc_merc_talk_5} remark@4
+danger = danger@esc_client
+target = basic_way_maddog, 0
+
+[remark@4]
+snd = esc_merc_dialog6
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+esc_merc_talk_6%
+on_info = {+esc_merc_talk_7 -esc_cutscene_backdoor} remark@5, {+esc_merc_talk_7 +esc_cutscene_backdoor} remark@merc_back
+danger = danger@esc_client
+target = basic_way_maddog, 0
+
+[remark@5]
+target = merc_client_target, 0
+snd = esc_merc_dialog8
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@esc_client
+on_timer = 4000 | %+scene_end%
+on_info = {+esc_teleport_scene_end -client_teleported} %=teleport_npc(way_telep_client:client_teleported)%
+on_info2 = {+client_teleported} walker@run_away3
+
+[remark@merc_back]
+target = back_door_look, 0
+snd = esc_merc_dialog8
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@esc_client
+on_timer = 4000 | %+scene_end%
+on_info = {+esc_teleport_scene_end} %=release%
+on_info2 = {+client_teleported} walker@run_away3
+
+;on_timer = 1500 | walker@run_away_client_start %+esc_scene_runners%
+;[walker@run_away_client_start]
+;path_walk = esc_scene_client_away
+;combat_ignore_cond = always
+;danger = danger@esc_client
+;meet = no_meet
+;on_info = {+scene_end -client_teleported} %=teleport_npc(way_telep_client:client_teleported)%
+;on_info2 = {+client_teleported} walker@run_away3
+
+[walker@run_away3]
+path_walk = esc_client_merc_way
+combat_ignore_cond = always
+danger = danger@esc_client2
+meet = no_meet
+on_info = {=dist_to_actor_le(8)}  %=release%
+on_info2 = {+esc_got_maddog_stuff} %=release%
+on_signal = release_client | %=release%

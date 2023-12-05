@@ -1,0 +1,1279 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_logic.script
+ Description: Script switching logic
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey) af@svitonline.com
+ Editors    : barin, Gr1ph00n
+ Last edit  : 30.04.2017 [SkyLoader, lox] 06.2018
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tDbgName = {}
+local bDebug   = false --/ false|true enabled/disabled debug mode
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+function InitDebug()
+	if db.tDbgName then
+		tDbgName = db.tDbgName
+		bDebug = true
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function configure_schemes(obj, ini, ini_filename, stype, section_logic, gulag_name)
+	ASSERT(obj ~= nil, "configure_schemes: Gulag=[%s] object is nil", gulag_name)
+	--/ if we have personal logic - let's read:
+	if ini:section_exist(section_logic) then
+		local filename = Get_Cfg_String(ini, section_logic, "cfg")
+		if filename then
+			local ini = ini_file(filename)
+			if not ini:section_exist(section_logic) then
+				abort("logic file '%s' does not exist or invalid!", filename)
+				return
+			end
+			return configure_schemes(obj, ini_file(filename), filename, stype, section_logic, gulag_name) --/> recursieve call
+		end
+	elseif gulag_name then
+		abort("%s:configure_schemes:Obj=[%s] gulag=[%s] unable to find section=[%s] in=[%s]", sModule, obj and obj:name(), gulag_name, section_logic, ini_filename, "")
+	end
+	--/ deactivating of active scheme:
+	local stor = obj and db.storage[obj:id()]
+	ASSERT(stor ~= nil, "configure_schemes: Obj=[%s] hasn`t storage!", obj and obj:name(), "")
+	if stor.active_section then
+		this.issue_event(obj, stor[stor.active_scheme], "deactivate", obj)
+	end
+	--/ common schemes (restrictors don't have them):
+	if stype ~= modules.stype_restrictor then
+		if stor.log then log("configure_schemes:Obj=[%s] stype=[%s] section=[%s] :(%s)", obj:name(), stype, section_logic, ">") end --/#~#
+		--/ in a moment of activation schemes could work before were setted common schemes, need to disable them all:
+		this.disable_generic_schemes(obj, stype)
+		--/#?# clearing storage array of setted schemes
+		--stor.schemes = {}
+		--/ enabling of all common schemes (wounded, callback on hit and etc):
+		this.enable_generic_schemes(ini, obj, stype, section_logic)
+		--/ initializing of trading
+		if stype == modules.stype_stalker or stype == modules.stype_trader then
+			trade_manager.trade_init(obj, ini, section_logic)
+		end
+	end
+	--/ common parameters:
+	stor.ini            = ini
+	stor.ini_filename   = ini_filename
+	stor.stype          = stype
+	stor.section_logic  = section_logic
+	stor.gulag_name     = gulag_name or ""
+	stor.active_section = nil
+	stor.active_scheme  = nil
+	
+	return ini --/>
+end
+--/ array of names of common schemes by events and object types:
+local tGenericSchemes = {
+	enable = {
+		[modules.stype_heli]    = {"hit"},
+		[modules.stype_car]     = {"hit"},
+		[modules.stype_item]    = {"ph_on_hit"},
+		[modules.stype_mobile]  = {"mob_combat", "hit", "hear", "death", "mob_panic"}, --/#!# "mob_death" -> "death"
+		[modules.stype_trader]  = {"mob_trade"},
+		[modules.stype_stalker] = {"danger", "combat", "use", "info", "hit", "hear", "actor_dialogs", "wounded", "abuse", "heli_hunter", "death", "combat_ignore",
+		                           "ai_mgr_main", "meet", "ai_mgr"} --/#?# TODO: to figure out correct order...
+	},
+	reset = {
+		[modules.stype_mobile]  = {"hear", "death", "mob_panic"},
+		[modules.stype_stalker] = {"meet", "abuse", "wounded", "death", "hear", "danger", "combat_ignore"} --/#?# TODO: to figure out correct order...
+	},
+	disable = {
+		[modules.stype_heli]    = {"hit"},
+		[modules.stype_car]     = {"hit"},
+		[modules.stype_item]    = {"ph_on_hit"},
+		[modules.stype_mobile]  = {"mob_combat"},
+		[modules.stype_trader]  = {"mob_trade"},
+		[modules.stype_stalker] = {"combat", "use", "hit", "hear", "actor_dialogs", "heli_hunter", "combat_ignore"} --/#?# TODO: to figure out correct order...
+	}
+}
+local tDataGenericSchemes = { --/ for 'enable_generic_schemes'
+	["ph_on_hit"]     = { section = "on_hit",        always =  nil },
+	["hit"]           = { section = "on_hit",        always =  nil },
+	["mob_combat"]    = { section = "on_combat",     always =  nil },
+	["mob_panic"]     = { section = nil,             always =  nil },
+	["mob_death"]     = { section = "on_death",      always = true },
+	["mob_trade"]     = { section = "on_trade",      always =  nil },
+	["danger"]        = { section = "danger",        always = true }, --/#?#
+	["combat"]        = { section = "on_combat",     always = true },
+	["combat_ignore"] = { section = "combat_ignore", always = true }, --/#!#
+	["use"]           = { section = "on_use",        always =  nil },
+	["wounded"]       = { section = "wounded",       always = true },
+	["abuse"]         = { section = nil,             always = true },
+	["meet"]          = { section = "meet",          always = true },
+	["death"]         = { section = "on_death",      always = true },
+	["heli_hunter"]   = { section = "heli_hunter",   always = true },
+	["info"]          = { section = "info",          always =  nil },
+	["hear"]          = { section = "on_sound",      always =  nil },
+	["actor_dialogs"] = { section = "actor_dialogs", always =  nil, func = _G.schemes["actor_dialogs"].set_actor_dialogs },
+	["ai_mgr_main"]   = { section = nil, func = "stub"},
+	["ai_mgr"]        = { section = nil, func = "stub"}
+}
+
+--/ The purpose: for object disable all common schemes:
+function disable_generic_schemes(obj, stype)
+	for _,generic_scheme in ipairs(tGenericSchemes.disable[stype]) do
+		_G[ schemes[generic_scheme] ].disable_scheme(obj,generic_scheme)
+	end
+	if stype == modules.stype_stalker and db.la_ai_mgr then
+		la_ai_mgr.Disable_Schemes(obj) --/ disable dynamic AI-schemes
+	end
+end
+
+--/ The purpose: for object enables all common schemes (wounded, callback on hit and etc)
+function enable_generic_schemes(ini, obj, stype, section)
+	local t = nil
+	for _,generic_scheme in ipairs(tGenericSchemes.enable[stype]) do
+		t = tDataGenericSchemes[generic_scheme]
+		if t then
+			--ASSERT(_G.schemes[generic_scheme] ~= nil, "enable_generic_schemes:Obj=[%s] scheme=[%s]~not_loaded!", obj:name(), generic_scheme, "")
+			if not t.func then t.func = _G[ schemes[generic_scheme] ].set_scheme end
+			if t.section then
+				local scheme_section = Get_Cfg_String(ini, section, t.section)
+				if scheme_section then
+					t.func(obj, ini, generic_scheme, scheme_section) --/> call 'set_scheme'
+				elseif t.always then
+					t.func(obj, ini, generic_scheme, t.section) --/>
+				end
+			elseif not generic_scheme:match('^ai_mgr') then --/ "abuse"|"hear"|"mob_panic"
+				t.func(obj, ini, generic_scheme, section) --/>
+			elseif db.la_ai_mgr then --/ dynamic schemes
+				la_ai_mgr.Enable_Schemes(obj, ini, generic_scheme, section) --/>
+			end
+		end
+	end
+end
+
+--/ The purpose: right before enabling of new scheme
+--/ produce a reset of object condition (taking off callbacks, disabling talk)
+function reset_generic_schemes_on_scheme_switch(obj, scheme, section)
+	local stor = obj and db.storage[obj:id()]
+	if not (stor and stor.stype) then
+		--log("reset_generic_schemes_on_scheme_switch:Obj=[%s],scheme=[%s],stype=[NIL]~?:<%s>", obj and obj:name(), scheme, "Warning!")
+		return --/>
+	elseif stor.stype == modules.stype_restrictor then
+--		log("reset_generic_schemes_on_scheme_switch:Obj=[%s],scheme=[%s],stype=[%s]:<%s>", obj and obj:name(), scheme, stor.stype, "Info!") --/#~#
+		return --/>
+	end
+	--if stor.log then log("reset_generic_schemes_on_scheme_switch:Obj=[%s],scheme=[%s],section=[%s],stype=[%s]:(%s)", obj:name(), scheme, section, stor.stype, ">") end --/#~#
+	if stor.stype == modules.stype_item then
+		--/#x# disabled and moved to binder!
+		--obj:set_callback(callback.use_object, nil)
+		--obj:set_nonscript_usable(true)
+	elseif stor.stype == modules.stype_car then
+		--/#x# disabled cause not needed
+		--obj:set_callback(callback.use_object, nil)
+		--obj:set_nonscript_usable(true)
+		if get_clsid(obj) == clsid.car then --/ and type(obj.destroy_car) == 'function' --/#?# rudiment?
+			--log("reset_generic_schemes_on_scheme_switch:Obj=[%s],scheme=[%s],section=[%s],stype=[%s],clsid=[%s]:<%s>", obj:name(), scheme, section, stor.stype, obj:clsid(), "?")
+			obj:destroy_car()
+			mob_release(obj)
+		end
+	elseif stor.stype == modules.stype_trader then
+		xr_meet.dialog_manager_reset(obj, stor.stype)
+		mob_release(obj) --/#?#
+	elseif tGenericSchemes.reset[stor.stype] then
+		for _,generic_scheme in ipairs(tGenericSchemes.reset[stor.stype]) do
+			_G[ schemes[generic_scheme] ].reset_scheme(obj, scheme, stor, section)
+		end
+		if stor.stype == modules.stype_stalker then
+			--/#x# moved to xr_danger.script
+			--stalker_generic.reset_threshold(obj, scheme, stor, section)
+			--stalker_generic.reset_show_spot(obj, scheme, stor, section)
+			stalker_generic.reset_invulnerability(obj, scheme, stor, section)
+		elseif stor.stype == modules.stype_mobile then
+			mob_release(obj)
+			if get_clsid(obj) == clsid.bloodsucker_s then
+				obj:set_manual_invisibility(scheme ~= "nil")
+			end
+		end
+		if (restrictor_manager) then --/#+#
+			restrictor_manager.get_restrictor_manager(obj,stor):reset_restrictions(stor, section, stor.log)
+		end
+	end
+end
+
+--/ Called by binder with purpose to determine first active scheme
+function determine_section_to_activate(obj, ini, section_logic, actor)
+	if not ini:section_exist(section_logic) then
+		return "nil" --/>
+	end
+	local active_section_cond = this.cfg_get_condlist(ini, section_logic, "active", obj)
+	if active_section_cond then
+		local active_section = this.pick_section_from_condlist(actor, obj, active_section_cond.condlist)
+		if active_section then
+			return active_section --/>
+		end
+		abort("determine_section_to_activat:obj=[%s],section=[%s] has no conditionless else clause", obj:name(), section_logic, "")
+	else
+		abort("determine_section_to_activat:obj=[%s],section=[%s] unable to find field 'active'", obj:name(), section_logic, "")
+	end
+end
+
+--/ The purpose: Activates stated section.
+--/ If in current moment any of section already activated, report about error.
+function activate_by_section(obj, ini, section, bLoaded)
+	--if bDebug and tDbgName[obj:name()] then log("activate_by_section:Obj=[%s],Section=[%s],loaded=[%s]:[%s]", obj:name(), section, bLoaded, ">" ) end --/#~#
+	local stor = obj and  db.storage[obj:id()]
+	if not stor or stor.active_section or bLoaded == nil then
+		abort("%s:activate_by_section:Obj=[%s],section=[%s]=>[%s],loaded=[%s]", sModule, obj and obj:name(), section, stor and stor.active_section, bLoaded, "")
+		return --/>
+	end
+	if stor.log then log("activate_by_section:obj=[%s],ini=[%s],section=[%s],loaded=[%s]", obj:name(), ini, section, bLoaded, "") end --/#~#
+	if not bLoaded then
+		stor.activation_time = time_global()
+		stor.activation_game_time = game.get_game_time() --/ GAMETIME added by Stohe
+	end
+	
+	if not section or section == "nil" then
+		if not section or stor.log then
+			log("activate_by_section:Obj=[%s],loaded=[%s],section=[%s]:<%s>", obj:name(), bLoaded, tostring(section), "Info!")
+		end
+		stor.overrides = nil
+		this.reset_generic_schemes_on_scheme_switch(obj, "nil", "nil")
+		stor.active_section = nil
+		stor.active_scheme = nil
+	elseif ini:section_exist(section) then
+		local scheme = utils.get_scheme_by_section(section)
+		if scheme then
+			--/ loading of overrides:
+			stor.overrides = this.cfg_get_overrides(ini, section, obj)
+			--/ reset of common schemes:
+			this.reset_generic_schemes_on_scheme_switch(obj, scheme, section)
+			--/ script: file (pointer to table/namespace) of module, in which scheme actualized:
+			local script = _G.schemes[scheme] and _G[ schemes[scheme] ]
+			if script and script.set_scheme then
+				if stor.log then log("activate_by_section:Obj=[%s],fname=[%s],scheme=[%s],section=[%s],gulag=[%s]", obj:name(), schemes[scheme], scheme, section, stor.gulag_name, "") end --/#~#
+				script.set_scheme(obj, ini, scheme, section, stor.gulag_name)
+				stor.active_scheme = scheme
+				stor.active_section = section
+				if stor.stype == modules.stype_stalker then
+					utils.send_to_nearest_accessible_vertex(obj, obj:level_vertex_id())
+					this.issue_event(obj, stor[scheme], "activate_scheme", bLoaded, obj)
+				else
+					this.issue_event(obj, stor[scheme], "reset_scheme", bLoaded, obj)
+				end
+				if stor.log then log("activate_by_section:Obj=[%s],section=[%s],loaded=[%s]:{%s)", obj:name(), section, bLoaded, "<") end --/#~#
+			else
+				abort("%s:activate_by_section:can't_call:script=[%s]~set_scheme(%s)=[NIL]", sModule, tostring(schemes[scheme]), scheme)
+			end
+		else
+			abort("%s:activate_by_section:Obj=[%s]~unable_to_determine_scheme_name_from_section=[%s]", sModule, obj:name(), section)
+		end
+	elseif bLoaded and section == stor.loaded_active_section then --/#?# for compatitability with saves during logic change in configs...
+		log("activate_by_section:obj=[%s],loaded_active_section=[%s]~>NIL:<%s>", obj:name(), section, "Info!") --/#~#
+		stor.overrides = nil
+		this.reset_generic_schemes_on_scheme_switch(obj, "nil", "nil")
+		stor.active_section = nil
+		stor.active_scheme = nil
+		if stor.loaded_gulag_name then
+			smart_terrain.unregister_npc(obj)
+			local sobj = alife():object( obj:id() )
+			if sobj then
+				sobj:brain():update(false)
+			end
+		else
+			this.initialize_obj(obj, stor, false, db.actor, stor.stype)
+		end
+	else
+		abort("%s:activate_by_section:obj=[%s],section=[%s]<~does_not_exist:(%s)", sModule, obj:name(), section, bLoaded, "") --/#~#
+	end
+end
+
+function assign_storage_and_bind(obj, ini, scheme, section)
+	ASSERT(scheme ~= nil, "assign_storage_and_bind: for '%s' - '%s'", obj and obj:name(), tostring(section) )
+	ASSERT(obj ~= nil and obj:id() ~= idActor, "assign_storage_and_bind: Obj='%s' or to actor?", type(obj) )
+	local stor = db.storage[obj:id()]
+	local stor_scheme = stor[scheme]
+	if not stor_scheme then
+		stor_scheme = { npc = obj, actions = {} }
+		stor[scheme] = stor_scheme
+		--/ scheme starts first time - bind it
+		local script = _G.schemes[scheme] and _G[ schemes[scheme] ]
+		if script then
+			if bDebug and tDbgName[obj:name()] then
+				log("assign_storage_and_bind:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") --/#~#
+				stor_scheme.log = true --/ for debug!
+			end
+			--/#+# common storage of schemes (about what developers wrote long time ago...)
+			if not stor.schemes then stor.schemes = {} end
+			stor.schemes[scheme] = stor_scheme
+			--/<
+			script.add_to_binder(obj, ini, scheme, section, stor_scheme)
+		else
+			abort("assign_storage_and_bind:Obj=[%s], scheme=[%s]<~NOT_script!, section=[%s]", obj:name(), scheme, section, "")
+		end
+	end
+	stor_scheme.scheme  = scheme
+	stor_scheme.section = section
+	stor_scheme.ini     = ini
+	return stor_scheme --/>
+end
+
+--/ registering action (for reset event)
+function subscribe_action_for_events(obj, stor_scheme, action)
+--	if stor_scheme.log then log("subscribe_action_for_events:Obj=[%s]", obj:name(), "") end --/#~#
+	if stor_scheme and stor_scheme.actions and type(action) == 'userdata' then
+		stor_scheme.actions[action] = true
+	else
+		abort("subscribe_action_for_events:Obj=[%s] ~ wrong arguments [%s/%s]", obj:name(), type(stor_scheme), type(action), "")
+	end
+end
+--/ unregistering action (for reset event)
+function unsubscribe_action_from_events(obj, stor_scheme, action)
+	if stor_scheme then
+		if action and stor_scheme.actions then
+			stor_scheme.actions[action] = nil --/ clear
+		else
+			stor_scheme.actions = {} --/ full clear!
+		end
+	else
+		abort("unsubscribe_action_for_events:Obj=[%s] ~ wrong arguments [%s/%s]", obj and obj:name(), type(stor_scheme), type(action), "")
+	end
+end
+
+function issue_event(obj, stor_scheme, event_name, ...)
+	if stor_scheme and stor_scheme.actions then --/ stor_scheme - storage ñõåìû
+		if stor_scheme.log and event_name ~= "update" then log("issue_event:=[%s] Obj=[%s] #actions=[%s]", event_name, obj and obj:name(), table.size(stor_scheme.actions), "") end --/#~#
+		for action, enabled in pairs(stor_scheme.actions) do
+			if enabled and action[event_name] then
+				action[event_name](action, ...) --/ call function
+			end
+		end
+	end
+end
+
+function issue_event_schemes(obj, scheme_names, event_name, ...) --/#+#
+	ASSERT(obj ~= nil, "issue_event_schemes: '%s' Obj=NIL", tostring(event_name) )
+	ASSERT(type(scheme_names) == 'table', "issue_event_schemes: Obj=[%s] '%s' ~ wrong schemes", obj:name(), tostring(event_name) )
+	local stor = obj and db.storage[obj:id()]
+	if stor and stor.schemes then
+		if stor.log and event_name ~= "update" then log("issue_event_schemes:=[%s] Obj=[%s] #schemes=[%s]", event_name, obj:name(), #scheme_names, "") end --/#~#
+		for _,scheme in ipairs(scheme_names) do
+			if stor.log and event_name ~= "update" then log("issue_event_schemes:=[%s] Obj=[%s] scheme=[%s]/(%s)", event_name, obj:name(), scheme, stor.schemes[scheme] ~= nil, "") end --/#~#
+			this.issue_event(obj, stor.schemes[scheme], event_name, ...)
+		end
+	end
+end
+
+function pick_section_from_condlist(oActor, obj, tCondlist)
+	if type(tCondlist) ~= 'table' then
+		if tCondlist ~= nil then
+			log("pick_section_from_condlist:Obj=[%s],tCondlist=[%s/%s]~?:<%s>", obj and obj:name(), tostring(tCondlist), type(tCondlist), "Warning!") --/#~#
+		end
+		return nil --/>
+	end
+	--local bLog = bDebug and db.bGameLoaded and obj and tDbgName[obj:name()]
+	--if bLog then log("pick_section_from_condlist:Obj=[%s]:(%s)", obj:name(), ">") end --/#~#
+	local bInfopConditionsMet, idx0, idx, tCond, tInfoP
+	for idx0, tCond in ipairs(tCondlist) do
+		bInfopConditionsMet = true --/ by default we think that all conditions of switching ok done
+		for idx, tInfoP in ipairs(tCond.infop_check) do
+			if tInfoP.prob then
+				if tInfoP.prob < Random.I(100) then
+					bInfopConditionsMet = false --/ there is infoportion, but it shouldn't be present
+					break
+				end
+			elseif tInfoP.func then
+				local Func = nil
+				local module, fname = tInfoP.func:match('([%w|_]+)%.([%w|_]+)')
+--				log("pick_section_from_condlist:Chk:func=[%s],module=[%s],fname=[%s]", tInfoP.func, module, fname, "") --/#~#
+				if not fname then
+					Func = xr_conditions[tInfoP.func]
+				elseif module and _G[module] then
+					Func = _G[module][fname]
+--					log("pick_section_from_condlist:Chk:Obj=[%s],func=[%s],module=[%s],fname=[%s]", obj and obj:name(), tInfoP.func, module, fname, "") --/#~#
+				end
+				if not Func or type(Func) ~= 'function' then
+					--log("pick_section_from_condlist:Obj=[%s],func=[%s]~is_NOT_defined:file=[%s],func=[%s]:<%s>", obj and obj:name(), tInfoP.func, module, fname, "Warning!")
+					abort("%s:pick_section_from_condlist:Obj=[%s]:function=[%s]~is_not_defined_in xr_conditions.script", sModule, obj and obj:name(), tInfoP.func)
+					return nil --/>
+				end
+				if tInfoP.params then
+					if Func(oActor, obj, tInfoP.params) then
+						if not tInfoP.expected then
+							bInfopConditionsMet = false --/ there is infoportion, but it shouldn't be present
+							break
+						end
+					else
+						if tInfoP.expected then
+							bInfopConditionsMet = false --/ there is infoportion, but it shouldn't be present
+							break
+						end
+					end
+				elseif Func(oActor, obj) then
+					if not tInfoP.expected then
+						bInfopConditionsMet = false --/ there is infoportion, but it shouldn't be present
+						break
+					end
+				elseif tInfoP.expected then
+					bInfopConditionsMet = false --/ there is infoportion, but it shouldn't be present
+					break
+				end
+			elseif has_info(tInfoP.name) then
+				if not tInfoP.required then --/ infoportion should be not present
+					--if bLog then log("pick_section_from_condlist:Obj=[%s]:InfoP=[%s]~has, which is NOT needed:(%s):<%s>", obj:name(), tInfoP.name, has_info(tInfoP.name), "Info!") end --/#~#
+					bInfopConditionsMet = false --/ there is infoportion, but it should'nt be present
+					break
+				--elseif bLog then log("PASSED:actor has InfoP=[%s], which is needed [%s]", tInfoP.name, tostring(has_info(tInfoP.name))) --/#~#
+				end
+			else
+				if tInfoP.required then --/ infoportion should be
+					--if bLog then log("%s:pick_section_from_condlist:Obj=[%s]:InfoP=[%s]~not_has, which is needed:(%s):<%s>", sModule, obj:name(), tInfoP.name, has_info(tInfoP.name), "Info!") end --/#~#
+					bInfopConditionsMet = false --/ no infoportion, but it's needed
+					break
+				--elseif bLog then log("PASSED: actor not has InfoP=[%s], which is not needed=[%s]", tInfoP.name, has_info(tInfoP.name) ) --/#~#
+				end
+			end
+		end
+		--if bLog then log("infop_cond_met=[%s]", bInfopConditionsMet) end --/#~#
+		if bInfopConditionsMet then
+			--/ Conditions are met. Not matter from if section setted, need to set infoportions:
+			for idx, tInfoP in ipairs(tCond.infop_set) do
+				if not oActor then
+					abort(sModule..":Trying_to_set_infos_then_Actor_is_NIL")
+					return nil --/>
+				end
+				if tInfoP.func then
+					local Func = nil
+					local module, fname = tInfoP.func:match('([%w|_]+)%.([%w|_]+)')
+--				log("pick_section_from_condlist:Set:func=[%s],module=[%s],fname=[%s]", tInfoP.func, module, fname, "") --/#~#
+					if not fname then
+						Func = xr_effects[tInfoP.func]
+					elseif module and _G[module] then
+						Func = _G[module][fname]
+--						log("pick_section_from_condlist:Set:Obj=[%s],func=[%s],module=[%s],fname=[%s]", obj and obj:name(), tInfoP.func, module, fname, "") --/#~#
+					end
+					if not Func or type(Func) ~= 'function' then
+						--log("pick_section_from_condlist:Obj=[%s],func=[%s]~is_NOT_defined:file=[%s],func=[%s]:<%s>", obj and obj:name(), tInfoP.func, module, fname, "Warning!")
+						abort("%s:pick_section_from_condlist:Obj=[%s]:function=[%s]~is_not_defined_in`xr_effects.script`", sModule, obj and obj:name(), tInfoP.func )
+						return nil --/>
+					end
+					--if bLog then log("pick_section_from_condlist:NPC=[%s]~>Func=[%s].[%s]", obj:name(), module, fname or tInfoP.func ) end --/#~#
+					if tInfoP.params then
+						Func(oActor, obj, tInfoP.params)
+					else
+						Func(oActor, obj)
+					end
+				elseif tInfoP.required then
+					if not has_info(tInfoP.name) then
+						--if bLog then log("pick_section_from_condlist:NPC=[%s],Info=[%s]~>enabled", obj:name(), tInfoP.name ) end --/#~#
+						oActor:give_info_portion(tInfoP.name)
+					end
+				else
+					if has_info(tInfoP.name) then
+						--if bLog then log("pick_section_from_condlist:NPC=[%s],Info=[%s]~>disabled", obj:name(), tInfoP.name ) end --/#~#
+						oActor:disable_info_portion(tInfoP.name)
+					end
+				end
+			end
+			if tCond.section == "never" then
+				return nil --/>
+			end
+			if bLog then log("pick_section_from_condlist: [%s] :(%s)", tCond.section, "<") end --/#~#
+			return tCond.section --/>
+		end
+	end
+	--if bLog then log("pick_section_from_condlist:Obj=[%s]:(nil):(%s)", obj and obj:name(), "<") end --/#~#
+	return nil --/>
+end
+
+--/ Executes switching on specified section if setted.
+--/ If section == nil, left to work old section.
+function switch_to_section(obj, st, section)
+--	if st.log then log("switch_to_section:Obj=[%s],section=[%s]:(%s)", obj and obj:name(), section, ">") end --/#~#
+	if obj and section and section ~= "" then
+		local stor = db.storage[obj:id()]
+		if stor then
+			local active_section = stor.active_section
+			--/ call scheme:finalize()
+			if active_section then
+				if active_section == section then
+					return false --/>
+				end
+				this.issue_event(obj, stor[stor.active_scheme], "deactivate", obj)
+			end
+			--if st.log then log("switch_to_section: Obj=[%s], section=[%s] => [%s]", obj:name(), active_section, section, "") end --/#~#
+			stor.active_section = nil
+			stor.active_scheme  = nil
+			this.activate_by_section(obj, st.ini, section, false)
+			return true --/>
+		end
+		if section == "nil" then
+			--log("switch_to_section:Obj=[%s],section=[%s]:<%s>", obj:name(), section, "Info!") --/#~#
+			db.del_obj(obj)
+		end
+	end
+	return false --/>
+end
+
+function see_actor(npc)
+	return npc ~= nil and npc:alive() and npc:see(db.actor) --/>
+end
+
+function cond_name(sCond, sMask)
+	return sCond:match('^'..sMask..'%d*$' ) ~= nil --/>
+end
+
+--/ The purpose: trying to switch on other scheme/section, if worked at least one of switching conditions
+function try_switch_to_another_section(obj, st, oActor)
+	if not oActor then oActor = db.actor end
+	if not (obj and st and st.logic and oActor) then
+		local stor = obj and db.storage[obj:id()]
+		--log("try_switch_to_another_section:Obj=[%s],aScheme=[%s],Scheme=[%s],actor=(%s):<%s>", obj and obj:name(), stor and stor.active_scheme, stor and stor.scheme, oActor ~= nil, "Warning!") --/#~#
+		abort("%s:Can't_find_script_switching_information_in_storage:Obj=[%s],Schemes(%s)=[%s/%s]:<%s>", sModule, obj and obj:name(), st, st and st.active_scheme, st and st.scheme, "Error!")
+		return false --/>
+	elseif not next(st.logic) then
+		--if st.log then log("try_switch_to_another_section:Obj=[%s],scheme=[%s],#cond=0:(%s)", obj:name(), st.scheme, "<") end --/#~#
+		return false --/>
+	end
+	--if st.log then log("try_switch_to_another_section:Obj=[%s],scheme=[%s],#cond=[%s]:(%s)", obj:name(), st.scheme, table.size(st.logic), ">") end --/#~#
+	
+	local bSwitched = false
+	
+	for idx,c in pairs(st.logic) do
+		if bDebug then
+			if type(c.condlist) ~= 'table' then
+				--log("try_switch_to_another_section:Obj=[%s],condlist=[%s]:<%s>", obj:name(), c.name, "Warning!") --/#~#
+				table.print(c,"Logic|"..obj:name())
+			elseif type(c.name) ~= 'string' then
+				--log("try_switch_to_another_section:Obj=[%s],name=[%s]:<%s>", obj:name(), c.name, "Warning!") --/#~#
+				table.print(c,"Logic|"..obj:name())
+			end
+		end
+		--if st.log then log("try_switch_to_another_section:c.name=[%s],time=[%s]:[%s]", c.name, time_global(), ">") end --/#~#
+		--/ FIXME: not to dublicate names here, leave only one on_info, not to add multiple instances to list
+		if cond_name(c.name, "on_info") then
+			bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+		elseif cond_name(c.name, "on_signal") then --if st.log then log(":on_signal:c.v1=[%s]", c.v1) end --/#~#
+			if st.signals and st.signals[c.v1] then --if st.log then log("on_signal:c.v1=[%s],signalled=[%s]", c.v1, obj:name()) end --/#~#
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			--	if st.log and bSwitched then log("try_switch_to_another_section:Obj=[%s],on_signal=[%s]=>%s", obj:name(), c.v1, "TRUE") end --/#~#
+			--	if true and bSwitched then log("try_switch_to_another_section:Obj=[%s],on_signal=[%s]=>%s", obj:name(), c.v1, "TRUE") end --/#~#
+			end
+		elseif cond_name(c.name, "on_timer") then --if st.log then log(":on_timer=[%s]>=[%s]", time_global(), st.activation_time + c.v1 ) end --/#~#
+			local stor = db.storage[obj:id()]
+			if stor and time_global() >= stor.activation_time + c.v1 then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_game_timer") then --/#+# GAMETIME added by Stohe.
+			local stor = db.storage[obj:id()]
+			if stor and stor.activation_game_time and Get_PastSeconds(stor.activation_game_time) >= c.v1 then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_actor_dist_le") then --if st.log then log("dist=[%s],need<=[%s],see_actor=[%s]%s", distance_between(oActor, obj), c.v1, see_actor(obj), "") end --/#~#
+			if see_actor(obj) and distance_between(oActor, obj) <= c.v1 then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+				--if st.log then log("try_switch_to_another_section:Obj=[%s],on_actor_dist_le=(%s)", obj:name(), bSwitched) end --/#~#
+			end
+		elseif cond_name(c.name, "on_actor_dist_le_nvis") then
+			if distance_between(oActor, obj) <= c.v1 then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_actor_dist_ge") then
+			--/ THERE ON PURPOSE >, AND NOT >=,  cause it makes pair with on_actor_dist_le, where <=
+			if see_actor(obj) and distance_between(oActor, obj) > c.v1 then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_actor_dist_ge_nvis") then
+			--/ THERE ON PURPOSE >,AND NOT >=, ause it makes pair with on_actor_dist_le_nvis, where <=
+			if distance_between(oActor, obj) > c.v1 then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_actor_in_zone") then
+			if utils.npc_in_zone(oActor, db.zone_by_name[c.v1]) then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_actor_not_in_zone") then
+			if not utils.npc_in_zone(oActor, db.zone_by_name[c.v1]) then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_actor_inside") then
+			if utils.npc_in_zone(oActor, obj) then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+				--if st.log and bSwitched then log("try_switch_to_another_section:Obj=[%s],on_actor_inside=TRUE", obj:name()) end --/#~#
+			end
+		elseif cond_name(c.name, "on_actor_outside") then
+			if not utils.npc_in_zone(oActor, obj) then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_npc_in_zone") then
+			if utils.npc_in_zone(level.object_by_id(c.npc_id), db.zone_by_name[c.v2]) then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end
+		elseif cond_name(c.name, "on_npc_not_in_zone") then
+			if not utils.npc_in_zone(level.object_by_id(c.npc_id), db.zone_by_name[c.v2]) then
+				bSwitched = switch_to_section(obj, st, pick_section_from_condlist(oActor, obj, c.condlist))
+			end 
+		elseif cond_name(c.name, "invulnerable") then
+		 if IsStalker(obj) then
+			local bInvulnerable = pick_section_from_condlist(oActor, obj, c.condlist) == "true"
+			if obj:invulnerable() ~= bInvulnerable then
+				obj:invulnerable(bInvulnerable)
+			--log("try_switch_to_another_section:Obj=[%s],invulnerable changed=(%s)", obj:name(), bInvulnerable)
+			end
+		 end
+		else
+			abort("%s:try_switch_to_another_section:Obj=[%s]~unknown_condition=[%s]~encountered", sModule, obj and obj:name(), c and c.name )
+			return false --/>
+		end
+		
+		if bSwitched then
+			if st.log then log("try_switch_to_another_section:Obj=[%s],scheme=[%s],cond=[%s] ~> switched!", obj:name(), st.scheme, c.name ) end --/#~#
+			break
+		end
+	end
+	--if st.log and bSwitched then log("try_switch_to_another_section:Obj=[%s] => scheme=[%s],section=[%s]", obj:name(), st.scheme, st.section, "") end --/#~#
+	return bSwitched --/>
+end
+
+function is_active(obj, st)
+	local stor = obj and db.storage[obj:id()]
+	if stor and st and st.section then
+		--/ Current section active and didn't work any of switching conditions on other sections
+		--if st.log then log("is_active:NPC=[%s],scheme=[%s],section=[%s]<~is_act=[%s]", obj:name(), stor.active_scheme, st.section, stor.active_section == st.section, "") end --/#~#
+		return stor.active_section == st.section --/>
+	end
+	abort("%s:is_active:NPC=[%s],ActiveSection=[%s],st.section=NIL", sModule, obj and obj:name(), stor and stor.active_section, "")
+	return false --/>
+end
+
+function abort_syntax_error_in_cond(obj, section, field)
+	abort("%s:abort_syntax_error_in_cond:Obj=[%s],section=[%s],field=[%s]:<%s>", sModule, obj and obj:name(), section, field, "Error!")
+end
+
+function parse_infop1(rslt, str)
+	if str then
+		local infop_name, sign = nil, nil
+		local infop_n = 1
+		for s in string.gfind(str, "%s*([%-%+%~%=%!][^%-%+%~%=%!%s]+)%s*") do
+			sign = string.sub(s, 1, 1)
+			infop_name = string.sub(s, 2)
+			if sign == "+" then
+				rslt[infop_n] = { name = infop_name, required = true }
+			elseif sign == "-" then
+				rslt[infop_n] = { name = infop_name, required = false }
+			elseif sign == "~" then
+				rslt[infop_n] = { prob = tonumber(infop_name) }
+			elseif sign == "=" then
+				rslt[infop_n] = { func = infop_name, expected = true }
+			elseif sign == "!" then
+				rslt[infop_n] = { func = infop_name, expected = false }
+			else
+				abort_syntax_error_in_cond(nil, section, field)
+			end
+			infop_n = infop_n + 1
+		end
+	end
+end
+
+--/ a|b|c ==> {[1]='a',[2]='b',[3]='c'}
+function parse_params(str)
+	local tbl,idx = {},1
+	for field in str:gmatch('%s*([^|]+)%s*') do
+		tbl[idx] = field
+		idx = idx +1
+	end
+	return tbl --/>
+end
+--/ a:b:c ==> {a,b,c}
+function parse_func_params(str)
+	local tbl = {}
+	for field in str:gmatch('%s*([^:]+)%s*') do
+		table.insert(tbl, tonumber(field) or field)
+	end
+	return tbl --/>
+end
+
+--/ On input we have empty array and string like "  +infop1  -infop2 +infop3 ... "
+function parse_infop(tCond, sInfop)
+--	log("parse_infop:=[%s]:[%s]", sInfop, ">") --/#~#
+	if type(sInfop) == 'string' then
+		if sInfop == '' then return end --/>
+		local iIdx = 1
+		local sPart,sSign,sName,sParams,tParams
+		--/ splitting 'sInfop' on pieces '-','+','~','=','!' without space between them
+		for sPart in sInfop:gmatch('%s*([%-%+%~%=%!][^%-%+%~%=%!%s]+)%s*') do
+--			log("%s:parse_infop:(%s):Part=[%s]%s", sModule, iIdx, sPart, '') --/#~#
+			sSign,sName = sPart:match('^([+-~=!])%s*(.*)%s*$') --/ separating 1st simbol and remnant
+			if not (sSign and sName) then
+				log("parse_infop:Sign=[%s],Name=[%s],Part=[%s],Infop=[%s]:<%s>", sSign, sName, sPart, sInfop, "Error!")
+				abort_syntax_error_in_cond(nil, nil, sPart)
+			end
+			tParams = nil
+			if sName:match('%(') then --/ we have function desriptor?
+				--/ parsing name of function and parameters of function '(...)' ) (from 1t bracket to last!)
+				sName,sParams = sName:match('^%s*(.*)%s*%(%s*(.*)%s*%)$') --/ splitting name of function a descriptor of parameters
+				if string.trim(sParams) ~= ''  then
+					tParams = this.parse_func_params(string.trim(sParams))
+				else --/ parameters missing
+					tParams = {}
+				end
+--				log("parse_infop:(%s): s[%s], f[%s] <~ p[%s] : Part=[%s]%s", iIdx, sSign, sName, sParams, sPart, '') --/#~#
+			--else log("parse_infop:(%s):s[%s],n[%s]:Part=[%s]%s", iIdx, sSign, sName, sPart, '') --/#~#
+			end
+			if not sName then
+				log("parse_infop:Sign=[%s],Name=[%s],Part=[%s],Infop=[%s]:<%s>", sSign, sName, sPart, sInfop, "Error!")
+				abort_syntax_error_in_cond(nil, nil, sPart)
+			elseif tParams and sSign ~= '=' and sSign ~= '!' then --/ there are parameters, but no signal of function calling
+				log("parse_infop:Sign=[%s]~?,Name=[%s],Params=[%s],Part=[%s],Infop=[%s]:<%s>", sSign, sName, sParams, sPart, sInfop, "Warning!")
+			end
+			--/ saving
+			if     sSign == '+' then --/ set infoportion
+				tCond[iIdx] = { name = sName, required = true }
+			elseif sSign == '-' then --/ remove infoportion
+				tCond[iIdx] = { name = sName, required = false }
+			elseif sSign == '~' then --/ probability
+				tCond[iIdx] = { prob = tonumber(sName) }
+			elseif sSign == '=' then --/ with condition of executing function and with check of infoportion
+				tCond[iIdx] = { func = sName, params = tParams, expected = true }
+			elseif sSign == '!' then --/ with condition of NOT executing function and with check of infoportion
+				tCond[iIdx] = { func = sName, params = tParams, expected = false }
+			else
+				log("parse_infop:Sign=[%s],Name=[%s],Part=[%s],Infop=[%s]:<%s>", sSign, sName, sPart, sInfop, "Error!")
+				abort_syntax_error_in_cond(nil, nil, sSign)
+			end
+			iIdx = iIdx +1
+		end
+	elseif sInfop ~= nil then
+		--log("parse_infop:Infop=[%s]:<%s>", sInfop, "Error!")
+		abort_syntax_error_in_cond(nil, nil, tostring(sInfop))
+	end
+end
+
+--/ Parsing string "sString' like: {+infop1} section1 %-infop2%, {+infop3 -infop4} section2 ...
+--/ to table: {
+--/  [1] = { infop_check = { 1 = {"infop1" = true} }, infop_set = { 1 = {"infop2" = false } }, section = "section1" },
+--/  [2] = { infop_check = { 1 = {"infop3" = true}, 2 = {"infop4" = false} }, infop_set = {}, section = "section2" }, ... }
+function parse_condlist(Obj, section, sField, sCondlist)
+	--if bDebug and Obj and tDbgName[Obj:name()] then log("parse_condlist:Obj=[%s],section=[%s],field=[%s],condlist=[%s]:[%s]", Obj and Obj:name(), section, sField, sCondlist, ">") end --/#~#
+	if type(sCondlist) ~= 'string' then
+		if type(sCondlist) == 'number' and sCondlist == 100 then return {} end
+		if sField ~= "meet_dialog" then
+			log("parse_condlist:Obj=[%s],section=[%s],field=[%s],condlist=[%s]~?:<%s>", Obj and Obj:name(), section, sField, tostring(sCondlist), "Info, wrong cond!") --/#~#
+		end
+		return {} --/>
+	end
+	if sCondlist == "" then return {} end
+	local tCondlist,iIdx  = {},1
+	local sPart, sSection, sInfopCheck, sInfopSet, at, to
+	--/[0] Splitting to separate parts with commas:
+	for sPart in sCondlist:gmatch('%s*([^,]+)%s*') do --/ sPart - list of infoportions and section name (sSection), on which to switch
+		--/[1] Select list of infoportions to check (sInfopCheck = '{...}'):
+		at,sInfopCheck,to = sPart:match('%s*(.*)%{%s*(.*)%s*%}(.*)%s*') --/ '{...}'
+		if sInfopCheck then --log("parse_condlist:InfopCheck=[%s]", sInfopCheck) --/#~#
+			sPart = at..to --/ in remnants name of section and list of infoportions to set
+		--else --/ list of infoportions  to check was not setted so we delete nothing:
+		end --log("parse_condlist:1:Part=[%s]", sPart) --/#~#
+		
+		--/[2] Selecting list of infoportions to set (sInfopSet = '%...%') from remnant:
+		at,sInfopSet,to = sPart:match('%s*(.*)%%%s*(.*)%s*%%(.*)%s*') --/ '%...%'
+		if sInfopSet then --log("parse_condlist:InfopSet=[%s]", sInfopSet) --/#~#
+			sPart = at..to --/ in remnants name of section
+		--else --/ list of infoportions to set was not setted, so remnant name of section.
+		end --log("parse_condlist:2:Part=[%s]", sPart) --/#~#
+		
+		--/[3] cleaning name of section from spaces (trim):
+		sSection = sPart:match('^%s*(%S*)')
+		--/[4] creating table and remembering name of section (can be empty string: '')
+		if sSection then
+--			log("parse_condlist:Sec=[%s],Chk=[%s],Set=[%s], Part=[%s]:(%s)", sSection, sInfopCheck, sInfopSet, sPart, iIdx) --/#~#
+			tCondlist[iIdx] = { section = sSection, infop_check = {}, infop_set = {} }
+			if sInfopCheck then --/ parsing checked infoportions in string 'sInfopCheck' and filling array infop_check: {"infop_name" = true/false}.
+				this.parse_infop(tCondlist[iIdx].infop_check, sInfopCheck)
+			end
+			if sInfopSet then --/ same for setted infoportions in string 'sInfopSet' we filling array infop_set:
+				this.parse_infop(tCondlist[iIdx].infop_set, sInfopSet)
+			end
+			--/ moving to next ...
+			iIdx = iIdx +1
+		else
+			log("parse_condlist:check[%s],set[%s],part=[%s]:<%s>", sInfopCheck, sInfopSet, sPart, "Error!") --/#~#
+			abort_syntax_error_in_cond(Obj, section, sField)
+		end
+	end
+--	log("parse_condlist:Last_Field=[%s]:[%s]", sField, "<") --/#~#
+	if not tCondlist then
+		log("parse_condlist:Obj=[%s],section=[%s],field=[%s],condlist=[%s]~?:<%s>", Obj and Obj:name(), section, sField, tostring(sCondlist), "Info, tCondlist is nil!") --/#~#
+	elseif bDebug and Obj and tDbgName[Obj:name()] then
+		--log("parse_condlist:Obj=[%s],section=[%s],field=[%s]", Obj and Obj:name(), section, sField, "") --/#~#
+		table.print(tCondlist, sModule..":Condlist("..sField..")|"..Obj:name()) --/#~#
+	end
+	return tCondlist --/>
+end
+
+function get_condlist(params, section, field, obj, mode) --/#+# 0:number|1:string|2:2string|nil:condlist
+	if params then --/ string
+		params = this.parse_params(params) --/< table
+		if params[1] then
+			local tbl = {name = field}
+			if not mode then
+				tbl.condlist = params[1] ~= '' and this.parse_condlist(obj, section, field, params[1]) or {}
+			elseif mode ~= 2 then --/ 0:number , 1:string
+				if params[2] then
+					tbl.v1 = (mode == 1 and params[1]) or tonumber( params[1] )
+					tbl.condlist = params[2] ~= '' and this.parse_condlist(obj, section, field, params[2]) or {}
+				end
+			elseif params[2] and params[3] then --/ 2 strings
+				tbl.v1, tbl.v2 = params[1], params[2]
+				tbl.condlist = params[3] ~= '' and this.parse_condlist(obj, section, field, params[3]) or {}
+			end
+			if tbl.condlist then
+				return tbl --/>
+			end
+		end
+		--log("get_condlist:obj=[%s],section=[%s],field=[%s],mode=[%s]:<%s>", obj and obj:name(), section, field, mode, "Error!") --/#~#
+		abort_syntax_error_in_cond(obj, section, field)
+	end
+	return nil --/>
+end
+
+function cfg_get_condlist(ini, section, field, obj)
+	local params = Get_Cfg_String(ini, section, field)
+	if params then
+		params = this.parse_params(params)
+		if params[1] then
+			local tbl = {name = field}
+			if params[1] ~= '' then
+				tbl.condlist = this.parse_condlist(obj, section, field, params[1])
+			else
+				tbl.condlist = {}
+			end
+			return tbl --/>
+		end
+		log("cfg_get_condlist:obj=[%s],section=[%s],field=[%s]:<%s>", obj and obj:name(), section, field, "Error!") --/#~#
+		abort_syntax_error_in_cond(obj, section, field)
+	end
+	return nil --/>
+end
+
+function cfg_get_number_and_condlist(ini, section, field, obj)
+	local params = Get_Cfg_String(ini, section, field)
+	if params then
+		params = this.parse_params(params)
+		if params[1] and params[2] then
+			local tbl = {name = field, v1 = tonumber(params[1])}
+			if params[2] ~= '' then
+				tbl.condlist = this.parse_condlist(obj, section, field, params[2])
+			else
+				tbl.condlist = {}
+			end
+			return tbl --/>
+		end
+		--log("cfg_get_number_and_condlist:Obj=[%s],section=[%s],field=[%s]:<%s>", obj and obj:name(), section, field, "Error!") --/#~#
+		abort_syntax_error_in_cond(obj, section, field)
+	--else log("cfg_get_number_and_condlist:Obj=[%s],section=[%s],field=[%s]~>NIL:<%s>", obj and obj:name(), section, field, "Info!") --/#~#
+	end
+	return nil --/>
+end
+
+function cfg_get_string_and_condlist(ini, section, field, obj)
+	local params = Get_Cfg_String(ini, section, field)
+	if params then
+		params = this.parse_params(params)
+		if params[1] and params[2] then
+			local tbl = {name = field, v1 = params[1]}
+			if params[2] ~= '' then
+				tbl.condlist = this.parse_condlist(obj, section, field, params[2])
+			else
+				tbl.condlist = {}
+			end
+			return tbl --/>
+		end
+		log("cfg_get_string_and_condlist:Obj=[%s],section=[%s],field=[%s]:<%s>", obj and obj:name(), section, field, "Error!") --/#~#
+		abort_syntax_error_in_cond(obj, section, field)
+	--else log("cfg_get_string_and_condlist:Obj=[%s],section=[%s],field=[%s]~>NIL:<%s>", obj and obj:name(), section, field, "Info!") --/#~#
+	end
+	return nil --/>
+end
+
+function cfg_get_two_strings_and_condlist(ini, section, field, obj)
+--	log("cfg_get_two_strings_and_condlist:ini=[%s],section=[%s],field=[%s],Obj=[%s]", ini, section, field, obj:name()) --/#~#
+	local params = Get_Cfg_String(ini, section, field)
+	if params then
+		params = this.parse_params(params)
+		if params[1] and params[2] and params[3] then
+			local tbl = {name = field, v1 = params[1], v2 = params[2]}
+			if params[3] ~= '' then
+				tbl.condlist = this.parse_condlist(obj, section, field, params[3])
+			else
+				tbl.condlist = {}
+			end
+			return tbl --/>
+		end
+		printf("cfg_get_two_strings_and_condlist:Obj=[%s],section=[%s],field=[%s]:<%s>", obj and obj:name(), section, field, "Error!") --/#~#
+		abort_syntax_error_in_cond(obj, section, field)
+	--else log("cfg_get_two_strings_and_condlist:Obj=[%s],section=[%s],field=[%s]~>NIL:<%s>", obj and obj:name(), section, field, "Info!") --/#~#
+	end
+	return nil --/>
+end
+
+function cfg_get_overrides(ini, section, obj)
+	if not (section and section ~= "") then return {} end --/>
+	local overrides = {}
+	overrides.on_combat     = cfg_get_condlist(ini, section, "on_combat", obj)
+	overrides.combat_type   = cfg_get_condlist(ini, section, "combat_type", obj)
+	overrides.combat_ignore = cfg_get_condlist(ini, section, "combat_ignore_cond", obj)
+	
+	overrides.combat_ignore_keep_when_attacked = Get_Cfg_Bool(ini, section, "combat_ignore_keep_when_attacked", false)
+	overrides.companion_enabled                = Get_Cfg_Bool(ini, section, "companion_enabled", false)
+	
+	local str = Get_Cfg_String(ini, section, "heli_hunter")
+	if str then
+		overrides.heli_hunter = this.parse_condlist(obj, section, "heli_hunter", str)
+	end
+	if section:match('kamper') then
+		overrides.soundgroup = Get_Cfg_String(ini, section, "kamp_name")
+	elseif section:match('kamp') then
+		overrides.soundgroup = Get_Cfg_String(ini, section, "center_point")
+	else
+		overrides.soundgroup = Get_Cfg_String(ini, section, "soundgroup")
+	end
+	return overrides --/>
+end
+
+function cfg_get_npc_and_zone(ini, section, field, obj)
+--	log("cfg_get_npc_and_zone:Obj=[%s],section=[%s],field=[%s]:[%s]", obj:name(), section, field, ">") --/#~#
+	local tbl = cfg_get_two_strings_and_condlist(ini, section, field, obj)
+	if tbl and alife() then
+		local iStoryId = tonumber(tbl.v1)
+		local soObj = iStoryId and alife():story_object(iStoryId)
+		if soObj then --log("cfg_get_npc_and_zone:Obj=[%s],section=[%s],field=[%s],StoryId=[%s]", obj:name(), section, field, iStoryId, "") --/#~#
+			tbl.npc_id = soObj.id
+		else
+			tbl.npc_id = -1
+			local tDoneSid = { --/ already worked restrictors
+				--[024] = "esc_prison",  --/ bandit on Cordon: "esc_wounded_follower_2"
+			}
+			if iStoryId and tDoneSid[iStoryId] and tDoneSid[iStoryId] == obj:name() then --/#fix?#
+				--log("cfg_get_npc_and_zone:Obj=[%s],section=[%s],field=[%s]~can't_use_StoryId=[%s/%s]:Cid=[%s]:<%s>!", obj:name(), section, field, iStoryId, tbl.v2, obj:clsid(), "Info!")
+				soObj = alife():object(obj:id())
+				if soObj and soObj:section_name() == "space_restrictor" then
+					alife():release(soObj, true) --/ removing
+				else
+					Add_MapSpot(obj:id(), "red_location", "DoneRestrictor:"..obj:name()) --/ for debug!
+					db.iErrIdx = 1 --/ error in codes
+				end
+			else
+				Add_MapSpot(obj:id(), "red_location", "BadRestrictor:"..obj:name()) --/ for debug!
+				--log("cfg_get_npc_and_zone:Obj=[%s],section=[%s],field=[%s],v1=[%s],v2[%s]:Cid=[%s]:<%s>!", obj:name(), section, field, tbl.v1, tbl.v2, obj:clsid(), "Error!")
+				--abort("%s:cfg_get_npc_and_zone:Obj=[%s],section=[%s],field=[%s]~there_is_no_object_with_StoryId=[%s]:<%s>", sModule, obj:name(), section, field, tbl.v1, "Error!")
+				db.iErrIdx = 1 --/ error in codes
+			end
+		end
+	elseif tbl then
+		tbl.npc_id = -1
+		--log("cfg_get_npc_and_zone:Obj=[%s],section=[%s],field=[%s]~can't use StoryId without simulation:<%s>", obj and obj:name(), section, field, "Warning!")
+	end
+	return tbl --/>
+end
+
+local tSwitchConditions = {
+	{field = "on_actor_dist_le"     , func = this.cfg_get_number_and_condlist},
+	{field = "on_actor_dist_le_nvis", func = this.cfg_get_number_and_condlist},
+	{field = "on_actor_dist_ge"     , func = this.cfg_get_number_and_condlist},
+	{field = "on_actor_dist_ge_nvis", func = this.cfg_get_number_and_condlist},
+	{field = "on_signal"            , func = this.cfg_get_string_and_condlist},
+	{field = "on_info"              , func = this.cfg_get_condlist           },
+	{field = "invulnerable"         , func = this.cfg_get_condlist           },
+	{field = "on_timer"             , func = this.cfg_get_number_and_condlist},
+	{field = "on_game_timer"        , func = this.cfg_get_number_and_condlist},
+	{field = "on_actor_in_zone"     , func = this.cfg_get_string_and_condlist},
+	{field = "on_actor_not_in_zone" , func = this.cfg_get_string_and_condlist},
+	{field = "on_actor_inside"      , func = this.cfg_get_condlist           },
+	{field = "on_actor_outside"     , func = this.cfg_get_condlist           },
+	{field = "on_npc_in_zone"       , func = this.cfg_get_npc_and_zone       },
+	{field = "on_npc_not_in_zone"   , func = this.cfg_get_npc_and_zone       }
+}
+function cfg_get_switch_conditions(ini, section, obj, bLog)
+	--if bLog then log("cfg_get_switch_conditions:Obj=[%s],section=[%s]:(%s)", obj and obj:name(), section, ">") end --/#~#
+	if not (section and section ~= "") then return {} end --/>
+	local tbl, idx, cnt, cond = {}, 1, 1, nil
+	for _,v in ipairs(tSwitchConditions) do
+		cnt = 1
+		cond = v.func(ini, section, v.field, obj)
+		while cond ~= nil do
+			tbl[idx] = cond
+			cnt, idx = cnt +1, idx +1
+			cond = v.func(ini, section, v.field..cnt, obj)
+		end
+	end
+	return tbl --/> table switch conditions
+end
+
+--/ Retuns a reference on overrides, registered in active on current moment section,
+--/ or nil, if not one of sections is active, or no overrides.
+function generic_scheme_overrides(obj)
+	return obj and db.storage[obj:id()].overrides
+end
+
+--/ -----------------------------------------------------------------
+--/ Functions of script mode (for mobs/cars)
+--/ -----------------------------------------------------------------
+--/ object is taken under script control
+function mob_capture(obj, flg_reset, script_name)
+	if obj and flg_reset ~= nil then
+		if not script_name then script_name = sModule end
+		if flg_reset == true then --/ with restarting:
+			if obj:get_script() then
+				obj:script(false, obj:get_script_name())
+			end
+			obj:script(true, script_name)
+		elseif not obj:get_script() then
+			obj:script(true, script_name)
+		end
+	--else
+		--log("mob_capture:Obj=[%s]/[%s]/[%s]:wrong_parameters:<%s>", obj and obj:name(), flg_reset, script_name, "Warning!")
+	end
+end
+--/ check: object under control of script?
+function mob_captured(obj)
+	return obj ~= nil and obj:get_script() --/>
+end
+--/ object released in 'alife'
+function mob_release(obj, script_name)
+	if obj and obj:get_script() then
+		--obj:script(false, script_name or obj:get_script_name())
+		obj:script(false, obj:get_script_name())
+	end
+end
+
+--/#~# --------------------------------------------------------
+local tPstorFunc_r = {
+	[0] = "r_float",   --/ 4 bytes
+	[1] = "r_stringZ", --/ N + 1 byte
+	[2] = "r_bool",    --/ 1 byte
+	[3] = "r_u16", --/#+# 2 bytes
+	[4] = "r_s16"  --/#+# 2 bytes (sign)
+}
+local tPstorFunc_w = {
+	["number"]  = {0, "w_float"},   --/ 4 bytes
+	["string"]  = {1, "w_stringZ"}, --/ N + 1 byte
+	["boolean"] = {2, "w_bool"},    --/ 1 byte
+	["u16"]     = {3, "w_u16"}, --/#+# 2 bytes
+	["s16"]     = {4, "w_s16"}  --/#+# 2 bytes (sign)
+}
+
+function pstor_is_registered_type(sType) --/#-# rudiment
+	return tPstorFunc_w[sType] ~= nil --/>
+end
+
+--/ record in object storage
+function pstor_store(obj, var_name, value)
+	local stor = obj and db.storage[obj:id()]
+	if stor and var_name then --/#fix#
+		if not stor.pstor then stor.pstor = {} end
+		if value == nil then --/ clearing
+			if stor.pstor[var_name] ~= nil then
+				stor.pstor[var_name] = nil
+			end
+			return --/>
+		elseif tPstorFunc_w[type(value)] then
+			stor.pstor[var_name] = value
+			return --/>
+		end
+		--log("pstor_store:Var(%s)=[%s]<~Not_Registered_Type=[%s]:<%s>", var_name, value, type(value), "Warning!")
+	end
+	abort("%s:pstor_store:Obj=[%s],VarName=[%s]:<%s>", sModule, obj and obj:name(), var_name, "Error!")
+end
+--/ reading from object storage
+function pstor_retrieve(obj, var_name, def_value)
+	local stor = obj and db.storage[obj:id()]
+	if stor and stor.pstor and stor.pstor[var_name] ~= nil then
+		return stor.pstor[var_name] --/>
+	end
+	return def_value --/>
+end
+
+function save_logic(obj, packet)
+	local stor = db.storage[obj:id()]
+	packet:w_s32( (stor.activation_time and stor.activation_time - time_global()) or time_global() )
+	utils.w_CTime(packet, stor.activation_game_time or game.get_game_time()) --/ GAMETIME added by Stohe.
+end
+
+function load_logic(obj, reader)
+	local stor = db.storage[obj:id()]
+	stor.activation_time = reader:r_s32() + time_global()
+	local oCTime = utils.r_CTime(reader) --/ GAMETIME added by Stohe.
+	if type(oCTime) == 'number' then
+		stor.activation_game_time = game.get_game_time()
+	else
+		stor.activation_game_time = oCTime or game.get_game_time()
+	end
+end
+
+function pstor_save_all(obj, packet)
+	local obj_id = obj:id()
+	local pstor = db.storage[obj_id].pstor
+	if not pstor then
+		db.storage[obj_id].pstor = {}
+		packet:w_u32(0) --/< count variables
+		return --/>
+	elseif next(pstor) == nil then --/ empty
+		packet:w_u32(0) --/< count variables
+		return --/>
+	end
+	
+	local iCnt = table.size(pstor)
+	packet:w_u32(iCnt) --/< count variables
+	
+	local tFunc,oFunc --/#+#
+	for k,v in pairs(pstor) do
+		tFunc = tPstorFunc_w[type(v)]
+		if tFunc then
+			--/#+# if 'number' - let's check: if enough 2 bytes (16 bits)?
+			if tFunc[1] == 0 and v < 65536 and v > -32768 and v == math.modf(v) then
+				if v >= 0 then --/ not negative number?
+					tFunc = tPstorFunc_w["u16"] --log("%s:pstor_save_all:=[%s]:%s=[%s]:[%s]", sModule, obj:name(), k, v, "u16") --/#~#
+				else --/ save and symbol
+					tFunc = tPstorFunc_w["s16"] --log("%s:pstor_save_all:=[%s]:%s=[%s]:[%s]", sModule, obj:name(), k, v, "s16") --/#~#
+				end
+			end
+			packet:w_stringZ(k) --/< name variable
+			packet:w_u8(tFunc[1]) --/< type variable
+			oFunc = packet[ tFunc[2] ] --/ write-function
+			oFunc(packet,v) --/< value variable
+		else
+			log("pstor_save_all:obj=[%s],id=[%s],type=[%s]<~?:k=[%s],v=[%s],:(%s):<%s>", obj:name(), obj_id, type(v), k, v, iCnt, "Error!")
+			abort(sModule..":pstor_save_all:not_registered_type=["..type(v).."]<~encountered")
+			return --/>
+		end
+	end
+end
+
+function pstor_load_all(obj, reader)
+	local obj_id = obj:id()
+	local pstor = db.storage[obj_id].pstor
+	if not pstor then
+		pstor = {}
+		db.storage[obj_id].pstor = pstor
+	end
+	
+	local iCnt = reader:r_u32() --/< count variables
+	if iCnt == 0 then
+		return --/>
+	elseif iCnt > 32 and obj_id ~= idActor then --/#fix#
+		log("pstor_load_all:Obj=[%s],Cnt=[%d]>32:<%s>", obj:name(), iCnt, "Warning!")
+		iCnt = 32
+	end
+	
+	local sVarName,iType,sFunc,oFunc
+	for i=1, iCnt do
+		sVarName = reader:r_stringZ() --/< name variable
+		iType    = reader:r_u8()      --/< type variable
+		--/#+#
+		sFunc = tPstorFunc_r[iType] --/ name read-function
+		if sFunc then
+			oFunc = reader[sFunc] --/ read-function
+			pstor[sVarName] = oFunc(reader) --/< value variable
+		else
+			log("pstor_load_all:Obj=[%s/%d],Type(%d/%d)=[%d]<~?:Var(%s)=[%s]:<%s>", obj:name(), obj_id, i, iCnt, iType, sVarName, tostring(pstor[sVarName]), "Error!")
+			pstor[sVarName] = nil
+		end
+	end
+end
+
+function save_obj(obj, packet)
+	set_save_marker(packet, "save", false, sModule, obj)
+	local stor = db.storage[obj:id()]
+	packet:w_stringZ(stor.ini_filename or "")
+	packet:w_stringZ(stor.section_logic or "")
+	packet:w_stringZ(stor.active_section or "")
+	packet:w_stringZ(stor.gulag_name or "")
+	
+	this.save_logic(obj, packet)
+	
+	if stor.active_scheme then
+		this.issue_event(obj, stor[stor.active_scheme], "save")
+	end
+	
+	this.pstor_save_all(obj, packet)
+	set_save_marker(packet, "save", true, sModule, obj)
+end
+
+function load_obj(obj, reader)
+	set_save_marker(reader, "load", false, sModule, obj)
+	local ini_filename = reader:r_stringZ()
+	if ini_filename == "" then
+		ini_filename = nil
+	end
+	local section_logic = reader:r_stringZ()
+	if section_logic == "" then
+		section_logic = nil
+	end
+	local active_section = reader:r_stringZ()
+	if active_section == "" then
+		active_section = "nil"
+	end
+	local gulag_name = reader:r_stringZ()
+	if gulag_name == "" then
+		gulag_name = nil
+	end
+	
+	local stor = db.storage[obj:id()]
+	stor.loaded_ini_filename   = ini_filename
+	stor.loaded_section_logic  = section_logic
+	stor.loaded_active_section = active_section
+	stor.loaded_gulag_name     = gulag_name
+	
+	this.load_logic(obj, reader)
+	this.pstor_load_all(obj, reader)
+	set_save_marker(reader, "load", true, sModule, obj)
+end
+
+function get_customdata_or_ini_file(obj, file_name, bLog)
+	if file_name == "<customdata>" then
+		local char_ini = obj and obj:spawn_ini()
+		if bLog then log("get_customdata_or_ini_file:Obj=[%s],file(customdata)=[%s]", obj and obj:name(), (char_ini and file_name) or "dummy", "") end --/#~#
+		return char_ini or ini_file("scripts\\dummy.ltx") --/>
+	elseif file_name:match('^*') then --/ starts with '*' - dynamic ltx
+		local gulag_name, gulag_type = file_name:match('^*(%S+)[*](%S+)')
+		if not (gulag_name and gulag_type) then
+			log("get_customdata_or_ini_file:DynLtx:Obj=[%s],gulag=[%s],type=[%s]:<%s>", obj and obj:name(), gulag_name, gulag_type , "Warning!") --/#~#
+		elseif bLog then
+			log("get_customdata_or_ini_file:DynLtx:Obj=[%s],gulag=[%s],type=[%s]", obj and obj:name(), gulag_name, gulag_type , "") --/#~#
+		end
+		return gulag_tasks.loadLtx( gulag_name, gulag_type ) --/>
+	elseif file_name ~= xr_gulag.gulag_tasks_file_name and file_name == "misc\\gulag_tasks.ltx" then --/#+#
+		file_name = xr_gulag.gulag_tasks_file_name
+	end
+	--if bLog then log("get_customdata_or_ini_file:Obj=[%s],file=[%s]", obj and obj:name(), file_name, "") end --/#~#
+	return ini_file(file_name) --/>
+end
+
+function initialize_obj(obj, stor, bLoaded, actor, stype, cfg_filename)
+	if obj then
+		local bLog = (stor and stor.log) or (bDebug and tDbgName[obj:name()])
+		if bLoaded then --/ loaded from save
+			local ini_filename = stor and stor.loaded_ini_filename
+			if ini_filename then
+				local ini = this.get_customdata_or_ini_file(obj, ini_filename, bLog)
+				ini = this.configure_schemes(obj, ini, ini_filename, stype, stor.loaded_section_logic, stor.loaded_gulag_name)
+				if bLog then log("initialize_obj:Obj=[%s],stype=[%s],ini_fn=[%s],section=[%s]=>[%s]", obj:name(), stype, ini_filename, stor.loaded_section_logic, stor.loaded_active_section, "") end --/#~#
+				this.activate_by_section(obj, ini, stor.loaded_active_section, true)
+			end
+			if bLog then log("initialize_obj:=[%s],stype=[%s],ini_fn=[%s]:loaded:(%s)", obj:name(), stype, ini_filename, "<") end --/#~#
+		else
+			if bLog then log("initialize_obj:=[%s],stype=[%s],ini_cfg=[%s]", obj:name(), stype, cfg_filename, "") end --/#~#
+			local ini_filename = cfg_filename or "<customdata>"
+			local ini = this.get_customdata_or_ini_file(obj, ini_filename, bLog)
+			ini = this.configure_schemes(obj, ini, ini_filename, stype, "logic")
+			local active_section = this.determine_section_to_activate(obj, ini, "logic", actor)
+			this.activate_by_section(obj, ini, active_section, false)
+			--if bLog then log("initialize_obj:=[%s],stype=[%s],ini_fn=[%s]/(%s),active_section=[%s]:(%s)", obj:name(), stype, ini_filename, ini ~= nil, active_section, "<") end --/#~#
+		end
+	--else
+		--log("initialize_obj:Obj=NIL,stype=[%s],loaded=(%s),ini_cfg=[%s]:<%s>", stype, bLoaded, cfg_filename, "Warning!")
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

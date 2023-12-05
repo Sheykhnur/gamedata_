@@ -1,0 +1,196 @@
+
+-- file: la_math.script
+-- author: Gr1ph00n
+-- date: 2008-12-2007
+-- edited by: Gr1ph00n
+-- last edited: 2008-12-2007
+
+class "Plane"
+
+function Plane:__init(v0, v1, v2)
+	self.a = 0
+	self.b = 0
+	self.c = 0
+	self.d = 0
+--	self:Set(v0, v1, v2)
+end
+
+function Plane:__finalize()
+	self.a = nil
+	self.b = nil
+	self.c = nil
+	self.d = nil
+end
+-- crea il piano usando 3 punti
+function Plane:Set(v0, v1, v2)
+	local ab = v2:sub(v0)
+	local ac = v1:sub(v0)
+	local cross = vector():set(ab.y * ac.z - ab.z * ac.y, ab.z * ac.x - ab.x * ac.z,  ab.x * ac.y - ab.y * ac.x)
+	cross:normalize() 
+	self.a = cross.x
+	self.b = cross.y
+	self.c = cross.z
+	self.d = -(self.a * v0.x + self.b * v0.y + self.c * v0.z)
+end
+-- ritorna la distanza tra un punto esterno al piano e il piano stesso
+function Plane:DistancePlanePoint(p)
+	return ((math.abs(self.a * p.x + self.b * p.y + self.c * p.z + self.d)) / math.sqrt(self.a * self.a + self.b * self.b + self.c * self.c))
+end
+-- ritorna i 4 parametri direttori del piano
+function Plane:GetPlane()
+	return self.a, self.b, self.c, self.d
+end
+
+function Plane:GetTPlane()
+	return {a = self.a, b = self.b, c = self.c, d = self.d}
+end
+
+function Plane:SetPlane(A, B, C, D)
+	self.a, self.b, self.c, self.d = A, B, C, D
+end
+
+function Plane:Normal()
+	return vector():set(self.a, self.b, self.c)
+end
+
+function Plane:IsPerpendicularTo(plane)
+	return self:Normal():dot_product(plane:Normal()) == 0
+end
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+class "Line3D"
+
+function Line3D:__init()
+	self.a = vector()
+	self.m = vector()
+end
+
+function Line3D:__finalize()
+	self.a, self.m = nil, nil
+end
+
+function Line3D:Set(p1, p2)
+	self.a = vector_copy_by_val(p1)
+	self.m = vector_copy_by_val(p2:sub(p1))
+end
+
+function Line3D:GetCoeff()
+	return self.m
+end
+
+function Line3D:GetA()
+	return self.a
+end
+
+function Line3D:ResetLine(A, M)
+	self.a, self.m = A, M
+end
+
+function Line3D:GetDistancePointLine(p1)
+	local a = vector_copy_by_val(self.a)
+	local diff = p1:sub(a)
+	local m = self.m
+	local l = m:dot_product(m)
+	local t, v = nil, nil
+	if l > 0.0 then
+		t = m:dot_product(diff)
+		t = t/l
+		diff = diff:sub(m):mul(t)
+		return math.sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z)
+	else
+		v = p1:sub(self.b)
+		return math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+	end
+end
+		
+
+function Line3D:IsPerpendicularTo(line1)
+--	return self:GetCoeff() == (1.0/line1:GetCoeff()) --  it's for 2d
+	return self:GetCoeff():dot_product(line1:GetCoeff()) == 0
+end
+
+
+function Line3D:ClosestPoint(p1)
+	local m = self.m
+	local diff = p1:sub(m)
+	local l = m:dot_product(m)
+	local t = 0.0
+	if l > 0.0 then
+		t = m:dot_product(diff)
+		t = t/l
+	end
+	return t
+end
+
+function Line3D:GetPointAt(t)
+	local mt = self.m:mul(t)
+	local ret = self.b:add(mt)
+	return ret
+end
+
+		
+--[[
+	calcolare punti medi M1 e M2 degli assi delle ruote;
+	calcolare retta r passante per i 2 punti medi;
+	calcolare piano passante per M2 e perpendicolare ad r;
+	
+]]
+
+function GetDistanceActorPlane(m1, m2)
+	local line = Line3D()
+	local plane = Plane()
+	local p = vector_copy_by_val(m2)
+	local q = vector_copy_by_val(m1)
+	line:Set(p, q)
+	local m = vector_copy_by_val(line:GetCoeff())
+	local a = m.x
+	local b = m.y
+	local c = m.z
+	local d = (m.x)*(-m2.x) + (m.y)*(-m2.y) + (m.z)*(-m2.z)
+	plane:SetPlane(a, b, c, d)
+	local dist = plane:DistancePlanePoint(db.actor:bone_position("bip01_head"))
+	--parser.dbg_print(" m1 = (%f, %f, %f); m2 = (%f, %f, %f); coeff = (%f,%f,%f); \n parametri piano :: a = %f :: b = %f :: c = %f :: d = %f",
+		--			  m1.x, m1.y, m1.z, m2.x, m2.y, m2.z, m.x, m.y, m.z, a, b, c, d)
+	return dist	
+end
+	
+function vector_copy_by_val(vec)
+	local x, y, z = vec.x, vec.y, vec.z
+	return vector():set(x, y, z)
+end
+
+--[[
+	- formule matematiche prese da libri vari
+	- c'avete i commenti in russo e in inglese, io li metto in italiano xD
+]]
+
+
+--/ A random floating-point number with guassian distribution
+function random_gaussian(mean, stdev)
+    return  math.sqrt(-2 * math.log(math.random())) *
+			math.cos(2 * math.pi * math.random()) *
+			stdev +
+			mean
+end
+
+--/ A random floating-point number with skewed guassian distribution
+function random_gaussian_skew(mean, stdev, alpha)
+	if alpha == nil then
+		return random_gaussian(mean, stdev)
+	end
+	local sigma = alpha / math.sqrt(1 + math.pow(alpha, 2))
+	local u0 = random_gaussian(0, 1)
+	local v = random_gaussian(0, 1)
+	local u1 = (sigma * u0 + math.sqrt(1 - math.pow(sigma, 2)) * v)
+	if u0 < 0 then
+	  u1 = -u1
+	end
+	return u1 * stdev + mean
+end
+
+--/ Clamp given number between min and max
+function clamp(value, min, max)
+	return math.min(math.max(value, min), max)
+end

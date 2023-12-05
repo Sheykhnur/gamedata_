@@ -1,0 +1,191 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_hear.script
+ Description: Hear Callback
+ Copyright  : 2009 © GSC Game World
+ Author     : based on: GSC Game World
+ Last edit  : 18.06.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tSoundDangers = {
+	--["ANM"] = true,
+	["WPN_hit"]    = true,
+	["MST_attack"] = true,
+	["MST_damage"] = true
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function get_sound_type(iSoundType, npc)
+	local sType = "NIL"
+	--
+	local enable_bit = function(value,bit)
+		return bit_and(value,bit) == bit --/>
+	end
+	--
+	if enable_bit(iSoundType, snd_type.weapon) then
+		if enable_bit(iSoundType, snd_type.weapon_shoot) then
+			sType = "WPN_shoot"
+		elseif enable_bit(iSoundType, snd_type.weapon_empty) then
+			sType = "WPN_empty"
+		elseif enable_bit(iSoundType, snd_type.weapon_bullet_hit) then
+			sType = "WPN_hit"
+		elseif enable_bit(iSoundType, snd_type.weapon_reload) then
+			sType = "WPN_reload"
+		else
+			sType = "WPN"
+		end
+	elseif enable_bit(iSoundType, snd_type.item) then
+		if enable_bit(iSoundType, snd_type.item_pick_up) then
+			sType = "ITM_pckup"
+		elseif enable_bit(iSoundType, snd_type.item_drop) then
+			sType = "ITM_drop"
+		elseif enable_bit(iSoundType, snd_type.item_hide) then
+			sType = "ITM_hide"
+		elseif enable_bit(iSoundType, snd_type.item_take) then
+			sType = "ITM_take"
+		elseif enable_bit(iSoundType, snd_type.item_use) then
+			sType = "ITM_use"
+		else
+			sType = "ITM"
+		end
+	elseif enable_bit(iSoundType, snd_type.monster) then
+		if enable_bit(iSoundType, snd_type.monster_die) then
+			sType = "MST_die"
+		elseif enable_bit(iSoundType, snd_type.monster_injure) then
+			sType = "MST_damage"
+		elseif enable_bit(iSoundType, snd_type.monster_step) then
+			sType = "MST_step"
+		elseif enable_bit(iSoundType, snd_type.monster_talk) then
+			sType = "MST_talk"
+		elseif enable_bit(iSoundType, snd_type.monster_attack) then
+			sType = "MST_attack"
+		elseif enable_bit(iSoundType, snd_type.monster_eat) then
+			sType = "MST_eat"
+		else
+			sType = "MST"
+		end
+	elseif enable_bit(iSoundType, snd_type.anomaly) then
+		if enable_bit(iSoundType, snd_type.anomaly_idle) then
+			sType = "ANM_idle" --/461708165
+		else
+			sType = "ANM"
+		end
+		if db.is_dbg1 then log("get_sound_type:=[%s]=>[%s]:NPC=[%s]:(%s)", iSoundType, sType, npc and npc:name(), "anomaly") end --/#~#
+	end
+	return sType --/>
+end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+--/ Action
+--/ -----------------------------------------------------------------------------------------------
+class "action_process_hear"
+--/ ---------------------------------------------
+function action_process_hear:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ CALLBACK
+--/------------------------------------------------------------------
+function action_process_hear:hear_callback(npc, who, iSoundType, vSoundPosition, iSoundPower)
+	local npc_id = npc and npc:id()
+	local stor = npc_id and db.storage[npc_id]
+	if not (stor and who and who:id() ~= npc_id) then return end --/>
+	local sSoundType = this.get_sound_type(iSoundType,npc)
+	if sSoundType and sSoundType ~= "NIL" then
+		if stor.stype == modules.stype_stalker then
+			event("npc_hear"):trigger({obj=npc,who=who,s_type_idx=iSoundType, s_pos=vSoundPosition, s_pwr=iSoundPower, s_type=sSoundType}) --/#+#>
+		else
+			event("mob_hear"):trigger({obj=npc,who=who,s_type_idx=iSoundType, s_pos=vSoundPosition, s_pwr=iSoundPower, s_type=sSoundType}) --/#+#>
+		end
+		--[[
+		if tSoundDangers[sSoundType] and not xr_wounded.is_wounded(npc) and vSoundPosition:distance_to_sqr(npc:position()) < 900 then
+			if xr_danger.set_timer then xr_danger.set_timer(npc,3000) end --/TODO: finish!
+			log("hear_callback:NPC=[%s]<~Who=[%s],sType=[%s],pwr=[%s],dist=[%s]", npc:name(), who and who:section(), sSoundType, ShortStr(iSoundPower), ShortStr(vSoundPosition:distance_to(npc:position())) )
+		end
+		--]]
+		if stor.hear_sounds then
+			local iStoryId = get_object_story_id(who:id()) or "any"
+			if stor.hear_sounds[iStoryId] and stor.hear_sounds[iStoryId][sSoundType] then
+--			log("hear_callback:NPC=[%s]<~Who=[%s],sType=[%s],pwr=[%s],pos=[%s]", npc:name(), who and who:name(), sSoundType, ShortStr(iSoundPower), vSoundPosition ) --/#~#
+				local tHearSoundParams = stor.hear_sounds[iStoryId][sSoundType]
+				if tHearSoundParams and tHearSoundParams.dist >= vSoundPosition:distance_to(npc:position()) and iSoundPower >= tHearSoundParams.power then
+					local sNewSection = xr_logic.pick_section_from_condlist(db.actor, npc, tHearSoundParams.condlist)
+					if sNewSection then
+						if sNewSection ~= "" then
+							xr_logic.switch_to_section(npc, stor.ini, sNewSection)
+						else
+							stor.hear_sounds[iStoryId][sSoundType] = nil
+						end
+					end
+				end
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.action = this.action_process_hear(npc, st)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ registration action, for a call of method 'callback'
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	--/ fot debug:
+	if st.log then log("set_scheme: NPC=[%s],scheme=[%s],section=[%s],gulag=[%s]", npc:name(), scheme, section, gulag_name, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function reset_scheme(npc, scheme, stor, section)
+	local ini = stor and stor.ini
+	if ini:section_exist(section) and npc then
+		local iCnt = ini:line_count(section)
+		for i=0,iCnt-1 do
+			local result, idx, value = ini:r_line(section,i,"","")
+			if idx and idx:match('^on_sound%d*$' ) then
+				--/ example: on_sound3 = actor|MST_step|25|0.1| mob_home@attack %+infoportion%
+				local p = utils.parse_params(value)
+				if p[5] then --/#?#
+					if not stor.hear_sounds then stor.hear_sounds = {} end
+					if not stor.hear_sounds[p[1]] then stor.hear_sounds[p[1]] = {} end
+					stor.hear_sounds[p[1]][p[2]] = {
+						dist     = tonumber(p[3]),
+						power    = tonumber(p[4]),
+						condlist = xr_logic.parse_condlist(npc, "hear_callback", "hear_callback", p[5])
+					}
+					if db.is_dbg1 then log("reset_hear_callback:NPC=[%s],scheme=[%s],section=[%s],on_sound(%s)=[%s]", npc:name(), scheme, section, idx, value, "") end --/#~#
+				else
+					log("reset_hear_callback:NPC=[%s],scheme=[%s],section=[%s],on_sound(%s)=[%s]~?:<%s>", npc:name(), scheme, section, idx, value, "Warning!") --/#~#
+				end
+			end
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	--/ when scheme disabled, need to get rid of subscribtion, so 'hear callback' will stop sending:
+	--obj:set_callback(callback.sound, nil)
+	local st = obj and db.storage[obj:id()][scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(obj, st, st.action)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

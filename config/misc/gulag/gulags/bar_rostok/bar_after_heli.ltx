@@ -1,0 +1,101 @@
+******************************state 0**********************************
+
+[logic@bar_after_heli_hole_watcher_heli]
+active = walker@bar_after_heli_hole_watcher_heli
+combat_ignore = true
+
+[walker@bar_after_heli_hole_watcher_heli]
+path_walk = watcher_heli_wait
+path_look = watcher_heli_look
+def_state_standing = assault
+combat_ignore_cond = {!hit_by_actor}
+
+[logic@bar_after_heli_petrenko_heli]
+active = walker@bar_after_heli_petrenko_heli
+combat_ignore = true
+
+[walker@bar_after_heli_petrenko_heli]
+path_walk = petrenko_heli_wait
+path_look = petrenko_heli_look
+def_state_standing = guard
+combat_ignore_cond = {!hit_by_actor}
+meet = meet@bar_petrenko_heli
+invulnerable = true
+
+[meet@bar_petrenko_heli]
+use = true
+use_wpn = true
+victim 	= 15| actor
+victim_wpn = 15| actor
+meet_state = 10|hello|5|nil
+meet_state_wpn = 10|hello|5|nil
+;meet_dialog	= bar_petrenko_heli_talk
+combat_ignore_cond = always
+
+[logic@bar_after_heli_assistant_guard_heli]
+active = walker@bar_after_heli_assistant_guard_heli
+combat_ignore = true
+
+[walker@bar_after_heli_assistant_guard_heli]
+path_walk = assistant_heli_wait
+path_look = assistant_heli_look
+def_state_standing = assault
+combat_ignore_cond = {!hit_by_actor}
+
+
+;*****************************state 1************************************************
+
+[logic@bar_after_heli_kamper1]
+active = kamper@bar_after_heli_kamper1
+
+[kamper@bar_after_heli_kamper1]
+path_walk = walk1
+path_look = look1
+kamp_name = kamp1
+
+[logic@bar_after_heli_kamper2]
+active = kamper@bar_after_heli_kamper2
+
+[kamper@bar_after_heli_kamper2]
+path_walk = walk2
+path_look = look2
+kamp_name = kamp1
+
+[logic@bar_after_heli_kamper_petrenko]
+active = kamper@bar_after_heli_kamper3
+
+[kamper@bar_after_heli_kamper3]
+path_walk = walk3
+path_look = look3
+kamp_name = kamp1
+meet = meet@bar_petrenko_heli
+on_info = {+bar_outskirts_barman_meet_start} kamper@bar_after_heli_kamper3_2
+invulnerable = true
+
+[kamper@bar_after_heli_kamper3_2]
+path_walk = walk3
+path_look = look3
+kamp_name = kamp1
+
+;********************************state 2********************************************
+
+[logic@bar_after_heli_off1]
+active = walker@bar_after_heli_off1
+
+[walker@bar_after_heli_off1]
+path_walk = watcher_heli_wait
+path_look = watcher_heli_look
+
+[logic@bar_after_heli_petrenko_off]
+active = walker@bar_after_heli_petrenko_off
+
+[walker@bar_after_heli_petrenko_off]
+path_walk = petrenko_heli_wait
+path_look = petrenko_heli_look
+
+[logic@bar_after_heli_off2]
+active = walker@bar_after_heli_off2
+
+[walker@bar_after_heli_off2]
+path_walk = assistant_heli_wait
+path_look = assistant_heli_look

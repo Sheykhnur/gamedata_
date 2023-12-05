@@ -1,0 +1,521 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_radar.script
+ Description: Gulags Radar
+ Copyright  : 2013 © LA-team
+ Author     : loxotron
+ Editors    : vintar, loxotron(23.02.2013)
+ Last edit  : 11.11.2017 (by lox) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	radar_monolith_base      = {comm = {"monolith", "stranger"}, out_rest = "radar_monolith_base_out_rest"},
+	radar_monolith_lager1    = {},
+	radar_monolith_lager2    = {comm = {"monolith"}},
+	radar_monolith_lager3    = {comm = {"monolith"}},
+	radar_monolith_lager4    = {comm = {"monolith"}},
+	rad_bunker_payment_lager = {},
+	rad_lager_to_pri         = {comm = {"monolith"}},
+	rad_bunker_lager         = {},
+	rad_area_after           = {comm = {"monolith"}},
+	rad_area_lager           = {comm = {"monolith", "milstalker"}, out_rest = "radar_area_lager_out_rest"},
+	--/ for monsters ------------------------------
+	rad_monsters_npp         = {comm = {"boar", "dog", "pseudodog", "flesh"}},
+	rad_dogs_camp            = {comm = {"dog"}},
+	rad_snorks_camp          = {comm = {"snork"}},
+	rad_boars_nest           = {comm = {"boar"}},
+	rad_dogs_lair            = {comm = {"dog", "pseudodog"}},
+	rad_poltergeist          = {comm = {"poltergeist"}},	--/polter_tele_outdoor
+	rad_snorks_lair_base     = {comm = {"snork"}},
+	rad_evil_controller      = {comm = {"controller"}},
+	--rad_mutant_lager         = {comm = {"fracture"}, out_rest = "rad_mutant_lager_out_rest"},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ ---------------------------------------------
+--/ radar monolith base
+--/ ---------------------------------------------
+gulags.radar_monolith_base.monolith_leader_pred   = function(info) return info.name == "radar_monolith_base_captain" end
+gulags.radar_monolith_base.monolith_follower_pred = function(info) return info.name == "radar_monolith_follower" end
+gulags.radar_monolith_base.cleaner_pred           = function(info) return info.name == "radar_monolith_cleaner" end
+gulags.radar_monolith_base.outside_pred1          = function(info) return info.name == "radar_monolith_outside1" end
+gulags.radar_monolith_base.outside_pred2          = function(info) return info.name == "radar_monolith_outside2" end
+
+gulags.radar_monolith_base.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader",         0, 10, {0}, squad, groups[2], "", gulags.radar_monolith_base.out_rest, nil, type, gulags.radar_monolith_base.monolith_leader_pred))
+	table.insert(sj, gulag_tasks.getJob("follower",       0, 10, {0}, squad, groups[1], "", gulags.radar_monolith_base.out_rest, nil, type, gulags.radar_monolith_base.monolith_follower_pred))
+	table.insert(sj, gulag_tasks.getJob("weapon_cleaner", 0, 10, {0}, squad, groups[1], "", gulags.radar_monolith_base.out_rest, nil, type, gulags.radar_monolith_base.monolith_cleaner_pred))
+	table.insert(sj, gulag_tasks.getJob("outside1",       0, 10, {0}, squad, groups[1], "", gulags.radar_monolith_base.out_rest, nil, type, gulags.radar_monolith_base.outside_pred1))
+	table.insert(sj, gulag_tasks.getJob("outside2",       0, 10, {0}, squad, groups[1], "", gulags.radar_monolith_base.out_rest, nil, type, gulags.radar_monolith_base.outside_pred2))
+	for i = 1, 12 do
+		table.insert(sj, gulag_tasks.getJob("troops" .. i,  0, 10,   {0}, squad, groups[2], "", gulags.radar_monolith_base.out_rest, nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("worship" .. i, 0, 10, {0}, squad, groups[1], "", gulags.radar_monolith_base.out_rest, nil, type, on_level_pred))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i,  0, 5, {0}, squad, groups[1], "", gulags.radar_monolith_base.out_rest, nil, type, on_level_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i,   0, 5, {0}, squad, groups[1], "", gulags.radar_monolith_base.out_rest, nil, type, on_level_pred))
+	end
+
+end
+
+--/ ---------------------------------------------
+--/ radar lager 1
+--/ ---------------------------------------------
+gulags.radar_monolith_lager1.comm = function(npc_community, gulag_type, npc_rank, se_obj)
+	if has_info("deactivate_radar_done") then
+		if npc_community == "stalker" then
+			return true
+		end
+	elseif npc_community == "monolith" then
+		return true
+	end
+	return false
+end
+
+gulags.radar_monolith_lager1.rad_follower_pred = function(info) return info.name == "radar_monolith_follower" end
+
+gulags.radar_monolith_lager1.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("follower", 0, 6, {0}, squad, groups[1], "", "", nil, type, gulags.radar_monolith_lager1.rad_follower_pred))
+	table.insert(sj, gulag_tasks.getJob("patrol",   0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i, 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ radar mutant lager
+--/ ---------------------------------------------
+--[[
+gulags.rad_mutant_lager.rad_mutant_pred = function(info) return info.name == "rad_mutant_trader" end
+
+gulags.rad_mutant_lager.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("walk" .. i, 0, 5, {0}, squad, groups[1], "", gulags.rad_mutant_lager.out_rest, false, type, gulags.rad_mutant_lager.rad_mutant_pred))
+	end
+end
+--]]
+
+--/ ---------------------------------------------
+--/ radar lager 2
+--/ ---------------------------------------------
+gulags.radar_monolith_lager2.rpg_pred       = function(info) return info.name == "rad_rpg_guy_special" end
+gulags.radar_monolith_lager2.cash_punk_pred = function(info) return info.name == "radar_lager2_punk" end
+
+gulags.radar_monolith_lager2.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("patrol1", 0, 6, {0}, squad, groups[1], "", "" , nil, type, gulags.radar_monolith_lager2.rpg_pred))
+	table.insert(sj, gulag_tasks.getJob("walk3",   0, 6, {0}, squad, groups[1], "", "" , nil, type, gulags.radar_monolith_lager2.cash_punk_pred))
+	table.insert(sj, gulag_tasks.getJob("patrol2", 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("sit",     0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("walk" .. i, 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ radar lager 3
+--/ ---------------------------------------------
+gulags.radar_monolith_lager3.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[combat_ignore@rad_lager3]\n\n"
+	ltx = ltx .. "[hit@radar_monolith_lager3]\n"
+	ltx = ltx .. "on_info = {=hit_by_actor} %+rad_actor_attacks_monolith%\n\n"
+	for i = 1, 2 do
+		ltx = ltx .. "[logic@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore = combat_ignore@rad_lager3\n"
+		ltx = ltx .. "on_hit = hit@radar_monolith_lager3\n"
+		ltx = ltx .. "[walker@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "path_walk = patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}\n"
+	end
+	ltx = ltx .. "[logic@" .. type .. "_walk]\n"
+	ltx = ltx .. "active = walker@" .. type .. "_walker1\n"
+	ltx = ltx .. "combat_ignore = combat_ignore@rad_lager3\n"
+	ltx = ltx .. "on_hit = hit@radar_monolith_lager3\n"
+	ltx = ltx .. "[walker@" .. type .. "_walker1]\n"
+	ltx = ltx .. "path_walk = walk1\n"
+	ltx = ltx .. "path_look = walk1_look\n"
+	ltx = ltx .. "combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}\n"
+	gulags.radar_monolith_lager3.ltx = ltx
+	
+	table.insert(sj, gulag_tasks.getJob("walk", 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i, 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ radar npp area
+--/ ---------------------------------------------
+gulags.rad_area_lager.outpost_leader_pred = function(info) return info.name == "radar_monolith_area_leader" end
+
+gulags.rad_area_lager.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[combat_ignore@area_lager]\n\n"
+	ltx = ltx .. "[death@rad_area_lager]\n"
+	ltx = ltx .. "on_info = {=killed_by_actor} %+rad_actor_attacks_monolith%\n\n"
+	for i = 1, 3 do
+		ltx = ltx .. "[logic@" .. type .. "_front_line" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_front_line" .. i .. "\n"
+		ltx = ltx .. "combat_ignore = combat_ignore@area_lager\n"
+		ltx = ltx .. "on_death = death@rad_area_lager\n"
+		ltx = ltx .. "[walker@" .. type .. "_front_line" .. i .. "]\n"
+		ltx = ltx .. "path_walk = walk" .. i .. "\n"
+		ltx = ltx .. "path_look = look" .. i .. "\n"
+		ltx = ltx .. "combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}\n"
+		ltx = ltx .. "on_death = death@rad_area_lager\n"
+	end
+	ltx = ltx .. "[logic@" .. type .. "_squad_leader]\n"
+	ltx = ltx .. "active = walker@" .. type .. "_leader\n"
+	ltx = ltx .. "combat_ignore = combat_ignore@area_lager\n"
+	ltx = ltx .. "on_death = death@rad_area_lager\n"
+	ltx = ltx .. "[walker@" .. type .. "_leader]\n"
+	ltx = ltx .. "path_walk = squad_leader_walk\n"
+	ltx = ltx .. "path_look = squad_leader_look\n"
+	ltx = ltx .. "combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}\n"
+	ltx = ltx .. "on_death = death@rad_area_lager\n"
+	ltx = ltx .. "meet = meet@" .. type .. "_leader\n\n"
+	ltx = ltx .. "[meet@" .. type .. "_leader]\n"
+	ltx = ltx .. "victim = 5|actor\n"
+	ltx = ltx .. "victim_wpn = 5|actor\n"
+	ltx = ltx .. "use = true\n"
+	ltx = ltx .. "use_wpn = true\n"
+	gulags.rad_area_lager.ltx = ltx
+	
+	table.insert(sj, gulag_tasks.getJob("squad_leader", 0, 5, {0}, squad, groups[1], "",  gulags.rad_area_lager.out_rest, nil, type, gulags.rad_area_lager.outpost_leader_pred))
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("front_line" .. i, 0, 5, {0}, squad, groups[1], "",  gulags.rad_area_lager.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ radar monsters attack
+--/ ---------------------------------------------
+gulags.rad_monsters_npp.jobs = function(sj, gname, type, squad, groups)
+	local ltx = smart_dyn_ltx.add_mob_home(type, 8, 25, 40)
+	for i = 1, 8 do
+		ltx = ltx .. "[logic@" .. type .. "_rush" .. i .. "]\n"
+		ltx = ltx .. "active = mob_walker@" .. type .. "_rush" .. i .. "\n"
+		ltx = ltx .. "[mob_walker@" .. type .. "_rush" .. i .. "]\n"
+		ltx = ltx .. "path_walk = rush" .. i .. "\n"
+		ltx = ltx .. "panic = 0\n"
+		ltx = ltx .. "braindead = true \n"
+		ltx = ltx .. "always_aggressive = true\n"
+		ltx = ltx .. "on_signal = reached | {-rad_monsters_help_done} mob_walker@" .. type .. "_brains" .. i .. "\n"
+		ltx = ltx .. "on_info = {+rad_monsters_help_done} mob_home@" .. type .. "_brains" .. i .. "\n"
+		ltx = ltx .. "[mob_walker@" .. type .. "_brains" .. i .. "]\n"
+		ltx = ltx .. "path_walk = brains" .. i .. "\n"
+		ltx = ltx .. "always_aggressive = true\n"
+		ltx = ltx .. "braindead = false \n"
+		ltx = ltx .. "panic = 0\n"
+		ltx = ltx .. "[mob_home@" .. type .. "_brains" .. i .. "]\n"
+		ltx = ltx .. "path_home = brains" .. i .. "\n"
+		ltx = ltx .. "braindead = false \n"
+		ltx = ltx .. "home_min_radius = 10\n"
+		ltx = ltx .. "home_max_radius = 20\n"
+		ltx = ltx .. "always_aggressive = true\n"
+	end
+	gulags.rad_monsters_npp.ltx = ltx
+	
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("rush" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.rad_monsters_npp.state = function(gulag)
+	if has_info("deactivate_radar_done") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ radar bunker lager
+--/ ---------------------------------------------
+gulags.rad_bunker_lager.comm = function(npc_community, gulag_type, npc_rank, se_obj)
+	if has_info("deactivate_radar_done") then
+		if npc_community == "stalker" then
+			return true
+		end
+	elseif npc_community == "monolith" then
+		return true
+	end
+	return false
+end
+
+gulags.rad_bunker_lager.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[combat_ignore@rad_bunker]\n\n"
+	for i = 1, 2 do
+		ltx = ltx .. "[logic@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore = combat_ignore@rad_bunker\n"
+		ltx = ltx .. "[walker@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "path_walk = patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}\n"
+	end
+	ltx = ltx .. "[logic@" .. type .. "_walk1]\n"
+	ltx = ltx .. "active = walker@" .. type .. "_walker1\n"
+	ltx = ltx .. "combat_ignore = combat_ignore@rad_bunker\n"
+	ltx = ltx .. "[walker@" .. type .. "_walker1]\n"
+	ltx = ltx .. "path_walk = walk1\n"
+	ltx = ltx .. "path_look = look1\n"
+	ltx = ltx .. "combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}\n"
+	gulags.rad_bunker_lager.ltx = ltx
+	
+	table.insert(sj, gulag_tasks.getJob("walk1", 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i, 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snorks
+--/ ---------------------------------------------
+gulags.rad_snorks_camp.jobs = function(sj, gname, type, squad, groups)
+	gulags.rad_snorks_camp.ltx = smart_dyn_ltx.add_mob_home(type, 4, 10, 35)
+	
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.rad_dogs_camp.jobs = function(sj, gname, type, squad, groups)
+	gulags.rad_dogs_camp.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 28)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ boars
+--/ ---------------------------------------------
+gulags.rad_boars_nest.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i,     0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("rush" .. i,     0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("rush_end" .. i, 0, 5, {2}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.rad_boars_nest.state = function(gulag)
+	if has_info("rad_boars_new_home") then
+		return 2
+	elseif has_info("radar_blowout_scripted_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ poltergeists
+--/ ---------------------------------------------
+gulags.rad_poltergeist.jobs = function(sj, gname, type, squad, groups)
+	gulags.rad_poltergeist.ltx = smart_dyn_ltx.add_mob_home(type, 4, 5, 25)
+	
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.rad_dogs_lair.jobs = function(sj, gname, type, squad, groups)
+	gulags.rad_dogs_lair.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 25)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snorks lair
+--/ ---------------------------------------------
+gulags.rad_snorks_lair_base.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i,     0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ radar lager 4
+--/ ---------------------------------------------
+gulags.radar_monolith_lager4.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[combat_ignore@rad_lager4]\n\n"
+	ltx = ltx .. "[hit@radar_monolith_lager4]\n"
+	ltx = ltx .. "on_info = {=hit_by_actor} %+rad_actor_attacks_monolith%\n\n"
+	for i = 1, 3 do
+		ltx = ltx .. "[logic@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore = combat_ignore@rad_lager4\n"
+		ltx = ltx .. "on_hit = hit@radar_monolith_lager4\n"
+		ltx = ltx .. "[walker@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "path_walk = patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore_cond = {-rad_actor_attacks_monolith}\n"
+	end
+	for i = 1, 3 do
+		ltx = ltx .. "[logic@" .. type .. "_walk" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_walk" .. i .. "\n"
+		ltx = ltx .. "combat_ignore = combat_ignore@rad_lager4\n"
+		ltx = ltx .. "on_hit = hit@radar_monolith_lager4\n"
+		ltx = ltx .. "[walker@" .. type .. "_walk" .. i .. "]\n"
+		ltx = ltx .. "path_walk = walk" .. i .. "\n"
+		ltx = ltx .. "path_walk = look" .. i .. "\n"
+		ltx = ltx .. "combat_ignore_cond = {-rad_actor_attacks_monolith}\n"
+	end
+	gulags.radar_monolith_lager4.ltx = ltx
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i, 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("walk" .. i,   0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ radar after npp
+--/ ---------------------------------------------
+gulags.rad_area_after.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[combat_ignore@rad_area_after]\n\n"
+	for i = 1, 3 do
+		ltx = ltx .. "[logic@" .. type .. "_walk" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_walk" .. i .. "\n"
+		ltx = ltx .. "[walker@" .. type .. "_walk" .. i .. "]\n"
+		ltx = ltx .. "path_walk = walk" .. i .. "\n"
+	end
+	ltx = ltx .. "[logic@" .. type .. "_guard_day]\n"
+	ltx = ltx .. "active = walker@" .. type .. "_guard_day\n"
+	ltx = ltx .. "[walker@" .. type .. "_guard_day]\n"
+	ltx = ltx .. "path_walk = guard\n"
+	ltx = ltx .. "path_look = guard_look\n"
+	ltx = ltx .. "[logic@" .. type .. "_guard]\n"
+	ltx = ltx .. "active = walker@" .. type .. "_guard\n"
+	ltx = ltx .. "[walker@" .. type .. "_guard]\n"
+	ltx = ltx .. "path_walk = guard\n"
+	ltx = ltx .. "path_look = guard_look\n"
+	gulags.rad_area_after.ltx = ltx
+	
+	table.insert(sj, gulag_tasks.getJob("guard_day", 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("guard",     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("walk" .. i, 0, 5, {0,1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.rad_area_after.state = function(gulag)
+	if has_info("deactivate_radar_done") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ radar lager to pripyat
+--/ ---------------------------------------------
+gulags.rad_lager_to_pri.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[combat_ignore@lager_to_pri]\n\n"
+	for i = 1, 3 do
+		ltx = ltx .. "[logic@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore = combat_ignore@lager_to_pri\n"
+		ltx = ltx .. "[walker@" .. type .. "_patrol" .. i .. "]\n"
+		ltx = ltx .. "path_walk = patrol" .. i .. "\n"
+		ltx = ltx .. "combat_ignore_cond = {-rad_actor_attacks_monolith}\n"
+	end
+	for i = 1, 3 do
+		ltx = ltx .. "[logic@" .. type .. "_walk" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_walk" .. i .. "\n"
+		ltx = ltx .. "combat_ignore = combat_ignore@lager_to_pri\n"
+		ltx = ltx .. "[walker@" .. type .. "_walk" .. i .. "]\n"
+		ltx = ltx .. "path_walk = walk" .. i .. "\n"
+		ltx = ltx .. "path_walk = look" .. i .. "\n"
+		ltx = ltx .. "combat_ignore_cond = {-rad_actor_attacks_monolith}\n"
+	end
+	gulags.rad_lager_to_pri.ltx = ltx
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i, 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("walk" .. i,   0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ radar story controller
+--/ ---------------------------------------------
+gulags.rad_evil_controller.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "",  "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "",  "",   nil, type, on_level_pred))
+end
+
+gulags.rad_evil_controller.state = function(gulag)
+	if has_info("radar_blowout_finished") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ radar payment lager
+--/ ---------------------------------------------
+gulags.rad_bunker_payment_lager.comm = function(npc_community, gulag_type, npc_rank, se_obj)
+	if has_info("deactivate_radar_done") then
+		if npc_community == "stalker" then
+			return true
+		end
+	elseif npc_community == "monolith" then
+		return true
+	end
+	return false
+end
+
+gulags.rad_bunker_payment_lager.punk_pred = function(info) return info.name == "radar_monolith_punk" end
+
+gulags.rad_bunker_payment_lager.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[combat_ignore@rad_bunker_payment]\n\n"
+	ltx = ltx .. "[logic@" .. type .. "_patrol]\n"
+	ltx = ltx .. "active = walker@" .. type .. "_patrol\n"
+	ltx = ltx .. "[walker@" .. type .. "_patrol]\n"
+	ltx = ltx .. "path_walk = patrol\n"
+	ltx = ltx .. "[logic@" .. type .. "_walk]\n"
+	ltx = ltx .. "active = walker@" .. type .. "_punk\n"
+	ltx = ltx .. "[walker@" .. type .. "_punk]\n"
+	ltx = ltx .. "path_walk = walk\n"
+	ltx = ltx .. "meet = meet@" .. type .. "_punk\n"
+	ltx = ltx .. "on_info = {+rad_monolith_outpost_welcome} walker@" .. type .. "_payed\n"
+	ltx = ltx .. "[walker@" .. type .. "_payed]\n"
+	ltx = ltx .. "path_walk = walk\n"
+	ltx = ltx .. "meet = no_meet\n"
+	ltx = ltx .. "[meet@" .. type .. "_punk]\n"
+	ltx = ltx .. "meet_state = 10|claim@rad_replics1|3|wait\n"
+	ltx = ltx .. "meet_state_wpn = 10|claim@rad_replics1|3|wait\n"
+	ltx = ltx .. "victim = 8|actor\n"
+	ltx = ltx .. "victim_wpn = 8|actor\n"
+	ltx = ltx .. "use = true\n"
+	ltx = ltx .. "use_wpn = true\n"
+	gulags.rad_bunker_payment_lager.ltx = ltx
+	
+	table.insert(sj, gulag_tasks.getJob("walk",   0, 5, {0}, squad, groups[1], "", "" , nil, type, gulags.rad_bunker_payment_lager.punk_pred))
+	table.insert(sj, gulag_tasks.getJob("patrol", 0, 5, {0}, squad, groups[1], "", "" , nil, type, on_level_pred))
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,19 @@
+[logic]
+active = sr_idle@0
+
+[sr_idle@0]
+on_actor_inside = {-fore_wounded_mine} sr_tip
+
+[sr_tip]
+header = sos_signal_header
+name = fore_sos_signal2
+sender = stalker
+type = tips
+single = true
+showtime = 7000
+on_signal = tip_sended| sr_idle@1 %=mark_psycho_stalker%
+;on_signal = tip_sended| nil %=mark_object_by_name(mr_fore_psycho_wounded:green_location:fore_wounded) =release%
+
+[sr_idle@1]
+on_info = {+fore_wounded_mine} nil %=mark_psycho_mine =release%
+on_info2 = {+fore_trap_free} nil %=release%

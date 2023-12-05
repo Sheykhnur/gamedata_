@@ -1,0 +1,49 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : se_turret.script
+ Description: 
+ Copyright  : 2011 © LA
+ Author     : Gr1ph00n (04/11/11)
+ Editors    : 
+ Last edit  : 13.07.2012 (by ...)
+--]]-----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------------------------------------
+class "se_turret" (cse_alife_mounted_turret)
+--/ ------------------------------------------------------------------------------------------------
+function se_turret:__init(section) super(section)
+end
+
+function se_turret:on_register()
+	cse_alife_mounted_turret.on_register(self)
+	log("on_register:=[%s],ID=[%s]%s", self:name(), self.id, "") --/#~#
+end
+
+function se_turret:on_spawn()
+	cse_alife_mounted_turret.on_spawn(self)
+	log("on_spawn:=[%s],ID=[%s]%s", self:name(), self.id, "") --/#~#
+	task_manager.get_random_task():register_target(self)
+end
+
+function se_turret:can_switch_offline()
+	return cse_alife_mounted_turret.can_switch_offline(self)
+end
+
+function se_turret:can_switch_online()
+	return cse_alife_mounted_turret.can_switch_online(self)
+end
+
+function se_turret:keep_saved_data_anyway()
+	return true
+end
+
+function se_turret:STATE_Read(packet, size)
+	cse_alife_mounted_turret.STATE_Read(self, packet, size)
+end
+
+function se_turret:STATE_Write(packet)
+	cse_alife_mounted_turret.STATE_Write(self, packet)
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,25 @@
+[death@tutorial_flesh]
+on_info = {=esc_tutorial_flesh_died_in_anomaly} %=esc_tutorial_flesh_warning%
+
+[logic]
+active = mob_walker@suicide
+on_death = death@tutorial_flesh
+
+[mob_walker@suicide]
+braindead = true
+path_walk = suicide
+;on_signal = reached | mob_walker@die_anyway
+;on_actor_dist_le_nvis = 25 | mob_walker@die_anyway
+
+[mob_walker@die_anyway]
+path_walk = suicide_new
+path_look = look
+braindead = true
+friendly = true
+actor_friendly = true
+npc_friendly = true
+on_timer = 500 | mob_remark@death_pose
+
+[mob_remark@death_pose]
+anim = $editor
+braindead = true

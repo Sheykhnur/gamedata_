@@ -1,0 +1,20 @@
+[combat_ignore]
+
+[logic]
+active = remark@sc1_scared
+combat_ignore = combat_ignore
+
+
+[remark@sc1_scared]
+anim = sci_incident
+combat_ignore_cond = always
+on_timer = 5000 |  remark@sc1_hide
+target = tag1, 0
+meet = no_meet
+
+[remark@sc1_hide]
+anim = ispug
+combat_ignore_cond = always
+on_timer = 5000 | remark@sc1_scared
+target = tag1, 0
+meet = no_meet

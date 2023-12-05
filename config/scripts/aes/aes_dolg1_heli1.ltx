@@ -1,0 +1,54 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = aes_dolg1_heli1_idle
+engine_sound = false
+combat_use_rocket = false
+combat_use_mgun = false
+;default_velocity = 100
+on_info = {+aes_tranceiver_placed} heli_move@btr_attack ;heli_move@move_out1
+
+[heli_move@move_out1]
+path_move = aes_dolg1_heli1_move_out
+engine_sound = true
+combat_safe_altitude = -20
+combat_use_rocket = true
+combat_use_mgun = true
+combat_velocity = 30
+default_velocity = 30
+on_signal = reached| heli_move@btr_attack
+
+[heli_move@btr_attack]
+path_move = aes_dolg1_heli1_btr_attack
+path_look = aes_dolg1_heli1_attack_look
+engine_sound = true
+combat_safe_altitude = -50
+combat_use_rocket = true
+combat_use_mgun = true
+combat_velocity = 30
+default_velocity = 30
+combat_enemy = 7115
+on_info = {+aes_btr_death} heli_move@mono_attack1
+
+[heli_move@mono_attack1]
+path_move = aes_dolg1_heli1_attack1
+engine_sound = true
+combat_safe_altitude = -30
+combat_use_rocket = true
+combat_use_mgun = true
+combat_velocity = 30
+default_velocity = 30
+combat_enemy = 7109
+on_info = {=is_dead(7109)} heli_move@mono_attack2
+
+[heli_move@mono_attack2]
+path_move = aes_dolg1_heli1_attack2
+engine_sound = true
+;combat_safe_altitude = -30
+combat_use_rocket = true
+combat_use_mgun = true
+combat_velocity = 30
+default_velocity = 30
+combat_enemy = 7110
+on_info = {=is_dead(7110)} heli_move@idle

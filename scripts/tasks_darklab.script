@@ -1,0 +1,114 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_darklab.script
+ Description: Tasks darklab
+ Copyright  : 2012 © LA-team
+ Author     : lox
+ Editors    : lox
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"dar_document1",
+	"dar_document2",
+	"dar_document3",
+	"dar_document4",
+	"dar_document5"
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if info_tbl then
+		for _,v in ipairs(info_tbl) do
+			if not has_info(v) and db.actor:object(v) then
+				give_info(v)
+				play_pda_snd()
+			end
+		end
+		if info_tbl and has_info_portions(info_tbl) then
+			give_info("dar_barman_has_all_x18_docs")
+			info_tbl = nil --/ clear
+		end
+	end
+	if sEvent == "item_take" then
+		if not has_info("dar_dead_admin_pda") and obj:name() == "dar_pda_dead_admin" then
+			play_pda_snd()
+			give_info("dar_dead_admin_pda")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "enlightered_docs1" then
+		pdaDownloads.add_article{"oversight_pc_behind_the_scene", "oversight_pc_behind_the_scene_text"}
+		return true
+	end
+	if info_id == "enlightered_docs2" then
+		pdaDownloads.add_article{"oversight_pc_about_enlightered_name", "oversight_pc_about_enlightered_text"}
+		return true
+	end
+	if not info_id:match('^dar_') then
+		return false
+	end
+	if info_id == "dar_disable_rat1_restr" then
+		start_real_timer(1, nil, {info_id = "dar_rat1_go"})
+		--log("infoportion: dar_rat1_go")
+		return true
+	end
+	if info_id == "dar_play_scripted_quake" then
+		xr_effects.dar_play_scripted_eathquake()
+		return true
+	end
+	if info_id == "dar_sci_base_response" then
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\dar\\dar_replics5")
+		snd:play(db.actor, 0, sound_object.s2d)
+		start_real_timer(6, nil, {info_id = "dar_sci_info_3"}) --/ 6 real-sec
+		return true
+	end
+	if info_id == "dar_sc4_end" then
+		disable_info("dar_sc4_zomb_ignore")
+		return true
+	end
+	if info_id == "dar_docs_start" then
+		start_real_timer(5, sModule..".dar_petrenko") --/ 5 real-sec
+		return true
+	end
+	if info_id == "dar_pc_docs_copied" then
+		pdaDownloads.add_article{"dar_mutant_experiments_name", "dar_mutant_experiments_text"}
+		return true
+	end
+	--[[
+	if info_id == "dar_soldier_delay" then
+		start_real_timer(1.2, sModule..".dar_soldier_timer") --/1.2 real-sec
+	end
+	--]]
+	return false
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function play_pda_snd()
+	local snd = xr_sound.get_safe_sound_object("device\\pda\\pda_objective")
+	snd:play(db.actor, 0, sound_object.s2d)
+end
+
+function dar_petrenko()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\dar\\dar_petrenko")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, db.actor:position(), 1.0)
+	news_manager.send_tip_hud(game.translate_string("petrenko_message_header"), game.translate_string("dar_petrenko_documents"), "petrenko")
+	give_info("dar_docs_template")
+end
+
+--[[
+function dar_soldier_timer()
+	give_info("dar_soldier_delay_ends")
+end
+--]]
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,161 @@
+[wpn_svu]:weapon_base,weapon_7.62x54r
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\svu"
+animation_slot                          = 2
+class                                   = WP_SVU
+hand_dependence                         = 1
+repair_compatibility                    = svu
+scheduled                               = off
+weapon_class                            = sniper_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 2
+
+; Text
+inv_name                                = wpn-svu
+inv_name_short                          = wpn-svu
+description                             = enc_weapons1_wpn-svu
+
+; Visual
+hud                                     = wpn_svu_hud
+position                                = -0.026, -0.084, 0.0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair
+strap_position                          = -0.26, -0.11, 0.25
+strap_orientation                       = -15, -9, 110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_svu\wpn_svu.ogf
+
+; Effects
+fire_point                              = 0.0, 0.128, 0.522
+fire_point2                             = 0.0, 0.128, 0.522
+flame_particles                         = ; silencer
+shell_point                             = 0.0, 0.128, 0.0
+shell_dir                               = 0.0, 0.0, 0.4
+light_disabled                          = true
+
+; Sounds
+snd_draw                                = weapons\svu\svu_draw
+snd_empty                               = weapons\ak_empty,	0.5
+snd_holster                             = weapons\sniper_holster
+snd_reload                              = weapons\svu\svu_reload
+snd_shoot                               = weapons\svu\svu_shoot
+snd_silncer_shot        				= weapons\w_ak74_shot1
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_SVU_mk2
+upgr_icon_x                             = 594
+upgr_icon_y                             = 395
+upgr_icon_width                         = 294
+upgr_icon_height                        = 80
+
+; Cost & Weight
+cost                                    = 40400
+inv_weight                              = 4.18
+ph_mass                                 = 4
+
+; Ammo
+ammo_mag_size                           = 10
+
+; Features
+fire_modes                              = -1, 1
+scope_status                            = 1
+scope_zoom_factor                       = 15 ;x4
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 1.0
+
+; Ballistics
+fire_dispersion_base                    = 0.3
+fire_dispersion_condition_factor        = 6
+
+; Performance
+rpm                                     = 500
+rpm_semi                                = 240
+rpm_empty_click                         = 200
+
+; Reliability
+misfire_start_prob                      = 0.01
+misfire_end_prob                        = 0.2
+condition_shot_dec                      = 0.0004
+condition_queue_shot_dec                = 0.0004444
+
+; Handling
+control_inertion_factor                 = 1.4f
+PDM_disp_base                           = 3.1
+PDM_disp_vel_factor                     = 1.4
+PDM_disp_accel_factor                   = 1.4
+sprint_allowed                          = true
+
+; Recoil
+cam_relax_speed                         = 5.5
+cam_dispersion                          = 2.5
+cam_dispersion_inc                      = 0.6
+cam_dispersion_frac                     = 0.5
+cam_max_angle_horz                      = 7.5
+cam_step_angle_horz                     = 4.5
+zoom_cam_dispersion                     = 1.6
+zoom_cam_dispersion_inc                 = 0.6
+zoom_cam_step_angle_horz                = 3.3
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.55
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_svu
+upgrades                                = up_gr_firstab_svu, up_gr_seconab_svu, up_gr_thirdab_svu, up_gr_thirdef_svu, up_gr_fourtab_svu, up_gr_fourtc_svu, up_gr_fourtd_svu, up_gr_fourtef_svu, up_gr_fifthab_svu
+installed_upgrades                      =
+
+; AI Params
+ef_main_weapon_type                     = 3
+ef_weapon_type                          = 8
+min_radius                              = 0
+max_radius                              = 50
+holder_range_modifier                   = 2.15
+holder_fov_modifier                     = 0.5
+
+
+[wpn_svu_hud]:hud_base
+aim_hud_offset_pos                      = -0.1123,0.062,-0.1
+aim_hud_offset_pos_16x9                 = -0.1123,0.062,-0.1
+aim_hud_offset_rot                      = 0.0386,0.022,0
+aim_hud_offset_rot_16x9                 = 0.0386,0.022,0
+anim_bore                               = svu_idle_aim
+anim_hide                               = svu_holster,,3.0
+anim_idle                               = svu_idle
+anim_idle_aim                           = svu_idle_aim
+anim_idle_moving                        = svu_idle_moving
+anim_idle_moving_crouch                 = svu_idle_crouch
+anim_idle_sprint                        = svu_idle_sprint
+anim_reload                             = svu_reload_empty, reload_empty, 1.05
+anim_shots                              = svu_shoot, shoot
+anim_show                               = svu_draw
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_point                              = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 0.55,2.39,0.15
+hands_orientation_16x9                  = 0.55,2.39,0.15
+hands_position                          = 0.008,-0.17,0.25
+hands_position_16x9                     = 0.008,-0.17,0.25
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_svu\wpn_svu_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true

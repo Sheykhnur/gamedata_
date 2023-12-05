@@ -1,0 +1,732 @@
+
+-- file: pcTetris.script
+-- author: barin
+-- date: 2008-09-22
+-- edited by: gr1ph00n
+-- last edited: 2011-09-11
+
+local BOARD_ROWS = 27
+local BOARD_COLS = 17
+local BLOCK_CELL_SIZE = 17
+
+local START_X = 0
+local START_Y = math.floor(BOARD_COLS / 2) + 1
+
+local BORDER = -1
+local EMPTY = 0
+local OCCUPIED = 1
+local CURRENT = 2
+
+local DIR_DOWN = 0
+local DIR_LEFT = -1
+local DIR_RIGHT = 1
+
+local LINE_POINTS = 10
+local DOCKED_BLOCK = 10
+local BLOCK_SPEED = 100
+local LEVEL_UP = 500
+
+local next_block_pos = 
+{
+	pyramid =
+	{
+		{x = 45, y = 45},
+		{x = 40, y = 40},
+		{x = 50, y = 45},
+		{x = 40, y = 40}
+	},	
+	left_knight =
+	{
+		{x = 45, y = 45},
+		{x = 40, y = 45},
+		{x = 45, y = 45},
+		{x = 40, y = 45}
+	},	
+	right_knight =
+	{
+		{x = 40, y = 45},
+		{x = 40, y = 45},
+		{x = 45, y = 45},
+		{x = 40, y = 45}
+	},
+	right_leaner =
+	{
+		{x = 40, y = 45},
+		{x = 45, y = 40}
+	},
+	left_leaner =
+	{
+		{x = 40, y = 45},
+		{x = 45, y = 40}
+	},
+	tower =
+	{
+		{x = 55, y = 30},
+		{x = 30, y = 55}
+	},
+	box = 
+	{
+		{x = 45, y = 45}
+	}
+}
+
+function create_matrix(rows, cols, init_value)
+	local matrix = {}
+	for row = 1, rows do
+		matrix[row] = {}
+		for col = 1, cols do
+			matrix[row][col] = init_value
+		end
+	end
+	return matrix
+end
+
+local block_types =
+{
+	"tower", "box", "pyramid", "left_knight",
+	"right_knight", "right_leaner", "left_leaner"
+}
+
+local block_colours =
+{
+	tower = "blue",
+	box = "green",
+	pyramid = "grey",
+	left_knight = "orange",
+	right_knight = "pink",
+	right_leaner = "red",
+	left_leaner = "yellow"
+}
+
+local blocks =
+{
+	pyramid =
+	{
+		{{1, 2}, {2, 1}, {2, 2}, {2, 3}},
+		{{1, 2}, {2, 2}, {2, 3}, {3, 2}},
+		{{1, 1}, {1, 2}, {1, 3}, {2, 2}},
+		{{1, 2}, {2, 1}, {2, 2}, {3, 2}}
+	},	
+	left_knight =
+	{
+		{{1, 1}, {1, 2}, {1, 3}, {2, 3}},
+		{{1, 2}, {2, 2}, {3, 1}, {3, 2}},
+		{{1, 1}, {2, 1}, {2, 2}, {2, 3}},
+		{{1, 1}, {1, 2}, {2, 1}, {3, 1}}
+	},	
+	right_knight =
+	{
+		{{1, 3}, {2, 1}, {2, 2}, {2, 3}},
+		{{1, 1}, {2, 1}, {3, 1}, {3, 2}},
+		{{1, 1}, {1, 2}, {1, 3}, {2, 1}},
+		{{1, 1}, {1, 2}, {2, 2}, {3, 2}}
+	},
+	right_leaner =
+	{
+		{{1, 2}, {2, 1}, {2, 2}, {3, 1}},
+		{{1, 1}, {1, 2}, {2, 2}, {2, 3}}
+	},	
+	left_leaner =
+	{
+		{{1, 1}, {2, 1}, {2, 2}, {3, 2}},
+		{{1, 2}, {1, 3}, {2, 1}, {2, 2}}
+	},
+	tower =
+	{
+		{{1, 1}, {1, 2}, {1, 3}, {1, 4}},
+		{{1, 1}, {2, 1}, {3, 1}, {4, 1}}
+	},	
+	box = 
+	{
+		{{1, 1}, {1, 2}, {2, 1}, {2, 2}}
+	}
+}
+
+class "tBlock"
+
+function tBlock:__init()
+	self:CreateBlock()
+end
+
+function tBlock:__finalize()
+end
+
+function tBlock:CreateBlock()
+	self.type = block_types[math.random(1, #block_types)]
+	self.shape = math.random(1, #blocks[self.type])
+	self.colour = block_colours[self.type]
+	self.block = create_matrix(4, 4, false)
+	
+	for k, v in pairs(blocks[self.type][self.shape]) do
+		self.block[v[1]][v[2]] = true
+	end
+end
+
+-- ************************************************************************************* --
+
+class "uiTetris" (CUIScriptWnd)
+
+function uiTetris:__init(parent, x, y) super()
+	self:SetWindowName("uiTetris")
+	self.owner = parent
+	
+	self.wnd_width = if_then_else(parent:WindowName() == "pda_games", 530, 560)
+	self.wnd_height = if_then_else(parent:WindowName() == "pda_games", 475, 530)
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self.board_width = 281
+	self.board_height = 470
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+	
+	self:reset()
+end
+
+function uiTetris:__finalize()
+end
+
+function uiTetris:OnChildDialogExit(child_name)
+	-- for pc only !!!
+end
+
+function uiTetris:Update()
+	CUIScriptWnd.Update(self)
+	
+	if self.game_started then
+		if not self.game_paused then
+			if not self.game_over then
+				if self.block_timer <= time_global() then
+					self:MoveBlock(DIR_DOWN)
+					--self.block_timer = time_global() + math.abs(1000 - (self.level - 1) * BLOCK_SPEED)
+					local v = 1000 - (self.level - 1) * BLOCK_SPEED
+					if v < 0 then v = 100 end
+					self.block_timer = time_global() + v
+				end
+				
+				if self.stc_info_timer ~= nil then
+					if self.stc_info_timer <= time_global() then
+						self:GetStatic("stc_info"):Show(false)
+						self.stc_info_timer = nil
+					end
+				end
+			end
+		end
+	end
+end
+
+function uiTetris:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	local parent_name = self.owner:WindowName()
+	
+	if parent_name ~= "pda_games" then
+		-- for pc only !!!
+		self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+		self.wnd_frame:SetAutoDelete(true)
+		self.wnd_frame:SetCaption("Tetris")
+		self.wnd_frame:Show(true)
+		self:AttachChild(self.wnd_frame)
+		self:Register(self.wnd_frame, "wnd_frame")
+	end
+	
+	local tmp_x = self.wnd_x + if_then_else(parent_name == "pda_games", 0, 30)
+	local tmp_y = self.wnd_y + if_then_else(parent_name == "pda_games", 0, 45)
+	
+	local dlg = CUIFrameWindow()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("board")
+	dlg:Init("ui_tablist_textbox", tmp_x, tmp_y, self.board_width, self.board_height)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("board_background")
+	dlg:SetWndPos(tmp_x + 2, tmp_y + 3)
+	dlg:SetWidth(self.board_width - 8)
+	dlg:SetHeight(self.board_height - 8)
+	dlg:SetStretchTexture(true)
+	dlg:InitTexture("ui\\pc\\blackscreen")
+	self:AttachChild(dlg)
+	
+	self.xml = CScriptXmlInit()
+	self.xml:ParseFile("ui_wnd\\ui_tetris_wnd.xml")
+	
+	dlg = self.xml:InitStatic("next_block", self)
+	dlg:SetWndPos(tmp_x + self.board_width - 7, tmp_y)
+	self:Register(dlg, "stc_next_block")
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("stc_next_block_background")
+	dlg:SetWndPos(tmp_x + self.board_width + 60, tmp_y + 70)
+	dlg:SetWidth(130)
+	dlg:SetHeight(130)
+	dlg:SetStretchTexture(true)
+	dlg:InitTexture("ui\\pc\\blackscreen")
+	self:AttachChild(dlg)
+	
+	dlg = self.xml:InitStatic("stc_info", self)
+	dlg:SetWndPos(tmp_x + 330, tmp_y + 220)
+	self:Register(dlg, "stc_info")
+	
+	self:AddStats(tmp_x + 350, tmp_y + 270)
+	self:AddButtons(tmp_x + 350, tmp_y + 370)
+end
+
+function uiTetris:AddButtons(x, y)
+	local dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_new_game")
+	dlg:Init("ui_button_ordinary", x, y, 117, 29)
+	dlg:SetText(game.translate_string("ui_tetris_new_game"))
+	self:AttachChild(dlg)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_pause")
+	dlg:Init("ui_button_ordinary", x, y + 30, 117, 29)
+	self:AttachChild(dlg)
+	
+	if self.owner:WindowName() == "pda_games" then
+		-- for pda only !!!
+		dlg = CUI3tButton()
+		dlg:SetAutoDelete(true)
+		dlg:SetWindowName("btn_game_mnu")
+		dlg:SetText(game.translate_string("ui_pda_games_mnu"))
+		dlg:Init("ui_button_ordinary", x, y + 60, 117, 29)
+		self:AttachChild(dlg)
+	end
+end
+
+function uiTetris:AddStats(x, y)
+	local dlg = self.xml:InitStatic("stc_points", self)
+	dlg:SetWndPos(x, y)
+	self:Register(dlg, "stc_points")
+	
+	dlg = self.xml:InitStatic("stc_lines", self)
+	dlg:SetWndPos(x, y + 25)
+	self:Register(dlg, "stc_lines")
+	
+	dlg = self.xml:InitStatic("stc_level", self)
+	dlg:SetWndPos(x, y + 50)
+	self:Register(dlg, "stc_level")
+end
+
+function uiTetris:InitCallBacks()
+	if self.owner and self.owner:WindowName() == "pda_games" then
+		-- for pda only !!!
+		self:AddCallback("btn_game_mnu", ui_events.BUTTON_CLICKED, self.DisplayGamesMenu, self)
+	end
+	
+	self:AddCallback("btn_new_game", ui_events.BUTTON_CLICKED, self.OnNewGame, self)
+	self:AddCallback("btn_pause", ui_events.BUTTON_CLICKED, self.OnPauseGame, self)
+end
+
+function uiTetris:DisplayGamesMenu()
+	self.owner:DisplayGamesMenu()
+end
+
+function uiTetris:reset()
+	self.game_started = false
+	self.game_over = false
+	self.game_paused = false
+	self.block_timer = -1000
+	
+	self:GetButton("btn_pause"):SetText(game.translate_string("ui_tetris_pause"))
+	self:GetButton("btn_pause"):Enable(false)
+	self:GetStatic("stc_info"):Show(false)
+	
+	self:GetStatic("stc_points"):SetText(game.translate_string("ui_tetris_t_key1"))
+	self:GetStatic("stc_lines"):SetText(game.translate_string("ui_tetris_t_key2"))
+	self:GetStatic("stc_level"):SetText(game.translate_string("ui_tetris_t_key3"))
+	
+	self.points = 0
+	self.lines = 0
+	self.level = 1
+end
+
+function uiTetris:CreateBoard()
+	local board = create_matrix(BOARD_ROWS + 1, BOARD_COLS + 1, {avail = EMPTY, wnd = nil, colour = nil})
+	
+	for row = 1, BOARD_ROWS do
+		board[row][1] = {avail = BORDER, wnd = nil, colour = nil}
+		board[row][BOARD_COLS + 1] = {avail = BORDER, wnd = nil, colour = nil}
+	end
+	
+	for col = 1, BOARD_COLS + 1 do
+		board[BOARD_ROWS + 1][col] = {avail = BORDER, wnd = nil, colour = nil}
+	end
+	
+	return board
+end
+
+function uiTetris:DrawNextBlock()
+	local base_x = self.wnd_x + self.board_width + 60 + if_then_else(self.owner:WindowName() == "pda_games", 0, 30)
+	local base_y = self.wnd_y + 70 + if_then_else(self.owner:WindowName() == "pda_games", 0, 45)
+	local x, y, dlg = nil, nil, nil
+	
+	for i = 1, 4 do
+		for j = 1, 4 do
+			dlg = self:GetStatic(string.format("stc_next_block_%d%d", i, j))
+			if dlg then
+				self:DetachChild(dlg)
+			end
+			if self.next_block.block[i][j] then
+				dlg = self.xml:InitStatic("blocks:" .. self.next_block.colour, self)
+				self:Register(dlg, string.format("stc_next_block_%d%d", i, j))
+				x = base_x + (i - 1) * BLOCK_CELL_SIZE + next_block_pos[self.next_block.type][self.next_block.shape].x
+				y = base_y + (j - 1) * BLOCK_CELL_SIZE + next_block_pos[self.next_block.type][self.next_block.shape].y
+				dlg:SetWndPos(x, y)
+			end
+		end
+	end
+end
+
+function uiTetris:DrawCurrentBlock()
+	local base_x = self.wnd_x + if_then_else(self.owner:WindowName() == "pda_games", 2, 32)
+	local base_y = self.wnd_y + if_then_else(self.owner:WindowName() == "pda_games", 4, 49)
+	local x, y, dlg = nil, nil, nil
+	
+	for row = 1, 4 do
+		for col = 1, 4 do
+			if self.current_block.block[row][col] then
+				x = row + self.curr_x
+				y = col + self.curr_y - 2
+				dlg = self.xml:InitStatic("blocks:" .. self.current_block.colour, self)
+				dlg:SetWndPos(base_x + (y - 2) * BLOCK_CELL_SIZE, base_y + (x - 1) * BLOCK_CELL_SIZE)
+				self:Register(dlg)
+				self.board[x][y] = {avail = CURRENT, wnd = dlg, colour = self.current_block.colour}
+			end
+		end
+	end
+	self.drawing_current_block = false
+end
+
+function uiTetris:CanMove(c_x, c_y)
+	local x, y = nil, nil
+	for row = 1, 4 do
+		for col = 1, 4 do
+			if self.current_block.block[row][col] then
+				x = row + c_x
+				y = col + c_y - 2
+				if self.board[x][y].avail ~= EMPTY and self.board[x][y].avail ~= CURRENT then
+					return false
+				end
+			end
+		end
+	end
+	
+	return true
+end
+
+function uiTetris:MoveBlock(dir)
+	local curr_x = self.curr_x
+	local curr_y = self.curr_y
+	
+	if dir == DIR_DOWN then
+		curr_x = self.curr_x + 1
+	elseif dir == DIR_LEFT then
+		curr_y = self.curr_y - 1
+	elseif dir == DIR_RIGHT then
+		curr_y = self.curr_y + 1
+	end
+	
+	if self:CanMove(curr_x, curr_y) then
+		self.curr_x = curr_x
+		self.curr_y = curr_y		
+		self:EraseCurrentBlock(EMPTY)
+		self:DrawCurrentBlock()
+		return true
+	else
+		if self.curr_x == START_X and self.curr_y == START_Y then
+			self:OnGameOver()
+			return false
+		elseif dir == DIR_DOWN then
+			self:DockBlock()
+			return false
+		end
+	end
+end
+
+function uiTetris:RotateBlock(dir)
+	local s = math.abs(self.current_block.shape + dir)
+	if s == 0 then
+		s = #blocks[self.current_block.type]
+	elseif s > #blocks[self.current_block.type] then
+		s = 1
+	end
+	
+	if s ~= self.current_block.shape then
+		local tmp_b = self.current_block.block
+		local tmp_s = self.current_block.shape
+		
+		self.current_block.shape = s
+		self.current_block.block = create_matrix(4, 4, false)
+		for k, v in pairs(blocks[self.current_block.type][s]) do
+			self.current_block.block[v[1]][v[2]] = true
+		end
+		
+		if not self:CanMove(self.curr_x, self.curr_y) then
+			self.current_block.block = tmp_b
+			self.current_block.shape = tmp_s
+		else
+			self:EraseCurrentBlock(EMPTY)
+			self:DrawCurrentBlock()
+		end
+	end
+end
+
+function uiTetris:EraseCurrentBlock(value)
+	for row = 1, BOARD_ROWS do
+		for col = 2, BOARD_COLS do
+			if self.board[row][col].avail == CURRENT then
+				self.board[row][col] = {avail = value, wnd = self.board[row][col].wnd,
+					colour = self.board[row][col].colour}
+				if value == EMPTY then
+					if self.board[row][col].wnd ~= nil then
+						self:DetachChild(self.board[row][col].wnd)
+						self.board[row][col] = {avail = EMPTY, wnd = nil, colour = nil}
+					end
+				end
+			end
+		end
+	end
+end
+
+function uiTetris:ClearAll()
+	local dlg = nil
+	
+	for i = 1, 4 do
+		for j = 1, 4 do
+			dlg = self:GetStatic(string.format("stc_next_block_%d%d", i, j))
+			if dlg then
+				self:DetachChild(dlg)
+			end
+		end
+	end
+	
+	if not self.board then
+		return
+	end
+	
+	for row = 1, BOARD_ROWS do
+		for col = 2, BOARD_COLS do
+			if self.board[row][col].wnd then
+				self:DetachChild(self.board[row][col].wnd)
+				self.board[row][col] = nil
+			end
+		end
+	end
+	
+	self.board = nil
+end
+
+function uiTetris:InvalidateRect(r)
+	local base_x = self.wnd_x + if_then_else(self.owner:WindowName() == "pda_games", 2, 32)
+	local base_y = self.wnd_y + if_then_else(self.owner:WindowName() == "pda_games", 4, 49)
+	local dlg, c = nil, nil
+	
+	for row = r, 1, -1 do
+		for col = 2, BOARD_COLS do
+			dlg, c = nil, nil
+			if self.board[row][col].wnd then
+				self:DetachChild(self.board[row][col].wnd)
+				self.board[row][col] = {avail = EMPTY, wnd = nil, colour = nil}
+				if row ~= 1 then
+					if self.board[row - 1][col].wnd then
+						c = self.board[row - 1][col].colour
+						dlg = self.xml:InitStatic("blocks:" .. c, self)
+						dlg:SetWndPos(base_x + (col - 2) * BLOCK_CELL_SIZE, base_y + (row - 1) * BLOCK_CELL_SIZE)
+						self:Register(dlg)
+					end
+				end
+			end
+			if row == 1 then
+				self.board[row][col] = {avail = EMPTY, wnd = nil, colour = nil}
+			else
+				self.board[row][col] = {avail = self.board[row - 1][col].avail, wnd = dlg, colour = c}
+			end
+		end
+	end
+end
+
+function uiTetris:CanRemove(row)
+	for col = 2, BOARD_COLS do
+		if self.board[row][col].avail ~= OCCUPIED then
+			return false
+		end
+	end
+	
+	return true
+end
+
+function uiTetris:EraseLines()
+	local lines = 0
+	local row = 1
+	
+	while true do
+		if self:CanRemove(row) then
+			self:InvalidateRect(row)
+			lines = lines + 1
+		end
+		row = row + 1
+		
+		if row == BOARD_ROWS + 1 then
+			break
+		end
+	end
+	
+	self.lines = self.lines + lines
+	self.points = self.points + (lines * LINE_POINTS)
+	
+	if self.points > 0 then
+		if self.points >= (self.level * LEVEL_UP) then
+			self.level = self.level + 1
+			self:OnLevelUp()
+		end
+	end
+	
+	self:UpdateStats()
+end
+
+function uiTetris:ImmediateDock()
+	-- too slow!
+	--while self:MoveBlock(DIR_DOWN) do end
+	
+	-- better (faster):	skips all the drawings before dock
+	self.curr_x = self.curr_x + 1
+	while self:CanMove(self.curr_x, self.curr_y) do
+		self.curr_x = self.curr_x + 1
+	end
+	
+	self.curr_x = self.curr_x - 1
+	
+	if self.curr_x == START_X and self.curr_y == START_Y then
+		self:OnGameOver()
+	else
+		self:EraseCurrentBlock(EMPTY)
+		self:DrawCurrentBlock()
+		self:DockBlock()
+	end
+end
+
+function uiTetris:DockBlock()
+	self:EraseCurrentBlock(OCCUPIED)
+	self:EraseLines()
+	
+	self.curr_x = START_X
+	self.curr_y = START_Y
+	
+	self.current_block = self.next_block
+	self.next_block = tBlock()
+	
+	self:DrawCurrentBlock()
+	self:DrawNextBlock()
+	
+	self.points = self.points + DOCKED_BLOCK
+	self:UpdateStats()
+end
+
+function uiTetris:OnLevelUp()
+	self:GetStatic("stc_info"):SetText(string.upper(game.translate_string("ui_tetris_new_level")))
+	self:GetStatic("stc_info"):Show(true)
+	self.stc_info_timer = time_global() + 2000
+end
+
+function uiTetris:UpdateStats()
+	self:GetStatic("stc_points"):SetText(game.translate_string("ui_tetris_points") .. " = " .. self.points)
+	self:GetStatic("stc_lines"):SetText(game.translate_string("ui_tetris_lines") .. " = " .. self.lines)
+	self:GetStatic("stc_level"):SetText(game.translate_string("ui_tetris_level") .. " = " .. self.level)
+end
+
+function uiTetris:OnNewGame()
+	self:reset()
+	self:UpdateStats()
+	self:ClearAll()
+	
+	self:GetButton("btn_new_game"):Enable(false)
+	self:GetButton("btn_pause"):Enable(true)
+	
+	self.curr_x = START_X
+	self.curr_y = START_Y
+	
+	self.board = self:CreateBoard()
+	self.current_block = tBlock()
+	self.next_block = tBlock()
+	
+	self:DrawNextBlock()
+	self:DrawCurrentBlock()
+	
+	self.block_timer = time_global() + 400
+	self.game_started = true
+end
+
+function uiTetris:OnPauseGame()
+	if self.game_paused then
+		self:GetButton("btn_pause"):SetText(game.translate_string("ui_tetris_pause"))
+		self:GetStatic("stc_info"):Show(false)
+	else
+		self:GetButton("btn_pause"):SetText(game.translate_string("ui_tetris_resume"))
+		self:GetStatic("stc_info"):SetText(string.upper(game.translate_string("ui_tetris_paused")))
+		self:GetStatic("stc_info"):Show(true)
+	end
+	self.game_paused = not self.game_paused
+end
+
+function uiTetris:OnGameOver()
+	self.game_over = true
+	self:ClearAll() -- gr1
+	self:GetStatic("stc_info"):SetText(string.upper(game.translate_string("st_game_over")))
+	self:GetStatic("stc_info"):Show(true)
+	self:GetButton("btn_new_game"):Enable(true)
+	self:GetButton("btn_pause"):Enable(false)
+end
+
+function uiTetris:OnExit()
+	self:ClearAll()
+	if self.owner and self.owner:WindowName() == "desktop" then
+		-- for pc only !!!
+		self.owner:OnChildDialogExit(self:WindowName())
+		self:GetHolder():start_stop_menu(self, true)
+	end
+end
+
+function uiTetris:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+				return true
+			end
+	
+		
+			if self.game_started and not self.game_over then		
+				if dik == DIK_keys.DIK_P then
+				self:OnPauseGame()
+					return true
+				end		
+				if not self.game_paused then
+					if dik == DIK_keys.DIK_UP then
+						self:RotateBlock(DIR_RIGHT)
+					elseif dik == DIK_keys.DIK_DOWN then
+						--self:RotateBlock(DIR_LEFT)
+						self:MoveBlock(DIR_DOWN)
+					elseif dik == DIK_keys.DIK_LEFT then
+						self:MoveBlock(DIR_LEFT)
+					elseif dik == DIK_keys.DIK_RIGHT then
+						self:MoveBlock(DIR_RIGHT)
+					elseif dik == DIK_keys.DIK_RETURN then
+						self:ImmediateDock()
+					end
+				end
+			end
+		end
+	end
+	
+	return true
+end

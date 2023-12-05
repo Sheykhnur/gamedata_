@@ -1,0 +1,199 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : lua_help_la.script
+ Description: Additional list of the classes exported to LUA
+ Copyright  : 2013 © LA-team
+ Author     : 
+ Editors    : 
+ Last edit  : 18.06.2013 [...]
+--/ ----------------------------------------------------------------------------------------------
+
+Additional list of the classes exported to LUA
+
+C++ class cse_alife_object : cse_abstract {
+  --/ engine build 492X (by gr1ph00n)
+  property direction;
+  --/ engine build 5XXX (by ...)
+  function set_custom_data(string);
+    example: se_obj:set_custom_data("[logic]\ncfg = scripts\\XXX.ltx")
+};
+
+C++ class cse_alife_dynamic_object : cse_alife_object {
+  property direction;
+  
+  function set_custom_data(string);
+};
+
+C++ class cse_alife_space_restrictor : cse_alife_dynamic_object,cse_shape {
+  property direction;
+  --/ engine build 5XXX (by ...)
+  const DEFAULT_RESTRICTOR_TYPE_NONE = 0;
+  const DEFAULT_RESTRICTOR_TYPE_OUT  = 1;
+  const DEFAULT_RESTRICTOR_TYPE_IN   = 2;
+  const RESTRICTOR_TYPE_NONE = 3;
+  const RESTRICTOR_TYPE_IN   = 4;
+  const RESTRICTOR_TYPE_OUT  = 5;
+  
+  function set_space_restrictor_type(number);
+    example: 
+};
+
+C++ class cse_alife_smart_zone : cse_alife_space_restrictor,cse_alife_schedulable {
+  function set_space_restrictor_type(number);
+};
+
+C++ class cse_alife_team_base_zone : cse_alife_space_restrictor {
+  function set_space_restrictor_type(number);
+};
+
+C++ class cse_alife_level_changer : cse_alife_space_restrictor {
+  function set_space_restrictor_type(number);
+};
+
+C++ class cse_custom_zone : cse_alife_dynamic_object,cse_shape {
+  property direction;
+  
+  function set_custom_data(string);
+};
+
+C++ class cse_anomalous_zone : cse_custom_zone {
+  --function set_space_restrictor_type(number); --/#?# - а почему нету?
+  function set_custom_data(string);
+  --/ engine build 50XX (by ...)
+  function add_shape_size(number);
+    example: 
+};
+
+C++ class cse_zone_visual : cse_anomalous_zone,cse_visual {
+  function set_custom_data(string);
+  function add_shape_size(number);
+};
+
+C++ class alife_simulator {
+  --/ engine build 492X (by gr1ph00n)
+  function create(alife_simulator*, string, number, const vector&, number, number);
+    example: alife():create(section, story_id, pos, dir, lvid, gvid) --/ set story_id
+  function create(alife_simulator*, string, const vector&, const vector&, number, number, number);
+    example: alife():create(section, pos, dir, lvid, gvid) --/ set direction
+  --/ engine build XXXX (by ...)
+  function store(alife_simulator*);
+  function timer_manager(alife_simulator*);
+  
+  function create_anomaly(alife_simulator*, string, const vector&, number, number, number, number);
+  function create_anomaly(alife_simulator*, string, const vector&, number, number, number, number, number);
+  function change_actor_level(alife_simulator*, vector, number, number, vector);
+  function teleport_entity(alife_simulator*, cse_abstract*, vector&, number, number);
+  function force_entity_update(const alife_simulator*, number);
+};
+
+C++ class game_object {
+  function is_blocked_slots_and_inventory(); -- заблокировано ли использование слотов и инвентаря (т.е. не обрабатываются нажатия на кнопки слотов и инвентаря, требовалось для сцен)
+  --/ Дабы избегать путаницы, посоветовал бы ввести (если еще не приняты) понятия:
+  --/ slot(s) - слот(ы), но не пояс
+  --/ belt - только пояс
+  --/ ruck - рюкзак (то, что не в слотах и не на поясе)
+  --/ inventory - рюкзак и все слоты (включая пояс)
+  --/ т.о. название функции избыточно и может иметь вид: is_blocked_inventory()
+  function block_slots_and_inventory(boolean); -- заблокировать использование слотов и инвентаря
+  --/ аналогично указанному выше: block_nventory
+  function set_actor_direction_vector(vector); -- направление гг по вектору
+  function set_fov(number); -- установить угол из глаз
+  function invulnerable() const; -- получение флага "бессмертие"
+  function invulnerable(boolean); -- сделать бессмертным
+  function set_actor_camera(number); -- установить вид камеры (от первого лица, от третьего и тд.)
+  --/ а почему бы не ближе к штатному(?), типа: device().cam_first_eye , или даже device().cam_eye_1
+  function has_silencer_installed() const; -- натянут ли глушитель на оружие
+  function has_grenade_launcher_installed() const; -- натянут ли гранатомет на оружие
+  function has_scope_installed () const; -- натянут ли прицел на оружие
+  --/ ну ведь в CoP уже имеются прямые аналоги 'weapon_silencer_status',weapon_grenadelauncher_status,weapon_scope_status', зачем же изобретать велосипед?
+  function is_first_eye(); -- смотрим ли мы от первого лица?
+  function move_to_ruck(game_object*); -- переместить из слота\пояса в рюкзак
+  --/ Отлично! Но:
+  --/ - теперь сразу хочется иметь коллбэк на появление предмета в рюкзаке! ;-)
+  --/ - а почему только из слота/пояса? А что, "с земли" - сложно добавить? Так же удобнее, чем трансферить! ;-)
+  function move_to_slot(game_object*, boolean); -- перестить в слот
+  --/ Отлично! Но:
+  --/ - теперь сразу хочется иметь коллбэк на появление предмета в слоте! ;-)
+  --/ - ну а для чего второй аргумент? Это типа 'НЕ' перемещать? Ну так нет вызова функции - и не будет перемещения.
+  --/ ну а почему пояс обделен? или он в одной куче со слотами? (см. о разделении в самом верху)
+  function set_actor_look_at_position(vector, number); -- гг посмотрит в указанную позицию (1 арг.) с определенной скоростью поворота (2 арг.)
+  function is_weapon_hidden(); -- спрятано ли оружие (проверка, чтобы много раз не была вызвана ф-ция прятания оружия)
+  function set_actor_legs_visible(boolean); -- установить видимость ног гг от первого лица (пока отключено)
+  function object_on_belt_by_id(number); -- объект на поясе по айди (арг.)
+  function get_torch_state(); -- получить флаг вкл\выкл у текущего фонарика гг
+  function set_torch_state(boolean); -- включить\ выключить фонарик гг
+  function deactivate_slot(); -- убрать оружие ( (!) с возможностью достать снова)
+  --/ ну нельзя же так... ;-) Если пишешь про оружие, то и в названии помянуть не мешает.
+  --/ а так - слотов много(!) и гадай в каком слоте это сработает, а в каком нет. Например граната - тоже "оружие"..., как и болт. :-)
+  function attach_addon(number); -- натянуть гранатомет\глуш.\прицел на оружие (айди аддона - арг.)
+  --/ может если уже 'installed' - то и применять его? или наоборот, использовать корень 'attach'?
+};
+--/ engine build 482X (by gr1ph00n)
+C++ class DynamicPatrolPath {
+  DynamicPatrolPath (string);
+  
+  function add_point(DynamicPatrolPoint*);
+  function add_link(DynamicPatrolPoint*, DynamicPatrolPoint*);
+};
+
+C++ class DynamicPatrolPoint {
+  DynamicPatrolPoint (class CPatrolPath*, DynamicPatrolPoint*);
+  DynamicPatrolPoint ();
+  
+  function set_position(vector);
+  function set_game_vertex_id(number);
+  function set_level_vertex_id(number);
+  function set_name(string);
+  function set_flags(number);
+};
+
+namespace keyboard {
+  function get_pressed_key();
+    example: local key = get_pressed_key() --/ number
+  function get_released_key();
+    example: local key = get_released_key() --/ number
+};
+
+namespace level {
+  function add_patrol(DynamicPatrolPath*);
+  function is_save_allowed(); --/ разрешено ли сейчас сохраняться
+  function save_allowed(boolean); --/ установить возможность сохраняться
+  --/ зачем изобретать велосипед(?), если уже есть название у аналогичного метода: keep_saved_data_anyway()
+  function set_weather_fx(string); --/ установить погоду
+  function ai_ignore_actor(boolean); --/ аи игнорирует актора (сталкеры, монстры)
+  function get_game_difficulty(); --/ получить сложность игры
+  function set_game_difficulty(enum ESingleGameDifficulty); -- установить сложность игры
+  function indicators_shown(); --/ показан ли ui худ в данный момент?
+  function send_event_key_pressed(number); --/ фэйковое нажатие клавиши (код клавиши - арг.)
+  function send_event_key_release(number); --/ фэйковое отпускание клавиши
+  function send_event_key_hold(number); --/ фэйковое удерживание клавиши
+  function send_event_mouse_move(number, number); --/ фэйковое движение мышью (координаты x,y - аргументы)
+  function send_event_mouse_wheel(number); --/ фэйковое кручение колесом мыши (арг. - на сколько прокрутим)
+  --/ engine build 5245 (by Skyloader) - хм, очередное засорение бинарников... одноразовыми (да еще и неработающими) функциями
+  function enable_pda_skills(boolean);
+  function enable_pda_downloads(boolean);
+};
+
+--/ engine build 5192 (by gr1ph00n)
+namespace game {
+  function convert_time(number);
+    example: local oCTime = game.get_game_time() + game.convert_time(5*1000) --/ set timer on 5 game-seconds
+  function convert_time(const CTime&);
+    example: local mseconds = game.convert_time(oCTime) --/ get rest game-mseconds (оставшиеся милисекунды)
+};
+
+--/ engine build 5192 (by gr1ph00n)
+C++ class CTime {
+  CTime (number, number, number, number, number);
+};
+
+--/ engine build 5227 (by SkyLoader)
+C++ class ui_events {
+  const LIST_ITEM_DB_CLICKED = 33;
+};
+
+--/ engine build 5227 (by SkyLoader)
+C++ class CCar : CGameObject,holder {
+  function OpenTrunkBone();
+  function CloseTrunkBone();
+};
+--]] ----------------------------------------------------------------------------------------------

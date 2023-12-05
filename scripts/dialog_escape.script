@@ -1,0 +1,133 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_escape.script
+ Description: Dialog & InfoPortions Function for Escape
+ Copyright  : 2004 © GSC Game World
+ Author     : gr1ph00n
+ Editors    : gr1ph00n, vintar, lox (21.07.2012)
+ Last edit  : 07.06.2013 [...]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function has_af_rusty_thorn(oSpeaker1, oSpeaker2)
+	return oSpeaker1:object("af_rusty_thorn_quest") ~= nil
+end
+
+function give_af_to_sid(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "af_rusty_thorn_quest") --/ NPC <~ item <~ actor
+	dialogs.relocate_money(oNPC, 800, "in") --/ NPC ~> money ~> actor
+end
+
+function give_drive_to_sid_break(oSpeaker1, oSpeaker2, sDlgId)
+	if not has_info("esc_rescue_novice_from_heli_done") then
+		give_info("esc_rescue_novice_from_heli_done")
+		dialogs.relocate_items(dialogs.get_npc(oSpeaker1, oSpeaker2), "esc_killed_flash")
+		dialogs.give_money(1000) --/ money ~> actor (give and message)
+	end
+	dialogs.break_dialog(oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function give_drive_to_sid(oSpeaker1, oSpeaker2)
+	if not has_info("esc_rescue_novice_from_heli_done") then
+		give_info("esc_rescue_novice_from_heli_done")
+		dialogs.relocate_items(dialogs.get_npc(oSpeaker1, oSpeaker2), "esc_killed_flash")
+		dialogs.give_money(1000) --/ money ~> actor (give and message)
+	end
+end
+
+function sid_give_flash(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oSpeaker1, "esc_killed_flash", "in")
+end
+
+function give_flash_to_sin(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oSpeaker2, "esc_killed_flash", "out")
+end
+
+function fox_reward(oSpeaker1, oSpeaker2)
+	dialogs.give_items("medkit", 2) --/ spawn to actor and message
+	dialogs.give_money(3000) --/ give to actor and message
+end
+
+function become_friend(oSpeaker1, oSpeaker2)
+	dialogs.become_friend(oSpeaker1, oSpeaker2) --/#~#
+end
+
+function about_unlocked()
+	return has_info("escape_trader_tutorial_done") and not has_info("esc_trader_told_all")
+end
+
+function can_activate_fox_task()
+	return has_info("esc_assault_bandit_factory_done") and has_info("esc_sid_special_check") and not has_info("esc_rescue_fox_start")
+end
+
+function can_get_sin_info()
+	return check_info_portions( {
+		["esc_talked_with_dstalker_leader"] = true,
+		["esc_sid_gives_dstalker_info"] = false,
+		["esc_fox_dead"] = false,
+	} )
+end
+
+function not_has_sin_info(oSpeaker1, oSpeaker2)
+	return check_info_portions( {["esc_talked_with_dstalker_leader"]=true,["esc_sid_gives_dstalker_info"]=false,["esc_fox_dead"]=false} )
+end
+
+function can_exchange_info_fox()
+	return check_info_portions( {["esc_sid_gives_dstalker_info"]=true,["esc_fox_rescued"]=false,["esc_fox_dead"]=false} )
+end
+
+function start_assault(oSpeaker1, oSpeaker2)
+	give_info_portions({"esc_assault_talked_petruha", "esc_assault_go1"})
+	dialogs.break_dialog(oSpeaker1, oSpeaker2)
+	local oSnd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\escape\\assault_raid")
+	if oSnd then
+		local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+		oSnd:play_no_feedback(oNPC, sound_object.s3d, 0, oNPC:position(), 1.0)
+	end
+end
+
+function mark_factory()
+	local obj = level_object_by_sid(6028)
+	if obj then
+		level.map_add_object_spot(obj:id(), "crlc_big", game.translate_string("esc_factory"))
+	end
+end
+
+function fox_greatings_precond(oSpeaker1, oSpeaker2)
+	return has_info("esc_fox_rescued") and not has_info("esc_fox_dialog_thanks")
+end
+
+function wolf_bandit_factory_reward(oSpeaker1, oSpeaker2)
+	dialogs.give_items("medkit",  1) --/ items ~> actor
+	dialogs.give_items("bandage", 1)
+	dialogs.give_items("antirad", 1)
+	dialogs.give_items("mineral_water", 1)
+end
+
+function can_complete_maddog_task()
+	return has_info("esc_got_maddog_stuff") and has_info("esc_rescue_novice_from_heli_done") and not has_info("esc_sid_special_check")
+end
+
+function give_maddog_stuff(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "esc_maddog_pda") --/ NPC <~ item <~ actor
+	dialogs.relocate_items(oNPC, "af_electra_maddog")
+	dialogs.give_items("conserva",  3) --/ items ~> actor
+	dialogs.give_items("korn_conserva",  2)
+	dialogs.give_items("bandage",  1)
+	dialogs.give_items("medkit",  1)
+end
+
+function wolf_greatings_precond(oSpeaker1, oSpeaker2)
+	if has_info("esc_talked_with_wolf") and has_info("esc_wolf_spoke_all") then
+		return false
+	end
+	return true
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,82 @@
+[smart_terrains]
+none = true
+
+[hit@out_chef]
+on_info = %+out_bar_hit%
+
+[combat_ignore@chef]
+
+[logic]
+active = walker@out_chef_serve
+combat_ignore = combat_ignore@chef
+on_hit = hit@out_chef
+
+[walker@out_chef_serve]
+path_walk = out_chef_serve_walk
+path_look = out_chef_serve_look
+combat_ignore_cond = {!hit_by_actor}
+meet = meet@chef
+on_timer = 35000 | walker@out_chef_drink
+on_info = {+out_got_flash -out_dialog_completed} walker@out_chef_serve_combat %=out_freedom_hate_another_cond%
+
+[walker@out_chef_drink]
+path_walk = out_chef_drink_walk
+path_look = out_chef_drink_look
+on_signal = drink | remark@out_chef_drink
+combat_ignore_cond = {!hit_by_actor}
+on_info = {+out_got_flash -out_dialog_completed} walker@out_chef_problem
+
+[remark@out_chef_drink]
+anim = drink_vodka
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+on_timer = 13500 | remark@wait_chef_drink_end
+on_info = {+out_got_flash -out_dialog_completed} walker@out_chef_problem
+
+[remark@wait_chef_drink_end]
+anim = drink_vodka_out
+combat_ignore_cond = {!hit_by_actor}
+on_signal = anim_end | walker@out_chef_serve
+meet = no_meet
+on_info = {+out_got_flash -out_dialog_completed} walker@out_chef_problem
+
+[meet@chef]
+use = true
+use_wpn = true
+victim 	= 15| actor
+victim_wpn = 15| actor
+meet_state = 5|nil
+meet_state_wpn = 5|nil
+combat_ignore_cond = {!hit_by_actor}
+
+[walker@out_chef_problem]
+path_walk = out_chef_serve_walk2
+path_look = out_chef_serve_look2
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_signal = reached | remark@out_chef_problem %+out_guard_here%
+
+[remark@out_chef_problem]
+anim = ordinary_talk3 ;sci_calling
+snd = out_chef_replic
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+target = actor
+on_signal = sound_end | remark@out_chef_wait
+
+[remark@out_chef_wait]
+anim = wait
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+target = out_chef_serve_look2, 0
+on_info = {+out_dialog_completed} walker@out_chef_serve_combat
+on_info2 = {+out_actor_returned} walker@out_chef_serve_combat
+
+[walker@out_chef_serve_combat]
+path_walk = out_chef_serve_walk
+path_look = out_chef_serve_look
+combat_ignore_cond = {+out_actor_left -out_actor_returned !hit_by_actor}
+meet = meet@chef

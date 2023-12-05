@@ -1,0 +1,116 @@
+[logic]
+active = sr_idle@idle
+
+[sr_idle@idle]
+on_info = {+bar_arena_start_introduce +bar_arena_dogs_choosen -bar_arena_actor_afraid -bar_arena_dogs_defeated} sr_sound@introduce_dogs, {+bar_arena_start_introduce +bar_arena_pseudodog_choosen -bar_arena_actor_afraid -bar_arena_pseudodog_defeated} sr_sound@introduce_pseudodog, {+bar_arena_start_introduce +bar_arena_snork_choosen -bar_arena_actor_afraid -bar_arena_snork_defeated} sr_sound@introduce_snork, {+bar_arena_start_introduce +bar_arena_bloodsucker_choosen -bar_arena_actor_afraid -bar_arena_bloodsucker_defeated} sr_sound@introduce_bloodsucker, {+bar_arena_start_introduce +bar_arena_burer_choosen -bar_arena_actor_afraid -bar_arena_burer_defeated} sr_sound@introduce_burer, {+bar_arena_start_introduce +bar_arena_burer_choosen -bar_arena_actor_afraid -bar_arena_burer_defeated} sr_sound@introduce_burer, {+bar_arena_start_introduce +bar_arena_savage_choosen -bar_arena_actor_afraid -bar_arena_savage_defeated} sr_sound@introduce_savage
+
+[sr_idle@fight]
+on_info = {+bar_arena_actor_lose -bar_sr_random_sound} sr_idle@fight_random, {-bar_arena_start} sr_idle@idle, {+bar_arena_start_introduce +bar_arena_actor_afraid} sr_sound@actor_afraid, {+bar_arena_actor_victory +bar_arena_20_p +bar_arena_start_introduce} sr_sound@victory, {+bar_arena_actor_victory -bar_actor_lost_time +bar_arena_start_introduce} sr_sound@victory, {+bar_arena_actor_dead +bar_arena_start_introduce} sr_sound@death,  {+bar_arena_fight -bar_arena_fight_start +bar_arena_start_introduce} sr_sound@fight_begin %+bar_arena_fight_start%, {+bar_arena_monstr_dead +bar_arena_start_introduce -bar_actor_lost_time +bar_arena_actor_lose} sr_sound@lose, {+bar_megafon_start -bar_arena_fight -bar_arena_savage_choosen} ph_sound@bar_arena_public_start, {+bar_arena_actor_lose +bar_actor_lost_time +bar_arena_start_introduce} sr_sound@loose_notime, {+bar_megafon_start -bar_arena_fight +bar_arena_savage_choosen} ph_sound@bar_arena_public_savage
+
+[sr_idle@fight_random]
+on_info = {~45 +bar_arena_actor_lose -bar_actor_lost_time} sr_sound@timeout %+bar_actor_lost_time +bar_sr_random_sound%, sr_idle@fight %+bar_sr_random_sound%
+
+[ph_sound@bar_arena_public_start]
+snd = bar_arena_public_start
+min_idle = 0 ;1000
+max_idle = 0 ;1500
+random = true
+on_info = {+bar_arena_fight} sr_idle@fight
+
+[ph_sound@bar_arena_public_savage]
+snd = bar_arena_public_start_savage
+min_idle = 0
+max_idle = 0
+random = true
+on_info = {+bar_arena_fight} sr_idle@fight
+
+[sr_sound@fight_begin]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_start
+delay = 0
+;play_at_actor = true
+on_signal = sound_end | {+bar_arena_actor_victory} sr_sound@victory %-bar_arena_start_introduce%, sr_idle@fight %-bar_arena_start_introduce%
+
+[sr_sound@actor_afraid] 
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_coward
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@idle
+
+[sr_sound@introduce_dogs]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_dogs
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+;on_timer = 24000 | sr_idle@fight %-bar_arena_start_introduce%
+on_signal = sound_end | sr_idle@fight %-bar_arena_start_introduce%
+
+[sr_sound@introduce_pseudodog]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_pseudodog_new
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@fight %-bar_arena_start_introduce%
+
+[sr_sound@introduce_snork]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_snork
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@fight %-bar_arena_start_introduce%
+
+[sr_sound@introduce_bloodsucker]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_bloodsucker
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@fight %-bar_arena_start_introduce%
+
+[sr_sound@introduce_burer]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_burer
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@fight %-bar_arena_start_introduce%
+
+[sr_sound@introduce_savage]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_zver
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@fight %-bar_arena_start_introduce%
+
+[sr_sound@timeout]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_out_of_time
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | {+bar_arena_actor_lose +bar_arena_monstr_dead} sr_sound@loose_notime %-bar_arena_start_introduce%, sr_idle@fight %-bar_arena_start_introduce +bar_actor_lost_time%
+
+[sr_sound@victory]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_win_1
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@idle %-bar_arena_start_introduce +bar_arena_megafon_finished%
+
+[sr_sound@lose]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_out_of_time_win
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@idle %-bar_arena_start_introduce +bar_arena_megafon_finished%
+
+[sr_sound@loose_notime]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_win_2
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@idle %-bar_arena_start_introduce +bar_arena_megafon_finished%
+
+[sr_sound@death]
+snd = characters_voice\scenario\bar\arena_megafon\mega_arena_dead
+delay = 0
+slide_sound_once = true
+;play_at_actor = true
+on_signal = sound_end | sr_idle@idle %-bar_arena_start_introduce%

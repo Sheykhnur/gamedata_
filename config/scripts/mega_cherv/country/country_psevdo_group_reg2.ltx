@@ -1,0 +1,42 @@
+[danger@psevduch_regular2]
+ignore_distance = 0
+danger_inertion_time = 1500
+
+[danger@psevduch_regular22]
+ignore_types                = hit
+ignore_distance_sound       = 0
+ignore_distance_danger_hit     = 2
+ignore_distance             = 0
+ignore_distance_hit = 0
+danger_inertion_time = 1500
+danger_inertion_time_corpse = 0
+
+[threshold@psevduch_regular2]
+max_ignore_distance = 6
+
+[logic]
+active = walker@psevduch_regular2_start
+;on_death = death@psevduch_regular2
+danger = danger@psevduch_regular2
+threshold = threshold@psevduch_regular2
+
+[walker@psevduch_regular2_start]
+path_walk = psevduch_group_regular2_start
+path_look = psevduch_group_look
+combat_ignore_cond = always
+team = psevduch_group
+on_info = {+count_psevduch_dvinuli} walker@psevduch_regular2_walk
+meet = no_meet
+
+[walker@psevduch_regular2_walk]
+path_walk = psevduch_group_regular2_walk
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+team = psevduch_group
+on_signal = prishli| walker@psevduch_regular2_walk2 
+
+[walker@psevduch_regular2_walk2]
+path_walk = psevduch_home_walk
+path_look = psevduch_home_walk
+team = psevduch_group
+meet = no_meet

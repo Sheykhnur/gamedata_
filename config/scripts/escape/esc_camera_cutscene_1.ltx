@@ -1,0 +1,39 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-scene_end -scene_start +esc_assault_talked_petruha} sr_cutscene@1 %+scene_start =disable_ui%
+;on_info = {+scene_force_portion} sr_cutscene@1 %+scene_start =disable_ui%
+
+[sr_cutscene@1]
+point = camera_way
+look = camera_look
+cam_effector = factory_esc_main
+on_signal = cameff_end | nil %+scene_end +player_near =enable_ui =release%
+
+
+
+
+
+
+;on_signal = cameff_end | nil %+player_near2 +scene_end +scene_end2 =enable_ui%
+;[sr_idle@1]
+;on_timer = 1000| sr_cutscene@1
+
+;[sr_idle@2]
+;on_timer = 1000| sr_cutscene@2
+
+;on_signal = cameff_end | sr_idle@1
+
+;[sr_cutscene@1]
+;point = camera_way
+;look = camera_look
+;cam_effector = factory_esc_02
+;on_game_timer = 13 | sr_idle@2
+;on_signal = cameff_end | sr_idle@2
+
+;[sr_cutscene@2]
+;point = camera_way
+;look = camera_look
+;cam_effector = factory_esc_03
+;on_signal = cameff_end | nil %+player_near2 +scene_end2 =enable_ui%

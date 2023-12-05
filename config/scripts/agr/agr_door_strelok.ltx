@@ -1,0 +1,26 @@
+;STRELOK'S HIDEOUT DOOR
+[logic]
+active = ph_door@locked
+
+[ph_door@locked]
+locked = true
+closed = true
+snd_open_start = metal_small_locked
+on_use = {!actor_has_item(agro_door_key) -agro_find_key_info} %+agro_find_key_info =scenario_autosave(esc_wagon_key_text)%, {=actor_has_item(agro_door_key)} ph_door@open %=lost_item(agro_door_key)%
+;on_use2 = {=actor_has_item(agro_door_key)} ph_door@open
+
+[ph_door@closed]
+locked = false
+closed = true
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+
+[ph_door@open]
+locked = false
+closed = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed

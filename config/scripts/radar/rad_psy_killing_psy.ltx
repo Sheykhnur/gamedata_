@@ -1,0 +1,16 @@
+[logic]
+active = {-deactivate_radar_done} sr_idle, {+deactivate_radar_done} nil %=release%
+ 
+[sr_idle]
+on_actor_inside = sr_psy_antenna
+on_info = {+deactivate_radar_done} nil %=release%
+
+[sr_psy_antenna]
+eff_intensity = +300
+hit_intensity = +90
+phantom_prob = 100
+postprocess = psy_antenna.ppe
+min_phantom_idle = 100
+max_phantom_idle = 500
+on_info = {+deactivate_radar_done} nil %=release%
+on_actor_outside = sr_idle

@@ -1,0 +1,979 @@
+
+-- file: pcSolitare.script
+-- author: barin
+-- date: 2009-08-11
+-- edited by: barin
+-- last edited: 2009-09-09
+
+local MAX_ROWS = 23
+
+local cards_pos =
+{
+	[1] =
+	{
+		[1] = {x = 20, y = 40},
+		[2] = {x = 100, y = 40},
+		[3] = {x = 180, y = 40},
+		[4] = {x = 260, y = 40},
+		[5] = {x = 340, y = 40},
+		[6] = {x = 420, y = 40},
+		[7] = {x = 500, y = 40},
+	},
+	[2] = 
+	{
+		[1] = {x = 20, y = 146},
+		[2] = {x = 100, y = 146},
+		[3] = {x = 180, y = 146},
+		[4] = {x = 260, y = 146},
+		[5] = {x = 340, y = 146},
+		[6] = {x = 420, y = 146},
+		[7] = {x = 500, y = 146},
+	},
+}
+
+for i = 2, MAX_ROWS do
+	cards_pos[i + 1] = {}
+	for j = 1, 7 do
+		cards_pos[i + 1][j] = {}
+		cards_pos[i + 1][j].x = cards_pos[i][j].x
+		cards_pos[i + 1][j].y = cards_pos[i][j].y + 15
+	end
+end
+
+local DECK =
+{
+	["jack"] = { "heart", "diamond",	"spade", "club" },
+	["queen"] = { "heart", "diamond",	"spade", "club" },
+	["king"] = { "heart", "diamond",	"spade", "club" },
+	["ace"] = { "heart", "diamond",	"spade", "club" },
+}
+for i = 2, 10 do
+	DECK[tostring(i)] = { "heart", "diamond",	"spade", "club" }
+end
+
+-- ************************************************************************** --
+
+local BACK_TEXTURE = "ui_cards_back_1" --"ui_cards_back_2"
+local FRAME_TEXTURE = "ui_cards_selected"
+local FAKE_BTN_TEXTURE = "ui_cards_fake"
+local STACK_BTN_TEXTURE = "ui_cards_stack_deck"
+
+local CARD_WIDTH = 71
+local CARD_HEIGHT = 96
+
+function deck_copy()
+	local t = {}
+	for k, v in pairs(DECK) do
+		t[k] = {}
+		for kk, vv in pairs(v) do
+			table.insert(t[k], vv)
+		end
+	end
+	return t
+end
+
+function gCardValue(c_name)
+	local n = tonumber(c_name)
+	if n then
+		return n
+	end
+	
+	if c_name == "jack" then
+		return 11
+	elseif c_name == "queen" then
+		return 12
+	elseif c_name == "king" then
+		return 13
+	elseif c_name == "ace" then
+		return 14
+	end
+end
+
+-- ************************************************************************** --
+
+class "uiCard" (CUIButton)
+
+function uiCard:__init(c_name, c_type) super()
+	self.card_name = c_name
+	self.card_type = c_type
+	
+	if self.card_name:find("btn_fake_") then
+		self.texture = FAKE_BTN_TEXTURE
+		self.card_side = "front"
+		self.position = "fake"
+	elseif self.card_name:find("stack_deck_fake_") then
+		self.texture = STACK_BTN_TEXTURE
+		self.card_side = "front"
+		self.position = "stack_deck_fake"
+	else
+		self.texture = string.format("ui_cards_%s_%s", c_name, c_type)
+		self.position = "table"
+		self.card_side = "back"
+		if c_type == "heart" or c_type == "diamond" then
+			self.card_color = "red"
+		else
+			self.card_color = "black"
+		end
+	end
+	
+	self.pos_x = 0
+	self.pos_y = 0
+	
+	self.card_width = CARD_WIDTH
+	self.card_height = CARD_HEIGHT
+end
+
+function uiCard:__finalize()
+end
+
+function uiCard:SetType(t)
+	self.position = t
+end
+
+function uiCard:GetType()
+	return self.position
+end
+
+function uiCard:SetPosition(x, y)
+	self.pos_x = x
+	self.pos_y = y
+end
+
+function uiCard:SetSide(side)
+	self.card_side = side
+end
+
+function uiCard:CanDock(target)
+	if self.position == "fake" then
+		return false
+	end
+	if self.position == "stack_deck_fake" then
+		return false
+	end
+	if self.position == "stack_left" then
+		return target.position == "stack_right"
+	end
+	if target.position == "fake" then
+		return (self.position ~= "stack_deck" and self.card_name == "king")
+	end
+	if target.position == "stack_deck_fake" then
+		return (self.position ~= "stack_deck" and self.card_name == "ace")
+	end
+	if target.position == "stack_deck" then
+		if self.position == "stack_deck" then
+			return false
+		end
+		if self.card_type == target.card_type then
+			local s = gCardValue(self.card_name)
+			local t = gCardValue(target.card_name)
+			return ((s == 2 and t == 14) or (s == t + 1))
+		else
+			return false
+		end
+	end
+	if self.card_color ~= target.card_color then
+		return (gCardValue(self.card_name) == gCardValue(target.card_name) - 1)
+	end
+	
+	return false
+end
+
+function uiCard:isInverted()
+	return self.card_side == "back"
+end
+
+function uiCard:Invert()
+	if self.card_side == "back" then
+		self.card_side = "front"
+		self:InitTexture(self.texture)
+		self:Enable(true)
+	end
+end
+
+function uiCard:GetInitData()
+	local t = if_then_else(self.card_side == "front", self.texture, BACK_TEXTURE)
+	return t, self.pos_x, self.pos_y, self.card_width, self.card_height
+end
+
+function uiCard:ToString()
+	return self:WindowName()
+end
+
+function uiCard:Clone()
+	local b = uiCard(self.card_name, self.card_type)
+	b:SetPosition(self.pos_x, self.pos_y)
+	b:SetSide(self.card_side)
+	b:SetType(self.position)
+	
+	return b
+end
+
+-- ************************************************************************** --
+
+class "stack"
+
+function stack:__init()
+	self:clear()
+end
+
+function stack:__finalize()
+end
+
+function stack:push(name)
+	self.count = self.count + 1
+	self.items[self.count] = name
+end
+
+function stack:pop()
+	local name = self.items[self.count]
+	self.items[self.count] = nil
+	self.count = self.count - 1
+	
+	return name
+end
+
+function stack:contains(name)
+	for k, v in pairs(self.items) do
+		if v == name then
+			return k
+		end
+	end
+	return nil
+end
+
+function stack:get_last_elem()
+	return self.items[self.count]
+end
+
+function stack:is_empty()
+	return self.count == 0
+end
+
+function stack:clear()
+	self.count = 0
+	self.items = {}
+end
+
+-- ************************************************************************** --
+
+function DispatchClickEvent(wnd, btn_name)
+	wnd:OnCardClicked(btn_name)
+end
+
+class "uiBoard" (CUIScriptWnd)
+
+function uiBoard:__init(parent) super()
+	self.parent = parent
+	self.wnd_x = parent.wnd_x
+	self.wnd_y = parent.wnd_y
+	
+	self.wnd_w = parent.wnd_width
+	self.wnd_h = parent.wnd_height
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	--self.parent:AttachChild(self)
+end
+
+function uiBoard:__finalize()
+end
+
+function uiBoard:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiBoard:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_w, self.wnd_h)
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box, "message_box")
+	
+	self.sel_card_frame = CUIStatic()
+	self.sel_card_frame:SetAutoDelete(true)
+	self.sel_card_frame:Init(FRAME_TEXTURE, 580, 146, 83, 115)
+	self.sel_card_frame:Show(false)
+	self:AttachChild(self.sel_card_frame)
+	
+	self.sel_card_label = CUIStatic()
+	self.sel_card_label:SetAutoDelete(true)
+	self.sel_card_label:SetText(game.translate_string("ui_klondike_selected"))
+	self.sel_card_label:SetTextAlign(CGameFont.alCenter)
+	self.sel_card_label:SetFont(pcTextViewer.get_font("letterica16"))
+	self.sel_card_label:SetTextColor(pcTextViewer.get_colour("yellow"))
+	self.sel_card_label:Init(585, 246, 72, 20)
+	self.sel_card_label:Show(false)
+	self:AttachChild(self.sel_card_label)
+	
+	self.sel_card = CUIStatic()
+	self.sel_card:SetAutoDelete(true)
+	self.sel_card:Init(BACK_TEXTURE, 586, 150, CARD_WIDTH, CARD_HEIGHT)
+	self.sel_card:Show(false)
+	self:AttachChild(self.sel_card)
+	
+	self.prev_selected_card = nil
+	self.cards_deck = {}
+	self.stack_deck = {}
+	self.stack_left = stack()
+	self.stack_right = stack()
+	
+	local name = nil
+	
+	for k, v in pairs(DECK) do
+		for kk, vv in pairs(v) do
+			name = string.format("card_%s_%s", k, vv)
+			self.cards_deck[name] = {}
+			self.cards_deck[name].callback = function() DispatchClickEvent(self, string.format("card_%s_%s", k, vv)) end
+		end
+	end
+	
+	for i = 1, 4 do
+		self.stack_deck[i] = stack()
+		name = "stack_deck_fake_" .. i
+		self.cards_deck[name] = {}
+		self.cards_deck[name].callback = function() DispatchClickEvent(self, string.format("stack_deck_fake_%d", i)) end
+	end
+	
+	for i = 1, 7 do
+		name = "btn_fake_" .. i
+		self.cards_deck[name] = {}
+		self.cards_deck[name].callback = function() DispatchClickEvent(self, string.format("btn_fake_%d", i)) end
+	end
+end
+
+function uiBoard:InitCallBacks()
+	self:AddCallback("message_box", ui_events.MESSAGE_BOX_YES_CLICKED, self.OnMsgBoxYes, self)
+	self:AddCallback("message_box", ui_events.MESSAGE_BOX_NO_CLICKED, self.OnMsgBoxNo, self)
+	
+	for k, v in pairs(self.cards_deck) do
+		self:AddCallback(k, ui_events.BUTTON_CLICKED, v.callback, self)
+	end
+end
+
+function uiBoard:OnMsgBoxYes()
+	self:OnNewGame()
+end
+
+function uiBoard:OnMsgBoxNo()
+end
+
+function uiBoard:CreateBoard()
+	self.board = {}
+	for row = 1, MAX_ROWS do
+		self.board[row] = {}
+		for col = 1, 7 do
+			self.board[row][col] = nil
+		end
+	end
+end
+
+function uiBoard:RemoveCards()
+	for k, v in pairs(self.cards_deck) do
+		if v.card then
+			self:DetachChild(v.card)
+			v.card = nil
+		end
+	end
+end
+
+function uiBoard:OnNewGame()
+	self.sel_card_frame:Show(true)
+	self.sel_card_label:Show(true)
+	self.sel_card:Show(false)
+	
+	self.is_game_end = false
+	
+	self.stack_left:clear()
+	self.stack_right:clear()
+	
+	for k, v in pairs(self.stack_deck) do
+		v:clear()
+	end
+	
+	self:CreateBoard()
+	self:RemoveCards()
+	
+	BACK_TEXTURE = string.format("ui_cards_back_%d", math.random(2))
+	
+	self:Shuffle()
+end
+
+function uiBoard:MoveCard(n, x, y)
+	local new_card = self.cards_deck[n].card:Clone()
+	self:DetachChild(self.cards_deck[n].card)
+	
+	self.cards_deck[n].card = new_card
+	self.cards_deck[n].card:SetAutoDelete(true)
+	self.cards_deck[n].card:SetWindowName(n)
+	
+	self.cards_deck[n].card:SetPosition(cards_pos[x][y].x, cards_pos[x][y].y)
+	self.cards_deck[n].card:Init(self.cards_deck[n].card:GetInitData())
+	self.cards_deck[n].card:Enable(true)
+	self:AttachChild(self.cards_deck[n].card)
+	
+	self.cards_deck[n].card.board_x = x
+	self.cards_deck[n].card.board_y = y
+	self.board[x][y] = n
+end
+
+function uiBoard:MoveAllCards(src, dest)
+	local curr_x = self.cards_deck[src].card.board_x
+	local curr_y = self.cards_deck[src].card.board_y
+	local dest_x = self.cards_deck[dest].card.board_x + 1
+	local dest_y = self.cards_deck[dest].card.board_y
+	local prev_x = curr_x - 1
+	
+	while self.board[curr_x][curr_y] do
+		self:MoveCard(self.board[curr_x][curr_y], dest_x, dest_y)
+		self.board[curr_x][curr_y] = nil
+		curr_x = curr_x + 1
+		dest_x = dest_x + 1
+	end
+	
+	if self.board[prev_x][curr_y] then
+		self.cards_deck[self.board[prev_x][curr_y]].card:Enable(true)
+	end
+end
+
+function uiBoard:LeftStackToRightStack(c_name)
+	self.cards_deck[c_name].card:SetType("stack_right")
+	self.cards_deck[c_name].card:SetSide("front")
+	
+	local tmp = nil
+	local n = nil
+	
+	if not self.stack_right:is_empty() then
+		tmp = self.stack_right:get_last_elem()
+		self.cards_deck[tmp].card:Enable(false)
+	end
+	
+	n = self.stack_left:pop()
+	self.stack_right:push(n)
+	self:MoveCard(n, 1, 2)
+	self.board[1][2] = nil
+	
+	if self.stack_left:is_empty() then
+		n = self.stack_right:pop()
+		self.stack_left:clear()
+		while not self.stack_right:is_empty() do
+			tmp = self.stack_right:pop()
+			self.stack_left:push(tmp)
+			self.cards_deck[tmp].card:SetType("stack_left")
+			self.cards_deck[tmp].card:SetSide("back")
+			self:MoveCard(tmp, 1, 1)
+			self.board[1][1] = nil
+			self.cards_deck[tmp].card:Enable(false)
+		end
+		if not self.stack_left:is_empty() then
+			tmp = self.stack_left:get_last_elem()
+			self.cards_deck[tmp].card:Enable(true)
+		end
+		self.stack_right:push(n)
+	else
+		n = self.stack_left:get_last_elem()
+		self.cards_deck[n].card:Enable(true)
+	end
+end
+
+function uiBoard:GetCardType(c_name)
+	return self.cards_deck[c_name].card:GetType()
+end
+
+function uiBoard:CanDockCard(src, dest)
+	return self.cards_deck[src].card:CanDock(self.cards_deck[dest].card)
+end
+
+function uiBoard:UpdateStack(s)
+	local n = s:pop()
+	n = s:get_last_elem()
+	if n then
+		self.cards_deck[n].card:Enable(true)
+	end
+end
+
+function uiBoard:IsOnTop(c_name)
+	local x = self.cards_deck[c_name].card.board_x
+	local y = self.cards_deck[c_name].card.board_y
+	
+	return (self.board[x + 1][y] == nil)
+end
+
+function uiBoard:CheckButtons()
+	local tmp = nil
+	
+	for k, v in pairs(self.cards_deck) do
+		if v.card then
+			if v.card.position == "stack_left" then
+				tmp = self.stack_left:get_last_elem() == k
+				tmp = if_then_else(tmp, true, false)
+				v.card:Enable(tmp)
+			elseif v.card.position == "stack_right" then
+				tmp = self.stack_right:get_last_elem() == k
+				tmp = if_then_else(tmp, true, false)
+				v.card:Enable(tmp)
+			elseif v.card.position == "stack_deck" then
+				tmp = self:GetStackByType(v.card.card_type)
+				tmp = self.stack_deck[tmp]:get_last_elem() == k
+				v.card:Enable(if_then_else(tmp, true, false))
+			elseif v.card.position == "stack_deck_fake" then
+				tmp = tonumber(k:gsub("[^%d]", ""))
+				v.card:Enable(self.stack_deck[tmp]:is_empty())
+			elseif v.card.position == "table" then
+				if self.board[v.card.board_x + 1][v.card.board_y] then
+					if v.card:isInverted() then
+						v.card:Enable(false)
+					else
+						v.card:Enable(true)
+					end
+				else
+					v.card:Enable(true)
+				end
+			elseif v.card.position == "fake" then
+				tmp = tonumber(k:gsub("[^%d]", ""))
+				tmp = self.board[2][tmp] ~= nil
+				v.card:Enable(if_then_else(tmp, false, true))
+			end
+		end
+	end
+end
+
+function uiBoard:OnCardClicked(c_name)
+	if self.is_game_end then
+		return
+	end
+	
+	local card_position_type = self.cards_deck[c_name].card:GetType()
+	
+	if card_position_type == "fake" then
+		if self.prev_selected_card ~= nil then
+			if self:CanDockCard(self.prev_selected_card, c_name) then
+				if self:GetCardType(self.prev_selected_card) == "stack_right" then
+					-- stack_right --> fake
+					self.cards_deck[self.prev_selected_card].card:SetType("table")
+					local x = self.cards_deck[c_name].card.board_x + 1
+					local y = self.cards_deck[c_name].card.board_y
+					self:MoveCard(self.prev_selected_card, x, y)
+					self:UpdateStack(self.stack_right)
+				else
+					-- table --> fake
+					--if self:IsOnTop(self.prev_selected_card) then
+						self:MoveAllCards(self.prev_selected_card, c_name)
+					--end
+				end
+			end
+		end
+		self.prev_selected_card = nil
+	elseif card_position_type == "stack_left" then
+		if self.prev_selected_card == nil then
+			self:LeftStackToRightStack(c_name)
+		end
+		self.prev_selected_card = nil
+	elseif card_position_type == "stack_right" then
+		if self.prev_selected_card ~= nil then
+			self.prev_selected_card = nil
+		else
+			self.prev_selected_card = c_name
+		end
+	elseif card_position_type == "stack_deck" then
+		if self.prev_selected_card ~= nil then
+			if self:CanDockCard(self.prev_selected_card, c_name) then
+				if self:GetCardType(self.prev_selected_card) == "table" then
+					-- table --> stack_deck
+					if self:IsOnTop(self.prev_selected_card) then
+						self.cards_deck[c_name].card:Enable(false)
+						local x = self.cards_deck[self.prev_selected_card].card.board_x
+						local y = self.cards_deck[self.prev_selected_card].card.board_y
+						self.board[x][y] = nil
+						if self.board[x - 1][y] then
+							self.cards_deck[self.board[x - 1][y]].card:Enable(true)
+						end
+						self.cards_deck[self.prev_selected_card].card:SetType("stack_deck")
+						local index = self:GetStackByType(self.cards_deck[c_name].card.card_type)
+						self.stack_deck[index]:push(self.prev_selected_card)
+						self:MoveCard(self.prev_selected_card, 1, index + 3)
+						self.board[1][index + 3] = nil
+					end
+				else
+					-- stack_right --> stack_deck
+					self.cards_deck[c_name].card:Enable(false)
+					self.cards_deck[self.prev_selected_card].card:SetType("stack_deck")
+					local index = self:GetStackByType(self.cards_deck[c_name].card.card_type)
+					self.stack_deck[index]:push(self.prev_selected_card)
+					self:MoveCard(self.prev_selected_card, 1, index + 3)
+					self.board[1][index + 3] = nil
+					self:UpdateStack(self.stack_right)
+				end
+			end
+			self.prev_selected_card = nil
+		else
+			self.prev_selected_card = c_name
+		end
+	elseif card_position_type == "table" then
+		if self.cards_deck[c_name].card:isInverted() then
+			self.cards_deck[c_name].card:Invert()
+			self.prev_selected_card = nil
+		else
+			if self.prev_selected_card == nil then
+				self.prev_selected_card = c_name
+			else
+				if self:IsOnTop(c_name) then
+					if self:CanDockCard(self.prev_selected_card, c_name) then
+						local x = self.cards_deck[c_name].card.board_x
+						local y = self.cards_deck[c_name].card.board_y
+						if self:GetCardType(self.prev_selected_card) == "table" then
+							-- table --> table
+							self:MoveAllCards(self.prev_selected_card, c_name)
+						elseif self:GetCardType(self.prev_selected_card) == "stack_right" then
+							-- stack_right --> table
+							self.cards_deck[self.prev_selected_card].card:SetType("table")
+							self:MoveCard(self.prev_selected_card, x + 1, y)
+							self:UpdateStack(self.stack_right)
+						else
+							-- stack_deck --> table
+							self.cards_deck[self.prev_selected_card].card:SetType("table")
+							self:MoveCard(self.prev_selected_card, x + 1, y)
+							local c_type = self.cards_deck[self.prev_selected_card].card.card_type
+							local index = self:GetStackByType(c_type)
+							self:UpdateStack(self.stack_deck[index])
+						end
+					end
+				end
+				self.prev_selected_card = nil
+			end
+		end
+	elseif card_position_type == "stack_deck_fake" then
+		if self.prev_selected_card ~= nil then
+			if self:CanDockCard(self.prev_selected_card, c_name) then
+				if self:GetCardType(self.prev_selected_card) == "table" then
+					-- table --> stack_deck_fake
+					if self:IsOnTop(self.prev_selected_card) then
+						self.cards_deck[c_name].card:Enable(false)
+						local x = self.cards_deck[self.prev_selected_card].card.board_x
+						local y = self.cards_deck[self.prev_selected_card].card.board_y
+						if self.board[x - 1][y] then
+							self.cards_deck[self.board[x - 1][y]].card:Enable(true)
+						end
+						self.board[x][y] = nil
+						--local index = self:GetAvailableStack()
+						--local index = tonumber(c_name:gsub("(%a+)(%p+)", ""))
+						local index = tonumber(c_name:gsub("[^%d]", ""))
+						self.stack_deck[index]:push(self.prev_selected_card)
+						self.cards_deck[self.prev_selected_card].card:SetType("stack_deck")
+						self:MoveCard(self.prev_selected_card, 1, index + 3)
+						self.board[1][index + 3] = nil
+					end
+				elseif self:GetCardType(self.prev_selected_card) == "stack_right" then
+					-- stack_right --> stack_deck_fake
+					self.cards_deck[c_name].card:Enable(false)
+					--local index = self:GetAvailableStack()
+					--local index = tonumber(c_name:gsub("(%a+)(%p+)", ""))
+					local index = tonumber(c_name:gsub("[^%d]", ""))
+					self.stack_deck[index]:push(self.prev_selected_card)
+					self.cards_deck[self.prev_selected_card].card:SetType("stack_deck")
+					self:MoveCard(self.prev_selected_card, 1, index + 3)
+					self.board[1][index + 3] = nil
+					self:UpdateStack(self.stack_right)
+				end
+			end
+		end
+		self.prev_selected_card = nil
+	else
+		self.prev_selected_card = nil
+	end
+	
+	self:CheckButtons()
+	
+	if self:IsGameEnd() then
+		self:ShowMessageBox()
+		self.is_game_end = true
+		self.prev_selected_card = nil
+	end
+	
+	if self.prev_selected_card then
+		self.sel_card:Show(true)
+		self.sel_card:InitTexture(self.cards_deck[self.prev_selected_card].card.texture)
+	else
+		self.sel_card:Show(false)
+	end
+end
+
+function uiBoard:ShowMessageBox()
+	self.message_box:Init("pc_message_box_yes_no")
+	local x = self.wnd_x + self.wnd_w / 2 - 208
+	local y = self.wnd_y + self.wnd_h / 2 - 95
+	self.message_box:SetWndPos(x, y)
+	self.message_box:SetText(game.translate_string("ui_klondike_play_again"))
+	level.start_stop_menu(self.message_box, true)
+end
+
+function uiBoard:IsGameEnd()
+	local counter = 0
+	for k, v in pairs(self.stack_deck) do
+		if v.count == 13 then
+			counter = counter + 1
+		end
+	end
+	
+	return counter == 4
+end
+
+function uiBoard:Shuffle()
+	local cdeck = deck_copy()
+	
+	local function get_card()
+		local t = {}
+		for k, v in pairs(cdeck) do
+			table.insert(t, k)
+		end
+		if #t == 0 then
+			return nil, nil
+		end
+		local c_name = t[math.random(#t)]
+		local index = math.random(#cdeck[c_name])
+		local c_type = cdeck[c_name][index]
+		cdeck[c_name][index] = nil
+		
+		local tbl = {}
+		for k, v in pairs(cdeck[c_name]) do
+			if v then
+				table.insert(tbl, v)
+			end
+		end
+		cdeck[c_name] = tbl
+		
+		if #cdeck[c_name] == 0 then
+			cdeck[c_name] = nil
+		end
+		
+		return c_name, c_type
+	end
+	
+	local c_name = nil
+	local c_type = nil
+	local name = nil
+	
+	for i = 1, 7 do
+		name = "btn_fake_" .. i
+		self.cards_deck[name].card = uiCard(name)
+		self.cards_deck[name].card:SetAutoDelete(true)
+		self.cards_deck[name].card:SetWindowName(name)
+		self.cards_deck[name].card:SetPosition(cards_pos[2][i].x, cards_pos[2][i].y)
+		self.cards_deck[name].card:Init(self.cards_deck[name].card:GetInitData())
+		self.cards_deck[name].card:Enable(false)
+		self:AttachChild(self.cards_deck[name].card)
+		self.cards_deck[name].card.board_x = 1
+		self.cards_deck[name].card.board_y = i
+		--[[
+		for j = 1, i do
+			c_name, c_type = get_card()
+			name = string.format("card_%s_%s", c_name, c_type)
+			self.cards_deck[name].card = uiCard(c_name, c_type)
+			self.cards_deck[name].card:SetAutoDelete(true)
+			self.cards_deck[name].card:SetWindowName(name)
+			self.cards_deck[name].card:SetType("table")
+			self.cards_deck[name].card:SetPosition(cards_pos[j + 1][i].x, cards_pos[j + 1][i].y)
+			self.cards_deck[name].card:SetSide(if_then_else(j ~= i, "back", "front"))
+			self.cards_deck[name].card:Init(self.cards_deck[name].card:GetInitData())
+			self.cards_deck[name].card:Enable(if_then_else(j ~= i, false, true))
+			self:AttachChild(self.cards_deck[name].card)
+			self.cards_deck[name].card.board_x = j + 1
+			self.cards_deck[name].card.board_y = i
+			self.board[j + 1][i] = name
+		end
+		--]]
+	end
+	
+	--[[
+	c_name, c_type = get_card()
+	while (c_name ~= nil and c_type ~= nil) do
+		name = string.format("card_%s_%s", c_name, c_type)
+		self.cards_deck[name].card = uiCard(c_name, c_type)
+		self.cards_deck[name].card:SetAutoDelete(true)
+		self.cards_deck[name].card:SetWindowName(name)
+		self.cards_deck[name].card:SetType("stack_left")
+		self.cards_deck[name].card:SetSide("back")
+		self.cards_deck[name].card:SetPosition(cards_pos[1][1].x, cards_pos[1][1].y)
+		self.cards_deck[name].card:Init(self.cards_deck[name].card:GetInitData())
+		self.cards_deck[name].card:Enable(false)
+		self:AttachChild(self.cards_deck[name].card)
+		self.stack_left:push(name)
+		c_name, c_type = get_card()
+	end
+	
+	self.cards_deck[self.stack_left:get_last_elem()].card:Enable(true)
+	--]]
+	
+	local tmp = {}
+	for i = 1, 7 do
+		for j = 1, i do
+			table.insert(tmp, {j + 1, i})
+		end
+	end
+	local index = 1
+	local switch = true
+	local x, y = nil, nil
+	c_name, c_type = get_card()
+	while (c_name ~= nil and c_type ~= nil) do
+		name = string.format("card_%s_%s", c_name, c_type)
+		if switch then
+			x, y = unpack(tmp[index])
+			index = index + 1
+			self.cards_deck[name].card = uiCard(c_name, c_type)
+			self.cards_deck[name].card:SetAutoDelete(true)
+			self.cards_deck[name].card:SetWindowName(name)
+			self.cards_deck[name].card:SetType("table")
+			self.cards_deck[name].card:SetPosition(cards_pos[x][y].x, cards_pos[x][y].y)
+			self.cards_deck[name].card:SetSide(if_then_else(x == y + 1, "front", "back"))
+			self.cards_deck[name].card:Init(self.cards_deck[name].card:GetInitData())
+			self.cards_deck[name].card:Enable(if_then_else(x == y + 1, true, false))
+			self:AttachChild(self.cards_deck[name].card)
+			self.cards_deck[name].card.board_x = x
+			self.cards_deck[name].card.board_y = y
+			self.board[x][y] = name
+		else
+			self.cards_deck[name].card = uiCard(c_name, c_type)
+			self.cards_deck[name].card:SetAutoDelete(true)
+			self.cards_deck[name].card:SetWindowName(name)
+			self.cards_deck[name].card:SetType("stack_left")
+			self.cards_deck[name].card:SetSide("back")
+			self.cards_deck[name].card:SetPosition(cards_pos[1][1].x, cards_pos[1][1].y)
+			self.cards_deck[name].card:Init(self.cards_deck[name].card:GetInitData())
+			self.cards_deck[name].card:Enable(false)
+			self:AttachChild(self.cards_deck[name].card)
+			self.stack_left:push(name)
+			
+			if self.stack_left.count == 24 then
+				self.cards_deck[name].card:Enable(true)
+			end
+		end
+		
+		c_name, c_type = get_card()
+		
+		if self.stack_left.count ~= 24 then
+			switch = not switch
+		else
+			switch = true
+		end
+	end
+	
+	for i = 1, 4 do
+		name = "stack_deck_fake_" .. i
+		self.cards_deck[name].card = uiCard(name)
+		self.cards_deck[name].card:SetAutoDelete(true)
+		self.cards_deck[name].card:SetWindowName(name)
+		self.cards_deck[name].card:SetPosition(cards_pos[1][i + 3].x, cards_pos[1][i + 3].y)
+		self.cards_deck[name].card:Init(self.cards_deck[name].card:GetInitData())
+		self.cards_deck[name].card:Enable(true)
+		self:AttachChild(self.cards_deck[name].card)
+		self.cards_deck[name].card.board_x = 1
+		self.cards_deck[name].card.board_y = i + 3
+	end
+end
+
+function uiBoard:GetStackByType(card_type)
+	local n = nil
+	for k, v in pairs(self.stack_deck) do
+		if not v:is_empty() then
+			n = v:get_last_elem()
+			if self.cards_deck[n].card.card_type == card_type then
+				return k
+			end
+		end
+	end
+	
+	return nil
+end
+
+function uiBoard:GetAvailableStack()
+	for index = 1, 4 do
+		if self.stack_deck[index]:is_empty() then
+			return index
+		end
+	end
+	
+	return nil
+end
+
+-- ************************************************************************** --
+
+class "uiSolitare" (CUIScriptWnd)
+
+function uiSolitare:__init(parent, x, y) super()
+	self:SetWindowName("uiSolitare")
+	self.parent = parent
+	
+	self.wnd_width = 680
+	self.wnd_height = 510
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.parent:AttachChild(self)
+end
+
+function uiSolitare:__finalize()
+end
+
+function uiSolitare:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiSolitare:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption("..:: Klondike Solitare ::..")
+	self.wnd_frame:Show(true)
+	
+	self.board = uiBoard(self)
+	self.board:SetAutoDelete(true)
+	self:AttachChild(self.board)
+	self.board:Show(true)
+	
+	self.new_game = CUI3tButton()
+	self.new_game:SetAutoDelete(true)
+	self.new_game:SetWindowName("btn_new_game")
+	self.new_game:SetText(game.translate_string("ui_tetris_new_game"))
+	local x = self.wnd_x + self.wnd_width / 2 - 60
+	local y = self.wnd_y + self.wnd_height - 40
+	self.new_game:Init("ui_button_ordinary", x, y, 117, 29)
+	self:AttachChild(self.new_game)
+end
+
+function uiSolitare:InitCallBacks()
+	self:AddCallback("btn_new_game", ui_events.BUTTON_CLICKED, self.OnNewGame, self)
+end
+
+function uiSolitare:reset()
+	-- for pc only !!!
+end
+
+function uiSolitare:OnNewGame()
+	self.board:OnNewGame()
+end
+
+function uiSolitare:OnExit()
+	if self.parent:WindowName() ~= "pda_games" then
+		-- for pc only !!!
+		self.parent:OnChildDialogExit(self:WindowName())
+		self:GetHolder():start_stop_menu(self, true)
+	end
+end
+
+function uiSolitare:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+	
+	return true
+end

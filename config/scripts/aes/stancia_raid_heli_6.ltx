@@ -1,0 +1,32 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = aes_heli6_idle
+engine_sound = false
+combat_use_rocket = false
+combat_use_mgun = false
+on_info = {-npp_chose_dolg1 -aes_help_raiders_refuse +aes_heli3_regrouped} heli_move@aes6
+
+[heli_move@aes6]
+path_move = aes_heli_move3_6
+path_look = aes_heli_move_look3
+combat_use_rocket = true
+;combat_enemy = 7117
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -10
+on_signal = reached | heli_move@regroup6 %+aes_heli6_released%
+on_heli_death = %+aes_heli6_released%
+
+[heli_move@regroup6]
+path_move = aes_heli_regroup6
+;combat_use_rocket = true
+;combat_enemy = 7117
+engine_sound = true
+default_velocity = 60
+;combat_velocity = 30
+;combat_safe_altitude = -10
+on_signal = release | %=release%
+on_heli_death = %+aes_heli6_released%

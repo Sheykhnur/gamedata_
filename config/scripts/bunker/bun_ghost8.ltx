@@ -1,0 +1,28 @@
+[combat_ignore@ghost]
+
+[logic]
+active = walker@ghost_runaway
+combat_ignore = combat_ignore@ghost
+
+[walker@ghost_runaway]
+path_walk = bun_sci_runaway
+combat_ignore_cond = always
+meet = no_meet
+on_signal = psy | %+bun_sci_tele -bun_ghost_6%
+on_info = {+bun_sci_tele -bun_ghost_6} %=teleport_npc(bun_sci_stay:bun_ghost_6)% walker@ghost_runaway2
+on_info2 = {+deactivate_radar_done} %=release%
+
+[walker@ghost_runaway2]
+path_walk = bun_sci_stay
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 500 | %-bun_sci_tele% walker@ghost_runaway
+on_info = {+deactivate_radar_done} %=release%
+
+[remark@ghost_psy]
+anim = wounded_heavy
+no_move = true
+no_rotate = true
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+deactivate_radar_done} %=release%

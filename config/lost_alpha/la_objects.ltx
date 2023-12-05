@@ -1,0 +1,44 @@
+;--/ last update: 30.04.2013 [Extended Edition]
+
+[anomaly_zone]
+GroupControlSection = 
+$spawn              = "lost alpha\anomaly_zone"
+class               = LA_ANZNE
+script_binding      = bind_anom_field.bind
+
+[blowout_shelter]
+GroupControlSection = spawn_group_restrictor
+$spawn              = "lost alpha\blowout_shelter"
+class               = LA_SHELT
+script_binding      = bind_shelter.bind
+
+[safe_object]
+GroupControlSection	= spawn_group
+discovery_dependency = 
+$spawn 				= "devices\safe object"
+class				= O_INVBOX
+cform				= skeleton
+visual				= physics\door\seif_01_ph_door.ogf
+script_binding      = bind_physic_object.init
+
+[camera]
+GroupControlSection = spawn_group
+$spawn              = "lost alpha\camera"
+class               = O_SEARCH
+cform               = skeleton
+visual              = equipments\camera.ogf
+script_binding      = bind_physic_object.init
+
+[camera_zone]
+GroupControlSection = 
+$spawn              = "lost alpha\camera_zone"
+class               = SCRIPTZN
+script_binding      = bind_camera_zone.bind
+
+;--/#?# Технологическая-нычка
+[fake_inv_box]:inventory_box
+$spawn              = "devices\fake_inventory_box"
+visual              = physics\equipment_cache\equipment_rucksack_01_case
+custom_data         = scripts\inventory_fake_box.ltx
+radius              = 0
+script_binding      = la_slave.bind_InvBox ;--/#+#

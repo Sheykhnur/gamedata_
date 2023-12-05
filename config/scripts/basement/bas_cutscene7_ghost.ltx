@@ -1,0 +1,72 @@
+[combat_ignore@sc7_ghost]
+
+[danger@bas_sc7_ghost]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_sc7_ghost]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@sc7_ghost_wait
+combat_ignore = combat_ignore@sc7_ghost
+danger = danger@bas_sc7_ghost
+threshold = threshold@bas_sc7_ghost
+
+[remark@sc7_ghost_wait]
+anim = sci_look_out
+;snd = bas_replics_ghost1
+combat_ignore_cond = always
+danger = danger@bas_sc7_ghost
+threshold = threshold@bas_sc7_ghost
+on_info = {+bas_cutscene7_run} walker@sc7_ghost_run_away
+meet = no_meet
+
+[walker@sc7_ghost_run_away]
+path_walk = bas_ghost_cs7_run_away
+combat_ignore_cond = always
+danger = danger@bas_sc7_ghost
+threshold = threshold@bas_sc7_ghost
+meet = no_meet
+on_signal = cs7st | %+bas_sc7_tele%
+on_info = {+bas_sc7_tele -bas_sc7_tele_end} %=teleport_npc(bas_ghost_cs7_teleport:bas_sc7_tele_end)%
+on_info2 = {+bas_sc7_tele_end} remark@sc7_ghost_pre
+
+[walker@sc7_ghost_pre]
+path_walk = bas_ghost_cs7_teleport
+combat_ignore_cond = always
+danger = danger@bas_sc7_ghost
+threshold = threshold@bas_sc7_ghost
+meet = no_meet
+on_info = {+bas_sc7_ha} remark@sc7_haha
+
+[remark@sc7_ghost_pre]
+combat_ignore_cond = always
+danger = danger@bas_sc7_ghost
+threshold = threshold@bas_sc7_ghost
+no_move = true
+no_rotate = true
+meet = no_meet
+target = actor
+on_info = {+bas_sc7_ha} remark@sc7_haha
+
+[remark@sc7_haha]
+anim = stand_wait
+snd = bas_replics_ghost2
+combat_ignore_cond = always
+danger = danger@bas_sc7_ghost
+threshold = threshold@bas_sc7_ghost
+meet = no_meet
+on_signal = sound_end | walker@sc7_away
+
+[walker@sc7_away]
+path_walk = bas_ghost_cs7_run_away2
+danger = danger@bas_sc7_ghost
+threshold = threshold@bas_sc7_ghost
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_signal = ghstcs7rls | %=release%

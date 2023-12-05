@@ -1,0 +1,84 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : sr_no_weapon.script
+ Description: Disable actor weapon
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : 
+ Last edit  : 28.12.2019 [ValeroK]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local state_nowhere = 0 --/ схема только что включилась
+local state_inside  = 1 --/ актер внутри
+local state_outside = 2 --/ актер снаружи
+--/ ---------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_no_weapon"
+--/ -----------------------------------------------------------------------------------------------
+function action_no_weapon:__init( obj, st )
+	self.object = obj
+	self.st     = st
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_no_weapon:reset_scheme()
+	self.state = state_nowhere --/ еще неясно, актор в зоне рестриктора или нет
+	self:switch_state(db.actor)
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_no_weapon:update( delta )
+    if not xr_logic.try_switch_to_another_section( self.object, self.st, db.actor ) then
+        self:switch_state()
+    end
+    if self.state ~= state_outside and db.actor:has_info("anim_starts") and not db.actor:has_info("anim_end") then    
+		bind_actor.actor_restore_weapon_anim()
+		--log ("draw weapon script")
+	end
+    if self.state ~= state_outside and db.actor:has_info("anim_end") and not db.actor:has_info("anim_starts") then    
+		bind_actor.actor_hide_weapon_anim()
+		--log ("hide weapon script")
+	end 
+end
+
+
+
+--/------------------------------------------------------------------
+function action_no_weapon:switch_state()
+	local is_inside = self.object:inside( db.actor:center() )
+	if is_inside then
+		if self.state ~= state_inside then --or self.state == state_nowhere
+			self.state = state_inside
+			bind_actor.hide_weapon_script()
+			--log("hide weapon sr")
+		end
+	else
+		if self.state ~= state_outside then --or self.state == state_nowhere
+			self.state = state_outside
+			bind_actor.draw_weapon_script(false)
+			--log("draw weapon sr")
+		end
+	end
+end
+
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+	local oNewAction = this.action_no_weapon(obj, st)
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+end
+--/ -----------------------------------------------------------------------------------------------

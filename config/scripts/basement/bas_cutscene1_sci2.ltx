@@ -1,0 +1,67 @@
+[combat_ignore@sc2]
+
+[danger@bas_sc2]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_sc2]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@sc2_lab_work
+combat_ignore = combat_ignore@sc2
+danger = danger@bas_sc2
+threshold = threshold@bas_sc2
+
+[remark@sc2_lab_work]
+anim = probe
+combat_ignore_cond = always
+danger = danger@bas_sc2
+threshold = threshold@bas_sc2
+on_info = {+bas_cs1_info_2} walker@sc2_to_holo
+meet = no_meet
+
+[walker@sc2_to_holo]
+path_walk = bas_sci3_see
+combat_ignore_cond = always
+danger = danger@bas_sc2
+threshold = threshold@bas_sc2
+on_signal = sc2here | remark@sc2_admire
+target = bas_look_to_holo, 0
+meet = no_meet
+
+[remark@sc2_admire]
+snd = bas_replics_way ;wauuu
+combat_ignore_cond = always
+danger = danger@bas_sc2
+threshold = threshold@bas_sc2
+on_info = {+bas_cs1_drain} remark@sc2_scared
+target = bas_look_to_holo, 0
+meet = no_meet
+
+[remark@sc2_scared]
+anim = sci_incident
+combat_ignore_cond = always
+danger = danger@bas_sc2
+threshold = threshold@bas_sc2
+on_info = {+bas_cs1_info_8} remark@sc2_dialog_end
+target = bas_look_to_holo, 0
+meet = no_meet
+
+[remark@sc2_dialog_end]
+anim = sci_blame
+snd = bas_replics14
+target = bas_sci1_see, 0
+combat_ignore_cond = always
+danger = danger@bas_sc1
+threshold = threshold@bas_sc1
+on_signal = sound_end | %+bas_cs1_shut_down% remark@sc2_hide
+meet = no_meet
+
+[remark@sc2_hide]
+anim = hide
+combat_ignore_cond = always
+danger = danger@bas_sc2
+threshold = threshold@bas_sc2
+meet = no_meet

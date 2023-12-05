@@ -1,0 +1,43 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = generic_buy
+sell_condition = generic_sell
+
+buy_item_condition_factor = 0.8
+
+[generic_buy]:buy_food_cheap,buy_weapons_cheap,buy_ammo_cheap,buy_misc_cheap
+$category_artefacts     = 0.2, 0.1
+$category_meds          = 0.35, 0.1
+$category_food          = 0.2, 0.1
+
+guitar_a				= 0.2,  0.1
+harmonica_a			 = 0.2,  0.1
+
+[generic_sell]:sell_all_normal,traders_common_no_sell
+$category_artefacts     = 3, 6
+$category_ammo          = 4, 6
+$category_meds          = 5, 8
+$category_food          = 5, 8
+$category_devices       = 4, 8
+
+;Non-selling attachables, it causes crash!!!
+
+;Non-selling unique stuff
+outfit_bandit_m1
+outfit_bandit_m2
+dolg_medium_outfit_m1
+outfit_killer_m1
+outfit_novice_m1
+military_medium_outfit_m1
+stalker_light_outfit_m1
+stalker_medium_outfit_m1
+stalker_heavy_outfit_m1
+outfit_svoboda_m1
+stalker_exo_outfit_m1
+rubles_10
+rubles_50
+rubles_100
+rubles_500
+rubles_1000
+rubles_5000

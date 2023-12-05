@@ -1,0 +1,72 @@
+[smart_terrain]
+none = true
+
+[spawner]
+cond = {+yan_sid_documents_task}
+
+[combat_ignore@sci_bunker]
+
+[hit@sci_bunker]
+on_info = {=hit_by_actor} %+yan_block_breach%
+
+[logic]
+active = kamper@yan_sci_specnaz
+combat_ignore = combat_ignore@sci_bunker
+on_hit = hit@sci_bunker
+
+[kamper@yan_sci_specnaz]
+path_walk = sci_specnaz_kamp2
+path_look = sci_specnaz_look
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+kamp_name = kamp1
+on_info = {+yan_pribor_task_start} walker@yan_sci_specnaz1
+
+[walker@yan_sci_specnaz1]
+path_walk = sci_specnaz_wakl1
+path_look = yan_zombied3_terrain_ladc_home1
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+on_info = {=gulag_population_active_le(yan_zombied3_terrain_ladc:2)} walker@yan_sci_specnaz2
+
+[walker@yan_sci_specnaz2]
+path_walk = sci_specnaz_wakl2
+path_look = yan_zombied4_terrain_ladc_home1
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+on_info = {=gulag_population_active_le(yan_zombied4_terrain_ladc:2)} walker@yan_sci_specnaz3
+
+[walker@yan_sci_specnaz3]
+path_walk = sci_specnaz_wakl3
+path_look = yan_zombied2_terrain_ladc_home1
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+on_info = {=gulag_population_active_le(yan_zombied2_terrain_ladc:2) =gulag_population_active_le(yan_dog_terrain2:2)} walker@yan_sci_specnaz4
+
+[walker@yan_sci_specnaz4]
+path_walk = sci_specnaz_wakl4
+path_look = yan_zombied2_terrain_ladc_home1
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+on_info = {=gulag_population_active_le(yan_dog_terrain1:2)} walker@yan_sci_specnaz5
+
+[walker@yan_sci_specnaz5]
+path_walk = sci_specnaz_wakl5
+path_look = yan_boar_terrain_ladc_home1
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+on_info = {=gulag_population_active_le(yan_boar_terrain_ladc:2)} walker@yan_sci_specnaz6
+
+[walker@yan_sci_specnaz6]
+path_walk = sci_specnaz_wakl6
+path_look = yan_zombied1_terrain_ladc_home1
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+on_info = {=gulag_population_active_le(yan_zombied1_terrain_ladc) =gulag_population_active_le(yan_boar_terrain:2)} kamper@yan_sci_specnaz2
+
+[kamper@yan_sci_specnaz2]
+path_walk = sci_specnaz_kamp2
+path_look = sci_specnaz_look
+soundgroup = yan_sci_specnaz
+combat_ignore_cond = {-yan_block_breach =fighting_actor}
+kamp_name = kamp1

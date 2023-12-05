@@ -1,0 +1,194 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : pdaManager.script
+ Description: Manager actor PDA
+ Copyright  : 2009 © LA-team
+ Author     : barin(19.04.2009)
+ Editors    : SkyLoader, gr1ph00n
+ Last edit  : 10.01.2014 [gr1ph00n]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local pda_skin = nil
+local pda_mgr  = nil
+local ext_tabs = {}
+local adv_tabs = {} --/ reserve!
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialization and preset module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+	event("update_1st"):register(OnUpdate_1st)
+	local bits = this.get_pda_flags() --/ bits-flag
+	--/ rect: common position and size of the windows for PDA (SetWndRect)
+	ext_tabs = { --/ button, window and handler dependency
+		comm = 		{idx = 4,   rect = {77,62,761,490}, bit = 1, handler = pdaContacts  and pdaContacts.uiPdaComm},
+		skills = 	{idx = 8, 	rect = {77,62,761,490}, bit = 2, handler = pdaSkills    and pdaSkills.uiPdaSkills},
+		downs = 	{idx = 9,  	rect = {77,62,761,490}, bit = 4, handler = pdaDownloads and pdaDownloads.uiPdaDownloads},
+	}
+	for id,v in pairs(ext_tabs) do
+		if type(v.handler) ~= 'userdata' then  
+			log("PreSets: '%s' <= wrong handler type=[%s]! <%s>", tostring(v.name), type(v.handler), "Warning!")
+			ext_tabs[id] = nil
+		else
+			v.active = bit_and(bits, v.bit) ~= 0
+		end
+	end
+end
+--/ --------------------------
+function PreSets(e)
+	--[[
+	adv_tabs = { --/ button, window and handler dependency
+		[11] = {name = "games",   rect = {0,0,761,440}, bit =  8, handler = pdaGames       and pdaGames.uiPdaGames},
+		[12] = {name = "mplayer", rect = {0,0,761,440}, bit = 16, handler = pdaMusicPlayer and pdaMusicPlayer.uiPdaMusicPlayer}
+	}
+	for id,v in pairs(adv_tabs) do
+		if type(v.handler) ~= 'userdata' then --/ insurance (подстраховка)
+			log("PreSets: '%s' <= wrong handler type=[%s]! <%s>", tostring(v.name), type(v.handler), "Warning!")
+			adv_tabs[id] = nil
+		else
+			v.active = bit_and(bits, v.bit) ~= 0
+		end
+	end
+	--]]
+	pdaContacts.PreSets(e)
+	pdaDownloads.PreSets(e)
+	pdaSkills.PreSets(e)
+	event("actor_info"):register(OnInfo)
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function OnUpdate_1st(e)
+	this.reset_options(1,true)
+end
+
+function OnInfo(e)
+	if e.info:match('^ui_pda') then
+		if e.info == "ui_pda" then
+			this.get_pda_skin()
+			event("update"):register(OnUpdate)
+		elseif e.info == "ui_pda_hide" then
+			event("update"):unregister(OnUpdate)
+		end
+	elseif e.info == "pda_downloads_enabled" then
+		this.reset_options(4,true)
+	elseif e.info == "pda_skills_enabled" then
+		this.reset_options(2,true)
+	elseif e.info == "yan_scientist_pda_done" then --/ enable 'pdaContacts','pdaSkills','pdaDownloads'
+		this.reset_options(1+2,true)
+		level.enable_pda_downloads(true)
+	end
+end
+
+--/ --------------------------
+function OnUpdate(e)
+	if pda_skin then
+		pda_skin:OnUpdate(e)
+	else
+		e:remove()
+	end
+end
+--/ -----------------------------------------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaSkin" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaSkin:__init() super()
+	self.holder = level.main_input_receiver()
+	if self.holder then
+		local xml = CScriptXmlInit()
+		xml:ParseFile("pda.xml")
+		--/ LED-indicators
+		self.leds = {}
+		for _,v in ipairs({"yellow","orange","red","green","blue"}) do
+			local led = xml:InitStatic(v.."_led_static", self.holder)
+			led:Show(false)
+			table.insert(self.leds, led)
+		end
+	end
+end
+
+function uiPdaSkin:__finalize()
+end
+
+function uiPdaSkin:Update() --/#?# не работает!?
+	CUIScriptWnd.Update(self)
+--	log("uiPdaSkin:Update:[?]") --/#~#
+end
+
+function uiPdaSkin:OnUpdate(e)
+	if (self.time_upd or 0) < e.time then
+		self.time_upd = e.time + 250 + math.random(250) --/ ~1 every half-second
+		if not self.leds or has_info("ui_pda_hide") then
+			e:remove()
+		elseif (self.time_led or 0) < e.time then
+			if self.led and self.led:IsShown() then --/ to off:
+				self.time_led = e.time + 3000 + math.random(2000,4000)
+				self.led:Show(false)
+				self.led = nil
+			elseif math.random(1000) % 3 == 2 then --/ to on:
+				self.time_led = e.time + 2000 + math.random(500,2000)
+				self.led = self.leds[math.random(#self.leds)]
+				self.led:Show(true)
+			else --/ wait:
+				self.time_led = e.time + 3000 + math.random(2000,4000)
+			end
+		elseif self.led then
+			self.led:Show(not self.led:IsShown())
+		end
+	end
+end
+
+--/ ------------------------------------------------------------------
+--/ HELPERs
+--/ ------------------------------------------------------------------
+function get_pda_skin()
+	if not (pda_skin and pda_skin.holder) then
+		pda_skin = this.uiPdaSkin()
+	end
+	return pda_skin --/>
+end
+
+function get_pda_flags()
+	return GetVar("pda_flags",0) --/> bits-flag! (0:off 31:all)
+end
+
+function reset_options(val,mode) --/< mode: true|nil - set, false - clear
+	if type(val) == 'number' then
+		local bits = GetVar("pda_flags",0)
+		if mode ~= false then
+			bits = bit_or(bits, val)
+		else
+			bits = bit_xor(bits, val)
+		end
+		SetVar("pda_flags",bits) --/ (re)set
+	end
+end
+
+function turn_on_pda_downs()
+	if not has_info("pda_downloads_enabled") then
+		level.enable_pda_downloads(true)
+	else
+		news_manager.send_tip_hud(game.translate_string("hmm"), game.translate_string("ui_has_pda_module"), "actor")
+		Spawn_ItemInInv("xray_pda_downs")
+	end
+end
+--/ ------------------------------------------------------------------
+--/ call from the engine (lost_alpha_cfg.ltx)
+--/ ------------------------------------------------------------------
+function get_pda_window_instance(name)
+	--log("get_pda_window_instance: tab_name=["..tostring(name).."]") --/#~#
+	local bits = this.get_pda_flags()
+	local t = ext_tabs[name]
+	local wnd = nil
+	t.active = t.active or bit_and(bits, t.bit) ~= 0
+	wnd = t.handler(name, t.rect, t.active)
+	wnd:SetAutoDelete(false)
+	return wnd
+end

@@ -1,0 +1,64 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+x16_brain_signals_1} sr_idle@1 %=play_snd(characters_voice\scenario\bra\x16_brain1) =turn_off(8407)%
+
+[sr_idle@1]
+on_timer = 4000 | %+x16_cutscene_talk8%
+on_info = {+x16_brain_signals_2} sr_idle@2
+
+[sr_idle@2]
+on_timer = 1000 | %+x16_cutscene_talk8 =play_snd(characters_voice\scenario\bra\x16_brain2) =turn_off(8409) =turn_on(8407)% sr_idle@3
+
+[sr_idle@3]
+on_timer = 2000 | %+x16_cutscene_talk10%
+on_info = {+x16_brain_signals_3} sr_idle@4 %=play_snd(characters_voice\scenario\bra\x16_brain3) =turn_off(8411) =turn_on(8409)%
+
+[sr_idle@4]
+on_timer = 3000 | %=play_snd(characters_voice\scenario\bra\x16_brain4) =turn_off(8407) =play_particle_on_path(explosions\group_items\expl_02_sparks:x16_sparks2:100)% sr_idle@5
+
+[sr_idle@5] 
+on_timer = 3000 | %=play_snd(characters_voice\scenario\bra\x16_brain3) =turn_off(8409)% sr_idle@6
+
+[sr_idle@6]
+on_timer = 2000 | %+x16_cutscene_talk13%
+on_info = {+x16_brain_signals_4} sr_idle@finale %=play_snd(characters_voice\scenario\bra\x16_brain1) =turn_on(8407) =turn_on(8409) =turn_on(8411)%
+
+[sr_idle@finale]
+on_timer = 3000 | %=play_snd(characters_voice\scenario\bra\x16_brain3) =turn_off(8407) =turn_off(8409) =turn_off(8411)% sr_idle@finale2
+
+[sr_idle@finale2]
+on_timer = 3000 | %=play_snd(characters_voice\scenario\bra\x16_brain2) =turn_on(8407) =turn_on(8409) =turn_on(8411) +x16_die_user% sr_idle@finale3
+
+[sr_idle@finale3]
+on_timer = 3000 | %=play_snd(characters_voice\scenario\bra\x16_brain4)  =turn_off(8407) =turn_on(8409) =turn_off(8411)% sr_idle@final_accord
+
+[sr_idle@final_accord]
+on_timer = 3000 | %=play_snd(characters_voice\scenario\bra\x16_brain5) =turn_on(8407) =turn_on(8411)% sr_idle@pre_end
+
+[sr_idle@pre_end]
+on_timer = 1000 | %+x16_brain_sci_no%
+on_info = {+x16_start_waves} sr_idle@wait
+
+[sr_idle@wait]
+on_timer = 2000 | sr_idle@end
+
+[sr_idle@end]
+on_timer = 500 | %+x16_start_waves =play_snd(ambient\x16\x16_brain_death)%
+on_timer2 = 5500 | sr_idle@effect %=run_cam_effector(dis_consciousness:2635:true)%
+
+[sr_idle@effect]
+on_timer = 1300 | sr_idle@effect2 %=run_postprocess(brain_wake)%
+
+[sr_idle@effect2]
+on_timer = 4100 | sr_idle@effect3 %=teleport_actor(x16_teleport_player:x16_teleport_player_look)%
+
+[sr_idle@effect3]
+on_timer = 500 | %=stop_cam_effector(2635) =run_cam_effector(xlab_bad_day:2636:true)% sr_idle@effect4
+
+[sr_idle@effect4]
+on_timer = 2000 | %=transfer_item_reverse(x16_inventory_box_0001) =stop_cam_effector(2636) +x16_dream_ended =set_only_hands(false)% sr_idle@nil
+
+[sr_idle@nil]
+on_info = nil %=release%

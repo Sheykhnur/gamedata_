@@ -1,0 +1,108 @@
+;***********************state 0*********************************
+
+[combat_ignore@pri_military_attache]
+
+[hit@pri_military_attache]
+on_info = {=hit_by_actor} %+pri_military_attache_hit%
+
+
+[logic@pri_military_attache_military1]
+active = walker@pri_military_attache1
+combat_ignore = combat_ignore@pri_military_attache
+on_hit = hit@pri_military_attache
+
+[walker@pri_military_attache1]
+path_walk = wait1
+path_look = look1
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_attache_attack1
+
+[walker@pri_military_attache_attack1]
+path_walk = attack1
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_attache1
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_attache_military2]
+active = walker@pri_military_attache2
+combat_ignore = combat_ignore@pri_military_attache
+on_hit = hit@pri_military_attache
+
+[walker@pri_military_attache2]
+path_walk = wait2
+path_look = look2
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_attache_attack1
+
+[walker@pri_military_attache_attack2]
+path_walk = attack2
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_attache2
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_attache_military3]
+active = walker@pri_military_attache3
+combat_ignore = combat_ignore@pri_military_attache
+on_hit = hit@pri_military_attache
+
+[walker@pri_military_attache3]
+path_walk = wait3
+path_look = look3
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_attache_attack3
+
+[walker@pri_military_attache_attack3]
+path_walk = attack3
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_attache3
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_attache_military4]
+active = walker@pri_military_attache4
+combat_ignore = combat_ignore@pri_military_attache
+on_hit = hit@pri_military_attache
+
+[walker@pri_military_attache4]
+path_walk = wait4
+path_look = look4
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_attache_attack4
+
+[walker@pri_military_attache_attack4]
+path_walk = attack4
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_attache4
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_attache_military5]
+active = walker@pri_military_attache5
+combat_ignore = combat_ignore@pri_military_attache
+on_hit = hit@pri_military_attache
+
+[walker@pri_military_attache5]
+path_walk = wait5
+path_look = look5
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_attache_attack5
+
+[walker@pri_military_attache_attack5]
+path_walk = attack5
+combat_ignore_cond = {=fighting_actor -pri_military_attache_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_attache5
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+

@@ -1,0 +1,208 @@
+[detector_anomaly_base]:identity_immunities
+$prefetch                       = 32
+cform                           = skeleton
+
+class                           = D_SIMDET
+
+noise                           = detectors\geiger_1, 0.4
+buzzer                          = detectors\da-2_alarm_loop, 0.4
+slot                            = 13
+ef_detector_type                = 1
+
+attach_angle_offset             = -0.160570,-1.425061,-0.361283
+attach_position_offset          = 0.160570,-0.060214,0.020071
+attach_bone_name                = bip01_l_hand
+auto_attach                     = false
+
+inv_grid_width     = 1
+inv_grid_height    = 1
+default_to_ruck                 = false
+
+anomal_list               = zone_radioactive, zone_mosquito_bald, zone_gravi_zone, zone_mincer, zone_no_gravity, zone_witches_galantine, zone_ameba1, zone_rusty_hair, zone_zharka_static, zone_buzz, zone_isparenie, zone_ameba, zone_burning_fuzz1, zone_burning_fuzz_bottom_base
+
+zone_radioactive = 0
+zone_mosquito_bald = 0
+zone_gravi_zone = 0
+zone_mincer = 0
+zone_no_gravity = 0
+zone_witches_galantine = 0
+zone_ameba1 = 0
+zone_rusty_hair = 0
+zone_zharka_static = 0
+zone_buzz = 0
+zone_isparenie = 0
+zone_burning_fuzz1 = 0
+zone_burning_fuzz_bottom_base = 0
+
+;-- ******************* Simple Anomaly Detector ********************** --
+[detector_radiation]:detector_anomaly_base
+$spawn                          = "devices\detector_anomaly\detector_radiation"
+visual                          = equipments\item_datchik1.ogf
+
+inv_name                        = st_anom_detector_radiation
+inv_name_short                  = st_anom_detector_radiation
+description                     = st_anom_detector_radiation_descr
+
+radius                          = 6
+buzzer_radius                   = 2
+inv_weight                      = 0.2
+
+inv_grid_x						= 19
+inv_grid_y						= 13
+
+cost                            = 1000
+
+zone_radioactive = 1
+zone_class_1                    = zone_radioactive
+zone_sound_1_                   = detectors\geiger_1, 0.4
+zone_sound_1_1                  = detectors\geiger_2, 0.4
+zone_sound_1_2                  = detectors\geiger_3, 0.4
+zone_sound_1_3                  = detectors\geiger_4, 0.4
+zone_sound_1_4                  = detectors\geiger_5, 0.4
+zone_sound_1_5                  = detectors\geiger_6, 0.4
+zone_sound_1_6                  = detectors\geiger_7, 0.4
+zone_sound_1_7                  = detectors\geiger_8, 0.4
+zone_min_freq_1                 = 1
+zone_max_freq_1                 = 20
+
+;-- ******************* Simple Anomaly Detector ********************** --
+[detector_simple]:detector_radiation
+$spawn                          = "devices\detector_anomaly\detector_anomaly_simple"
+
+visual                          = equipments\item_datchik2.ogf
+inv_grid_x						= 16
+inv_grid_y						= 13
+
+inv_name                        = anom_detector_simple
+inv_name_short                  = anom_detector_simple
+description                     = anom_detector_simple_descr
+
+radius                          = 6
+buzzer_radius                   = 2
+inv_weight                      = 0.6
+
+cost                            = 8800
+
+zone_no_gravity = 1
+zone_class_2                    = zone_no_gravity
+zone_sound_2_                   = detectors\da-2_beep1, 0.5
+zone_min_freq_2                 = 1
+zone_max_freq_2                 = 5
+
+zone_mosquito_bald = 1
+zone_class_3                    = zone_mosquito_bald
+zone_sound_3_                   = detectors\da-2_beep1, 0.5
+zone_min_freq_3                 = 1
+zone_max_freq_3                 = 5
+
+zone_gravi_zone = 1
+zone_class_4                    = zone_gravi_zone
+zone_sound_4_                   = detectors\da-2_beep1, 0.5
+zone_min_freq_4		            = 1
+zone_max_freq_4                 = 5
+
+zone_mincer = 1
+zone_class_5                    = zone_mincer
+zone_sound_5_                   = detectors\da-2_beep1, 0.5
+zone_min_freq_5                 = 1
+zone_max_freq_5                 = 5
+
+;-- ******************* Advanced Anomaly Detector ********************** --
+
+[detector_advances]:detector_simple
+$spawn                          = "devices\detector_anomaly\detector_anomaly_advances"
+
+visual                          = equipments\item_decoder.ogf
+inv_grid_x						= 17
+inv_grid_y						= 13
+
+
+inv_name                        = anom_detector_advanced
+inv_name_short                  = anom_detector_advanced
+description                     = anom_detector_advanced_descr
+
+radius                          = 6
+buzzer_radius                   = 3
+inv_weight                      = 0.4
+
+cost                            = 14500
+
+zone_max_freq_2                 = 10
+zone_max_freq_3                 = 10
+zone_max_freq_4                 = 10
+zone_max_freq_5                 = 10
+
+zone_isparenie = 1
+zone_class_6                	= zone_isparenie
+zone_sound_6_                   = detectors\da-2_beep1, 0.5
+zone_min_freq_6		            = 1
+zone_max_freq_6                 = 11
+
+zone_witches_galantine = 1
+zone_class_7                    = zone_witches_galantine
+zone_sound_7_                   = detectors\da-2_beep1, 0.5
+zone_min_freq_7                 = 1
+zone_max_freq_7                 = 11
+
+zone_buzz = 1
+zone_class_8                	= zone_buzz
+zone_sound_8_                   = detectors\da-2_beep1, 0.5
+zone_min_freq_8		            = 1
+zone_max_freq_8                 = 11
+
+;-- ******************* Elite Anomaly detector ********************** --
+
+[detector_elite]:detector_advances
+$spawn                          = "devices\detector_anomaly\detector_anomaly_elite"
+
+visual                          = equipments\item_datchik3.ogf
+inv_grid_x						= 18
+inv_grid_y						= 13
+
+inv_name                        = anom_detector_elite
+inv_name_short                  = anom_detector_elite
+description                     = anom_detector_elite_descr
+
+radius                          = 6
+buzzer_radius                   = 4
+inv_weight                      = 0.2
+
+cost                            = 22500
+
+zone_max_freq_2                 = 15
+zone_max_freq_3                 = 15
+zone_max_freq_4                 = 15
+zone_max_freq_5                 = 15
+zone_max_freq_6                 = 20
+zone_max_freq_7                 = 20
+zone_max_freq_8                 = 20
+
+zone_zharka_static = 1
+zone_class_9                   = zone_zharka_static
+zone_sound_9_                  = detectors\da-2_alarm_loop, 0.5
+zone_min_freq_9	            	= 1
+zone_max_freq_9                = 15
+
+zone_ameba1 = 1
+zone_class_10                   = zone_ameba1
+zone_sound_10_                  = detectors\da_beep_03, 0.47
+zone_min_freq_10                = 2
+zone_max_freq_10                = 18
+
+zone_rusty_hair = 1
+zone_class_11                   = zone_rusty_hair
+zone_sound_11_                  = detectors\da_beep_03, 0.47
+zone_min_freq_11                = 2
+zone_max_freq_11                = 18
+
+zone_burning_fuzz1 = 1
+zone_class_12                    = zone_burning_fuzz1
+zone_sound_12_                   = detectors\da_beep_03, 0.47
+zone_min_freq_12                 = 2
+zone_max_freq_12                 = 18
+
+zone_burning_fuzz_bottom_base = 1
+zone_class_13                   = zone_burning_fuzz_bottom_base
+zone_sound_13_                  = detectors\da_beep_03, 0.47
+zone_min_freq_13	            = 2
+zone_max_freq_13                = 18

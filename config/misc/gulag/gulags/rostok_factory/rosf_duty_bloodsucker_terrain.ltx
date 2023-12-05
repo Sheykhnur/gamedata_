@@ -1,0 +1,23 @@
+;***********state 0***************
+
+[death@bs3]
+on_info = %+rosf_bloodsucker3_dead%
+;on_info = {=is_gulag_population_inactive(rosf_bloodsucker_construction_terrain) =is_gulag_population_inactive(rosf_duty_bloodsucker_terrain)} %+rosf_bloodsuckers_dead%
+
+[logic@rosf_duty_bloodsucker_terrain_sucker]
+active = mob_walker@rosf_duty_sucker
+
+[mob_walker@rosf_duty_sucker]
+path_walk = wait1
+path_look = look1
+
+;**********state 1***************
+
+[logic@rosf_duty_bloodsucker_terrain_mob]
+active = mob_home@rosf_duty_sucker
+on_death = death@bs3
+
+[mob_home@rosf_duty_sucker]
+path_home = home
+home_min_radius = 1
+home_max_radius = 5

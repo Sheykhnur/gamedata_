@@ -1,0 +1,107 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_.44_reg]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_.44_reg"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_44_fmj.ogf
+wm_size                     = 0.14
+
+; Icon
+inv_grid_width              = 1
+inv_grid_height             = 1
+inv_grid_x                  = 34
+inv_grid_y                  = 23
+
+; Text
+inv_name                    = ammo_.44_reg_name
+inv_name_short              = ammo_.44_reg_name
+description                 = enc_ammo_.44_reg_descr
+
+; Economy
+cost                        = 400
+inv_weight                  = .34
+box_size                    = 20
+
+; Impact
+k_hit                       = 1.86
+k_ap                        = 0.36
+k_pierce                    = 0.36
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 1.4
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.85
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_.44_frag]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_.44_frag"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_44_ap.ogf
+explosive                   = on
+wm_size                     = 0.13
+
+; Icon
+inv_grid_width              = 1
+inv_grid_height             = 1
+inv_grid_x                  = 33
+inv_grid_y                  = 23
+
+; Text
+inv_name                    = ammo_.44_frag_name
+inv_name_short              = ammo_.44_frag_name
+description                 = ammo_.44_frag_descr
+
+; Economy
+cost                        = 540
+inv_weight                  = .38
+box_size                    = 20
+
+; Impact
+k_hit                       = 2.0
+k_ap                        = 0.5
+k_pierce                    = 0.5
+k_impulse                   = 1.0
+impair                      = 1.35
+
+; Ballistics
+k_air_resistance            = 1.7
+k_disp                      = 1.4
+k_dist                      = 0.8
+k_speed                     = 0.80
+
+
+[weapon_.44]
+; Effects
+shell_particles             = amik\weapons\45_shells_r
+flame_particles             = weapons\generic_weapon05
+smoke_particles             = amik\weapons\smoke_particles\smoke_particles_00
+silencer_flame_particles    = ; no flame
+silencer_smoke_particles    = amik\weapons\smoke_particles\silencer_smoke_particles_00
+
+; Ammo
+ammo_class                  = ammo_.44_reg, ammo_.44_frag
+ammo_limit                  = 120
+
+; Features
+silencer_name               = ; no silencer
+
+; Ballistics
+bullet_speed                = 380
+
+; Impact
+hit_impulse                 = 200

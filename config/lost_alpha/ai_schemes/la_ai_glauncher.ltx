@@ -1,0 +1,57 @@
+;==================================================================================================
+;--/ для схемы "НПС - стрельба из подствольников" (la_ai_glauncher.script)
+;==================================================================================================
+
+[options]
+enabled            = true
+check_period       = 2500 ;--/ время между проверками (мс)
+min_dist           = 6
+max_dist           = 85
+spawn_period       = 30 ;-- время между спавном зарядов для неписей (cек), 0 - отключить спавн
+
+[scheme_params] ;--/ массив параметров для регистрации схемы
+logic   = false ;--/ используется ли 'штатная' логика схемы
+enable  = true  ;--/ признак/флаг разрешения штатно включать схему (менеджером)
+disable = true  ;--/ признак/флаг разрешения штатно выключать схему (менеджером)
+common  = true  ;--/ признак/флаг регистрации в "addCommonPrecondition"
+ev_ids  = 0     ;--/ id-массив эвалюаторов для "addCommonPrecondition"
+
+
+[excluded_community] ;--/ исключенные группировки
+zombied     = true
+trader      = true
+arena_enemy = true
+
+[excluded_npcs] ;--/ исключенные неписи
+;zero = true ;--/ заглушка-заготовка
+
+[excluded_weapons] ;--/ запрещенное к использованию оружие
+;zero = true ;--/ заглушка-заготовка
+
+[shell_types] ;--/ подствольные заряды, используемые схемой
+ammo_vog-25  = true
+ammo_vog-25p = true
+ammo_m209    = true
+;ammo_napalm  = true ;--/ для огнемета
+
+[novice]
+accuracy    = 50
+aim_time    = 1200
+reload_time = 4500
+
+[experienced]
+accuracy    = 80
+aim_time    = 400
+reload_time = 3000
+
+[veteran]
+accuracy    = 95
+aim_time    = 100
+reload_time = 2500
+
+[master]
+accuracy    = 100
+aim_time    = 0
+reload_time = 1700
+
+;==================================================================================================

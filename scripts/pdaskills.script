@@ -1,0 +1,458 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : pdaSkills.script
+ Description: PDA: "Skills"
+ Copyright  : 2009 © LA-team
+ Author     : Gr1ph00n (19.04.2009)
+ Editors    : gr1ph00n, Artos, 04.08.2016 - 04.2017 [SkyLoader], lox
+ Last edit  : 22.06.18 (tomilovsenya) – PDA messages fix
+--]] ----------------------------------------------------------------------------------------------
+
+--[[
+"barter" - "Бартер"
+"endurance" - "Выносливость"
+"sharpshooter" - "Снайпер"
+"survivor" - "Выживание"
+--]]
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local skills = { "barter", "endurance", "sharpshooter", "survivor" }
+local skills_values = {}
+for _,v in ipairs(skills) do
+	if not skills_values[v] then
+		skills_values[v] = 0
+	end
+end
+local points_amount = 0
+local killed_npcs = 0
+local killed_mobs = 0
+local completed_quests = 0
+local time_update = time_global() + 30*1000
+local ltx_skills = "lost_alpha\\la_skills.ltx"
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Initialization and preset module (from pdaManager.script)
+--/ -----------------------------------------------------------------
+function PreSets(e)
+	event("actor_save"):register(this.save)
+	event("actor_spawned"):register(this.spawned)
+	event("update_1st"):register(this.enable_skills)
+	this.prepare()
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function prepare(active)
+	local tbl = GetVar("pda_skills_sav", nil)
+	if tbl and type(tbl.skills) == 'table' then
+		killed_npcs = tbl.npcs or 0
+		killed_mobs = tbl.mobs or 0
+		points_amount = tbl.points or 0
+		skills_values = tbl.skills
+		for _,skill in ipairs(skills) do
+			if not skills_values[skill] then
+				skills_values[skill] = 0
+			end
+		end
+	end
+end
+
+function save(e)
+	local tbl = {}
+	tbl.skills = table.copy(skills_values)
+	tbl.points = points_amount
+	tbl.npcs = killed_npcs
+	tbl.mobs = killed_mobs
+	SetVar("pda_skills_sav", tbl)
+end
+
+function enable_skills(e)
+	--/ phobos2077: it used to be activated only by certain item, now it is available from game start
+	if not has_info("pda_skills_enabled") then
+		level.enable_pda_skills(true)
+		level.enable_pda_downloads(true)
+		give_info("pda_skills_enabled")
+	end
+end
+
+function spawned(e)
+	this.prepare()
+
+	--/ SkyLoader: load skills
+	db.actor:set_actor_price_factor(get_barter_skill())
+	--/ endurance
+	db.actor:set_actor_max_weight(get_endurance_max_weight())
+	db.actor:set_actor_walk_weight(get_endurance_walk_weight())
+	db.actor:set_actor_sprint_factor(get_endurance_sprint())
+	--/ sharpshooter
+	db.actor:set_actor_dispersion_factor(get_sharpshooter_dispersion())
+	db.actor:set_actor_zoom_inert_factor(get_sharpshooter_zoom_inertion())
+	--/ survivor
+	db.actor:set_actor_hit_immunity_factor(get_survivor_hit_factor())
+end
+
+function add_killed_npcs(e)
+	if e.who and e.who:id() == idActor then
+		killed_npcs = killed_npcs + 1
+	end
+end
+function add_killed_mobs(e)
+	if e.who and e.who:id() == idActor then
+		killed_mobs = killed_mobs + 1
+	end
+end
+
+--/ ------------------------------------------------------------------
+function get_barter_skill() --/< from xr_conditions.script
+	local diff_koef = 1.0
+
+	if level.get_game_difficulty() == game_difficulty.novice then diff_koef = 1.23
+	elseif level.get_game_difficulty() == game_difficulty.stalker then diff_koef = 1.15
+	elseif level.get_game_difficulty() == game_difficulty.veteran then diff_koef = 0.98
+	else diff_koef = 0.8
+	end
+
+	local min_value = (Get_Cfg_Number(ltx_skills, "barter_skill_data", "minimum_value", 1)/diff_koef)
+	local max_value = (Get_Cfg_Number(ltx_skills, "barter_skill_data", "maximum_value", 1)/diff_koef)
+
+	return min_value - (skills_values["barter"] / 10 * (min_value - max_value)) --/>
+end
+
+function get_endurance_max_weight()
+	local diff_koef = 0
+
+	if level.get_game_difficulty() == game_difficulty.novice then diff_koef = 20
+	elseif level.get_game_difficulty() == game_difficulty.stalker then diff_koef = 15
+	elseif level.get_game_difficulty() == game_difficulty.veteran then diff_koef = 5
+	else diff_koef = 0
+	end
+
+	local min_value = (Get_Cfg_Number(ltx_skills, "endurance_skill_data", "minimum_max_weight", 35)+diff_koef)
+	local max_value = (Get_Cfg_Number(ltx_skills, "endurance_skill_data", "maximum_max_weight", 70)+diff_koef)
+
+	return min_value + (skills_values["endurance"] / 10 * (max_value - min_value)) --/>
+end
+
+function get_endurance_walk_weight()
+	local diff_koef = 0
+
+	if level.get_game_difficulty() == game_difficulty.novice then diff_koef = 20
+	elseif level.get_game_difficulty() == game_difficulty.stalker then diff_koef = 15
+	elseif level.get_game_difficulty() == game_difficulty.veteran then diff_koef = 5
+	else diff_koef = 0
+	end
+
+	local min_value = (Get_Cfg_Number(ltx_skills, "endurance_skill_data", "minimum_max_walk_weight", 40)+diff_koef)
+	local max_value = (Get_Cfg_Number(ltx_skills, "endurance_skill_data", "maximum_max_walk_weight", 80)+diff_koef)
+
+	return min_value + (skills_values["endurance"] / 10 * (max_value - min_value)) --/>
+end
+
+function get_endurance_sprint()
+	local diff_koef = 1.0
+
+	if level.get_game_difficulty() == game_difficulty.novice then diff_koef = 1.06
+	elseif level.get_game_difficulty() == game_difficulty.stalker then diff_koef = 1.03
+	else diff_koef = 1.0
+	end
+
+	local min_value = (Get_Cfg_Number(ltx_skills, "endurance_skill_data", "minimum_sprint_factor", 2.0)*diff_koef)
+	local max_value = (Get_Cfg_Number(ltx_skills, "endurance_skill_data", "maximum_sprint_factor", 2.2)*diff_koef)
+
+	return min_value + (skills_values["endurance"] / 10 * (max_value - min_value)) --/>
+end
+
+function get_sharpshooter_dispersion()
+	local diff_koef = 1.0
+
+	if level.get_game_difficulty() == game_difficulty.novice then diff_koef = 1.15
+	elseif level.get_game_difficulty() == game_difficulty.stalker then diff_koef = 1.05
+	elseif level.get_game_difficulty() == game_difficulty.veteran then diff_koef = 1.0
+	else diff_koef = 0.97
+	end
+
+	local min_value = (Get_Cfg_Number(ltx_skills, "sharpshooter_skill_data", "minimum_dispersion", 1)/diff_koef)
+	local max_value = (Get_Cfg_Number(ltx_skills, "sharpshooter_skill_data", "maximum_dispersion", 1)/diff_koef)
+
+	return min_value - (skills_values["sharpshooter"] / 10 * (min_value - max_value)) --/>
+end
+
+function get_sharpshooter_zoom_inertion()
+	local diff_koef = 1.0
+
+	if level.get_game_difficulty() == game_difficulty.novice then diff_koef = 1.3
+	elseif level.get_game_difficulty() == game_difficulty.stalker then diff_koef = 1.15
+	elseif level.get_game_difficulty() == game_difficulty.veteran then diff_koef = 1.0
+	else diff_koef = 0.93
+	end
+
+	local min_value = (Get_Cfg_Number(ltx_skills, "sharpshooter_skill_data", "minimum_zoom_inertion", 1)/diff_koef)
+	local max_value = (Get_Cfg_Number(ltx_skills, "sharpshooter_skill_data", "maximum_zoom_inertion", 1)/diff_koef)
+
+	return min_value - (skills_values["sharpshooter"] / 10 * (min_value - max_value)) --/>
+end
+
+function get_survivor_hit_factor()
+	local min_value = Get_Cfg_Number(ltx_skills, "survivor_skill_data", "minimum_immunity_coeff", 1)
+	local max_value = Get_Cfg_Number(ltx_skills, "survivor_skill_data", "maximum_immunity_coeff", 1)
+
+	return min_value - (skills_values["survivor"] / 10 * (min_value - max_value)) --/>
+end
+
+function get_survivor_stash_skill() --/< from treasure_manager.script
+	local diff_koef = 0
+
+	if 		level.get_game_difficulty() == game_difficulty.novice then diff_koef = 3
+	elseif	level.get_game_difficulty() == game_difficulty.stalker then diff_koef = 2
+	elseif	level.get_game_difficulty() == game_difficulty.veteran then diff_koef = 1
+	end
+
+	local value = (Get_Cfg_Number(ltx_skills, "survivor_skill_data", "minimum_stash_percent", 1)+diff_koef)
+
+	return value --/>
+end
+
+--/ ------------------------------------------------------------------
+function add_points_amount(value) --/< from task_manager.script
+	if points_amount < 41 then
+		points_amount = points_amount + value
+		news_manager.send_tip_hud(game.translate_string("points_update"), string.format("%s %d", game.translate_string("points_msg"), value))
+	end
+end
+
+local points_to_skill = 100
+local points_part_to_up = level.get_game_difficulty() == game_difficulty.novice and 20 or 10
+
+function add_rank_skills_count(c)
+	local counter = "add_rank_skills_count"
+	local counter_total = "rank_skills_count_total"
+	local count_total = GetVarA(counter_total, 0)
+	local points_to_next_skill = points_to_skill + count_total * (points_to_skill/points_part_to_up)
+	
+	if c and c ~=0 then	
+		SetVarA(counter, GetVarA(counter, 0) + c)
+		local count = GetVarA(counter, 0)
+		--log("rank_skill_count + [%s] = [%s]", c, count, "")
+		if count >= points_to_next_skill then
+			pdaSkills.add_points_amount(1)
+			SetVarA(counter, (count - (points_to_next_skill)))
+			SetVarA(counter_total, GetVarA(counter_total, 0) + 1)
+			--log("add_rank_skill")
+		end
+	end
+end
+
+
+function print_rank_skills_count()
+		local counter = "add_rank_skills_count"
+		local count = GetVarA(counter, 0)
+		log("rank_skill_count [%s]", count, "")
+end
+--/ ------------------------------------------------------------------
+function get_reputation()
+	if not xr_effects.sakharov_dialog_ch() then
+	local r = db.actor:character_reputation()
+	if r >= -10000 and r <= -1000 then
+		return "terrible"
+	elseif r <= -150 then
+		return "very_bad"
+	elseif r <= -50 then
+		return "bad"
+	elseif r <= 50 then
+		return "neutral"
+	elseif r <= 150 then
+		return "good"
+	elseif r <= 1000 then
+		return "very_good"
+	end
+	return "excellent"
+	end
+end
+
+function get_completed_quests()
+	local sum = actor_stats.get_points("quests")
+	--[[ --old broken func
+	for _,v in pairs(task_manager.get_random_task().task_info) do
+		if v.status == "completed" then
+			sum = sum + 1
+			completed_quests = sum
+		end
+	end
+	--]]
+	completed_quests = sum
+	--return tostring(sum)
+end
+
+function get_rank_left()
+	local counter = "add_rank_skills_count"
+	local counter_total = "rank_skills_count_total"
+	local count_total = GetVarA(counter_total, 0)
+	local points_to_next_skill = points_to_skill + count_total * (points_to_skill/points_part_to_up)
+	local count = GetVarA(counter, 0)
+	local left = ((points_to_next_skill)-count)
+	return left
+end
+
+function get_wnd_tags()
+	return  {
+		["name"]		= db.actor:character_name(),
+		["rank"]		= ranks.get_obj_rank_name(db.actor),
+		["community"]	= db.actor:character_community(),
+		["reputation"]	= this.get_reputation(),
+--		["rank_value"]	= db.actor:character_rank(),
+		["rank_left"]	= this.get_rank_left()
+	}
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaSkills" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaSkills:__init(name,rect,active) super()
+	self:SetWindowName("pda_"..name)
+	self:SetAutoDelete(false)
+	self.rect = rect
+	self.active = active
+	self.initialized = false
+	self:initialize()
+	
+end
+
+function uiPdaSkills:initialize()
+	self:InitControls()
+	self:InitCallBacks()
+	self.initialized = true
+end
+
+function uiPdaSkills:InitControls()
+	--self.rect[1] = device():is_widescreen() and self.rect[1] - 15 or self.rect[1]
+	self:Init( unpack(self.rect) )
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_"..self:WindowName()..".xml")
+	
+	xml:InitFrame    ("left_frame_window", self)
+	xml:InitFrameLine("left_frame_header", self)
+	xml:InitFrame    ("right_frame_window", self)
+	xml:InitFrameLine("right_frame_header", self)
+	xml:InitFrame    ("bottom_frame_window", self)
+	xml:InitFrameLine("bottom_frame_header", self)
+	xml:InitAnimStatic("anim_static", self)
+	self:Register(xml:InitStatic("description", self), "description")
+	
+	local dlg = nil
+	local wnd_tags = this.get_wnd_tags()
+	for k,v in pairs(wnd_tags) do
+		xml:InitStatic(k.."_caption", self)
+		dlg = xml:InitStatic(k.."_static", self)
+		dlg:SetWindowName(k.."_static")
+		dlg:SetTextST(tostring(v))
+	end
+	
+	dlg = xml:InitButton("points_amount_caption", self)
+	dlg:SetTextST("points_amount")
+	self:Register(dlg, "points_amount_descr")
+	dlg = xml:InitStatic("points_amount_static", self)
+	dlg:SetText(tostring(points_amount))
+	self:Register(dlg, "points_amount_val")
+	
+	for _,skill in ipairs(skills) do
+		dlg = xml:Init3tButton(skill.."_icon", self)
+		self:Register(dlg, skill.."_icon")
+		dlg = xml:InitButton(skill.."_caption", self)
+		dlg:SetTextST("st_pda_skills_"..skill)
+		self:Register(dlg, skill.."_descr")
+		dlg = xml:InitStatic(skill.."_static", self)
+		dlg:SetText(tostring(skills_values[skill]))
+		self:Register(dlg, skill.."_val")
+		
+		dlg = xml:InitButton(skill.."_title", self)
+		self:Register(dlg, skill)
+		dlg = xml:InitProgressBar(skill.."_progress", self)
+		dlg:SetProgressPos(skills_values[skill])
+		self:Register(dlg, skill.."_bar")
+		dlg = xml:Init3tButton(skill.."_plus_btn", self)
+		dlg:Enable(false)
+		dlg:Show(false)
+		self:Register(dlg, skill.."_plus_btn")
+	end
+end
+
+function uiPdaSkills:InitCallBacks()
+	self:AddCallback("points_amount_descr", ui_events.BUTTON_CLICKED, self.ShowDescription, self)
+	for _,skill in ipairs(skills) do
+		self:AddCallback(skill,           ui_events.BUTTON_CLICKED, function() self:ShowDescription("st_pda_skills_"..skill.."_descr") end, self)
+		self:AddCallback(skill.."_icon",           ui_events.BUTTON_CLICKED, function() self:ShowDescription("st_pda_skills_"..skill.."_descr") end, self)
+		self:AddCallback(skill.."_descr", ui_events.BUTTON_CLICKED, function() self:ShowDescription("st_pda_skills_"..skill.."_descr") end, self)
+		self:AddCallback(skill.."_plus_btn",  ui_events.BUTTON_CLICKED, function() self:ChangeSkill(skill, 1) end, self)
+	end
+end
+
+function uiPdaSkills:ChangeSkill(skill,value)
+	skills_values[skill] = skills_values[skill] + value
+
+	if skill == "barter" then
+		db.actor:set_actor_price_factor(get_barter_skill())
+	elseif skill == "endurance" then
+		db.actor:set_actor_max_weight(get_endurance_max_weight())
+		db.actor:set_actor_walk_weight(get_endurance_walk_weight())
+		db.actor:set_actor_sprint_factor(get_endurance_sprint())
+	elseif skill == "sharpshooter" then
+		db.actor:set_actor_dispersion_factor(get_sharpshooter_dispersion())
+		db.actor:set_actor_zoom_inert_factor(get_sharpshooter_zoom_inertion())
+	elseif skill == "survivor" then
+		db.actor:set_actor_hit_immunity_factor(get_survivor_hit_factor())
+	end
+
+	points_amount = points_amount - value
+	
+	self:GetStatic(skill.."_val"):SetText(tostring(skills_values[skill]))
+	self:GetProgressBar(skill.."_bar"):SetProgressPos(skills_values[skill])
+	self:ShowDescription("st_pda_skills_"..skill.."_descr")
+	self:UpdateInfo()
+end
+
+function uiPdaSkills:UpdateInfo()
+	local btn_add = nil
+	for _,skill in ipairs(skills) do
+		btn_add = self:GetButton(skill.."_plus_btn")
+		if points_amount > 0 and skills_values[skill] < 10 then
+			btn_add:Enable(true)
+			btn_add:Show(true)
+		else
+			btn_add:Enable(false)
+			btn_add:Show(false)
+		end
+	end
+
+	self:GetStatic("points_amount_val"):SetText(tostring(points_amount))
+	local wnd_tags = this.get_wnd_tags()
+	for k,v in pairs(wnd_tags) do
+		self:GetStatic(k.."_static"):SetTextST(tostring(v))
+	end
+end
+
+function uiPdaSkills:ShowDescription(str)
+	if not str then str = "points_amount_descr" end
+	self:GetStatic("description"):SetTextST(str)
+end
+
+function uiPdaSkills:Dispatch(cmd, param)
+	log("uiPdaSkills:Dispatch(%d, %d)", cmd, param)
+	self:OnShow(param == 1)
+	return CUIScriptWnd.Dispatch(self, cmd, param)
+end
+
+function uiPdaSkills:OnShow(show)
+	if show then
+		if not self.initialized then
+			self:initialize()
+		end
+		self:UpdateInfo()
+		self:ShowDescription("select_skill")
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

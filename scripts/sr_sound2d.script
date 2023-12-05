@@ -1,0 +1,195 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : sr_sound2d.script
+ Description: Проигровка звуков в голове актера
+ Copyright  : 2004 © GSC Game World
+ Author     : Tunduk Vladimir aka Sidorovich
+ Last edit  : 27.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "action_sound2d"
+--/ -----------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ---------------------------------------------
+function action_sound2d:__init (obj, st)
+	self.object    = obj
+	self.st        = st
+	self.snd_obj_l = nil
+	self.snd_obj_r = nil
+	self.time      = 0
+	self.current   = 0
+	self.playing   = false
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_sound2d:reset_scheme()
+	self:recreate_sounds()
+	self.st.signals = {}
+	self.time = time_global()
+	self.playing = false
+end
+----------------------
+function action_sound2d:recreate_sounds()
+	self.snd_obj_l = nil
+	self.snd_obj_r = nil
+	local sNameLeft, sNameRight = self:get_sound_name()
+	if sNameLeft then --log("recreate_sounds:LeftChannel=[%s]", sNameLeft) --/#~#
+		self.snd_obj_l = xr_sound.get_safe_sound_object(sNameLeft)
+	end
+	if sNameRight then --log("recreate_sounds:RightChannel=[%s]", sNameRight) --/#~#
+		self.snd_obj_r = xr_sound.get_safe_sound_object(sNameRight)
+	end
+end
+----------------------
+function action_sound2d:get_sound_name()
+	local sSound = self.st.snd_name
+	if not sSound then
+		sSound = sound_theme.ph_snd_themes[self.st.snd_theme][self:get_next_sound_index()]
+		if type(sSound) == 'table' then
+			sSound = sSound[1]
+		end
+	end
+	if self.st.stereo == false then
+		return sSound, nil --/>
+	end
+	return string.format("%s_l", sSound), string.format("%s_r", sSound) --/>
+end
+----------------------
+function action_sound2d:get_next_sound_index()
+	local iIdx = self.current
+	local iSize = #sound_theme.ph_snd_themes[self.st.snd_theme]
+	if iSize > 1 then
+		while iIdx == self.current do
+			iIdx = math.random(1,iSize)
+		end
+	else
+		iIdx = 1
+	end
+	self.current = iIdx
+	return iIdx --/>
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_sound2d:update(delta)
+	if not self.snd_obj_l then
+		return --/>
+	end
+	if self.playing == false then
+		self:play_sounds()
+		self.playing = true
+		return --/>
+	end
+	if self.st.stereo == true then
+		local pos_l,pos_r = self:get_source_positions()
+		if self.snd_obj_l and self.snd_obj_l:playing() == true then
+			self.snd_obj_l:set_position(pos_l)
+		end
+		if self.snd_obj_r and self.snd_obj_r:playing() == true then
+			self.snd_obj_r:set_position(pos_r)
+		end
+	end
+	if self.snd_obj_l:playing() == false then
+		self.st.signals["sound_end"] = true
+		if self.st.snd_theme ~= nil then
+			self:recreate_sounds()
+			self.time = time_global()
+			self.playing = false
+		end
+	end
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+----------------------
+function action_sound2d:play_sounds()
+	--/ рассчет задержки
+	local iDelay = self.st.delay
+	if self.st.delay ~= self.st.delay_max then
+		iDelay = math.random(self.st.delay, self.st.delay_max)
+	end
+	local oActor = db.actor
+	if self.st.stereo then --/ рассчитаем направления на источники звука для левого и правого лопуха
+		if self.snd_obj_l and self.snd_obj_r then
+			local pos_l,pos_r = self:get_source_positions()
+			self.snd_obj_l:play_at_pos(oActor, pos_l, iDelay/1000.0, sound_object.s2d) --/ s3d ~> s2d
+			self.snd_obj_r:play_at_pos(oActor, pos_r, iDelay/1000.0, sound_object.s2d) --/ s3d ~> s2d
+		else --/ если один из каналов отсутсвует, то пинать жестоко звуковика
+			abort(sModule..":Can't play stereo sound because sound file for left or right channel not loaded")
+		end
+	else --/ моно-звук: играем только с левого канала и только в голове актора
+		if self.snd_obj_l then
+			self.snd_obj_l:play_at_pos(oActor, vector():set(0,0,0), iDelay/1000.0, sound_object.s2d)
+		end
+	end
+end
+----------------------
+function action_sound2d:get_source_positions()
+	--[[
+	local oActor = db.actor
+	local vDir = vector():set( oActor:direction() )
+	vDir.y = 0.0
+	local vDirL = vector_rotate_y(vDir, 45):normalize()
+	local vDirR = vector_rotate_y(vDir, -45):normalize()
+	--/ рассчитаем высоту
+	local vPos = vector():set( oActor:position() )
+	vPos.y = vPos.y + 1.5 --/ ну низкорослый у нас актер...
+	local vPosL = vector():set(vPos)
+	return vPosL:add( vDirL:mul(1.5) ), vPos:add( vDirR:mul(1.5) ) --/>
+	--]]
+	return vector():set(-0.5,0.0,0.3), vector():set(0.5,0.0,0.3) --/>
+end
+----------------------
+function action_sound2d:deactivate()
+	if self.snd_obj_l then
+		if self.snd_obj_l:playing() == true and self.st.sound_reset then
+			self.snd_obj_l:stop()
+		end
+		self.snd_obj_l = nil
+	end
+	if self.snd_obj_r then
+		if self.snd_obj_r:playing() == true and self.st.sound_reset then
+			self.snd_obj_r:stop()
+		end
+		self.snd_obj_r = nil
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oObj, ini, sScheme, sSection, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]", oObj:name(), sScheme, sSection, "") --/ #~#
+	local oNewAction = this.action_sound2d(oObj, st)
+	--/ регистрация 'action', для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events (oObj, st, oNewAction)
+end
+----------------------
+function set_scheme(oObj, ini, sScheme, sSection, sGulagName)
+	local st = xr_logic.assign_storage_and_bind (oObj, ini, sScheme, sSection)
+	st.logic = xr_logic.cfg_get_switch_conditions (ini, sSection, oObj)
+	st.snd_name    = Get_Cfg_String(ini, sSection, "snd")
+	st.snd_theme   = Get_Cfg_String(ini, sSection, "theme")
+	st.stereo      = Get_Cfg_Bool  (ini, sSection, "stereo", false)
+	st.sound_reset = Get_Cfg_Bool  (ini, sSection, "sound_reset", true ) --/#+#
+	st.delay       = Get_Cfg_Number(ini, sSection, "delay",     0)
+	st.delay_max   = Get_Cfg_Number(ini, sSection, "delay_max", 0)
+	if st.delay_max < st.delay then
+		st.delay_max = st.delay
+	end
+	if st.snd_theme and st.snd_name then
+		abort(sModule..":[%s]~Can't definition sound file name and sound theme at the one time:<%s>", oObj:name(), "Error!")
+	elseif st.snd_name and st.snd_name == "" then
+		abort(sModule..":[%s]~Invalid_sound_name:<%s>", oObj:name(), "Error!")
+	elseif st.snd_theme and st.snd_theme == "" then
+		abort(sModule..":[%s]~Invalid_sound_theme:<%s>", oObj:name(), "Error!")
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

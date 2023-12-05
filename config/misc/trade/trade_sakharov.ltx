@@ -1,0 +1,54 @@
+#include "traders_common.ltx"
+
+; Sakharov - a trader ecolog in the bunker on Yantar 
+[trader]:trader_base
+buy_condition = ecolog_generic_buy
+sell_condition = ecolog_start_sell
+buy_supplies = {+has_freeplay_info}supplies_freeplay, {+x16_main_power_disabled}supplies_after_x16, {+yan_good_helmet_start}supplies_after_helmet, supplies_start
+
+buy_item_condition_factor = 0.7
+
+[ecolog_generic_buy]:buy_artefacts_high,buy_mutant_normal
+
+
+[supplies_start]:booster_supplies
+nauchniy_outfit		                 = 4, 1
+ecolog_outfit                        = 3, 0.6
+
+detector_simple                      = 1, 0.9
+detector_af_simple				     = 2, 0.9
+
+medkit                               = 5, 0.8
+medkit_scientic                      = 5, 0.3
+antirad                              = 10, 0.7
+bandage                              = 20, 0.9
+energy_drink                         = 10, 0.5
+item_battery                         = 10, 0.8
+mineral_water                        = 10, 0.5
+sleeping_bag                         = 1, 1.0
+vodka                                = 10, 0.3
+
+
+[supplies_after_helmet]:supplies_start,fancy_food_supplies
+ecolog_outfit                        = 4, 1
+protection_outfit                    = 2, 0.7
+
+detector_advances                    = 2, 0.8
+detector_af_advanced				 = 1, 0.5
+
+
+[supplies_after_x16]:supplies_after_helmet
+protection_outfit                    = 4, 0.8
+
+ammo_gauss                           = 5, 0.6
+
+
+[supplies_freeplay]:supplies_after_x16
+ecolog_outfit_black                  = 1, 0.35
+detector_elite                       = 2, 0.8
+detector_af_elite					 = 2, 0.8
+detector_af_svarog					 = 1, 0.95
+wpn_gauss                            = 1, 1
+
+
+[ecolog_start_sell]:sell_all_high,sell_ammo_very_high,sell_outfit_normal

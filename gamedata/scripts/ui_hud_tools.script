@@ -1,0 +1,573 @@
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+--local dbg_tools_mgr 	= nil
+local bInit 			= false --/ flag module initialization
+local sModule 			= script_name() --/ string name of file module
+local bRus				= true --/ Russian language flag
+
+--/ -----------------------------------------------------------------
+--/ Print-Log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end --/>
+	bRus = db.sLanguage and db.sLanguage == "rus"
+	bInit = true
+end
+
+--/------------------------------------------------------------------------------------------------
+class "UI_Tools01" (CUIWindow) --/ Menu-1 "Destructor"
+--/------------------------------------------------------------------------------------------------
+function UI_Tools01:__init() super() end
+
+function UI_Tools01:InitControls(xml, parent)
+	--/ frame
+	xml:InitFrame("tab1:frame", self)
+	--/ window title
+	local title = xml:InitStatic("tab1:title", self)
+	title:SetText((bRus and "Удаление объекта из игры") or "Delete item in game")
+	--/ output window title
+	local caption = xml:InitStatic("tab1:caption", self)
+	caption:SetText((bRus and "Введите имя (или часть) секции искомого объекта:") or "Type name(or half) of object section you searching:")
+	--/ input string/window
+	local box = xml:InitEditBox("tab1:edit_box", self)
+	parent.box1 = box
+	parent:Register(box, "box_edt1")
+	box:CaptureFocus(true)
+	--/ string 'note'
+	parent.note0 = xml:InitStatic("tab1:note", self)
+	--/ Lua console launcher
+	local btn_lua = xml:Init3tButton("tab1:btn_lua", self)
+	btn_lua:SetText((bRus and "Консоль LUA") or "LUA Console")
+	parent:Register(btn_lua, "btn_lua")
+	--/ action button
+	local btn = xml:Init3tButton("tab1:btn_act", self)
+	btn:SetText((bRus and "Удалить") or "Delete")
+	parent:Register(btn, "btn_act1")
+end
+
+function UI_Tools01:InitCallBacks(parent) end
+
+function UI_Tools01:Update() end
+--/------------------------------------------------------------------------------------------------
+class "UI_TabControll" (CUIScriptWnd) --/ main menu (shell)
+--/------------------------------------------------------------------------------------------------
+function UI_TabControll:__init() super()
+	if not bInit then init() end
+	
+	self.active_idx = 0 -- set default tab
+	
+	local xml_backgrd = CScriptXmlInit()
+	xml_backgrd:ParseFile("ui_mm_main.xml")
+	
+	local st = xml_backgrd:InitStatic("back_movie", self)
+	st:InitTexture("ui\\ui_vid_back_02")
+	
+	xml_backgrd:InitStatic("background", self)
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+local la_levels = {
+	[ 1] = "la01_escape",
+	[ 2] = "la02_garbage",
+	[ 3] = "la03_agroprom",
+	[ 4] = "la04_darkdolina",
+	[ 5] = "la04u_darklab",
+	[ 6] = "la05_bar_rostok",
+	[ 7] = "la06_yantar",
+	[ 8] = "la07_military",
+	[ 9] = "la08_deadcity",
+	[10] = "la09_swamp",
+	[11] = "la10_radar",
+	[12] = "la10u_bunker",
+	[13] = "la11_pripyat",
+	[14] = "la12_stancia",
+	[15] = "la12u_sarcofag",
+	[16] = "la13_generators",
+	[17] = "la13u_warlab",
+	[18] = "la13u_oso", --/#+#
+	[19] = "la14_rostok_factory",
+	[20] = "la14u_secret_lab",
+	[21] = "la15_darkscape",
+	[22] = "la16_lost_factory",
+	[23] = "la16u_labx16",
+	[24] = "la17_outskirts",
+	[25] = "la17u_labx7", --/#+#
+	[26] = "la18_damned",
+	[27] = "la19_country",
+	[28] = "la20_forgotten",
+	[29] = "la21_generators_2", --/#+#
+	[30] = "la22_forest", --/#+#
+	[31] = "ai_test", --/#+#
+	[32] = "factory_test", --/#+#
+}
+
+local faction_names = {
+	["stalker"] = {
+		"stalker", "monolith", "military", "killer", "ecolog", "dolg", "freedom", "clear_sky", "milstalker", "cleaning",
+		"bandit", "zombied", "stranger", "dark_stalker", "arena_enemy",
+		"trader", "actor_bandit", "actor_mono", "actor_freedom",
+	},
+	["mutant"] = {
+		"tushkano", "flesh", "boar", "cat", "zombie", "burer", "fracture",
+		"chimera", "dog", "pseudodog", "psy_dog", "psy_dog_phantom", "snork", "poltergeist",
+		"pseudo_gigant", "controller", "bloodsucker", "rat", "swampbeast", "karlik", "karlito", "ghostboss",
+		"bird", "karlito"
+	}
+}
+local rank_names = {
+	["stalker"] = {
+		"novice", "experienced", "regular", "veteran", "master"
+	},
+	["mutant"] = {
+		"weak", "normal", "middle_strong", "strong", "very_strong", "uniq"
+	}
+}
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiPopulationListItem" (CUIListBoxItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function uiPopulationListItem:__init(lname, fname, rname, q, xml) super()
+	self:SetWndRect(2, 0, 433, 18)
+	
+	self.lname = CUIStatic()
+	self.lname:SetAutoDelete(true)
+	self:AttachChild(self.lname)
+	self.lname:SetWndRect(0, 0, 150, 18)
+	self.lname:SetTextST(lname or "")
+	self.lname:SetTextAlign(CGameFont.alLeft)
+	self.lname:SetFont(pcTextViewer.get_font("letterica16"))
+	self.lname:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	self.fname = CUIStatic()
+	self.fname:SetAutoDelete(true)
+	self:AttachChild(self.fname)
+	self.fname:SetWndRect(150, 0, 125, 18)
+	self.fname:SetTextST(fname or "")
+	self.fname:SetTextAlign(CGameFont.alLeft)
+	self.fname:SetFont(pcTextViewer.get_font("letterica16"))
+	self.fname:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	self.rname = CUIStatic()
+	self.rname:SetAutoDelete(true)
+	self:AttachChild(self.rname)
+	self.rname:SetWndRect(275, 0, 100, 18)
+	self.rname:SetText(rname or "")
+	self.rname:SetTextAlign(CGameFont.alLeft)
+	self.rname:SetFont(pcTextViewer.get_font("letterica16"))
+	self.rname:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	self.q = CUIStatic()
+	self.q:SetAutoDelete(true)
+	self:AttachChild(self.q)
+	self.q:SetWndRect(375, 0, 60, 18)
+	self.q:SetText(q)
+	self.q:SetTextAlign(CGameFont.alLeft)
+	self.q:SetFont(pcTextViewer.get_font("letterica16"))
+	self.q:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	xml:InitStatic("alife_population_stats:list_item_div", self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiPopulationStats" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPopulationStats:__init() super() end
+
+function uiPopulationStats:__finalize()
+end
+
+function uiPopulationStats:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPopulationStats:AttachLevelsCombo()
+	self.cmb_level = ui_combo.uiComboBox(self, false, 5, 10, self.xml, "combobox")
+	self.cmb_level:SetWindowName("cmb_level")
+	self.cmb_level:SetAutoDelete(true)
+	self:AttachChild(self.cmb_level)
+	self.cmb_level:SetFirstItem("select level ...")
+	self.cmb_level:Show(true)
+	
+	local items = {}
+	
+	table.insert(items, {key = "all", value = "all"})
+	
+	for k, v in ipairs(la_levels) do
+		table.insert(items, {key = v, value = game.translate_string(v)})
+	end
+	
+	self.cmb_level:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:AttachEntityTypeCombo()
+	self.cmb_entity = ui_combo.uiComboBox(self, false, 5, 40, self.xml, "combobox")
+	self.cmb_entity:SetWindowName("cmb_entity_type")
+	self.cmb_entity:SetAutoDelete(true)
+	self:AttachChild(self.cmb_entity)
+	self.cmb_entity:SetFirstItem("select entity ...")
+	self.cmb_entity:Show(true)
+	
+	local items = {}
+	
+	for k, v in ipairs({"all", "stalker", "mutant"}) do
+		table.insert(items, {key = v, value = v})
+	end
+	
+	self.cmb_entity:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:AttachRankCombo()
+	self.cmb_rank = ui_combo.uiComboBox(self, false, 5, 40, self.xml, "combobox")
+	self.cmb_rank:SetWindowName("cmb_rank")
+	self.cmb_rank:SetAutoDelete(true)
+	self:AttachChild(self.cmb_rank)
+	self.cmb_rank:SetFirstItem("select rank ...")
+	self.cmb_rank:Show(true)
+	
+	local items = {}
+	
+	table.insert(items, {key = "all", value = "all"})
+	
+	for k, v in ipairs(rank_names["stalker"]) do
+		table.insert(items, {key = v, value = v})
+	end
+	for k, v in ipairs(rank_names["mutant"]) do
+		table.insert(items, {key = v, value = v})
+	end
+	
+	self.cmb_rank:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:AttachFactionsCombo()
+	self.cmb_faction = ui_combo.uiComboBox(self, false, 5, 70, self.xml, "combobox")
+	self.cmb_faction:SetWindowName("cmb_faction")
+	self.cmb_faction:SetAutoDelete(true)
+	self:AttachChild(self.cmb_faction)
+	self.cmb_faction:SetFirstItem("select faction ...")
+	self.cmb_faction:Show(true)
+	
+	local items = {}
+	
+	table.insert(items, {key = "all", value = "all"})
+	
+	for k, v in ipairs(faction_names["stalker"]) do
+		table.insert(items, {key = v, value = game.translate_string(v)})
+	end
+	for k, v in ipairs(faction_names["mutant"]) do
+		table.insert(items, {key = v, value = game.translate_string(v)})
+	end
+	
+	self.cmb_faction:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:InitControls(xml, parent)
+	self.xml = xml
+	
+	xml:InitFrame("alife_population_stats:frame", self)
+	xml:InitFrame("alife_population_stats:list_frame", self)
+	self.list_descr_frame = xml:InitFrame("alife_population_stats:list_descr_frame", self)
+	xml:InitAutoStaticGroup("alife_population_stats:list_descr", self.list_descr_frame)
+	
+	self.listview = xml:InitListBox("alife_population_stats:listview", self)
+	
+	self.btn_display = CUI3tButton()
+	self.btn_display:SetAutoDelete(true)
+	self.btn_display:SetWindowName("btn_display")
+	self.btn_display:Init("ui_button_ordinary", 5, 100, 117, 29)
+	self.btn_display:SetText("display")
+	self:AttachChild(self.btn_display)
+	self:Register(self.btn_display)
+	
+	self.btn_save = CUI3tButton()
+	self.btn_save:SetAutoDelete(true)
+	self.btn_save:SetWindowName("btn_save")
+	self.btn_save:Init("ui_button_ordinary", 5, 130, 117, 29)
+	self.btn_save:SetText("to log")
+	self:AttachChild(self.btn_save)
+	self:Register(self.btn_save)
+	
+	self:AttachFactionsCombo()
+	self:AttachRankCombo()
+	--self:AttachEntityTypeCombo()
+	self:AttachLevelsCombo()
+end
+
+function uiPopulationStats:InitCallBacks()
+	self:AddCallback("btn_display", ui_events.BUTTON_CLICKED, self.OnDisplayStats, self)
+	self:AddCallback("btn_save", ui_events.BUTTON_CLICKED, self.OnSaveStats, self)
+end
+
+function uiPopulationStats:OnSaveStats()
+	local item = nil
+	for i = 0, self.listview:GetSize() - 1 do
+		item = self.listview:GetItem(i)
+		parser.dbg_print("[%s] %s (%s) => %s", item.lname:GetText(), item.fname:GetText(), item.rname:GetText(), item.q:GetText())
+	end
+end
+
+function uiPopulationStats:OnDisplayStats()
+	local lname = self.cmb_level:GetSelectedItemKey()
+	local rname = self.cmb_rank:GetSelectedItemKey()
+	local fname = self.cmb_faction:GetSelectedItemKey()
+	
+	if lname and rname and fname then
+		if lname == "all" then
+			lname = la_levels
+		else
+			lname = {lname}
+		end
+		if rname == "all" then
+			rname = {}
+			for k, v in pairs(rank_names["stalker"]) do
+				table.insert(rname, v)
+			end
+			for k, v in pairs(rank_names["mutant"]) do
+				table.insert(rname, v)
+			end
+		else
+			rname = {rname}
+		end
+		if fname == "all" then
+			fname = {}
+			for k, v in pairs(faction_names["stalker"]) do
+				table.insert(fname, v)
+			end
+			for k, v in pairs(faction_names["mutant"]) do
+				table.insert(fname, v)
+			end
+		else
+			fname = {fname}
+		end
+		
+		self.listview:RemoveAll()
+		if lname then
+			--log ("lvl_name %s", lname)
+			for _, lvl_name in pairs(lname) do
+				if fname then
+					--log ("faction_name %s", fname)
+					for _, comm_name in pairs(fname) do
+						if rname then
+							--log ("rank_name %s", rname)
+							for _, rank_name in pairs(rname) do
+								local q = xr_statistic.getSimStats().level_stats[lvl_name][comm_name][rank_name]
+								if q then
+									self.listview:AddItem(uiPopulationListItem(lvl_name, comm_name, rank_name, q, self.xml))
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function uiPopulationStats:OnComboBoxItemChange(cmb_name, key, value)
+end
+
+function UI_TabControll:InitControls()
+	self:SetWndRect(Frect():set(0,0,device().width,device().height))
+	self:SetAutoDelete(true)
+	self:SetFont(GetFontMedium()) --/ set base font for 'menu'
+	self:Enable(true)
+	--/ widget class
+	local xml = CScriptXmlInit()
+	--/ desc-file of elements
+	xml:ParseFile("ui_hud_tools_new.xml")
+	--debug_print(sModule..":Parse XML:>") --/#~#
+	--/active frame
+	local dlg = xml:InitStatic("main:menu", self)
+	--/ window title
+	local title = xml:InitStatic("main:title", dlg)
+	title:SetText("LA: Tools Kit")
+	--/ initialization of tab-menu
+	self.tab = xml:InitTab("main:tab", dlg)
+	self:Register(self.tab, "tab")
+	--/ frames initialization
+	local tWnds = {
+		[0] = {handler = this.UI_Tools01,        cap = (bRus and "УдалПредм") or "DelItem"},
+		[1] = {handler = this.uiPopulationStats, cap = (bRus and "NPC")       or "NPC"}
+	}
+	self.wnds = {}
+	for idx,v in pairs(tWnds) do
+		--log(v.handler)
+		local wnd = v.handler()
+		wnd:Init(15,75,375,450) --/ frames size
+		wnd:SetAutoDelete(true)
+		wnd:InitControls(xml,self)
+		wnd:InitCallBacks(self)
+		wnd:Show(idx == self.active_idx)
+		dlg:AttachChild(wnd)
+		self.wnds[idx] = wnd
+		self.tab:GetButtonByIndex(idx):SetText(v.cap) --/ menu button text
+	end
+	--/ activating of 'current' frame
+	self.tab:SetNewActiveTab(self.active_idx)
+	--/ exit button
+	local btn = xml:Init3tButton("main:btn_exit", dlg)
+	if not this.Check_StartGame() then
+		btn:SetTextST("ui_inv_exit")
+	end
+	self:Register(btn, "btn_exit")
+	--/ copyright
+	xml:InitStatic("main:copyright",dlg):SetText("Copyright 2008 © Artos")
+end
+
+function UI_TabControll:InitCallBacks() 
+	--// Interactive elements during certain actions executes specified function
+	self:AddCallback("tab", 			ui_events.TAB_CHANGED, 				self.OnTabChange, 	self)
+	self:AddCallback("btn_exit",	ui_events.BUTTON_CLICKED, 		self.Quit,					self)
+	self:AddCallback("btn_lua", 	ui_events.BUTTON_CLICKED, 		self.LuaConsole, 		self)
+	
+	if #self.wnds == 0 then
+		log("size of table self.wnds is "..#self.wnds.." (value is exist in index 0) so at least one Callback is added for workaround (Hello, LUA!)")
+		self:AddCallback("box_edt".. 0, 		ui_events.EDIT_TEXT_COMMIT,		self["OnBtnAct".. 0],	self) --//Edit box text changed
+		log("box_edt".. 0)
+		self:AddCallback("btn_chk".. 0,		ui_events.BUTTON_CLICKED,		self["OnBtnChk".. 0],	self) --//Check button changed
+		self:AddCallback("btn_act".. 0,		ui_events.BUTTON_CLICKED,		self["OnBtnAct".. 0],	self) --//Action button changed
+	end
+	
+	for k, v in ipairs(self.wnds) do 
+			--log("k %s", k, "v %s", v)
+			self:AddCallback("box_edt"..k, 		ui_events.EDIT_TEXT_COMMIT,		self["OnBtnAct"..k],	self) --//Edit box text changed
+			--log("box_edt %s", k)
+			self:AddCallback("btn_chk"..k,		ui_events.BUTTON_CLICKED,			self["OnBtnChk"..k],	self) --//Check button changed
+			self:AddCallback("btn_act"..k,		ui_events.BUTTON_CLICKED,			self["OnBtnAct"..k],	self) --//Action button changed
+	end
+end
+
+
+--//------------------------------------------------------------------------------------------------
+--// = H E L P E R S =
+--//------------------------------------------------------------------------------------------------
+
+function UI_TabControll:OnTabChange()
+	self.active_idx = this.Check_StartGame() and self.tab:GetActiveIndex() or 0
+--	log("TC:OnTabChange: active_id=[%s]", self.active_idx, "") --/#~#
+	for idx,wnd in pairs(self.wnds) do
+		if idx == self.active_idx then
+			wnd:Update()
+			wnd:Show(true) --/ show active window
+		elseif wnd:IsShown() then --/ hide
+			wnd:Show(false)
+		end
+	end
+end
+
+function UI_TabControll:Quit()
+--	log("TC:Quit:owner=[%s],holder=[%s]:(%s)", self.owner, self:GetHolder(), ">") --/#~#
+	if self:GetHolder() then
+		if self.owner then
+			self:GetHolder():start_stop_menu(self.owner, true) --/ show main window
+		end
+		self:GetHolder():start_stop_menu(self,true)
+	end
+	if self.owner then
+		self.owner:Show(false) --/ not show main window
+	end
+	if this.Check_StartGame() then
+		get_console():execute("main_menu off") --/ close main window
+		if event then event("main_menu_off"):trigger() end --/#+#
+	end
+end
+
+function UI_TabControll:OnKeyboard(dik, keyboard_action)
+	local bRes = CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if bRes == false and keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:Quit()
+		end
+	end
+	return bRes --/>
+end
+
+
+function Check_StartGame() --/> true if game launched
+	if level.present() and db.actor and db.actor:alive() then
+		return true --/>
+	end
+	return false --/>
+end
+
+function UI_TabControll:Update()
+--	log("TC:Update:[>]") --/#~#
+	CUIScriptWnd.Update(self)
+	if self.active_idx == 1 and time_global() > (self.tm_upd or 0) and this.Check_StartGame() then
+		self.tm_upd = time_global() + 1000
+		self.wnds[self.active_idx]:Update() --/ update PosInfo (~1sec)
+	end
+end
+
+--//--------------------------------------------------
+--// Launcher
+--//--------------------------------------------------
+function get_dbg_tools_mgr() --/#+#
+	if not dbg_tools_mgr then
+		dbg_tools_mgr = UI_TabControll()
+	end
+	return dbg_tools_mgr
+end
+
+
+--//====================================================================================================
+--//=================== ACTIONS ========================================================================
+--//====================================================================================================
+
+--// --------------------
+--// Destructor 
+--// --------------------
+function UI_TabControll:OnBtnAct1() 
+	--log(self)
+	self.note0:SetText("")
+	local sStr
+	local obj
+	sStr = self.box1:GetText() or ""
+	self.box1:CaptureFocus(true)
+	if sStr == "" then
+		self.note0:SetTextColor(0xad3e3e)
+		self.note0:SetText((bRus and "Пустая строка, введите секцию объекта") or "Error! String empty! Type object section.")
+		return --/>
+	else
+		sStr = sStr:match('(%S+)')
+		sStr = sStr:gsub("|", "/")
+	end
+	
+	if obj == nil then obj = db.actor end
+	local item = obj:object(sStr)
+	if item then
+		local seobj = alife():object(item:id())
+		if seobj then
+			alife():release(seobj)
+			self.note0:SetTextColor(0x14a314)
+			self.note0:SetText("\"" .. sStr .. "\"" .. (bRus and " успешно удалено") or " deleted successfully.")
+		end
+	else 
+		self.note0:SetTextColor(0xad3e3e)
+		self.note0:SetText((bRus and "Ошибка! Объект или в оффлайне либо его не существует") or "Error! Object isn't online or doesn't exist.")
+	end
+end
+
+--// ---------------------
+--// Launch LUA Console
+--// ---------------------
+function UI_TabControll:LuaConsole() 
+	if ui_lua_console then
+	
+		if not self.lua_console then
+			--log("Attempt to launch LUA Console")
+			self.lua_console = ui_lua_console.LaunchLUA()
+		end
+		
+		self:GetHolder():start_stop_menu(self.lua_console, true)
+		self:GetHolder():start_stop_menu(self, true)
+		self:Show(false)
+	end
+end

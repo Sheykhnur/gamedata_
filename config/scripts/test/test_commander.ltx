@@ -1,0 +1,22 @@
+[combat_ignore]
+
+[hit]
+on_info = {=hit_by_actor} %+actor_attacked_bridge%
+
+[logic]
+active = walker@com
+combat_ignore = combat_ignore
+on_hit = hit
+
+[walker@com]
+path_walk = ai_commander
+path_look = ai_commander_look
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge}
+on_info = {=dist_to_actor_le(20)} remark@commander
+
+[remark@commander]
+anim = backoff
+target = actor
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge}
+on_info = {=dist_to_actor_ge(20)} walker@com
+on_info2 = {=dist_to_actor_le(10)} %+actor_attacked_bridge%

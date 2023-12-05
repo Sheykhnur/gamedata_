@@ -1,0 +1,888 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_slave.script
+ Description: Main slave-functions
+ Copyright  : 2012 © LA-team
+ Author     : ...
+ Editors    : 
+ Last edit  : 09.08.2013 [SkyLoader]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iTmrUpdScr  = 5 --/ period check timer of screen mode (s)
+local iTimeUpdHud = 0 --/ period check timer of HUD (ms)
+local idUsed      = 0 --/ ID of used item
+local tLevels       = {} --/ levels array (names,Num,ID,idLv,idGv)
+local tUndergrounds = {} --/ undeground levels array
+local tQuestNPCs    = {} --/ array of quest npc
+local tQuestDone    = {}
+local bShowMain     = false --/ flag of primary HUD activity
+local sMapNow,idMapNow --/ current level (name/index)
+local oActor,sim,dev = nil,nil,nil
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+--	log("init:>") --/#~#
+	if db.la_fix then la_fix.init() end --/ for make fix
+	if not event then return end --/>
+	event("on_synchronized"):register(OnSynchronized)
+	event("presets"):register(PreSets)
+	event("actor_init"):register(OnActorInit)
+	event("actor_spawned"):register(Continue_Game_Load)
+	event("actor_update"):register(OnUpdate)
+	event("update_1st"):register(OnUpdate_1st)
+	event("update_1sec"):register(OnUpdate_1s)
+	event("actor_save"):register(OnActorSave)
+	bInit = true
+end
+--/ ------------------------------------------------------------------------------------------------
+--/ Loaded array storehouse and/or loaded objects of spawn
+--/ ------------------------------------------------------------------------------------------------
+function Game_Init()
+	sim,dev = alife(),device()
+	this.Update_WideScr()
+	local ltx     = ini_file("lost_alpha\\la_generic.ltx")
+	tLevels       = Get_IniSection(ltx, "levels", "table", "val2num", ",")
+	tUndergrounds = Get_IniSection(ltx, "underground_levels", "true")
+	idMapNow = db.idMapNow --/ ID of current level/map
+	sMapNow  = db.sMapNow --/ name of current level/map
+	
+	local iFirstBuild = GetVar("1st",-1) --/ date mark of new game start(NG)
+	local iBuildSav = GetVar("BuildSav",nil) --/ checking presence of version mode from save (if not new game)
+	if iBuildSav then --/ loaded saved game
+		db.idMapSav = GetVar("map_sav",0) --/ reading ID of saved level (idMapSav)
+		db.sMapSav = (db.idMapSav ~= 0 and sim:level_name(db.idMapSav)) or "" --/ name of saved level (sMapSav)
+		--/ restoring ID array and names of 'explored' levels
+		local tMapIdSav = GetVar("maps_sav",{}) --/ loading IDs array of 'explored' levels
+		for _,id in pairs(tMapIdSav) do
+			db.tKnowMapId[id] = true
+			db.tKnowMapName[sim:level_name(id)] = true
+		end
+		if iBuildSav == db.iBuildMod then
+			_G.log("Game_Init: Ver=[%s] Build=[%d=>%d] %s", db.sTxtVerGS, iFirstBuild, db.iBuildMod, Get_MemUsage(true) ) --/#~#
+		else
+			_G.log("Game_Init: Ver=[%s] Build=[%d=>%d=>%d] %s", db.sTxtVerGS, iFirstBuild, iBuildSav, db.iBuildMod, Get_MemUsage(true) ) --/#~#
+		end
+		if idMapNow == db.idMapSav then
+			_G.log("GameTime=[%s] Map(%d)=[%s], knowMaps=[%d]", Get_StrTime(), idMapNow, sMapNow, table.size(db.tKnowMapName)) --/#~#
+		else
+			_G.log("GameTime=[%s] Map(%d)=[%s], MapSaved(%d)=[%s], knowMaps=[%d]", Get_StrTime(), idMapNow, sMapNow, db.idMapSav, db.sMapSav, table.size(db.tKnowMapName)) --/#~#
+		end
+	else --/ new game started (NG)
+		if iFirstBuild < 0 then SetVar("1st", db.iBuildMod) end --/< mark of 'new' game start
+		_G.log("Game_Init: Ver=[%s] Build=[%d] %s", db.sTxtVerGS, db.iBuildMod, Get_MemUsage(true) ) --/#~#
+		_G.log("GameTime=[%s] Map(%d)=[%s]", Get_StrTime(), idMapNow, sMapNow ) --/#~#
+	end
+	SetVar("map_sav",idMapNow) --/ remembering ID of current level
+end
+--/ ------------------------------------------------------------------------------------------------
+--/ Game-object 'Actor' appeared in game
+--/ ------------------------------------------------------------------------------------------------
+function OnActorInit(e) --/ from event 'actor_init' (actor_proxy)
+--	debug_print("Actor_Init:>") --/#~#
+	oActor = db.actor
+	this.ReInit_Options()
+	this.Build_Tables()
+	--this.Get_FakeBox() --/#x# search/creating of technological box(remembering ID)
+end
+--/ -----------------------------------------------------------------
+--/ Main Functions
+--/ -----------------------------------------------------------------
+function PreSets(e)
+--	log("PreSets:[%s]", ">") --/#~#
+	if not bInit then abort(sModule..":Not_initialised!") end
+	event("options"):register(ReInit_Options)
+	--x event("actor_spawned"):register(Start_vKeyCB)
+	event("on_key_press"):register(OnKey_Press)
+	event("actor_info"):register(OnInfo)
+	event("actor_article"):register(OnArticle)
+	--x event("actor_death"):register(OnDeath_Actor)
+	--x event("actor_destroy"):register(OnDestroy_Actor)
+	--event("actor_trade"):register(OnTrade)
+	event("actor_hit"):register(OnHit) --/#+?# disabled due hit of psy radiotion on radar during dialogs
+	event("npc_hit"):register(OnHit_NPC) --/#?#
+	event("npc_death"):register(OnDeath_NPC)
+	event("npc_spawn"):register(OnSpawn_NPC)
+	--x event("npc_destroy"):register(OnDestroy_NPC)
+	event("npc_used"):register(OnUse_NPC)
+	event("mob_used"):register(OnUse_NPC) --/#?#
+	--x event("item_use"):register(OnUse_Item)
+	event("item_take"):register(OnTake)
+	event("item_take_from_box"):register(OnTake_FromBox)
+	iTimeUpdHud = time_global() + 3000
+	if ui_repair_kit and ui_repair_kit.PreSets then
+		ui_repair_kit.PreSets(e)
+	end
+end
+--/ -----------------------------------------------------------------
+--/ 
+--/ -----------------------------------------------------------------
+function OnNewGame(e)
+end
+--/ -----------------------------------------------------------------
+--/ Continue game load
+--/ -----------------------------------------------------------------
+function Continue_Game_Load(e)
+	death_manager.init_drop_settings() --/#+# loading drop settings (from actor_binder:net_spawn)
+	--db.is_legs_visible = not db.is_mixed_mode and Get_Cfg_Bool(db.lost_alpha_cfg, "lost_alpha_cfg", "actor_legs_visible", false) --/#x#
+	db.is_legs_visible = true --/skyloader: should be always true
+	if not has_info("ui_talk_hide") then
+		oActor:give_info_portion("ui_talk_hide") --/ simulating permitted talk
+	end
+	--/ remembering new 'explored' level
+	if not db.tKnowMapId[idMapNow] then
+		db.tKnowMapId[idMapNow] = true
+		db.tKnowMapName[sMapNow] = true
+	end
+	if not has_info("actor_storyline_startup") then --/ give_startup_stuff:
+		oActor:give_info_portion("actor_storyline_startup")
+		oActor:hide_weapon()
+	end
+	if sMapNow:match("^la13") then --/#+?#
+		oActor:deactivate_slot()
+	end
+
+	--get_console():execute("g_actor_body off") --/skyloader: switch to actor shadow, remove when you fix legs
+	if (get_console():get_float("cam_inert") < 0.2) then
+		get_console():execute("g_head_bobbing on")
+		get_console():execute("cam_inert 0.3")
+	end		
+end
+
+function Build_Tables()
+	local ltx = ini_file("lost_alpha\\la_generic.ltx")
+	tQuestNPCs    = Get_IniSection(ltx, "table_quest_npc", "string", "key2num")
+	tQuestDone    = Get_IniSection(ltx, "task_info_done",  "string", "key2num")
+	for sid,v in pairs(tQuestNPCs) do
+		local soNPC = sim:story_object(sid)
+		--local iSpawnID = this.GetSpawnID(soNPC,sid) --/#x# disabled!
+		if soNPC and IsHuman(soNPC) then
+			v = string.split(v, ",", false)
+			tQuestNPCs[sid] = {id=soNPC.id, name=soNPC:name(), visual=v[2], spawn_id=iSpawnID}
+--			log("Build_Tables:Sid[%s]=[%s]/[%s]:[%s/%s]:(%s):[%s]", sid, soNPC:name(), type(sid), v[1], v[2], iSpawnID, "+") --/#~#
+		end
+	end
+	for sid,v in pairs(tQuestDone) do
+		local soNPC = sim:story_object(sid)
+		if soNPC then
+			v = string.split(v, ",")
+			tQuestDone[sid] = {info=v[1], flg=(v[2] ~= "false")}
+			if type(tQuestNPCs[sid]) == 'table' then
+				tQuestNPCs[sid].info = v[1]
+				tQuestNPCs[sid].flg = (v[2] ~= "false")
+			end
+		end
+	end
+	--[[
+	for id=1,65534 do
+		soObj = sim:object(id)
+		if soObj then
+			local iClassId = soObj:clsid()
+			if iClassId == clsid.inventory_box then --/ or SHoC|STCS | for SCoP: clsid.inventory_box_s
+				if soObj:section_name() == "inventory_box" then --/ objects like 'box-stash'
+					if game_graph():vertex(soObj.m_game_vertex_id):level_id() == idMapNow then --/ on current location?
+						if not db.tInvBoxes then db.tInvBoxes = {} end
+						local iStoryId = (soObj.m_story_id ~= db.iMax_s32 and soObj.m_story_id) or nil
+						db.tInvBoxes[id] = {sid=iStoryId, name=soObj:name(), pos=soObj.position}
+						log("Build_Tables:InvBox=[%s],Id=[%s]:[%s]", soObj:name(), id, "+") --/#~#
+					end
+				elseif not db.idFakeBox and soObj:section_name() == "fake_inv_box" then --/ searching fake-box
+					if soObj.m_story_id == 9989 and game_graph():vertex(soObj.m_game_vertex_id):level_id() == idMapNow then
+						db.idFakeBox = id --/ ID of fake-box - found!
+					else --log("Build_Tables:idFakeBox=[%s]<?>[%s/%s]~>release:<%s>", db.idFakeBox, id, Get_MapNameObj(soObj), "x") --/#~#
+						sim:release(soObj,true) --/ cleaning all extra boxes (from old saves)
+					end
+				end
+			--/#?#> ! [LUA] no static 'obj_fake_s' in class 'clsid'
+			elseif clsid.obj_fake_s ~= nil and iClassId == clsid.obj_fake_s then
+				if not db.idFakeInv and db.m_belt and soObj:section_name() == "item_fake" then
+					db.idFakeInv = id --/ registering ID of belt splitter
+					--log("Build_Tables:Fake=[%s/%s]:[%s]", soObj:name(), id, "+") --/#~#
+				else --log("Build_Tables:Fake=[%s/%s]~release:[%s]", soObj:name(), id, "x") --/#~#
+					sim:release(soObj, true) --/ cleaning all extra 'belt separators'
+				end
+			--/#x#
+			elseif iClassId == clsid.custom_storage then
+				--log("Build_Tables:custom_storage=[%s/%s]~release:[%s]", soObj:name(), id, "x") --/#~#
+				sim:release(soObj, true) --/ cleaning all 'store elements'
+			end
+		end
+	end
+	--]]
+--	log("Build_Tables:#InvBoxes=[%s]:[%s]", db.tInvBoxes and table.size(db.tInvBoxes), "<") --/#~#
+	--table.print(tUndergrounds,sModule..":tUndergrounds|") --/#~#
+end
+
+function IsUndergroundLevel(sLevelName)
+	return tUndergrounds[sLevelName or sMapNow] == true
+end
+
+function Get_MapNameById()
+	local tMapNames = {}
+	for k,v in pairs(tLevels) do
+		tMapNames[ v[2] ] = k
+	end
+	return tMapNames --/>
+end
+
+function Get_MapNameByNumber()
+	local tMapNames = {}
+	for k,v in pairs(tLevels) do
+		tMapNames[ v[1] ] = k
+	end
+	return tMapNames --/>
+end
+--/ -----------------------------------------------------------------
+--/ Reading and remembering 'spawn_id'
+--/ -----------------------------------------------------------------
+function GetSpawnID(soObj, iStoryID)
+	local sMask = iStoryID or ( soObj and soObj:name() )
+	if not sMask then return nil end --/>
+	local iSpawnID = db.storehouse.spawn_ids[sMask]
+	if not soObj and iStoryID then
+		soObj = alife():story_object(iStoryID)
+	end
+	if soObj then
+		local char_ini = soObj:spawn_ini()
+		if char_ini and char_ini:section_exist("spawn_id") then --/ check in custom-data:
+			local result,idx,value = char_ini:r_line("spawn_id",0,"","")
+			if tonumber(value) then --/ and idx == soObj:name()
+				iSpawnID = tonumber(value) --log("GetSpawnID:=[%s]:Obj=[%s/%s],StoryID=[%s]%s", iSpawnID, soObj and soObj:name(), idx, iStoryID, "") --/#~#
+				db.storehouse.spawn_ids[sMask] = iSpawnID
+			end
+		elseif game_graph():vertex(soObj.m_game_vertex_id):level_id() == idMapNow then --/ on current level?
+			local pk = get_netpk(soObj,0) --/ net-packet request ('abstract')
+			if pk:isOk() then
+				local func = function(data)  --table.print(data,script_name()..":NetPacket_abstract|"..soObj:name())
+					db.storehouse.spawn_ids[sMask] = data.spawn_id
+					log("callback:Obj=[%s],ID=[%s],spawn_id=[%s]:(%s)", soObj:name(), soObj.id, data.spawn_id, sMask, "") --/#~#
+				end
+				local status = pk:setCallback(func) --/ setting callback function reading of net-packet
+--				log("GetSpawnID:Obj=[%s/%s],Sid=[%s]~>cb=(%s)", soObj:name(), soObj.id, sMask, status, "") --/#~#
+				if status == false then  --log("GetSpawnID:Obj=[%s]~set_do_switch:(%s)", soObj and soObj:name(), ">") --/#~#
+					level.client_spawn_manager():add(soObj.id, 65535, db.callback_do_switch, sMask)
+				end
+			end
+		--else log("GetSpawnID:=[%s]:Obj=[%s],StoryID=[%s]%s", iSpawnID, soObj and soObj:name(), iStoryID, "?") --/#~#
+		end
+	end
+--	log("GetSpawnID:=[%s]:Obj=[%s],StoryID=[%s]", iSpawnID, soObj and soObj:name(), iStoryID, "") --/#~#
+	return iSpawnID --/>
+end
+--/ ---------------------------------------------
+function CheckAndReSpawn_BySpawnID(iStoryID)
+	if not iStoryID then return end --/>
+	local soObj = alife():story_object(iStoryID)
+	if soObj then
+		GetSpawnID(soObj, iStoryID)
+	else
+		local iSpawnID = db.storehouse.spawn_ids[iStoryID]
+		if iSpawnID then
+			local soObj = alife():create(iSpawnID)
+			log("CheckAndReSpawn_BySpawnID:=[%d]:Create:Obj=[%s/%d/%d]", iSpawnID, soObj:name(), soObj.id, iStoryID, "") --/#~#
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Changing of parameters
+--/ -----------------------------------------------------------------
+function Change_Data_BySID(iStoryId,...)
+	if type(iStoryId) == 'number' or (type(iStoryId) == 'srting' and tonumber(iStoryId)) then
+		--_G[sModule]["Change_Logic_"..iStoryId](...) --/ loadstring sModule..".Change_Logic_"..iStoryId.."()"(...)
+		local Func = _G["m_relogic"] and _G["m_relogic"]["Change_Logic_"..iStoryId]
+		if type(Func) == "function" then
+--			log("Change_Data_BySID:=[%s]:[%s]", iStoryId, ">") --/#~#
+			Func(...)
+		else
+			log("Change_Data_BySID:=[%s]~?:(%s):<%s>", iStoryId, db.m_relogic, "Warning!") --/#~#
+		end
+	else
+		log("Change_Data_BySID:=[%s]?:<%s>", iStoryId, "Warning!") --/#~#
+	end
+end
+--/ -----------------------------------------------------------------
+--/ packing and saving
+--/ -----------------------------------------------------------------
+function OnActorSave(e)
+--	log("OnActorSave:BuildMod=[%s]:[%s]", db.iBuildMod, ">") --/#~#
+	--e:note("s:>") --/#~# for debug
+	debug_print( string.rep("~",96) ) --/#~#
+	SetVar("BuildSav", db.iBuildMod) --/ save mark
+	--/ remembering ID array of 'explored' levels
+	local tMapIdSav = {}
+	for id,v in pairs(db.tKnowMapId) do
+		table.insert(tMapIdSav, id)
+	end
+	SetVar("maps_sav", tMapIdSav) --/ recording
+	--/ Determine the fact of actor transition on new location and if ... remembering new coordinates
+	local soActor = alife():actor() --/ server object of actor
+	local idGv = soActor and soActor.m_game_vertex_id
+	local idMap = idGv and game_graph():valid_vertex_id(idGv) and game_graph():vertex(idGv):level_id()
+	if idMap and idMap ~= idMapNow then --/ fact of upcoming transition to new location
+		_G.log("Game_Save:BuildMod=[%d]:[%s]:%s:TimeFactor=[%d],Map=[%d~>%d]", db.iBuildMod, Get_StrTime(), Get_MemUsage(true), level.get_time_factor(), idMapNow, idMap, "") --/#~#
+		--/ remembering already setted (server!) coordinates of actor for new location
+		local tT = {pos=soActor.position, lvid=soActor.m_level_vertex_id, gvid=idGv, map=idMap}
+		db.tMapNew = tT
+		event("new_map"):trigger(tT) --/#+#
+	else
+		_G.log("Game_Save:BuildMod=[%d]:[%s]:%s:TimeFactor=[%d]", db.iBuildMod, Get_StrTime(), Get_MemUsage(true), level.get_time_factor() ) --/#~#
+	end
+end
+
+--/ ---------------------------------------------
+--/ Set option-variables
+--/ ---------------------------------------------
+function ReInit_Options(e)
+	idUsed = 0 --/ preset
+	if stalker_generic.reinit_options then stalker_generic.reinit_options() end
+end
+--/ ---------------------------------------------
+--/ we need to restore indicators after synch
+--/ ---------------------------------------------
+
+function OnSynchronized(e)
+	if not has_info("cutscene_started") then
+		level.show_indicators() --seems sr_cutscene leaks when load any save during playing start cutscene
+	end
+end
+--/ -----------------------------------------------------------------
+--/ UpDate Actor (for conditions check, calls constantly)
+--/ -----------------------------------------------------------------
+local iCountPF = -1
+local bLuaHook = false --/#?#
+local sLuaHookMode = "c" --/#?#
+
+function fLuaHook() --/#?# for debug
+	--[[
+	local dbg_info = debug.getinfo(2, "nSl")
+	if not dbg_info then
+		log("no debug info available!")
+	elseif dbg_info.what ~= "C" then
+		local file_name = dbg_info.short_src:sub(dbg_info.short_src:find("gamedata"), dbg_info.short_src:len())
+		local func_name = dbg_info.name or "<unknown>"
+		log("called %s.%s", file_name, func_name)
+	else
+		log("fLuaHook called for c function")
+	end
+	--]]
+	log(debug.traceback())
+end
+
+function OnUpdate_1st(e)
+	if db.is_dbg1 then --/ teh.message to log-file
+		debug_print( string.rep("~",96) ) --/#~#
+		debug_print(string.format("Update:Run:[%s] os.clock=[%5.3f] %s", os.date(), os.clock(), Get_MemUsage(true))) --/#~# 
+		debug_print( string.rep("~",96) ) --/#~#
+		get_console():execute("flush")
+	end
+	oActor = db.actor
+	local oSuit = oActor:get_current_outfit()
+	if oSuit then
+		oActor:transfer_item(oSuit, oActor) --/ 'changing' suit
+	end
+	oActor:block_slots_and_inventory(GetVarA("only_hands", false))
+	oActor:set_actor_legs_visible(db.is_legs_visible)
+	if bLuaHook then --/#?#
+		local co = coroutine.running()
+		if co then
+			log("current co: %s", coroutine.status(co))
+			debug.sethook(co, fLuaHook, sLuaHookMode)
+		else
+			log("current co: %s", "none")
+			debug.sethook(fLuaHook, sLuaHookMode)
+		end
+		--log("current co: ok")
+	end
+end
+function OnUpdate(e)
+	Update_MainHud(e) --/ check of opened screens (inventory/trade/...)
+	if iCountPF then
+		local pf = dev.precache_frame
+		if pf == 0 and pf == iCountPF then
+			iCountPF = nil
+			if db.is_dbg1 then --/ teh.msg to log file
+				debug_print(string.rep("~",96) ) --/#~#
+				debug_print( "Update:["..game.get_game_time():timeToString(3).."] " .. Get_MemUsage(true) ) --/#~#
+				debug_print(string.rep("~",96) ) --/#~#
+				get_console():execute("flush")
+			end
+		else --log("OnUpdate_Mgr:delta=[%s],pf=[%s]:[%s]", e.delta, pf, ">") --/#~#
+			iCountPF = pf
+			e:note("s:update_pf->:>") --/#~# for debug
+			event("update_pf"):trigger({pf=iCountPF}) --/#+#>
+		end
+	elseif db.bGameLoaded then
+		e:note("s:update->:>") --/#~# for debug
+		event("update"):trigger({delta=e.delta,binder=e.binder,time=e.time}) --/#+#>
+	end
+end
+
+function OnUpdate_1s(e,uo) --/ check 1 time in sec of real time
+--	log("OnUpdate_1s: "..Get_StrTime()) --/#~#
+	this.Update_WideScr() --/ check of screen mode(widescreen)
+	--this.Check_Death_QuestNPC() --/ check of quest NPC death
+	--this.Check_Actor_in_Hideout() --/ check of beeing Actor in cover
+	this.Check_Actor_Slots() --/ check of Actor suit condtion
+end
+--/ -----------------------------------------------------------------
+--/ Check of widescreen (16:10)
+--/ 16:9  => 1.7778 (0.5625) (1360x768 => 0.5647)
+--/ 16:10 => 1.6 (0.625)
+--/ 4:3 => 1.3333 (0.75)
+--/ 5:4 => 1.25 (0.8)
+function Update_WideScr()
+	if iTmrUpdScr < 5 then
+		iTmrUpdScr = iTmrUpdScr +1
+	else
+		iTmrUpdScr = 1
+		db.bWideScr = dev.width/dev.height > 1.333 +0.01 --/ true => wide screen! (1024/768 +0.01) - aspect ratio
+--		log("Update_WideScr:fov=[%d],asp=[%d],w/h=[%d]", dev.fov,dev.aspect_ratio,dev.width/dev.height, "") --/#~# 67.5|55/0.625/1.60
+	end
+end
+
+function OnDestroy_Actor(e)
+	--/ stub
+end
+function OnDeath_Actor(e)
+	--/ stub
+end
+--/ -----------------------------------------------------------------
+--/ Callback vKey pressed
+--/ -----------------------------------------------------------------
+local tKeysIgnored = {[257]=true,[30]=true,[17]=true,[31]=true,[32]=true,[16]=true,[18]=true} --/ a|w|s|d|q|e
+
+function OnKey_Press(e)
+	if not tKeysIgnored[e.dik] then
+		--e:driven("vk_pressed"):note("s:vk_pressede:>") --/#~# for debug
+		event("vk_pressed"):trigger({dik=e.dik,bind=e.bind}) --/#+#>
+	end
+end
+--/ -----------------------------------------------------------------
+--/ OnInfo Actor: opening(closing of inventory/trade/box window
+--/ -----------------------------------------------------------------
+local tInfoIdx = {
+	["ui_inventory"]      = {bit= 1, show= true},
+	["ui_car_body"]       = {bit= 2, show= true},
+	["ui_trade"]          = {bit= 4, show= true},
+	["ui_pda"]            = {bit= 8, show= true},
+	["ui_talk"]           = {bit=16, show= true},
+	["ui_inventory_hide"] = {bit= 1, show=false},
+	["ui_car_body_hide"]  = {bit= 2, show=false},
+	["ui_trade_hide"]     = {bit= 4, show=false},
+	["ui_pda_hide"]       = {bit= 8, show=false},
+	["ui_talk_hide"]      = {bit=16, show=false}
+}
+local tPdaInfo = {
+	["ui_pda_quests"]       = true,
+	["ui_pda_map_local"]    = true,
+	["ui_pda_map"]          = true,
+	["ui_pda_events"]       = true,
+	["ui_pda_contacts"]     = true,
+	["ui_pda_ranking"]      = true,
+	["ui_pda_actor_info"]   = true,
+	["ui_pda_encyclopedia"] = true
+}
+function OnInfo(e)
+	if e.info and e.info ~= "" then
+		local tT = tInfoIdx[e.info]
+		if tT then --/ 'window' infoportion
+			if not db.iHud then db.iHud = 0 end
+			if tT.show then --/ opening window
+				db.iHud = bit_or( db.iHud,tT.bit )
+			else --/ closing window
+				db.iHud = bit_and( db.iHud,(31-tT.bit) )
+			end
+			if not (tT.show and (tT.bit == 4 or tT.bit == 16)) then --/ when closing (not trade and not talk)
+				iTimeUpdHud = 0
+			end
+--			log("OnInfo:=[%s]=>[%s],bit[%d]~>hud[%d]", e.info, tT.show, tT.bit, db.iHud, "") --/#~#
+			if e.name then e:driven("change_hud"):note("s:on_info->change_hud:>") end --/#~# for debug
+			event("change_hud"):trigger({hud_id=tT.bit,show=tT.show}) --/#+#
+		else
+			if db.is_dbg1 then debug_print("OnInfo: <"..e.info..">") end --/ for debug
+			level_tasks.process_info_portion(e.info)
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Check of main game screen
+--/ -----------------------------------------------------------------
+function Update_MainHud(e)
+	if db.iHud and db.iHud ~= 0 then
+		if db.iHud < 16 then
+			bShowMain = false
+		else --/ check if opened 'ui_talk'
+			if iTimeUpdHud <= e.time and level.main_input_receiver() == nil then --/SHOC
+				OnInfo( {info="ui_talk_hide"} ) --/#!# fake collback: simulating closing of 'ui_talk'
+				return --/>
+			end
+		end
+	elseif iTimeUpdHud <= e.time then
+		iTimeUpdHud = e.time + 250
+		bShowMain = true
+		if dev.fov < 56.25 and oActor:alive() and not has_info("actor_is_sleeping") then --/iZoom = 1+(67.5/dev.fov-1)*1.5
+			local oItem = oActor:active_item()
+			if oItem then
+				bShowMain = oItem:clsid() ~= clsid.wpn_binocular_s and oItem:clsid() ~= clsid.wpn_zoom_s
+			end
+		end
+	end
+	if bShowMain ~= db.bHudMain then --/ change
+		db.bHudMain = bShowMain
+		iTmrUpdScr = 5
+--		log("Update_MainHud: (%s), [%d], fov=[%d]", bShowMain, db.iHud, dev.fov, "") --/#~# iZoom
+		e:driven("change_hud"):note("s:OnUppdate->MainHud:>") --/#~# for debug
+		event("change_hud"):trigger({hud_id=0,show=bShowMain}) --/#+#
+		e:note("") --/#~# for debug
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Actor: Articlle
+--/ -----------------------------------------------------------------
+function OnArticle(e)
+	if dev.precache_frame > 1 then return end
+
+	news_manager.send_encyclopedy(e.group, e.name, e.acticle_type)
+
+end
+--/ -----------------------------------------------------------------
+--/ Actor: Check Trade Item
+--/ -----------------------------------------------------------------
+function OnTrade(e) --/ e.item, e.sell, e.money
+end
+--/ -----------------------------------------------------------------
+--/ Actor: Check Take Items
+--/ -----------------------------------------------------------------
+function OnTake(e)
+	Del_MapSpot(e.item_id,"red_location") --/ removing mark
+	if e.section:match("sleeping_bag") then
+		oActor:give_info_portion("took_sleeping_bag")
+	--[[
+	elseif isSuit(e.item) then
+		local oSuit = self.object:get_current_outfit()
+		if oSuit and oSuit:id() ~= e.item_id then
+			db.actor:transfer_item(oSuit, db.actor) --/ 'changing' suit
+		end
+	--]]
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Actor: Check Take Items from Box - taking items (from box) to inventory
+--/ -----------------------------------------------------------------
+function OnTake_FromBox(e) --/uo,oBox,oItem,idBox,idItem
+	if e.box_id then
+		Del_MapSpot(e.box_id,"crlc_big")
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Actor: Check Drop Item (item lost check)
+--/ -----------------------------------------------------------------
+function OnDrop(e,uo)
+	--/ stub
+end
+--/ -----------------------------------------------------------------
+--/ Actor: Check Use Item (using item check)
+--/ -----------------------------------------------------------------
+function OnUse_Item(e)
+	--/ stub
+end
+--/ -----------------------------------------------------------------
+--/ Actor: Check Used (using NPC/object check)
+--/ -----------------------------------------------------------------
+function OnUse_NPC(e)
+	if not e.obj:alive() then
+		for _, spot in pairs( {"green_location", "red_location"} ) do
+			for i=1, level.map_has_object_spot(e.obj_id, spot) do
+				level.map_remove_object_spot(e.obj_id, spot)
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Actor|NPC: On Hit
+--/ -----------------------------------------------------------------
+function OnHit(e)
+    if e.amount > 0.1 and e.who then
+        if e.victim and e.victim:is_talking() and IsNPC(e.who) then
+			if db.sMapNow ~= "la17_outskirts" or has_info("bas_switcher_off") then
+				e.victim:stop_talk() --/ stop_dialog
+			end
+        end
+    end
+end
+--/ -----------------------------------------------------------------
+--/ NPC: Net Spawn
+--/ -----------------------------------------------------------------
+function OnSpawn_NPC(e)
+	if not sMapNow:match("^la09") and not sMapNow:match("^la12u") and not sMapNow:match("^la13") then
+		--/ sky: spawn actor weapon for actor fake
+		local visual = Get_Cfg_String(system_ini(), e.obj:section(), "set_visual", "")
+		if visual == "actor_visual" then
+			for i=1,2 do
+				local item_in_slot = db.actor:item_in_slot(i)
+				if item_in_slot then
+					Spawn_ItemsInInv(item_in_slot:section(), 1, e.obj)
+				end
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ NPC: Check Hit
+--/ -----------------------------------------------------------------
+function OnHit_NPC(e)
+	this.OnHit(e)
+end
+--/ -----------------------------------------------------------------
+--/ NPC: Net Destroy
+--/ -----------------------------------------------------------------
+function OnDestroy_NPC(e)
+	--/ stub
+end
+--/ -----------------------------------------------------------------
+--/ NPC: Death check
+--/ -----------------------------------------------------------------
+function OnDeath_NPC(e)
+	if e.victim and IsStalker(e.victim) then --/ stub from monsters and etc.
+		local sCommunity = e.victim:character_community()
+		if not sCommunity then return end --/>
+		--this.Check_Death_QuestNPC(nil,e.victim)
+		local idNPC = e.victim:id()
+		--if db.is_dbg1 then Del_MapSpot(idNPC,"dbg_metka2") end
+		for i=1, level.map_has_object_spot(idNPC, "alife_combat_help") do
+			level.map_remove_object_spot(idNPC, "alife_combat_help")
+		end
+	end
+end
+
+--/ Death check of quest NPC
+function Check_Death_QuestNPC(iSid,oNPC)
+	local iStoryId = iSid or (oNPC and IsStalker(oNPC) and oNPC:story_id())
+	if iStoryId then --/ check of specific NPC
+		if tQuestNPCs[iStoryId] then
+			local soNPC = alife():story_object(iStoryId)
+			if not soNPC then
+				return true --/> not in game
+			elseif soNPC.alive and not soNPC:alive() then
+				Del_MapSpot(soNPC.id,'green_location') --/ removing quest spot
+				return true --/> died
+			end
+		end
+	else --/ проверка всего списка
+		for k,v in pairs(tQuestNPCs) do
+			local soNPC = alife():story_object(k)
+			if soNPC and soNPC.alive and not soNPC:alive() then
+				Del_MapSpot(soNPC.id,'green_location') --/ removing quest spot
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Check of beeing Actor in cover
+--/ -----------------------------------------------------------------
+function Check_Actor_in_Hideout() --/ 1 time per sec
+	--if db.iTypeBW > 0 then return end --/>
+	local bInHide = false --/ outside
+	if db.gg_in_zone then
+		bInHide = true --/ inside
+	elseif db.m_hideouts then
+		bInHide = m_hideouts.Check_Pos_In_Hide(oActor:position())
+	end
+	db.gg_in_hide = bInHide
+end
+
+--/ -----------------------------------------------------------------
+--/#?# Search/Check/Creating of fake-box (temporaly storage)
+--/ -----------------------------------------------------------------
+function Get_FakeBox() --/ search FakeBox
+	local soFakeBox = sim:story_object(9989)
+	if soFakeBox then
+		if soFakeBox:clsid() == clsid.inventory_box and
+			 soFakeBox:section_name() == "fake_inv_box" and Get_MapIdObj(soFakeBox) == idMapNow
+			then --log("Get_FakeBox:ID=[%s]~found:[%s]", soFakeBox.id, "+") --/#~#
+			db.idFakeBox = soFakeBox.id --/ ID if fake-box - found
+		else --log("Get_FakeBox:ID=[%s]~release:[%s]", soFakeBox.id, "x") --/#~#
+			sim:release(soFakeBox,true) --/ 'left' -> removing
+		end
+	end
+	if not db.idFakeBox then --/ spawning new one:
+		--local soFakeBox = alife():create("fake_inv_box", 9989, vector():set(0,99,0), oActor:level_vertex_id(), oActor:game_vertex_id())
+		local soFakeBox = Spawn_Obj("fake_inv_box", vector():set(0,99,0))
+		local pk = get_netpk(soFakeBox,1) --/ net-packet request ('state')
+		if pk:isOk() then
+			local data = pk:get() --log("Create_FakeBox:ID=[%s],flags=[%s]:[%s]", soFakeBox.id, data.object_flags, "?") --/#~#
+			data.object_flags = bit_xor(data.object_flags,4) --/ reset: 4='SwitchOffline'
+			data.story_id = 9989 --/ set mark
+			pk:set(data) --/< record to net-packet
+			log("Get_FakeBox:ID=[%s],clsid=[%s]~create:[%s]", soFakeBox.id, soFakeBox:clsid(), "+") --/#~#
+		end
+		db.idFakeBox = soFakeBox.id --/ created FakeBox
+		db.do_switchings(soFakeBox.id) --/#!# adding to transfer array offline->online
+	end
+end
+--/ -----------------------------------------------------------------
+--/ (RE)Intializing of logic
+--/ -----------------------------------------------------------------
+function fReInit_Logic(uo, idObj, oObj) --/ Callback_NetSpawn
+	log("ReInit_Logic:Obj=[%s/%s]:[%s]", oObj:name(), idObj, ">") --/#~#
+	if IsStalker(oObj) then
+		local soGulag = xr_gulag.get_npc_gulag(oObj)
+		log("ReInit_Logic:NPC=[%s/%s],aSection=[%s],Smrt=[%s],uo=[%s]", oObj:name(), idObj, db.storage[oObj:id()].active_section, soGulag and soGulag.name, uo, "") --/#~#
+		if soGulag then
+			xr_gulag.clearJob(oObj)
+		end
+		xr_logic.initialize_obj(oObj, nil, false, db.actor, modules.stype_stalker, type(uo) == 'string' and uo) --/ uo: sIni_CfgFile
+		--[[
+			local soNPC = alife():object(idObj)
+			if soNPC then
+				soNPC:brain():update()
+			end
+		--]]
+		soGulag = xr_gulag.get_npc_gulag(oObj)
+		oObj:restore_default_start_dialog()
+		log("ReInit_Logic:NPC=[%s/%s],aSection=[%s],Smrt=[%s]:[%s]", oObj:name(), idObj, db.storage[oObj:id()].active_section, soGulag and soGulag.name, "Info!") --/#~#
+	elseif oObj:clsid() == clsid.script_restr then
+		xr_logic.initialize_obj(oObj, nil, false, db.actor, modules.stype_restrictor, type(uo) == 'string' and uo)
+		log("ReInit_Logic:Obj=[%s/%s],aSection=[%s]:[%s]", oObj:name(), idObj, db.storage[oObj:id()].active_section, "Info!") --/#~#
+	end
+	db.do_switchings(idObj) --/ adding to transfer array online->offline->online
+end
+--/ -----------------------------------------------------------------
+--/ OTHER (...)
+--/ -----------------------------------------------------------------
+local idOutfit   = -1 --/ last actor outfit Id
+local iOutfitCond = 1 --/ last actor outfit condition
+
+function Set_OutfitCondition(iCondition)
+	local oOutfit = oActor:get_current_outfit()
+	if oOutfit then
+		idOutfit = oOutfit:id()
+		iOutfitCond = iCondition
+		oOutfit:set_condition(iCondition)
+	end
+end
+
+function Check_Actor_Slots()
+	if oActor then --/ actor in game
+		local oOutfit = oActor:get_current_outfit()
+		if oOutfit and oActor:alive() then --/ actor wear suit?
+			if oOutfit:id() == idOutfit then --/ suit same?
+				if oOutfit:condition() > iOutfitCond then
+					oOutfit:set_condition(iOutfitCond) --log("Check_Actor_Slots:set_condition=[%s]~>outfit=[%s]", iOutfitCond, oOutfit:section(), "") --/#~# ;-)
+				else --/ update suit condition
+					iOutfitCond = oOutfit:condition()
+				end
+			else --/ remember suit (ID) and it's condition
+				idOutfit    = oOutfit:id()
+				iOutfitCond = oOutfit:condition()
+			end
+		else --/ actor without suit:
+			idOutfit = -1 --/ forgetting suit identificator
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------
+--/ Quest NPCs
+--/ -----------------------------------------------------------------
+IsQuestNPC = function(npc,iSid) --/ for exterior scripts
+	if not (npc or iSid) then return false end --/>
+	local iStoryId = iSid
+	if not iStoryId and npc then
+		if npc.m_story_id then
+			iStoryId = npc.m_story_id
+		else --/ is game object
+			iStoryId = npc:story_id()
+		end
+	end
+	if iStoryId and tQuestNPCs[iStoryId] then
+--		log("IsQuestNPC:=[%s],sid=[%s]~Yes", npc and npc:name(), iStoryId, "") --/#~#
+		return true --/>
+	end
+	return false --/>
+end
+
+IsQuestDone = function(oNPC) --/ for exterior scripts
+	local bQuestDone = false
+	local Sid = (oNPC:story_id() ~= db.iMax_s32 and oNPC:story_id()) or get_object_story_id( oNPC:id() )
+	local iStoryId = tonumber(Sid) --/ in SCOP can be string!
+	local tQ = iStoryId and tQuestDone[iStoryId]
+	if tQ and tQ.info then
+		bQuestDone = has_info(tQ.info) == tQ.flg
+--		log("IsQuestDone:Sid=[%s],QuestDone=[%s]", iStoryId, bQuestDone, "") --/#~#
+	end
+	return bQuestDone --/>
+end
+
+function Get_Table_QuestNPCs(iStoryId) --/ for exterior scripts
+	if not next(tQuestNPCs) then Build_Tables() end
+	if iStoryId then
+		return tQuestNPCs[iStoryId] --/>
+	end
+	return tQuestNPCs --/>
+end
+--/ -----------------------------------------------------------------
+--/ Redefined Binders, as alternative to net_spawn
+--/ -----------------------------------------------------------------
+function bind_ZoneCFire(oObj)
+	if oObj and oObj:clsid() == clsid.zone_campfire and db.la_campfires then
+		la_campfires.AddToBinder(oObj)
+	end
+end
+
+function bind_GPS(oObj)
+	if oObj and db.la_gps then
+		la_pda.AddToBinder(oObj)
+	end
+end
+
+function bind_InvBox(oObj)
+	if oObj then
+		if db.bind_invbox then
+			bind_invbox.AddToBinder(oObj)
+		else
+			bind_physic_object.init(oObj)
+		end
+	end
+end
+
+function bind_Safe(oObj)
+	if oObj then
+		if db.bind_safe then
+			bind_safe.AddToBinder(oObj)
+		else
+			bind_physic_object.init(oObj)
+		end
+	end
+end
+
+--/------------------------------------------------------------------------------------------------
+--/ Integrating function synonyms from current module to module '_G'
+--/------------------------------------------------------------------------------------------------
+local bFuncG = false --/ flag of functions integration to module '_G'
+
+if not bFuncG then
+	local tFuncG = {
+		["IsUnderground"]    = IsUndergroundLevel,
+		["GetSpawnID"]       = GetSpawnID,
+		["IsQuestNPC"]       = IsQuestNPC,
+		["IsQuestDone"]      = IsQuestDone,
+		["IsQuestNPC_Death"] = Check_Death_QuestNPC
+	}
+	local oModule = _G
+	setfenv(1,oModule)
+	for k,v in pairs(tFuncG) do
+		oModule[k] = v
+		setfenv(oModule[k],oModule)
+	end
+	bFuncG = true
+end
+--/------------------------------------------------------------------------------------------------

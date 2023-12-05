@@ -1,0 +1,885 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_ai_grenader.script [option]
+ Description: Scheme: "NPC - grenades throwing scheme"
+ Copyright  : 2008 © LA-team
+ Author     : (by materials: ...)
+ Editor     : 
+ Last edit  : 30.04.2017 [lox]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iMaxDistTrow  = 30
+local iTimeSpawn    = 180 --/ period of grenades respawn (sec) (~3min)
+local bTimeSpawn    = true --/ permission to spawn more grenades in inventory to npc
+local sGrenadeBone  = "bip01_head" --/ 'bone' from which we throw
+local tExcludedComm = {} --/ excluded communities
+local tExcludedNPCs = {} --/ excluded npces
+
+local tReadyNPCs    = {} --/ dynamic array of 'NPC removed the pin': Tab[idNPC] = idGr
+local tGrenades     = {} --/ dynamic array test- and real- grenades: Tab[idGr] = {...}
+local tGrenadeTypes = {} --/ array of grenades we use: Tab[section] = prob
+local tGrenadeData  = {} --/ parameters of grenades (from config-files)
+local tThrowReplics = {} --/ replics during throw
+local tRankPrecisions = {}
+local tCommunityPercent = {} --/ probability array of grenades spawn (%)
+--/ --------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local bEnabled    = true --/ flag of permission of activity of the scheme
+local sSchemeName = "ai_grenader" --/ string name of the scheme
+local iEvl_AI_Grenader  = 0 --/ property_base
+local iAct_AI_Grenader  = 0 --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+local tBindActs = {} --/ array of 'external' actions disconnected in case of the active scheme
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end --/>
+	iEvl_AI_Grenader,iAct_AI_Grenader = register_ai_module(sModule,sSchemeName)
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ ---------------------------------------------
+function get_ai_evl(idx)
+	return iEvl_AI_Grenader + (idx or 0) --/>
+end
+function get_ai_act(idx)
+	return iAct_AI_Grenader + (idx or 0) --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	local ltx = ini_file("lost_alpha\\ai_schemes\\"..sModule..".ltx")
+	bEnabled        = Get_Cfg_Bool(ltx, "options", "enabled", bEnabled)
+	bEnabled = bEnabled and not command_line():match("grenades_throwing") --/ script scheme enabled, engine disabled
+	bEnabled = get_console():get_bool("la_ai_grenader") or bEnabled
+	iMaxDistTrow    = ReadFromIni(ltx, "options", "max_dist",     iMaxDistTrow, "number")
+	iTimeSpawn      = ReadFromIni(ltx, "options", "check_period", iTimeSpawn,   "number") *1000
+	tRankPrecisions = ReadFromIni(ltx, "options", "rank_precisions", {}, "table", ",", false)
+	tExcludedComm     = Get_IniSection(ltx, "excluded_community", "true")
+	tExcludedNPCs     = Get_IniSection(ltx, "excluded_npcs",      "true")
+	tCommunityPercent = Get_IniSection(ltx, "community_percent",  "table", "val2num")
+	tGrenadeTypes     = Get_IniSection(ltx, "grenade_types",      "number")
+	if next(tGrenadeTypes) then
+		for k,v in pairs(tGrenadeTypes) do
+			Get_GrenadeData(k)
+		end
+	else
+		abort(sModule..":PreSets:Not_GrenadeTypes:<Error!>")
+	end
+	if iTimeSpawn <= 0 then bTimeSpawn = false end
+	Build_ThrowReplics()
+	tBindActs = {
+		[1] = stalker_ids.action_alife_planner, --/ alife
+		[2] = stalker_ids.action_combat_planner, --/ combat
+		[3] = stalker_ids.action_danger_planner, --/ panic
+		[4] = stalker_ids.action_anomaly_planner, --/ anomalies bypassing
+	}
+	tBindEvls = {
+		[1] = { stalker_ids.property_alive,          true }, --/ NPC alive
+		[2] = { stalker_ids.property_anomaly,        false}, --/ no anomalies
+		[3] = { xr_evaluators_id.sidor_wounded_base, false}  --/ not wounded
+	}
+	--/ доп.условия в tBindEvls world_property(v.id, v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout   and xr_blowout.get_ai_evl(0),   flg = false}, --/ no blowout
+		[2] = {id = db.la_ai_detour and la_ai_detour.get_ai_evl(0), flg = false}, --/ no anomalies
+		[2] = {id = db.la_ai_facer  and la_ai_facer.get_ai_evl(0),  flg = false}, --/ no facefight
+		[3] = {id = db.la_ai_facer  and la_ai_facer.get_ai_evl(1),  flg = false}, --/ stealth-facefight
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+	--table.print(tGrenadeData,"ParamsGrenades") --/#~#
+end
+--/------------------------------------------------------------------------------------------------
+--/ EVALUATORS
+--/------------------------------------------------------------------------------------------------
+--/------------------------------------------------------------------
+class "CEvaluator_Grenade_Throw" (property_evaluator)
+--/------------------------------------------------------------------
+--/ condition: can NPC throw grenade
+--/------------------------------------------------------------------
+function CEvaluator_Grenade_Throw:__init(name, st) super (nil, name)
+	self.st  = st
+	self.log = st.log
+	self.st.throwing = false --/ flag: 'can throw grenade'
+	self.st.tm_check = time_global() + Random.I(10,20)*1000
+end
+
+function CEvaluator_Grenade_Throw:evaluate()
+	if not (self.st.enabled and self.object) then return false end --/>
+	local oNPC = self.object
+	if not oNPC:alive() then
+		this.Check_Self_Blasting(oNPC)
+		return false --/>
+	end
+	if self.st.throwing then --/ (flag) can throw grenade?
+		--log("ev_Grenadier:NPC=[%s] ~> Throwing :(%s)", oNPC:name(), "!") --/#~#
+		return true --/> can throw grenade
+	end
+--	log("ev_Grenadier:NPC=[%s]:(%s)", self.object:name(), ">") --/#~#
+	if self.st.tm_check < time_global() then --/ check possibility to start another cycle:
+		self.st.tm_check = time_global() + 1000 --/ ~1 time per sec
+		--/ pre-checks of throw possibilities:
+		if xr_wounded.is_wounded(oNPC) or oNPC:body_state() == move.crouch then
+			return false --/> if wounded or sitting - we can't throw
+		end
+		local oEnemy = oNPC:best_enemy() --/ we have enemy?
+		if not oEnemy then 
+			return false --/> no enemy
+		end
+		if IsNPC(oEnemy) and (not oNPC:see(oEnemy) or xr_wounded.is_wounded(oEnemy)) then --/  we don't see him or he is dead/wounded
+			return false
+		end
+		local vPosN,vPosE = oNPC:position(),oEnemy:position()
+		local iDistThrow = vPosN:distance_to(vPosE)
+		if iDistThrow < 10 or iDistThrow > iMaxDistTrow then
+			return false --/> we don't throw close, and far we can't throw, we're not olympians...
+		end
+		local iDistLimit = vPosE:distance_to(level.vertex_position(oEnemy:level_vertex_id()))
+		if iDistLimit > 2 then --/ because of engine limitation we throw only at objects not far from AI-grid
+--			log("ev_Grenadier:NPC=[%s] ~> Enemy=[%s] dist_limit=[%s] :(%s)", oNPC:name(), oEnemy:name(), string.short(iDistLimit), "<x") --/#~#
+			return false --/> 
+		end
+		--log("ev_Grenadier:NPC=[%s] ~> Enemy=[%s], dists=[%s]/[%s]", oNPC:name(), oEnemy:name(), string.short(iDistThrow), string.short(iDistLimit), "") --/#~#
+		--/ selecting of grenades to throw (from the ones NPC already have)
+		self.st.grenade_id = nil
+		local iRnd, oGrenade = Random.I(100), nil
+		for sect,rnd in pairs(tGrenadeTypes) do
+			if rnd >= iRnd then
+				oGrenade = oNPC:object(sect)
+				if oGrenade and self:Check_Grenade(sect,iDistThrow,vPosE) then
+					self.st.grenade_id = oGrenade:id()
+					break --/ choice done
+				end
+			end
+			iRnd = iRnd - rnd
+		end
+		--/<
+		if self.st.grenade_id then
+			--log("has needed grenade")
+			--/ can try to throw - possibility not to hurt anyone (exept enemies) quite big
+			local idLv,idGv,idNPC = oNPC:level_vertex_id(), oNPC:game_vertex_id(), oNPC:id()
+			--/ calculating and remembering parameters to check throw
+			self.st.lvid_at = idLv --/ level_vertex_id 'from where thrown'
+			self.st.pos_at  = vector():set(vPosN) --/ coordinates 'from where thrown'
+			self.st.pos_to  = vPosE:add(vector_rotate_y(vector():sub(vPosE,vPosN),90):normalize():mul(2)) --/ coordinates 'where to throw'
+			--/ accuracy depends from rang of NPC throwing grenade and distance
+			local iDist = vPosN:distance_to(self.st.pos_to)
+			local iDistFactor = iDist / math.min(iDist, iMaxDistTrow/3)
+			
+			local iPrecision = tRankPrecisions[ranks.get_obj_rank_number(oNPC,1)]
+			local offset_x = iDistFactor *iPrecision *(Random.F()-0.5)*2
+			local offset_z = iDistFactor *iPrecision *(Random.F()-0.5)*2
+			self.st.pos_to.x = self.st.pos_to.x + offset_x
+			self.st.pos_to.z = self.st.pos_to.z + offset_z
+			
+			local at_pos,to_pos = vector():set(vPosN),vector():set(self.st.pos_to)
+			self.st.throwing = true
+		else
+			--why not
+			local game_dif = level.get_game_difficulty()
+			local prob = Random.I(100) - (20 * game_dif)
+			if prob <= 0 then
+				-- log("[%s] hasnt got grenade so spawning prob = [%s]",oNPC:name(),tostring(prob))
+				Spawn_ItemInInv("grenade_f1", oNPC)
+			end
+		end
+--		log("ev_Grenadier:NPC=[%s] :(%s)", oNPC:name(), "<?") --/#~#
+	end
+--	log("ev_Grenadier:NPC=[%s]-done :(%s)", oNPC:name(), "<") --/#~#
+	return false --/>
+end
+
+function CEvaluator_Grenade_Throw:Clear_TestGrenades()
+	local sim = alife()
+	if self.test_id_hi then
+		local soItem = sim:object(self.test_id_hi)
+		if soItem then sim:release(soItem, true) end
+		--level.map_remove_object_spot(self.test_id_hi, "green_location") --/#~#
+		tGrenades[self.test_id_hi] = nil
+		self.test_id_hi = nil
+	end
+	if self.test_id_lo then
+		local soItem = sim:object(self.test_id_lo)
+		if soItem then sim:release(soItem, true) end
+		--level.map_remove_object_spot(self.test_id_lo, "red_location") --/#~#
+		tGrenades[self.test_id_lo] = nil
+		self.test_id_lo = nil
+	end
+end
+
+function CEvaluator_Grenade_Throw:Check_Grenade(sSection,iDistThrow,vPosE)
+--	log("ev_Grenadier:Check_Grenade:NPC=[%s]:[%s]", self.object:name(), ">") --/#~#
+	--/ if explosion and we can be hurt - we won't throw
+	if iDistThrow < tGrenadeData[sSection].radius then
+--		log("ev_Grenadier:Check_Grenade:NPC=[%s]:Radius~Bad:[%s]", self.object:name(), "<x") --/#~#
+		return false --/>
+	end
+		--/ we can't use light grenade in day, and smoke at night
+	local bDay = utils.is_day()
+	if (bDay and sSection == "grenade_gs-05") or (not bDay and sSection == "grenade_gd-05") then
+--		log("ev_Grenade_Throw:Check_Grenade:NPC=[%s]:is_Day~Bad:[%s]", self.object:name(), "<x") --/#~#
+		return false --/>
+	end
+--	log("ev_Grenade_Throw:Check_Grenade:NPC=[%s]~TRUE:[%s]", self.object:name(), "<") --/#~#
+	return true --/> we can use this grenade...
+end
+
+function CEvaluator_Grenade_Throw:Check_Throw(sSection,vPosE)
+	local oNPC = self.object
+	local iRadius = tGrenadeData[sSection].radius
+	--/ let's check, to not to touch mates and neutrals
+	local Check_Throw = function(oObj)
+		if oObj and IsStalker(oObj) and oObj:alive() and oNPC:relation(oObj) ~= game_object.enemy then
+			if vPosE:distance_to(oObj:position()) < iRadius then
+--				log("ev_Grenadier:Check_Throw: Wrong trow:[%s]", "<x") --/#~#
+				return false --/>
+			end
+		end
+	end
+	--/<
+	for o in oNPC:memory_visible_objects() do
+		if not Check_Throw(o:object()) then return false end --/>
+	end
+	--	log("ev_Grenade_Throw:Check_Throw:NPC=[%s]~TRUE:[%s]", self.object:name(), "<") --/#~#
+	return true --/>
+end
+--/------------------------------------------------------------------
+class "CEvaluator_Grenade_Danger" (property_evaluator)
+--/------------------------------------------------------------------
+--/ condition: should NPC to escape from thrown grenade
+--/------------------------------------------------------------------
+function CEvaluator_Grenade_Danger:__init(name, st) super (nil, name)
+	self.st  = st
+	self.log = st.log
+end
+
+function CEvaluator_Grenade_Danger:evaluate()
+	--log("ev_Danger_Grenade:NPC=[%s]:[%s]", self.object:name(), ">") --/#~#
+	if not ( self.object and self.object:alive() ) then return false end --/>
+	if not self.object:alive() then
+		this.disable_scheme(self.object, sSchemeName)
+		return false --/>
+	end
+	local iTime = time_global()
+	if next(tGrenades) then
+		--log("there are live grenades")
+		local vPosNPC = self.object:position()
+		local vPos,iRadius,iDistMin,iDist = nil,0,1000,nil
+		for id,v in pairs(tGrenades) do
+			local oGrenade = v.radius and level.object_by_id(id)
+			--log("throw time = [%s] and itime + 2500 = [%s]",tostring(v.tmr_trow+2500),tostring(iTime))
+			if oGrenade and v.tmr_trow + 2500 > iTime then --/ real grenade thrown more then 2.5sec ago
+				iDist = oGrenade:position():distance_to(vPosNPC)
+				--log("grenade dist = [%s] and radius = [%s]",tostring(iDist),tostring(v.radius))
+				if iDist < iDistMin and iDist < v.radius then
+					vPos = oGrenade:position()
+					iRadius = v.radius
+					iDistMin = iDist
+				end
+			end
+		end
+		if vPos then --/ close enough was thrown grenade - remembering parameters
+			self.st.danger_p = vPos --/ coordinates of grenade
+			self.st.danger_r = iRadius --/ damage radius
+			self.tm_danger   = iTime --/ detection time
+			--log("ev_Danger_Grenade:Fly:NPC=[%s],Dist=[%s/%s]:[%s]", self.object:name(), tostring(iDistMin), tostring(iRadius), "<+")--/#~#
+			return true --/> grenade in flight
+		end
+	elseif self.tm_danger and self.tm_danger + 1000 > iTime then --/ ~1сек пауза 'взрыв'
+		if self.st.danger_p and self.object:position():distance_to(self.st.danger_p) < self.st.danger_r then --/ grenade exploded close enough
+			self.tm_pause = iTime + 1500 --/ setting/update pause after 'explosion' ~1.5sec
+			--log("ev_Danger_Grenade:explosion:NPC=[%s],Dist=[%s]:[%s]", self.object:name(), tostring(self.object:position():distance_to(self.st.danger_p)), "<+") --/#~#
+			return true --/> pause 'explosion'
+		end
+		self.st.danger_p = nil
+		self.st.danger_r = nil
+		self.tm_danger   = nil
+	elseif self.tm_pause then
+		if self.tm_pause > iTime then --/ pause after 'explosion'
+			--log("ev_Danger_Grenade:Pause:NPC=[%s]:[%s]", self.object:name(), "<+")--/#~#
+			return true --/> pause after 'explosion'
+		end
+		self.st.danger_p = nil
+		self.st.danger_r = nil
+		self.tm_danger   = nil
+		self.tm_pause    = nil
+	end
+	--if self.st.throwing then log("ev_Danger_Grenade:NPC=[%s]:[%s]", self.object:name(), "<-") end --/#~#
+	return false --/> no danger
+end
+--/------------------------------------------------------------------
+class "CEvaluator_Grenade_Active" (property_evaluator)
+--/------------------------------------------------------------------
+--/ condition: if our scheme active
+--/------------------------------------------------------------------
+function CEvaluator_Grenade_Active:__init(name, st) super (nil, name)
+	self.st = st
+end
+function CEvaluator_Grenade_Active:evaluate()
+	return self.st.enabled == true --/>
+end
+--/------------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/------------------------------------------------------------------------------------------------
+class "CAction_FireInHole" (action_base)
+--/------------------------------------------------------------------
+--/ NPC throwing grenade
+--/------------------------------------------------------------------
+function CAction_FireInHole:__init (action_name, st) super (nil, action_name)
+	self.st  = st
+	self.log = st.log
+	self.tm_spawn = (bTimeSpawn and time_global() + 10*1000) --/ preset of grenade respawn timer (~10sec)
+end
+
+function CAction_FireInHole:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_FireInHole:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self.is_delay  = false
+	self.is_swing  = false
+	self.finalized = false
+	self.tm_droped = nil
+	self.tm_idle   = time_global() + 5*1000 --/ common time for throw (on all around ~5sec)
+	xr_sound.set_sound(self.object, nil)
+	stop_play_sound(self.object)
+end
+
+function CAction_FireInHole:execute()
+	action_base.execute (self)
+	if self.log then log("ac_FireInHole:NPC=[%s]:(%s)", self.object:name(), ">") end --/#~#
+	if self.finalized then
+		self.st.throwing = false
+		return --/> throw completed or impossible
+	end
+	local oGrenade = self.st.grenade_id and level.object_by_id(self.st.grenade_id)
+	if not oGrenade then
+		if self.log then log("ac_FireInHole:exe:NPC=[%s]~Not_Grenade:<%s>", self.object:name(), "Info!") end --/#~#
+		self.st.throwing = false
+		return --/> lost grenade
+	end
+	local oNPC = self.object
+	local vPosNPC = oNPC:position()
+	local iTime = time_global()
+	if not self.is_delay then --/ didn't 'cocked pin(check)'?
+		if self.tm_idle < iTime then --/ time for throw ended?
+			self.finalized = true
+			self.st.throwing = false
+			--log("ac_FireInHole:exe:NPC=[%s] grenade_id=[%s] ~> breakTime :<%s>", self.object:name(), self.st.grenade_id, "Info!") --/#~#
+			this.Remove_Grenades(self.object)
+			return --/> throw canceled
+		end
+		--/ pre-check before throw: NPC in point 'from where' and there are not with point 'to where' not enemies?
+		if self.st.lvid_at == oNPC:level_vertex_id() and vPosNPC:distance_to(self.st.pos_at) < 0.3 then
+			local bEnemy,bStop = false,false
+			local iRadius = tGrenadeData[oGrenade:section()].radius
+			for id,v in pairs(db.tStorNPC) do
+				local oObj = level.object_by_id(id)
+				if oObj and oObj.alive and oObj:alive() then
+					local iDist = self.st.pos_to:distance_to(oObj:position())
+					if iDist < iRadius then
+						if IsStalker(oObj) then
+							if oNPC:relation(oObj) == game_object.enemy then
+								bEnemy = true
+							elseif iDist < iRadius/2 then
+								bStop = true --/ cancel throw, neutral or friend close
+								break
+							end
+						elseif IsMonster(oObj) then
+							bEnemy = true
+						end
+					end
+				end
+			end
+			
+			if bStop or not bEnemy then --/ cancel or not enemy?
+				self.finalized     = true
+				self.st.throwing   = false
+				self.st.grenade_id = nil
+				self.st.pos_to     = nil
+--				log("ac_FireInHole:exe:NPC=[%s]~Break:(%s/%s):[%s]", self.object:name(), bStop, bEnemy, "<<") --/#~#
+				return --/> throw canceled
+			end
+			
+			oNPC:set_item(object.idle,nil) --/ no actions with items
+			oNPC:set_movement_type(move.stand)
+			oNPC:set_mental_state(anim.danger)
+			oNPC:set_body_state(move.standing)
+			oNPC:movement_enabled(true)
+			
+			local tReplics = tThrowReplics[oNPC:character_community()] or tThrowReplics.stalker
+			local oSnd = xr_sound.get_safe_sound_object(tReplics[math.random(#tReplics)])
+			oSnd:play_no_feedback(oNPC, sound_object.s3d, 0, vPosNPC, 1.0)
+			
+			self.tm_swing = iTime + 1000 --/ ~1.0s time for 'throw' (animation)
+			self.tm_drop  = iTime + 1300 --/ ~1.3s time to 'take in hand' (drop&teleport)
+			
+			tReadyNPCs[oNPC:id()] = self.st.grenade_id --/ 'cocked pin(check)'
+			self.is_delay = true
+--			log("ac_FireInHole:exe:NPC=[%s]~PreThrow:[%s]", self.object:name(), "<<") --/#~#
+		else --/ already ... need to retreat
+			oNPC:set_movement_type(move.run)
+			oNPC:set_body_state(move.standing)
+			--oNPC:set_desired_position(self.st.pos_at) --kolmogor
+			local idLv = utils.send_to_nearest_accessible_vertex(oNPC, self.st.lvid_at)
+			oNPC:clear_animations()
+			local oEnemy = oNPC:best_enemy()
+			if oEnemy and oNPC:see(oEnemy) then
+				oNPC:set_sight(look.point,oEnemy:position())
+				oNPC:set_desired_direction( vector():sub(oEnemy:position(),vPosNPC):normalize() )
+			end
+--			log("ac_FireInHole:exe:NPC=[%s]~RunThrow:[%s]", self.object:name(), "<<") --/#~#
+		end
+		return --/>
+	else --/ pin cocked - need to throw!
+		--/ look where we throwing
+		oNPC:set_sight(look.point,self.st.pos_to)
+		oNPC:set_desired_direction( vector():sub(self.st.pos_to,vPosNPC):normalize() )
+		--/ 'swing, prepare and throw' of grenade
+		if not self.is_swing then --/ didn't swing?
+			if self.tm_swing < iTime then --/ time for 'swing'
+				self.is_swing = true
+				--/ animation of 'swing'
+				oNPC:clear_animations()
+				if self.st.type_throw then --/"hi"
+					oNPC:add_animation("norm_all_6_attack_2",true,false) --/ udar_0
+				else --/"lo"
+					oNPC:add_animation("udar_0",true,false)
+				end
+				if self.log then log("ac_FireInHole:exe:NPC=[%s]~Swing", self.object:name(), "") end --/#~#
+			end
+		else --/ 'preparation and swing' of grenade
+			if not self.tm_droped then --/ didn't 'take in hand'?
+				if self.tm_drop < iTime then --/ time to 'take in hand'
+					self.tm_droped = iTime
+					self.pos_at = oNPC:bone_position(sGrenadeBone)
+					oNPC:mark_item_dropped(oGrenade) --/#?# throwing with mark 'delay'
+					oNPC:drop_item_and_teleport(oGrenade, self.pos_at)
+--					log("ac_FireInHole:exe:NPC=[%s]~PreThrow!", self.object:name(), "") --/#~#
+				end
+			else --/ grenade 'throw'
+				local sSection = oGrenade:section()
+				if self.log then log("ac_FireInHole:NPC=[%s],Grenade=[%s]~>Throw!", self.object:name(), sSection, "") end
+				
+				tGrenades[self.st.grenade_id] = { --/ adding to grenade array
+					tmr_trow = iTime, --/ throw time
+					tmr = iTime + tGrenadeData[sSection].explode_time, --/ timer 'time of explosion' (tm_explode)
+					radius = tGrenadeData[sSection].radius --/ damage radius
+				}
+				
+				Get_Push(self.st.grenade_id, self.st.pos_to, self.st.type_throw) --/ 'push for flight'
+
+				--/ setting pause for next throw (10...60 sec)
+				self.st.tm_check = iTime + math.random(10,60)*1000
+				--/ cleaning
+				tReadyNPCs[oNPC:id()] = nil --/ deleting from list 'cocked pin'
+				self.st.grenade_id = nil
+				self.st.pos_to     = nil
+				self.st.throwing   = false
+				self.finalized     = true
+			end
+		end
+	end
+end
+--/ ---------------------
+--/ CALLBACKs
+--/ ---------------------
+function CAction_FireInHole:npc_update(oNPC,delta)
+	if oNPC and oNPC:alive() then
+		if self.log then log("ac_FireInHole:upd:NPC=[%s]:(%s)", self.object:name(), ">") end --/#~#
+		--/ respawn allowed and NPC not throwing grenade
+		if bTimeSpawn and not tReadyNPCs[oNPC:id()] and self.tm_spawn < time_global() then --/ timer of grenades respawn
+			local tPercent = tCommunityPercent[oNPC:character_community()]
+			if not tPercent then
+				self.tm_spawn = time_global() + iTimeSpawn*10*1000
+				return --/> don't spawn grenades
+			end
+			self.tm_spawn = time_global() + iTimeSpawn*1000 --/ (~180sec = ~3min)
+			--/ Choosing grenade for spawn
+			local sSection = nil
+			local iRank = ranks.get_obj_rank_number(oNPC, 1) --/(1...4)
+			local iProb = tPercent[iRank] --/ probability of spawn
+			if iProb > Random.I(100) then
+				--/ selecting type (section) of grenade for spawn
+				local iRnd = Random.I(100)
+				for sect,rnd in pairs(tGrenadeTypes) do
+					if rnd >= iRnd then
+						sSection = sect
+						break --/ choise done
+					end
+					iRnd = iRnd - rnd
+				end
+				if sSection and sSection:match('^grenade_g') then
+					if utils.is_day() then --/ if day - smoke grenade
+						sSection = "grenade_gd-05"
+					else --/ at night - light grenade
+						sSection = "grenade_gs-05"
+					end
+				end
+			end
+			local bSpawn = this.Remove_Grenades(oNPC,sSection) --/ removing from NPC all grenades, exept selected
+			if bSpawn and sSection then --/ NPC hasn't grenade we need
+				if self.log then log("ac_FireInHole:upd:NPC=[%s]<~Grenade=[%s]:(%s)", self.object:name(), sSection, "+") end --/#~#
+				Spawn_ItemInInv(sSection, oNPC) --/ спавн
+			end
+		end
+	else
+		this.Check_Self_Blasting(oNPC or self.object)
+	end
+--	log("ac_FireInHole:upd:NPC=[%s]:(%s)", self.object:name(), "<")--/#~#
+end
+
+function CAction_FireInHole:death_callback(oVictim,oWho) --/ from la_ai_mgr.script
+	if self.log then log("ac_FireInHole:death_callback:NPC=[%s]", self.object and self.object:name(), oWho and oWho:name(), "") end --/#~#
+	this.Check_Self_Blasting(oVictim or self.object)
+end
+
+----------------------------------------------------------------------
+class "CAction_RunFromGrenade" (action_base)
+--/------------------------------------------------------------------
+--/ NPC running away from thrown grenade
+--/------------------------------------------------------------------
+function CAction_RunFromGrenade:__init (action_name, st) super (nil, action_name)
+	self.st  = st
+	self.log = st.log
+end
+
+function CAction_RunFromGrenade:initialize()
+	action_base.initialize(self)
+	--log("ac_RunFromGrenade:ini:NPC=[%s]", self.object:name(), "") --/#~#
+	xr_sound.set_sound(self.object, nil)
+	stop_play_sound(self.object)
+end
+
+function CAction_RunFromGrenade:execute()
+	action_base.execute (self)
+	if self.st.danger_p and self.object:animation_count() == 0 then
+		local oNPC = self.object
+		--log("ac_RunFromGrenade:NPC=[%s]", oNPC:name(), "") --/#~#
+		oNPC:clear_animations()
+		oNPC:set_movement_type(move.run)
+		oNPC:set_body_state(move.standing)
+		oNPC:movement_enabled(true)
+		local vPos = oNPC:position()
+		if vPos:distance_to(self.st.danger_p) < self.st.danger_r/2 then
+			oNPC:set_mental_state(anim.panic)
+		else
+			oNPC:set_mental_state(anim.danger)
+		end
+		--/ where to look: if grenade far - look around on enemy
+		if vPos:distance_to(self.st.danger_p) > self.st.danger_r/2 then
+			local oEnemy = oNPC:best_enemy()
+			if oEnemy and oNPC:see(oEnemy) then
+				oNPC:set_sight(look.point, oEnemy:position())
+			end
+		end
+		--/ where to run ...
+		local vDirNPC = vector():sub(vPos,self.st.danger_p):normalize()
+		local idLvNPC = oNPC:level_vertex_id()
+		local idLvTarget = idLvNPC
+		local iDistMax,iDist,idLv = 0,nil,nil
+		for i=-120,120,10 do
+			idLv = level.vertex_in_direction(idLvNPC, vector_rotate_y(vDirNPC,i), iMaxDistTrow)
+			iDist = level.vertex_position(idLv):distance_to(self.st.danger_p)
+			if iDist > iDistMax then
+				iDistMax = iDist
+				idLvTarget = idLv
+			end
+		end
+		utils.send_to_nearest_accessible_vertex(oNPC, idLvTarget)
+	--else  log("ac_RunFromGrenade:exe:NPC=[%s]:(%s)", self.object:name(), "<") --/#~#
+	end
+end
+
+function CAction_RunFromGrenade:finalize()
+--	if self.log then log("ac_RunFromGrenade:fin:NPC=[%s]:(%s)", self.object:name(), "x") end --/#~#
+	action_base.finalize (self)
+end
+
+--/------------------------------------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder(oNPC, ini, sScheme, sSection, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", oNPC:name(), sScheme, sSection, ">") --/#~#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = oNPC:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	if not bEnabled or tExcludedComm[oNPC:character_community()] or tExcludedNPCs[oNPC:name()] or is_ghost(oNPC) then
+		oPlanner:add_evaluator (iEvl_AI_Grenader,    property_evaluator_const(false))
+		oPlanner:add_evaluator (iEvl_AI_Grenader +1, property_evaluator_const(false))
+		--oPlanner:add_evaluator (iEvl_AI_Grenader +2, property_evaluator_const(false))
+	else  --st.log = true --/#~#
+		oPlanner:add_evaluator (iEvl_AI_Grenader,    this.CEvaluator_Grenade_Throw ("ev_ai_grenade_throw",  st))
+		oPlanner:add_evaluator (iEvl_AI_Grenader +1, this.CEvaluator_Grenade_Danger("ev_ai_grenade_danger", st))
+		--oPlanner:add_evaluator (iEvl_AI_Grenader +2, this.CEvaluator_Grenade_Active("ev_ai_grenade_active", st))
+		
+		--/ NewActions --------------------------------------------------
+		--/ NewAction(0) - throwing grenade
+		local oNewAction = this.CAction_FireInHole("ac_ai_grenader", st)
+		for _,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+		end
+		oNewAction:add_precondition( world_property(iEvl_AI_Grenader +1, false)) --/ not require to run from grenade
+		oNewAction:add_precondition( world_property(iEvl_AI_Grenader,    true )) --/ can throw grenade
+		oNewAction:add_effect( world_property(iEvl_AI_Grenader, false))
+		oPlanner:add_action( iAct_AI_Grenader, oNewAction )
+		st.action = oNewAction --/ for subscribe
+		
+		--/ NewAction(1) - runing from grenade
+		oNewAction = this.CAction_RunFromGrenade("ac_ai_grenade_danger", st)
+		for _,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+		end
+		--oNewAction:add_precondition( world_property(iEvl_AI_Grenader,    false)) --/#?# can't throw grenade
+		oNewAction:add_precondition( world_property(iEvl_AI_Grenader +1, true )) --/ need to run from grenade
+		oNewAction:add_effect( world_property(iEvl_AI_Grenader +1, false))
+		oPlanner:add_action( iAct_AI_Grenader +1, oNewAction )
+		
+		--/ Actions (additional preconditions for some standard operators)
+		for idx,v in ipairs(tBindActs) do
+			local oAction = oPlanner:action(v)
+			oAction:add_precondition( world_property( iEvl_AI_Grenader, false ) )
+			if idx < 3 then --/ we don't disable panic during running from grenade
+				oAction:add_precondition( world_property( iEvl_AI_Grenader +1, false ) )
+			end
+		end
+		--[[
+		--/#?# trying to disable crap engine grenade throwing
+		local oAction = oPlanner:action(stalker_ids.action_throw_grenade)
+		if oAction then
+			oAction:add_precondition( world_property( iEvl_AI_Grenader +2,   false ) )
+		end
+		--]]
+		--/ for debug!
+		if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", oNPC:name(), sScheme, sSection, "+") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ Calls only at the begning on reading logic, creates actions, evaluators and makes the first sets.
+--/ -----------------------------------------------------------------
+function set_scheme(oNPC, ini, sScheme, sSection)
+	local st = xr_logic.assign_storage_and_bind(oNPC, ini, sScheme, sSection)
+	if st.action then
+		--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+		subscribe_ai_event(oNPC, st.action, sScheme)
+		st.enabled = bEnabled
+		if st.log then log("set_scheme:NPC=[%s],scheme=[%s] :(%s)", oNPC:name(), sScheme, st.enabled, "") end --/#~#
+	end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/ Calls during switching to new section, making of subtraction(reading) of settings from current section.
+--/ -----------------------------------------------------------------
+function disable_scheme(oNPC, sScheme)
+	local idNPC = oNPC and oNPC:id()
+	local st = idNPC and db.storage[idNPC] and db.storage[idNPC][sScheme]
+	if st then
+		if st.action then
+			unsubscribe_ai_event(idNPC, st.action, sScheme) --/#+#
+		end
+		st.enabled = false
+	end
+end
+--/------------------------------------------------------------------------------------------------
+--/ HELPERs
+--/------------------------------------------------------------------------------------------------
+function Build_ThrowReplics()
+	local ltx = ini_file("lost_alpha\\ai_schemes\\"..sModule..".ltx")
+	local tCommReplic = Get_IniSection(ltx,"community_replic","number")
+	local fs = getFS()
+	for sComm,iCnt in pairs(tCommReplic) do
+		for i=1,iCnt do
+			local sFullFileName = "grenadier\\"..sComm.."\\replic_"..i
+			if fs:exist("$game_sounds$", sFullFileName..".ogg") then
+				if not tThrowReplics[sComm] then tThrowReplics[sComm] = {} end
+				table.insert( tThrowReplics[sComm], sFullFileName )
+--				log("Build_ThrowReplics:cnt=[%s]/[%s],comm=[%s],snd=[%s]", i, iCnt, sComm, sFullFileName, "") --/#~#
+			else --/ file missing
+				break
+			end
+		end
+	end
+end
+
+function Get_GrenadeData(sSection)
+	if not tGrenadeData[sSection] then
+		local iRadius,iDestroyTime = 1000,0
+		local sini = system_ini()
+		local iTimeOut = Get_Cfg_Num32(sini, sSection, "destroy_time", 0) --/ time of disruption(explosion) (ms)
+		local iBlastR  = Get_Cfg_Num32(sini, sSection, "blast_r",     10) --/ radius of blast (m)
+		local iFragsR  = Get_Cfg_Num32(sini, sSection, "frags_r",     20) --/ radius of flying fragments (m)
+		iRadius = math.max(iBlastR,iFragsR)
+		if iRadius == 0 and sSection:match('^grenade_g') then
+			iRadius = 10 --/ for light and smoke grenades
+		end
+		tGrenadeData[sSection] = {radius=iRadius, explode_time=iTimeOut}
+	end
+	return tGrenadeData[sSection].radius,tGrenadeData[sSection].explode_time --/>
+end
+
+function update(delta) --/< from 'la_ai_mgr'
+	--/ cleaning test- and real- grenades:
+	if next(tGrenades) then
+		local iTime = time_global()
+		local sim = alife()
+		for id,v in pairs(tGrenades) do
+			local soItem = sim:object(id)
+			if soItem then
+				if v.tmr < iTime then --/ flight time (before 'blast')
+					if v.radius then --/ real grenade substitute on fake one
+						local oItem = level.object_by_id(id)
+						if oItem then --/ change to fake one
+							local soFake = sim:create(oItem:section().."_fake", oItem:position():add(vector():set(0,1,0)), oItem:level_vertex_id(), oItem:game_vertex_id(), 65535)
+							if soFake then --log("update:Obj=[%s/%s]=>[%s]:(%s)", oItem:section(), id, soFake.id, "+") --/#~#
+								level.client_spawn_manager():add(soFake.id, 65535, Callback_NetSpawn_Fake, "fake")
+							end
+						end
+					end  --log("update:Obj=[%s/%s/%s]<~release:(%s)", soItem:section_name(), id, soItem:clsid(), "x") --/#~#
+					sim:release(soItem, true)
+					tGrenades[id] = nil --/ clear
+				end
+			else
+				tGrenades[id] = nil --/ clear
+			end
+		end
+	end
+end
+
+function Callback_NetSpawn_Fake(metka, idItem, oItem)
+	--log("Callback_NetSpawn_Fake: grenade=[%s]/[%s] => BOOM %s", oItem:section(), idItem, "!!!") --/#~#
+	oItem:explode(0) --/ exploading fake-grenade
+end
+
+function Get_Push(id,vTarget,bTrowType)
+	--/ 'push for flight' of grenade
+	local oGrenade = id and level.object_by_id(id)
+	if oGrenade then
+		local oPhShell = oGrenade:get_physics_shell()
+		local oBone = oPhShell and oPhShell:get_element_by_bone_name("wpn_body")
+		if oBone then
+			local vDir = vector():sub(vTarget, oGrenade:position())
+			vDir:mul(1300)
+			if bTrowType then --/ 'hi'
+				vDir:add(vector():set(0,5000,0))
+			else --/ 'lo'
+				vDir:add(vector():set(0,1800,0))
+			end
+			oBone:apply_force(vDir.x,vDir.y,vDir.z)
+		end
+	end
+end
+
+function Check_Self_Blasting(oNPC)
+	--/ check on 'selfexplosion' if grenade not thrown with cocked pin
+	local idNPC = oNPC and oNPC:id()
+	local idGrenade = idNPC and tReadyNPCs[idNPC]
+	if idGrenade then --/ ID of grenade 'with cocked pin'
+		local oGrenade = level.object_by_id(idGrenade)
+		if oGrenade then --/ explode?
+			local oOwner = oGrenade:parent() --/ grenade still/already got someone?
+			if oOwner and IsStalker(oOwner) and not oOwner:marked_dropped(oGrenade) then
+				--log("Check_Self_Blasting:Owner=[%s]=>Grenade=[%s/%s]", oOwner:name(), oGrenade:name(), idGrenade, "") --/#~#
+				oOwner:drop_item_and_teleport(oGrenade, oOwner:bone_position(sGrenadeBone))
+			else
+				--log("Check_Self_Blasting:NPC=[%s]=>Grenade=[%s/%s]", oNPC:name(), oGrenade:name(), idGrenade, "") --/#~#
+			end
+			local sSection = oGrenade:section()
+			if sSection and tGrenadeTypes[sSection] then
+				local  iTime = time_global()
+				local iRadius,iDestroyTime = Get_GrenadeData(sSection)
+				tGrenades[idGrenade] = {tmr_trow = iTime, tmr = iTime + iDestroyTime, radius = iRadius}
+			end
+		else
+			idGrenade = nil
+		end
+		tReadyNPCs[idNPC] = nil
+	end
+	this.Remove_Grenades(oNPC,nil,idGrenade) --/ deleting from NPC all grenades (exept ...)
+	this.disable_scheme(oNPC, sSchemeName)
+end
+
+function Remove_Grenades(oNPC,sGrenade,idGrenade)
+--	log("Remove_Grenades:NPC=[%s]:(%s)", oNPC and oNPC:name(), ">") --/#~#
+	local bSpawn = true
+	local sim = alife()
+	local oItem,soItem,idItem,sSection
+	local iCnt = oNPC:object_count()
+	for i=0, iCnt-1 do
+		oItem = oNPC:object(i)
+		sSection = oItem and oItem:section()
+		if sSection and tGrenadeTypes[sSection] then
+			idItem = oItem:id()
+			if bSpawn and ((sGrenade and sGrenade == sSection) or (idGrenade and idGrenade == idItem)) then
+				bSpawn = false --/ one (required) we leave
+--				log("Remove_Grenades:NPC=[%s],grenade=[%s]/[%s] ~ reserve :(%s)", oNPC:name(), sSection, idItem, i+1) --/#~#
+			else
+				soItem = sim:object(idItem)
+				if soItem then
+					sim:release(soItem, true)
+				end
+			end
+		end
+	end
+	return bSpawn --/>
+end
+
+function fake_pickup(oItem) --/< from 'la_ai_mgr'
+--	log("fake_pickup:(>)") --/#~#
+	--if not (oItem and oItem:clsid() == clsid.wpn_grenade_fake) then return end --/> 60
+	local sSection = oItem and oItem:section()
+	sSection = sSection and ( sSection:match('(.+)_test$') or sSection:match('(.+)_fake$') )
+	if sSection then
+		for k,_ in pairs(tGrenadeTypes) do
+			if sSection == k.."_test" or sSection == k.."_fake" then
+				local soItem = alife():object(oItem:id())
+				if soItem then
+					--log("fake_pickup:Obj=[%s] ~>release:[%s]", sSection, "x") --/#~#
+					alife():release(soItem, true)
+					break
+				end
+			end
+		end
+	end
+	--[[if sSection and tGrenadeTypes[sSection] then
+		local soItem = alife():object(oItem:id())
+		if soItem then
+			--log("fake_pickup:Obj=[%s],cid=[%s]~>release:(%s)", oItem:section(), oItem:clsid(), "x") --/#~# wpn_grenade_fake
+			alife():release(soItem, true)
+		end
+	end]]
+end
+
+function cleaning() --/< from 'la_ai_mgr'
+--	log("cleaning:(>)") --/#~#
+	local sim = alife()
+	for id=1,65534 do
+		local soObj = sim:object(id)
+		if soObj and soObj:clsid() == clsid.obj_explosive then --/ 72
+			local sSection = soObj:section_name()
+			if sSection:match("_test$") or sSection:match("_fake$") then
+				for k,_ in pairs(tGrenadeTypes) do
+					if sSection == k.."_test" or sSection == k.."_fake" then
+						--log("cleaning:Obj=[%s],cid=[%s]~>release:[%s]", sSection, soObj:clsid(), "x") --/#~#
+						sim:release(soObj, true)
+						break
+					end
+				end
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

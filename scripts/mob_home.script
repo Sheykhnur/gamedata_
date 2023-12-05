@@ -1,0 +1,175 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : mob_home.script
+ Description: Схема: "Mob Home"
+ Copyright  : 2004 © GSC Game World
+ Author     : Jim
+ Editors    : Gr1ph00n(22.06.2012)
+ Last edit  : 12.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local def_min_radius = 20
+local def_max_radius = 50
+local tHomes = {} -- /#+# the list of monsters, for each 'home'
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ------------------------------------------------------------------------------------------------
+class "mob_home"
+--/ ------------------------------------------------------------------------------------------------
+function mob_home:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function mob_home:reset_scheme()
+	local path_info = utils.parse_waypoint_data(self.st.home, 0) --/#!# читаем флаги из 0-ой точки пути (new format!)
+	self.minr = (self.st.home_min_radius or tonumber(path_info.minr) or def_min_radius)*1.2
+	self.maxr = (self.st.home_max_radius or tonumber(path_info.maxr) or def_max_radius)*2.25
+	--/ check min and max radius
+	if self.maxr > self.minr then
+		self.object:set_home(self.st.home, self.minr, self.maxr, self.st.aggressive)
+		--/#+# синхронизация по хитам
+		self.st.signals = {} --/ reset signals
+		if self.st.on_attaked then
+			self:add_to_home()
+		end
+		--/#+#
+		if self.st.invulnerable then
+			self.def_health = self.object.health
+		end
+		if self.log then log("reset_scheme: Mob=[%s], minR=[%s], maxR=[%s], attaked=(%s)", self.object:name(), self.minr, self.maxr, self.st.on_attaked, "") end --/#~#
+	else
+		abort("%s:reset_scheme:mob=[%s],min_radius=[%s]_MUST_be_<_max_radius=[%s]", sModule, self.object:name(), self.minr, self.maxr, "")
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function mob_home:update(delta)
+--	if self.log then log("update: Mob=[%s], health=[%s] :(%s)", self.object:name(), self.object.health, ">") end --/#~#
+	if self.st.invulnerable then
+		self.object.health = self.def_health
+	end
+	if xr_logic.mob_captured(self.object) then
+		xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+	else
+		self:reset_scheme()
+	end
+end
+--/------------------------------------------------------------------
+--/#+# CALLBACKs
+--/------------------------------------------------------------------
+function mob_home:hit_callback(obj, amount, local_direction, who, bone_index)
+	if self.home_set and amount > 0 and who and IsNPC(who) and tHomes[self.st.home] then
+		--/ ставим сигнал "attacked" для всех зверушек из home
+		for id in pairs(tHomes[self.st.home]) do
+			local stor = db.storage[id]
+			local st = stor and stor["mob_home"]
+			if st and st.signals then
+				st.signals["attacked"] = true
+				if self.log then log("hit_callback: setting 'attacked' for id=[%s] :[%s]/[%s]", id, self.object:id(), table.size(tHomes[self.st.home])) end --/#~#
+			else --/ выкидываем зверушку из группы:
+				tHomes[self.st.home][id] = nil
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/#+# SERVICE FUNCTIONs
+--/ -----------------------------------------------------------------
+function mob_home:add_to_home()
+	if not tHomes[self.st.home] then tHomes[self.st.home] = {} end
+	tHomes[self.st.home][self.object:id()] = true
+	--self.st.signals = {}
+	self.home_set = true
+	if self.log then log("add_to_home: Mob=[%s] home=[%s]:[%s](%s)", self.object:name(), self.st.home, table.size(tHomes[self.st.home]), "+") end --/#~#
+end
+
+function mob_home:remove_from_home()
+	if tHomes[self.st.home] then
+		tHomes[self.st.home][self.object:id()] = nil
+		self.st.signals = {}
+		self.home_set = false
+		if self.log then log("remove_from_home: Mob=[%s] home=[%s]:[%s](%s)", self.object:name(), self.st.home, table.size(tHomes[self.st.home]), "x") end --/#~#
+	end
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function mob_home:deactivate()
+	self.object:remove_home()
+	if self.home_set then --/#+#
+		self:remove_from_home()
+	end
+	--log("deactivate: Mob=[%s]:(%s)", self.object:name(), "x") --/#~#
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	st.action = this.mob_home(npc, st)
+	--/ регистрация action, для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Mob=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	--log("set_scheme: Mob=[%s],scheme=[%s],section=[%s],gulag=[%s]:(%s)", npc:name(), scheme, section, gulag_name, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--st.home            = Get_Cfg_String(ini, section, "path_home", "<<Err!>>", true, gulag_name)
+	st.home            = Get_Cfg_String(ini, section, "path_home", nil, true, gulag_name)
+	st.home_min_radius = (Get_Cfg_Number(ini, section, "home_min_radius", 20))*1.2 --/ def_min_radius (20)
+	st.home_max_radius = (Get_Cfg_Number(ini, section, "home_max_radius", 50))*2.25 --/ def_max_radius (40)
+	st.invulnerable    = Get_Cfg_Bool  (ini, section, "invulnerable", false) --/#+#
+	st.aggressive      = ini:line_exist(section, "aggressive_home") --/ true|false
+	st.on_attaked      = ini:line_exist(section, "on_signal") --/#+# синхронизация по хитам (true|false)
+	if not validate_patrol_path(st.home, npc, true) then
+		log("set_scheme:NPC=[%s],section=[%s],path_home=[%s]<~NOT_validate:<%s>", npc:name(), section, st.home, "Warning!")
+		xr_gulag.resetJob(npc)
+		--[[ scheme)
+		smart_terrain.unregister_npc(npc)
+		local stor = db.storage[npc:id()]
+		xr_logic.initialize_obj(npc, stor, false, db.actor, stor.stype)
+		--]]
+	else
+		if st.log then log("set_scheme: Mob=[%s],scheme=[%s],section=[%s],home=[%s],aggressive=(%s)/(%s)", npc:name(), scheme, section, st.home, st.aggressive, st.on_attaked, "") end --/#~#--/ for debug!
+		if st.home_max_radius > st.home_min_radius then
+			npc:set_home(st.home, st.home_min_radius, st.home_max_radius, st.aggressive)
+		else
+			abort("%s:reset_scheme:mob=[%s],min_radius=[%s]_MUST_be_<_max_radius=[%s]", sModule, npc:name(), st.home_min_radius, st.home_max_radius, "")
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/#+# DISABLE SCHEME - отключение схемы
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/< "mob_home"
+	local stor = npc and db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]", npc:name(), scheme, "") end --/#~#
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+
+--[[------------------------------------------------------------------------------------------------
+NOTE: Haron
+Описание: Теперь можно задавать радиусы home_min_radius и home_max_radius во флагах пути path_home.
+					Для этого введены флаги minr, maxr. Они должны быть прописаны в 1-ой точке пути.
+					У радиусов заданых в секции приоритет больший чем для тех что заданы во флагах,
+					т.е. если задано и там и там, то берутся значения из секции (сделано для обратной совместимости).
+--]]------------------------------------------------------------------------------------------------

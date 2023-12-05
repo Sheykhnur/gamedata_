@@ -1,0 +1,219 @@
+[death@gen_mil_bunker]
+on_info = {=gulag_population_le(gen_mil_bunker:1)} %+gen_mil_bunker_cleared%
+
+[danger@gen_bunker]
+ignore_distance  = 100
+
+[threshold@gen_bunker]
+max_ignore_distance = 5
+ignore_monster      = 0
+
+[hit@gen_bunker]
+on_info = {=hit_by_actor -gen_actor_in_zone} %+gen_actor_distance%
+
+[combat_ignore@gen_bunker]
+
+[logic@gen_mil_bunker_patrol1]
+active = patrol@gen_mil_bunker_walker
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[patrol@gen_mil_bunker_walker]
+path_walk = patrol_path
+path_look = patrol_look
+formation = back
+commander = false
+danger = danger@gen_bunker
+combat_ignore_cond = {-gen_actor_in_zone}
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} patrol@gen_mil_bunker_walker_fight
+
+[patrol@gen_mil_bunker_walker_fight]
+path_walk = patrol_path
+path_look = patrol_look
+formation = back
+commander = false
+threshold = threshold@gen_bunker
+
+[logic@gen_mil_bunker_patrol2]
+active = patrol@gen_mil_bunker_walker2
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[patrol@gen_mil_bunker_walker2]
+path_walk = patrol_path2
+path_look = patrol_path2_look
+formation = back
+commander = false
+danger = danger@gen_bunker
+combat_ignore_cond = {-gen_actor_in_zone}
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} patrol@gen_mil_bunker_walker2_fight
+
+[patrol@gen_mil_bunker_walker2_fight]
+path_walk = patrol_path2
+path_look = patrol_path2_look
+formation = back
+commander = false
+threshold = threshold@gen_bunker
+
+[logic@gen_mil_bunker_guard1]
+active = camper@gen_mil_bunker_guard
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[camper@gen_mil_bunker_guard]
+path_walk = guard
+path_look = guard_look
+combat_ignore_cond = {-gen_actor_in_zone}
+danger = danger@gen_bunker
+sniper = true
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} walker@gen_mil_bunker_guard
+on_info2 = {+gen_actor_distance} camper@gen_mil_bunker_guard1
+
+[walker@gen_mil_bunker_guard]
+path_walk = guard
+path_look = guard_look
+threshold = threshold@gen_bunker
+
+[camper@gen_mil_bunker_guard1]
+path_walk = guard
+path_look = guard_look
+sniper = true
+threshold = threshold@gen_bunker
+
+[logic@gen_mil_bunker_guard2]
+active = camper@gen_mil_bunker_guard2
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[camper@gen_mil_bunker_guard2]
+path_walk = guard2
+path_look = guard2_look
+combat_ignore_cond = {-gen_actor_in_zone}
+danger = danger@gen_bunker
+sniper = true
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} walker@gen_mil_bunker_guard2
+on_info2 = {+gen_actor_distance} camper@gen_mil_bunker_guard21
+
+[walker@gen_mil_bunker_guard2]
+path_walk = guard2
+path_look = guard2_look
+threshold = threshold@gen_bunker
+
+[camper@gen_mil_bunker_guard21]
+path_walk = guard2
+path_look = guard2_look
+sniper = true
+threshold = threshold@gen_bunker
+
+[logic@gen_mil_bunker_guard3]
+active = camper@gen_mil_bunker_guard3
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[camper@gen_mil_bunker_guard3]
+path_walk = guard3
+path_look = guard3_look
+combat_ignore_cond = {-gen_actor_in_zone}
+danger = danger@gen_bunker
+sniper = true
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} walker@gen_mil_bunker_guard3
+on_info2 = {+gen_actor_distance} camper@gen_mil_bunker_guard31
+
+[walker@gen_mil_bunker_guard3]
+path_walk = guard3
+path_look = guard3_look
+threshold = threshold@gen_bunker
+
+[camper@gen_mil_bunker_guard31]
+path_walk = guard3
+path_look = guard3_look
+sniper = true
+threshold = threshold@gen_bunker
+
+[logic@gen_mil_bunker_boss]
+active = walker@gen_mil_bunker_boss
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[walker@gen_mil_bunker_boss]
+path_walk = walk
+path_look = walk_look
+combat_ignore_cond = {-gen_actor_in_zone}
+danger = danger@gen_bunker
+def_state_standing = guard
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} walker@gen_mil_bunker_boss_fight
+
+[walker@gen_mil_bunker_boss_fight]
+path_walk = walk
+path_look = walk_look
+threshold = threshold@gen_bunker
+
+[logic@gen_mil_bunker_kamper]
+active = kamper@gen_mil_bunker_kamping
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[kamper@gen_mil_bunker_kamping]
+path_walk = camp
+path_look = camp_look
+combat_ignore_cond = {-gen_actor_in_zone}
+danger = danger@gen_bunker
+kamp_name = kamp1
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} kamper@gen_mil_bunker_kamping_fight
+
+[kamper@gen_mil_bunker_kamping_fight]
+path_walk = camp
+path_look = camp_look
+kamp_name = kamp1
+threshold = threshold@gen_bunker
+
+[logic@gen_mil_bunker_talker]
+active = walker@gen_mil_bunker_talker
+combat_ignore = combat_ignore@gen_bunker
+on_death = death@gen_mil_bunker
+threshold = threshold@gen_bunker
+on_hit = hit@gen_bunker
+
+[walker@gen_mil_bunker_talker]
+path_walk = meet
+path_look = meet_look
+combat_ignore_cond = {-gen_actor_in_zone}
+danger = danger@gen_bunker
+def_state_moving = rush
+def_state_standing = assault
+threshold = threshold@gen_bunker
+on_signal = meet | remark@gen_mil_bunker_wait %+gen_ghost_anim_end%
+on_info = {+gen_actor_in_zone} walker@gen_mil_bunker_talker_fight
+
+[remark@gen_mil_bunker_wait]
+anim = wait
+combat_ignore_cond = {-gen_actor_in_zone}
+danger = danger@gen_bunker
+threshold = threshold@gen_bunker
+on_info = {+gen_actor_in_zone} walker@gen_mil_bunker_talker_fight
+
+[walker@gen_mil_bunker_talker_fight]
+path_walk = meet
+path_look = meet_look
+threshold = threshold@gen_bunker

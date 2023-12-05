@@ -1,0 +1,40 @@
+[combat_ignore@zhadina]
+
+[danger@zhadina]
+ignore_distance          = 10
+ignore_distance_grenade  = 10
+ignore_distance_corpse   = 10
+ignore_distance_hit      = 50
+ignore_distance_sound    = 10
+danger_inertion_time_grenade = 5
+danger_inertion_time_corpse  = 5
+danger_inertion_time_hit     = 5
+danger_inertion_time_sound   = 5
+
+[threshold@zhadina]
+max_ignore_distance = 10
+ignore_monster = 0
+
+[logic]
+active ={+zhadina_start_talk} nil, {-zhadina_start_talk} follower@0
+combat_ignore = combat_ignore@zhadina
+threshold = threshold@zhadina
+
+[follower@0]
+formation_line = false
+leader = actor
+distance = 1
+threshold = threshold@pirozhenko
+danger = danger_condition
+combat_ignore_cond = {=fighting_dist_ge(15)}
+show_spot = false
+meet = meet@0
+on_info = {+zhadina_start_talk} nil
+
+[meet@0]
+abuse = false
+use = self
+use_wpn = self
+;meet_state = 30|hello@hail|5|guard@wait
+;meet_state_wpn = 30|hello@hail|5|guard@wait
+;precond = visibility

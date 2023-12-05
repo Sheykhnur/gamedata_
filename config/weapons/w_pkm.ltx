@@ -1,0 +1,206 @@
+[wpn_pkm]:weapon_base,weapon_7.62x54r
+$npc                                    = on                               
+$prefetch                               = 8
+$spawn                                  = "weapons\pkm"               
+animation_slot                          = 2                ; type of the animation that will be used
+class                                   = WP_AK74
+default_to_ruck                         = false
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 10
+hand_dependence                         = 1
+repair_compatibility                    = pkm
+scheduled                               = off                                ; option for ALife Simulator
+weapon_class                            = assault_rifle        ; Type of the weapon
+weapon_rank                             = 4
+
+; Inventory icon
+inv_grid_width                          = 6
+inv_grid_height                         = 2
+inv_grid_x                              = 10
+inv_grid_y                              = 4
+
+; Text
+inv_name                                = st_wpn_rp
+inv_name_short                          = st_wpn_rp
+description                             = st_wpn_rp_descr
+
+; Visual
+hud                                     = wpn_pkm_hud
+position                                = -0.027, -0.097, 0.042
+orientation                             = 0, -2, 0
+strap_position                          = -0.26,-0.11,0.25                                ; position (offset) and orientation of the weapon when it is strapped
+strap_orientation                       = -15,-9,110                                        ; (3rd person view in degrees)
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_pkm\wpn_pkm.ogf
+
+; Effects
+fire_point                              = 0.0, 0.158, 0.845
+fire_point2                             = 0.0, 0.097, 0.722
+shell_point                             = -0.020000,0.167000,0.082000
+shell_dir                               = 0.0, 0.0, 0.4
+light_disabled                          = false
+light_color                             = 0.6,0.5,0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6,0.5,0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\pkm\pkm_draw
+snd_empty                               = weapons\pkm\pkm_empty, 0.5
+snd_holster                             = weapons\pkm\pkm_holster
+snd_reload                              = weapons\pkm\pkm_reload
+snd_shoot                               = weapons\pkm\pkm_shoot
+snd_shoot1                              = weapons\pkm\pkm_shoot1
+snd_shoot2                              = weapons\pkm\pkm_shoot2
+snd_shoot3                              = weapons\pkm\pkm_shoot3
+snd_silncer_shot                        = weapons\pkm\pkm_shoot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_RP74
+upgr_icon_x                             = 8
+upgr_icon_y                             = 593
+upgr_icon_width                         = 294
+upgr_icon_height                        = 83
+
+; Cost & Weight
+cost                                    = 72200
+inv_weight                              = 7.5
+ph_mass                                 = 7
+
+; Ammo
+ammo_class                              = ammo_pkm_100
+ammo_mag_size                           = 100
+grenade_class                           = ammo_m209
+
+; Features
+fire_modes                              = 1, -1
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 1.0 ; buffed for balance
+
+; Ballistics
+fire_dispersion_base                    = 0.65 ; угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+
+; Performance
+rpm                                     = 600
+rpm_empty_click                         = 200
+
+; Reliability
+misfire_start_condition                 = 0.5
+misfire_end_condition                   = 0.0
+misfire_start_prob                      = 0.0001   ; misfire probability for every shot when condition == misfire_start_condition (value interpolates between this and misfire_end_prob)
+misfire_end_prob                        = 0.5    ; misfire probability for every shot when condition is below misfire_end_condition
+condition_shot_dec                      = 0.000125
+condition_queue_shot_dec                = 0.000125
+
+; Handling
+control_inertion_factor                 = 4.0f
+PDM_disp_base                           = 5.0
+PDM_disp_vel_factor                     = 2.0
+PDM_disp_accel_factor                   = 2.0
+PDM_disp_crouch                         = 1.5
+PDM_disp_crouch_no_acc                  = 2.0
+sprint_allowed                          = false
+
+; Recoil
+cam_dispersion                          = 0.6
+cam_dispersion_inc                      = 0.3
+cam_dispersion_frac                     = 1.0
+cam_max_angle                           = 20.0
+cam_max_angle_horz                      = 20.0
+cam_step_angle_horz                     = 3.0
+zoom_cam_dispersion                     = 0.4
+zoom_cam_dispersion_inc                 = 0.3
+zoom_cam_step_angle_horz                = 4.0
+zoom_cam_max_angle                      = 20.0
+
+; Aiming
+zoom_enabled                            = true                                                ; (on,off)zoom mode (right mouse button)
+zoom_dof                                = 0.5, 1.0, 180
+zoom_rotate_time                        = 0.6
+zoom_inertion_factor                    = 3.0 ; [NEW FOR LA DC] weapon sway multiplier - this value is multiplied by actor dispersion which is based on PDM_* values
+reload_dof                              = 0.0, 0.5, 5, 1.7
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_pkm
+upgrades                                = up_gr_firstab_pkm, up_gr_seconab_pkm, up_gr_thirdab_pkm, up_gr_fourtab_pkm, up_gr_fifthab_pkm
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 100
+holder_range_modifier                   = 1.0                       ; во сколько раз увеличивается eye_range
+holder_fov_modifier                     = 1.0                       ; во сколько раз увеличивается eye_fov
+
+
+[wpn_pkm_hud]:hud_base
+aim_hud_offset_pos                      = -0.0961,0.05345,-0.1
+aim_hud_offset_pos_16x9                 = -0.0961,0.05345,-0.1
+aim_hud_offset_rot                      = 0.03895,0.0352,0.0
+aim_hud_offset_rot_16x9                 = 0.03895,0.0352,0.0
+anim_bore                               = pkm_idle_aim
+anim_hide                               = pkm_holster
+anim_idle                               = pkm_idle
+anim_idle_aim                           = pkm_idle_aim
+anim_idle_moving                        = pkm_idle_moving
+anim_idle_moving_crouch                 = pkm_idle_crouch
+anim_idle_sprint                        = pkm_idle_sprint
+anim_reload                             = pkm_reload, reload
+anim_reload_empty                       = pkm_reload, reload
+anim_shots                              = pkm_shoot, shoot
+anim_show                               = pkm_draw
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = wpn_body
+fire_point                              = 0,0,0
+fire_point2                             = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 2,2,0
+hands_orientation_16x9                  = 2,2,0
+hands_position                          = -0.064,-0.18,0.14
+hands_position_16x9                     = -0.064,-0.18,0.14
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_pkm\wpn_pkm_hud
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+;********************************************************
+;********************************************************
+[wpn_pkm_m1]:wpn_pkm
+$spawn                                  = "weapons\uniq\wpn_pkm_zulus"
+unique_item                             = true
+
+; Text
+inv_name                                = st_wpn_pkm_zulus
+description                             = st_wpn_pkm_zulus_descr
+
+; Cost & Weight
+cost                                    = 80000
+inv_weight                              = 8.5
+
+; Ammo
+ammo_mag_size                           = 150
+
+; Reliability
+condition_shot_dec                      = 0.0001
+condition_queue_shot_dec                = 0.0001
+
+; Upgrades
+installed_upgrades                      = up_firsta_pkm, up_thirda_pkm, up_fiftha_pkm ; condition upgrades, +100 magazine

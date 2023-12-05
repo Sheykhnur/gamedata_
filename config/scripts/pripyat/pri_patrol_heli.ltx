@@ -1,0 +1,35 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = pri_patrol_heli_idle
+engine_sound = false
+combat_safe_altitude = 20
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 10
+on_info = {+pri_heli_path1} heli_move@path1
+on_info2 = {+pri_heli_path2} heli_move@path2
+on_info3 = %=heli_die%
+
+[heli_move@path1]
+path_move = pri_patrol_heli_path1
+combat_velocity = 10
+combat_safe_altitude = 20
+combat_use_rocket = false
+combat_use_mgun = true
+invulnerable = false
+default_velocity = 10
+on_signal = one| heli_move@idle %-pri_heli_path1 +pri_heli_path2%
+on_info = %=heli_die%
+
+[heli_move@path2]
+path_move = pri_patrol_heli_path2
+combat_velocity = 10
+combat_safe_altitude = 20
+combat_use_rocket = false
+combat_use_mgun = true
+invulnerable = false
+default_velocity = 40
+on_signal = two| heli_move@idle %+pri_heli_path1 -pri_heli_path2%
+on_info = %=heli_die%

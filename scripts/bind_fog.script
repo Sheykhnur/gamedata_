@@ -1,0 +1,69 @@
+
+-- file: bind_fog.script
+-- author: Gr1ph00n
+-- date: 05/08/2009
+-- edited by: Griphoon
+-- last edited: 05/08/2009
+
+local def_wound_hit = 0.3
+local def_rad_hit = 0.1
+local def_rustying_hit = 0.12
+
+class "fog_binder" (object_binder)
+ 
+function fog_binder:__init(obj) super(obj)
+	self.particle = nil
+	self.hit_timer = 0
+end
+
+
+function fog_binder:actor_inside()
+	return self.object:inside(db.actor:position())
+end
+
+function fog_binder:update(delta)
+	local pos = self.object:position()
+	if self:actor_inside() then
+		if time_global() > self.hit_timer then
+			self.hit_timer = time_global() + 2500
+	--		self:hit_actor()
+			self:rust_items()
+		end
+	end
+end
+
+function fog_binder:hit_actor()
+	local hit = hit()
+	hit.draftsman = db.actor
+	hit.impulse = 0.01
+	hit:bone("bip01_spine")
+	hit.direction = vector():set(0, 0, 0)
+	hit.power = def_wound_hit
+	hit.type = hit.wound
+	db.actor:hit(hit)
+	hit.power = def_rad_hit
+	hit.type = hit.radiation
+	db.actor:hit(hit)
+end
+
+function fog_binder:rust_items()
+	local current_pistol = db.actor:item_in_slot(1)
+	local current_weapon = db.actor:item_in_slot(2)
+	local current_outfit = db.actor:item_in_slot(6)
+	if current_pistol then
+		current_pistol:set_condition(current_pistol:condition() - def_rustying_hit)
+	end
+	if current_weapon then
+		current_weapon:set_condition(current_weapon:condition() - def_rustying_hit)
+	end
+	if current_outfit then
+		current_outfit:set_condition(current_outfit:condition() - def_rustying_hit)
+	end
+end
+
+---------------------------------------------------------
+
+function init(obj)
+	obj:bind_object(fog_binder(obj))
+end
+

@@ -1,0 +1,136 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_radar.script
+ Description: Tasks radar
+ Copyright  : 2010 © LA-team
+ Author     : lox
+ Editors    : vintar, lox(19.02.2013)
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"rad_hermit_spoke_doc",
+	"rad_hermit_spoke_yourself",
+	"rad_hermit_spoke_mono"
+}
+
+local mobs_tbl = {
+	"radar_dog_normal","radar_boar_strong_0000","radar_boar_normal","radar_flesh_strong",
+	"radar_pseudodog_normal","radar_boar_weak","radar_flesh_normal","radar_dog_weak_0003"
+}
+
+--/--------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		--[[if obj:story_id() == 7015 then
+			give_info("rad_hermit_x10_pass_recieved")
+		end--]]
+		if obj:name() == "rad_anom_machine" then
+			give_info("rad_has_anom_machine")
+		end
+	end
+	if db.sMapNow == "la10_radar" and has_info("deactivate_radar_done") and not has_info("deactivate_radar_done_delay") then
+		xr_effects.radar_release_all()
+	end
+	if info_tbl and has_info_portions(info_tbl) then
+		info_tbl = nil --/ clear
+		give_info("rad_hermit_spoke_all")
+	end
+	if not has_info("rad_actor_attacks_monolith") then
+	   give_info("rad_actor_attacks_monolith")
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "radar_monolith_base_quest_start" then
+		local box = level_object_by_sid(7009)
+		local hermit = level_object_by_sid(7008)
+		if box and not hermit then
+			alife():create("hermit_belongings", vector(), 0, 0, box:id())
+		end
+		return true --/>
+	end
+	if info_id == "rad_heli_message" then
+		news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("rad_heli_approaching"), "monolith")
+		start_real_timer(2, nil, {info_id = "rad_heli_task_give"})
+		return true --/>
+	end
+	if info_id == "rad_msg_herm" then
+		news_manager.send_tip_hud(game.translate_string("nomad_message_header"), game.translate_string("rad_nomad_run_away"), "nomad")
+		local s_obj = alife():story_object(7027)
+		if s_obj then
+			level.map_add_object_spot_ser(s_obj.id, "red_location", "rad_hidden_pasage")
+		end
+		return true --/>
+	end
+	if info_id == "rad_monsters_help_start_message" then
+		news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("rad_help_monolith_defend_front_line"), "monolith")
+		start_real_timer(1, sModule..".rad_monsters_help_replic")
+		return true --/>
+	end
+	if info_id == "rad_hermit_x10_to_undeground" then
+		start_real_timer(2, nil, {info_id = "bun_security_switches_start"})
+		return true --/>
+	end
+	if info_id == "radar_meet_veronin_start" then
+		news_manager.send_tip_hud(game.translate_string("veronin_message_header"), game.translate_string("radar_meet_veronin"), "veronin")
+		start_real_timer(4, nil, {info_id = "radar_meet_veronin_start_task"}) --/ ~ 4sec (real-time)
+		return true --/>
+	end
+	if info_id == "dam_ghost_dead" then
+		news_manager.send_tip_hud(game.translate_string("ghost_message_header"), game.translate_string("radar_ghost_dead"), "ghost")
+		start_real_timer(6,   nil, {info_id = "dam_ghost_dead_task"}) --/ ~ 6sec (real-time)
+		start_real_timer(6.5, nil, {info_id = "dam_meet_ghost_pointer_change"})
+		start_real_timer(7.5, nil, {info_id = "dam_pripyat_under_attack"}) --/ ~ 7.5sec (real-time)
+		return true --/>
+	end
+	if info_id == "rad_disabling_old_timer" then
+		local s_obj = alife():story_object(7027)
+		if s_obj then
+			level.map_remove_object_spot(s_obj.id, "red_location")
+		end
+		return true
+	end
+	if info_id == "rad_locked_door_open" then
+		local obj = db.actor:object("forg_key")
+		alife():release(alife():object(obj:id()), true)
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function rad_monsters_help_replic()
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\rad\\rad_replics4")
+		snd:play(db.actor, 0, sound_object.s2d)
+end
+
+function have_hermit_belongings()
+	if db.actor:object("hermit_belongings") then
+		if not has_info("radar_hermit_belonings_get") then
+			give_info("radar_hermit_belonings_get")
+		end
+		return true
+	end
+	return false
+end
+
+function have_hermit_x10_pass()
+	if db.actor:object("rad_lab_access_documents") then
+		if not has_info("rad_hermit_x10_pass_recieved") then
+			give_info("rad_hermit_x10_pass_recieved")
+		end
+		return true
+	end
+	return false
+end
+--/ -----------------------------------------------------------------------------------------------

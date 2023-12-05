@@ -1,0 +1,14 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+war_sc3_start} sr_idle@2
+
+[sr_idle@2]
+on_timer = 12000 | %=war_scene3_snd% sr_idle@3
+
+[sr_idle@3]
+on_timer = 6000 | %+war_sc3_talk1%
+on_info = {+war_sc3_falture} %=war_scene3_emergency% sr_idle@4
+
+[sr_idle@4]

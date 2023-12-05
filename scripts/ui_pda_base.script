@@ -1,0 +1,225 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_pda_base.script
+ Description: PDA
+ Copyright  : 2009 © LA-team
+ Author     : barin(19.04.2009)
+ Editors    : barin(18.09.2009), SkyLoader(06.05.2013)
+ Last edit  : 06.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local pda_menu = nil
+
+local data_tabs = { --/ button, window and handler dependency
+	[1] = {btn = "btn_comm",      wnd = "pda_comm",      handler = ui_pda_comm and ui_pda_comm.uiPdaComm},
+	[2] = {btn = "btn_skills",    wnd = "pda_skills",    handler = ui_pda_skills and ui_pda_skills.uiPdaSkills},
+	[3] = {btn = "btn_downloads", wnd = "pda_downloads", handler = ui_pda_downs and ui_pda_downs.uiPdaDownloads},
+	[4] = {btn = "btn_games",     wnd = "pda_games",     handler = ui_pda_games and ui_pda_games.uiPdaGames},
+	[5] = {btn = "btn_mplayer",   wnd = "pda_mplayer",   handler = ui_pda_mplayer and ui_pda_mplayer.uiPdaMusicPlayer}
+}
+local data_leds = {
+	color = {
+		"ui_dlg_elem_pda_led_yellow",
+		"ui_dlg_elem_pda_led_blue",
+		"ui_dlg_elem_pda_led_red",
+		"ui_dlg_elem_pda_led_green",
+		"ui_dlg_elem_pda_led_orange"
+	},
+	pos = {
+		{936, 334, 11, 5},
+		{936, 354, 11, 5},
+		{936, 375, 11, 5},
+		{936, 395, 11, 5},
+		{936, 416, 11, 5}
+	}
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule, tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaBase" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaBase:__init() super()
+	la_utils.custom_ui_usage("show", sModule)
+	
+	self.is_open = true --/#!# flag
+	self.wnds = {} --/ array of working child windows
+	
+	self:InitControls( {135, 119, 761, 475} ) --/< common position and size of the windows for PDA (SetWndRect)
+	self:InitCallBacks()
+	
+	self:SelectTab(1) --/ activate the first child window
+	
+	self.led_show = false
+	self.led_timer = time_global() + 5000
+end
+
+function uiPdaBase:__finalize()
+	self.is_open = false
+end
+
+function uiPdaBase:InitControls(pos)
+	self:Init(0, 0, device().width, device().height)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_pda_base.xml")
+	
+	xml:InitStatic("pda_base:background", self)
+	xml:InitFrameLine("pda_base:bottom_frame_line", self)
+	--xml:InitFrameLine("pda_base:time_frame_line", self)
+	xml:InitStatic("pda_base:time_static", self)
+	
+	self.current_time = xml:InitStatic("pda_base:time_update", self)
+	
+	self.led_wnd = CUIStatic()
+	self.led_wnd:SetAutoDelete(true)
+	self.led_wnd:SetWindowName("pda_led")
+	self:AttachChild(self.led_wnd)
+	
+	for idx,v in ipairs(data_tabs) do
+		if v.handler then --/ insurance
+			local wnd = v.handler(xml,pos)
+			wnd:SetAutoDelete(true)
+			self:AttachChild(wnd)
+			self.wnds[idx] = wnd --/ store
+			self:Register(xml:Init3tButton("pda_base:"..v.btn, self), v.btn)
+		else
+			log("uiPdaBase:InitControls: handler for '%s' not exist! <%s>", tostring(v.wnd), "Warning!")
+			data_tabs[idx] = nil
+		end
+	end
+	self:Register(xml:Init3tButton("pda_base:btn_close", self), "btn_close")
+end
+
+function uiPdaBase:InitCallBacks()
+	for idx,v in pairs(data_tabs) do
+		self["OnBtnAct_"..idx] = function() self:SelectTab(idx) end
+		self:AddCallback(v.btn, ui_events.BUTTON_CLICKED, self["OnBtnAct_"..idx], self)
+	end
+	self:AddCallback("btn_close", ui_events.BUTTON_CLICKED, self.OnExit, self)
+end
+
+function uiPdaBase:SelectTab(idx)
+	local child_wnd = self:GetDialogWnd(data_tabs[idx].wnd)
+	if not (child_wnd and child_wnd:IsShown()) then
+		if self.prev_idx and self.prev_idx ~= idx then
+			--/ hide previous tab, deactivate the previous window, activate the previous button
+			self.wnds[self.prev_idx]:OnWindowHide()
+			self:GetDialogWnd(data_tabs[self.prev_idx].wnd):Show(false)
+			self:GetButton(data_tabs[self.prev_idx].btn):Enable(true)
+			--self:GetButton(data_tabs[self.prev_idx].btn):SetTextColor(pcTextViewer.get_colour("yellow"))
+		end
+		--/ activate the window, deactivate the button
+		self.wnds[idx]:OnWindowShow()
+		child_wnd:Show(true)
+		self:GetButton(data_tabs[idx].btn):Enable(false)
+		--self:GetButton(btn_name):SetTextColor(pcTextViewer.get_colour("full_white"))
+	end
+	self.prev_idx = idx --/ remember!
+end
+
+function uiPdaBase:Update()
+	CUIScriptWnd.Update(self)
+	
+	self.is_open = true --/#!#
+	local time = time_global()
+	if time < (self.time or 0) then return end --/> 1 every half-second
+	self.time = time + 500
+	
+	self.current_time:SetText(game.get_game_time():timeToString(game.CTime.TimeToMinutes))
+	
+	if not self.led_show then
+		if self.led_timer < time then
+			if math.random(1000) % 3 == 2 then
+				self.led_timer = time + 3000
+				self.led_wnd:Init(data_leds.color[math.random(#data_leds.color)], unpack(data_leds.pos[math.random(#data_leds.pos)]))
+				self.led_show = true
+			else
+				self.led_timer = time + 5000
+			end
+		end
+	elseif self.led_timer < time then
+		self.led_timer = time + 5000
+		self.led_wnd:Show(false)
+		self.led_show = false
+	else
+		self.led_wnd:Show(not self.led_wnd:IsShown())
+	end
+end
+
+function uiPdaBase:OnExit()
+	la_utils.custom_ui_usage("hide", sModule)
+	self.is_open = false --/#!#
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiPdaBase:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnExit()
+		end
+	end
+	return true
+end
+
+--/ ------------------------------------------------------------------
+--/ HELPERs
+--/ ------------------------------------------------------------------
+function get_menu()
+	if not pda_menu then
+		pda_menu = uiPdaBase()
+	end
+	return pda_menu --/>
+end
+function clear_menu()
+	pda_menu = nil
+end
+function is_open()
+	if pda_menu then
+		return pda_menu.is_open --/>
+	end
+	return false --/>
+end
+function open_pda()
+	level.start_stop_menu(get_menu(), true)
+end
+--/ ------------------------------------------------------------------
+--/#x# rudiments (later delete)
+function is_pda_ext_displayed()
+	return is_open() --/> redirect
+end
+
+function display_pda_ext()
+	open_pda() --/< redirect
+end
+
+function display_xray_pda()
+	open_pda() --/< redirect
+	la_utils.spawn_items(db.actor, "xray_pda", 1, false) --/#?# respawn a need where there used!
+end
+--/ ------------------------------------------------------------------
+--/#+?# calls from the engine 
+local tab_handler = {
+	["comm"]      = ui_pda_comm and ui_pda_comm.uiPdaComm,
+	["skills"]    = ui_pda_skills and ui_pda_skills.uiPdaSkills,
+	["downloads"] = ui_pda_downs and ui_pda_downs.uiPdaDownloads,
+	["games"]     = ui_pda_games and ui_pda_games.uiPdaGames,
+	["mplayer"]   = ui_pda_mplayer and ui_pda_mplayer.uiPdaMusicPlayer
+}
+function get_script_pda_window(tab_name)
+	if type(tab_name) == 'string' and tab_handler[tab_name] then
+		local xml = CScriptXmlInit()
+		xml:ParseFile("ui_wnd\\ui_pda_base.xml")
+		local pos = {77, 62, 761, 475} --/#+# new(!) common position and size of the windows for PDA (SetWndRect)
+		return tab_handler[tab_name](xml,pos)--/>
+	end
+	abort("%s:get_script_pda_window: unknown argument=[%s]", sModule, tostring(tab_name))
+	return nil --/>
+end
+--/ ------------------------------------------------------------------------------------------------

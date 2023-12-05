@@ -1,0 +1,222 @@
+;****************************ds_dolg_terrain********************************
+
+;****************state 0**************************
+[danger@ds_dolg_terrain]
+
+[danger@ds_dolg_terrain_fight]
+
+[combat_ignore@ds_dolg_terrain]
+
+[logic@ds_dolg_terrain_walk1]
+active = walker@ds_dolg_terrain_walk1
+danger = danger@ds_dolg_terrain
+combat_ignore = combat_ignore@ds_dolg_terrain
+
+[walker@ds_dolg_terrain_walk1]
+path_walk = wait1
+path_look = wait1_look
+danger = danger@ds_dolg_terrain
+on_info = {+ds_attack_group_start} walker@ds_dolg_terrain_walk11
+
+[walker@ds_dolg_terrain_walk11]
+path_walk = walk1
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[follower@ds_dolg_terrain_walk1]
+formation_line = true
+leader = 7521
+distance = 5
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain_fight
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+
+[logic@ds_dolg_terrain_walk2]
+active = walker@ds_dolg_terrain_walk2
+danger = danger@ds_dolg_terrain
+combat_ignore = combat_ignore@ds_dolg_terrain
+
+[walker@ds_dolg_terrain_walk2]
+path_walk = wait2
+path_look = wait2_look
+danger = danger@ds_dolg_terrain
+on_info = {+ds_attack_group_start} walker@ds_dolg_terrain_walk22
+
+[walker@ds_dolg_terrain_walk22]
+path_walk = walk2
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[follower@ds_dolg_terrain_walk2]
+formation_line = true
+leader = 7521
+distance = 5
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+
+[logic@ds_dolg_terrain_walk3]
+active = walker@ds_dolg_terrain_walk3
+danger = danger@ds_dolg_terrain
+combat_ignore = combat_ignore@ds_dolg_terrain
+
+[walker@ds_dolg_terrain_walk3]
+path_walk = wait3
+path_look = wait3_look
+danger = danger@ds_dolg_terrain
+on_info = {+ds_attack_group_start} walker@ds_dolg_terrain_walk33
+
+[walker@ds_dolg_terrain_walk33]
+path_walk = walk3
+meet = no_meet
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[follower@ds_dolg_terrain_walk3]
+formation_line = true
+leader = 7521
+distance = 5
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+
+[logic@ds_dolg_terrain_walk4]
+active = walker@ds_dolg_terrain_walk4
+danger = danger@ds_dolg_terrain
+combat_ignore = combat_ignore@ds_dolg_terrain
+
+[walker@ds_dolg_terrain_walk4]
+path_walk = wait4
+path_look = wait4_look
+danger = danger@ds_dolg_terrain
+on_info = {+ds_attack_group_start} walker@ds_dolg_terrain_walk44
+
+[walker@ds_dolg_terrain_walk44]
+path_walk = walk4
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[follower@ds_dolg_terrain_walk4]
+formation_line = true
+leader = 7521
+distance = 5
+combat_ignore_cond = {=check_fighting(7503)}
+danger = danger@ds_dolg_terrain_fight
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+
+[logic@ds_dolg_terrain_leader]
+active = walker@ds_dolg_terrain_leader
+danger = danger@ds_dolg_terrain
+combat_ignore = combat_ignore@ds_dolg_terrain
+
+[walker@ds_dolg_terrain_leader]
+path_walk = wait_leader
+path_look = wait_leader_look
+meet = meet@ds_dolg_terrain
+danger = danger@ds_dolg_terrain
+on_info = {+ds_attack_group_start} walker@ds_dolg_terrain_leader_attack
+
+[walker@ds_dolg_terrain_leader_attack]
+path_walk = leader
+danger = danger@ds_dolg_terrain
+combat_ignore_cond = {=check_fighting(7503)}
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = dslead | {-ds_reached_critical_area} %+ds_reached_critical_area%
+on_signal2 =  reached | walker@ds_dolg_terrain_leader_finished
+on_info = {+ds_dstalkers_dead} walker@ds_dolg_terrain_leader_finished
+
+[walker@ds_dolg_terrain_leader_finished]
+path_walk = leader_new
+path_look = leader_new_look
+combat_ignore_cond = {=check_fighting(7503)}
+meet = meet@ds_dolg_terrain_after
+
+[meet@ds_dolg_terrain]
+use = true
+use_wpn = false
+abuse = true
+precond = visibility
+meet_talk_enabled = true
+meet_dialog = ds_blockpost_attack_group
+meet_state = 10|hello|3|guard
+meet_state_wpn = 10|hello_wpn|3|guard
+victim = 10|actor
+victim_wpn = 10|actor
+use_medkit = true
+
+[meet@ds_dolg_terrain_after]
+use = true
+use_wpn = false
+abuse = true
+precond = visibility
+meet_talk_enabled = true
+meet_dialog = ds_blockpost_attack_group_done
+meet_state = 10|hello|3|guard
+meet_state_wpn = 10|hello_wpn|3|guard
+victim = 10|actor
+victim_wpn = 10|actor
+use_medkit = true
+
+
+;****************state 1***********************
+
+[logic@ds_dolg_terrain_walk_off1]
+active = walker@ds_dolg_terrain_walk_off1
+
+[walker@ds_dolg_terrain_walk_off1]
+path_walk = wait1
+
+[logic@ds_dolg_terrain_walk_off2]
+active = walker@ds_dolg_terrain_walk_off2
+
+[walker@ds_dolg_terrain_walk_off2]
+path_walk = wait2
+
+[logic@ds_dolg_terrain_walk_off3]
+active = walker@ds_dolg_terrain_walk_off3
+
+[walker@ds_dolg_terrain_walk_off3]
+path_walk = wait3
+
+[logic@ds_dolg_terrain_walk_off4]
+active = walker@ds_dolg_terrain_walk_off4
+
+[walker@ds_dolg_terrain_walk_off4]
+path_walk = wait4
+
+[logic@ds_dolg_terrain_leader_off]
+active = walker@ds_dolg_terrain_leader_off
+
+[walker@ds_dolg_terrain_leader_off]
+path_walk = wait_leader
+

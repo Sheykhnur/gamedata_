@@ -1,0 +1,284 @@
+
+-- file: bind_anom_field.script
+-- author: barin
+-- date: 2008-12-04
+-- edited by: barin
+-- last edited: 2010-01-26
+
+local sModule = script_name()
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+local ID_NONE = 65535
+
+-- ******************************************************************** --
+
+class "afNavigator"
+
+function afNavigator:__init(path)
+	self.initialized = false
+	self.prev_af = ID_NONE
+	
+	self.path_count = 0
+	self.current_path = 1
+	self.current_point = 0
+	self.paths = {}
+	
+	self:parse(path)
+end
+
+function afNavigator:set_curr_path()
+	self.current_path = math.random(1, self.path_count)
+	self.current_point = 1
+end
+
+function afNavigator:parse(path)
+	local ptr = nil
+	
+	for name in string.gfind(path, "%s*([^,]+)%s*") do
+		if level.patrol_path_exists(name) then
+			
+			self.path_count = self.path_count + 1
+			self.paths[self.path_count] = {}
+			ptr = patrol(name)
+			
+			for index = 0, ptr:count() - 1 do
+				self.paths[self.path_count][index + 1] =
+				{
+					pos = ptr:point(index),
+					lvid = ptr:level_vertex_id(index),
+					gvid = ptr:game_vertex_id(index)
+				}
+			end
+		else
+			abort("[%s.script] '%s' patrol doesn't exist!", script_name(), name)
+		end
+	end
+	
+	if self.path_count > 0 then
+		self.initialized = true
+	end
+end
+
+function afNavigator:set_next_pos()
+	self.current_point = self.current_point + 1
+	if self.current_point > #self.paths[self.current_path] then
+		self.current_point = 1
+	end
+end
+
+function afNavigator:curr_pos()
+	return utils.vector_copy_by_val(self.paths[self.current_path][self.current_point].pos)
+end
+
+function afNavigator:FollowPath(curr_af, force)
+	if not self.initialized then
+		return
+	end
+	if not curr_af then
+		return
+	end
+	
+	if self.prev_af ~= curr_af:id() then
+		self.prev_af = curr_af:id()
+		self:set_curr_path()
+		return
+	end
+	
+	if curr_af:position():distance_to(self:curr_pos()) < 0.5 then
+		self:set_next_pos()
+	end
+	
+	local dir = self:curr_pos():sub(curr_af:position()):normalize()
+	curr_af:get_physics_shell():apply_force(force * dir.x, force * dir.y, force * dir.z)
+end
+
+function afNavigator:clear()
+	self.paths = nil
+end
+
+-- ******************************************************************** --
+
+class "InsideZone"
+
+function InsideZone:__init(pp, htype, hpower)
+	self.initialized = false
+	self.init_time = nil
+	self.postprocess = pp_eff.get_pp(pp)
+	self.hit_type = htype
+	self.hit_power = hpower
+end
+
+function InsideZone:on_enter()
+	if not bind_actor.binder_check22() then 
+		abort("D")
+	end
+	if self.postprocess then
+		self.postprocess:start()
+	end
+	
+	self.level_snd_volume = 1.0 --level.get_snd_volume()
+	--level.set_snd_volume(self.level_snd_volume / 4)
+	level.set_snd_volume(0.8)
+	
+	--xr_sound.set_actor_sound("level_border_detector")
+	--xr_sound.set_actor_sound_factor(50)
+	
+	self.init_time = time_global() + 2000
+	self.initialized = true
+end
+
+function InsideZone:update()
+	if not self.initialized then
+		self:on_enter()
+	end
+	
+	if self.init_time then
+		if self.init_time <= time_global() then
+			if db.actor and db.actor:alive() then
+				local zone_hit = hit()
+				zone_hit.draftsman = db.actor
+				zone_hit.type = self.hit_type
+				zone_hit.direction = vector():set(0, 0, 0)
+				zone_hit.impulse = 0
+				zone_hit.power = self.hit_power
+				if zone_hit.power > 0.0 then
+					db.actor:hit(zone_hit)
+				end
+				self.init_time = time_global() + 2000
+			end
+		end
+	end
+end
+
+function InsideZone:on_leave()
+	level.set_snd_volume(self.level_snd_volume)
+	--xr_sound.set_actor_sound("")
+	
+	self.init_time = nil
+	self.initialized = false
+	
+	if self.postprocess then
+		self.postprocess:stop()
+	end
+end
+
+function InsideZone:clear()
+	if self.postprocess then
+		if self.postprocess.playing then
+			self.postprocess:stop()
+		end
+		self.postprocess = nil
+	end
+end
+
+-- ******************************************************************** --
+
+function bind(obj)
+	obj:bind_object(anom_field_binder(obj))
+end
+
+class "anom_field_binder" (object_binder)
+
+function anom_field_binder:__init(obj) super(obj)
+end
+
+function anom_field_binder:reload(section)
+	object_binder.reload(self, section)
+end
+
+function anom_field_binder:reinit()
+	object_binder.reinit(self)
+end
+
+function anom_field_binder:net_spawn(server_object)
+	if not object_binder.net_spawn(self, server_object) then
+		return false
+	end
+	
+	self.actor_inside = false
+	self.se_anomaly_zone = alife():object(server_object.id)
+	self.inside_zone = InsideZone(self.se_anomaly_zone.pp_eff, self.se_anomaly_zone.hit_type, self.se_anomaly_zone.hit_power)
+	
+	if self.se_anomaly_zone.af_paths then
+		self.navigator = afNavigator(self.se_anomaly_zone.af_paths)
+	else
+		self.navigator = nil
+	end
+	
+	return true
+end
+
+function anom_field_binder:net_destroy()
+	if self.navigator then
+		self.navigator:clear()
+		self.navigator = nil
+	end
+	
+	if self.inside_zone then
+		self.inside_zone:clear()
+		self.inside_zone = nil
+	end
+	
+	object_binder.net_destroy(self)
+end
+
+function anom_field_binder:zone_enter()
+	if self.inside_zone then
+		self.inside_zone:update()
+	end
+	self.actor_inside = true
+end
+
+function anom_field_binder:zone_exit()
+	if self.inside_zone then
+		self.inside_zone:on_leave()
+	end
+	self.actor_inside = false
+end
+
+function anom_field_binder:update(delta)
+	object_binder.update(self, delta)
+	
+	self.se_anomaly_zone:zone_update()
+	
+	if self.se_anomaly_zone:is_zone_enabled() then
+		if db.actor then
+			if self.object:inside(db.actor:center()) then
+				self.se_anomaly_zone:actor_discovered()
+				self:zone_enter()
+			else
+				if self.actor_inside then
+					self:zone_exit()
+				end
+			end
+		end
+		
+		if self.navigator then
+			if self.se_anomaly_zone:af_exist() then
+				local af = level.object_by_id(self.se_anomaly_zone.curr_artefact)
+				if af then
+					if self.object:inside(af:position()) then
+						if self.se_anomaly_zone:can_move_artefact() then
+							self.navigator:FollowPath(af, self.se_anomaly_zone.af_jump_speed)
+						end
+					else
+						local obj = alife():create(af:section(), self.object:position(),
+							self.object:level_vertex_id(), self.object:game_vertex_id())
+						alife():release(alife():object(af:id()), true)
+						self.se_anomaly_zone.curr_artefact = obj.id
+						self.navigator.prev_af = ID_NONE
+					end
+				end
+			else
+				self.navigator.prev_af = ID_NONE
+			end
+		end
+	end
+end
+
+function anom_field_binder:save(packet)
+	object_binder.save(self, packet)
+end
+
+function anom_field_binder:load(reader)
+	object_binder.load(self, reader)
+end

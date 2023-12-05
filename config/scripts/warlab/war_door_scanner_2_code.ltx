@@ -1,0 +1,17 @@
+;CORRIDOR DOOR SCANNER
+[logic]
+active = ph_button@lockdown
+
+[ph_button@lockdown]
+anim = idle
+;tooltip =  tips_labx2_scanner_lock
+on_info = {+war_doors_unlocked} ph_button@active
+
+[ph_button@active]
+anim = idle
+;tooltip = tips_labx2_scanner_on
+on_info =  {+war_control_room_opened} ph_button@control_room
+;on_press = ph_button@control_room %+war_control_room_opened%
+
+[ph_button@control_room]
+anim = idle_on

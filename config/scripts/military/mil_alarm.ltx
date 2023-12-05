@@ -1,0 +1,23 @@
+
+;-- killer_base_rupor
+
+[logic]
+active = ph_idle@on
+
+
+[ph_idle@on]
+on_hit = ph_idle@off
+on_info = {+monsters_wave} ph_sound
+;on_info = {+mil_actor_enter_base} ph_sound
+on_signal = baseattack | ph_sound
+
+[ph_idle@off]
+
+[ph_sound]
+snd = siren_1
+on_signal = sound_end | ph_idle@wait
+on_info = {+mil_blowout_effects} ph_idle@off
+
+[ph_idle@wait]
+on_timer = 1000 | ph_sound
+

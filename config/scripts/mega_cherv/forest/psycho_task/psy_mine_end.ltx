@@ -1,0 +1,9 @@
+[logic]
+active = sr_idle@1
+
+[sr_idle@1]
+on_info = {+fore_has_compass} sr_idle@2
+on_info2 = {+fore_trap_free} nil %=release%
+
+[sr_idle@2]
+on_actor_inside = nil %+fore_trap_free =release%

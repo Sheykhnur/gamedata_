@@ -1,0 +1,692 @@
+;*****************************state 0********************************************
+
+[hit@ros_bar_lager]
+on_info = {=hit_by_actor} %+ros_bar_lager_hit%
+
+[danger@ros_bar_lager]
+ignore_distance = 0
+
+[threshold@ros_bar_lager]
+ignore_monster = 0
+
+
+[combat_ignore@ros_bar_lager]
+
+[meet@ros_bar_lager]
+use = true
+use_wpn = true
+meet_talk_enabled = true
+meet_state = ward
+victim = 2|actor
+victim_wpn = 2|actor
+
+;*************************************************** bar guard ********************************************
+[logic@ros_bar_lager_guard]
+active = walker@ros_bar_lager_guard
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_guard]
+path_walk = guard_walk
+path_look = guard_look
+danger = danger@ros_bar_lager
+def_state_standing = ward
+on_info = {+agroprom_military_case_done} walker@ros_bar_lager_guard2_free_away
+on_info2 = {=dist_to_actor_le(2) -agroprom_military_case_done} remark@ros_bar_lager_guard_stop1
+threshold = threshold@ros_bar_lager
+meet = no_meet
+
+[remark@ros_bar_lager_guard_stop1]
+anim = ward
+snd = bar_guard_stop
+danger = danger@ros_bar_lager
+on_info = {+agroprom_military_case_done} walker@ros_bar_lager_guard2_free_away
+on_signal = sound_end| walker@ros_bar_lager_guard2
+threshold = threshold@ros_bar_lager
+meet = no_meet
+
+[walker@ros_bar_lager_guard2]
+path_walk = guard_walk
+path_look = guard_look
+danger = danger@ros_bar_lager
+def_state_standing = ward
+on_info = {+agroprom_military_case_done} walker@ros_bar_lager_guard2_free_away
+on_info2 = {=dist_to_actor_ge(2)} walker@ros_bar_lager_guard
+threshold = threshold@ros_bar_lager
+meet = no_meet
+
+[walker@ros_bar_lager_guard2_free_pass]
+path_walk = guard_walk
+path_look = guard_look
+danger = danger@ros_bar_lager
+def_state_standing = ward
+on_info = {=dist_to_actor_le(2) =see_actor} walker@ros_bar_lager_guard2_free_away
+threshold = threshold@ros_bar_lager
+meet = no_meet
+
+[walker@ros_bar_lager_guard2_free_away]
+path_walk = guard_walk_out
+path_look = guard_look_out
+danger = danger@ros_bar_lager
+def_state_standing = ward
+on_info = {+bar_left_back_room} walker@ros_bar_lager_guard2_wait
+threshold = threshold@ros_bar_lager
+meet = no_meet
+
+[walker@ros_bar_lager_guard2_wait]
+path_walk = guard_walk_out
+path_look = guard_look_out
+danger = danger@ros_bar_lager
+def_state_standing = guard
+on_timer = 4000 | walker@ros_bar_lager_guard3_free_pass %-bar_left_back_room%
+;meet = meet@ros_bar_lager_guard
+threshold = threshold@ros_bar_lager
+meet = no_meet
+
+[walker@ros_bar_lager_guard3_free_pass]
+path_walk = guard_walk
+path_look = guard_look
+danger = danger@ros_bar_lager
+def_state_standing = ward
+on_timer = 2000 | walker@ros_bar_lager_guard2_free_pass
+;meet = meet@ros_bar_lager_guard
+threshold = threshold@ros_bar_lager
+meet = no_meet
+
+[meet@ros_bar_lager_guard]
+meet_state = 2|ward@state
+meet_state_wpn = 2|ward@state
+use = true
+use_wpn = false
+victim = 2|actor
+victim_wpn = 2|actor
+
+;*************************************************** enterance guard ***************************************************
+[logic@ros_bar_lager_guard_enterance]
+active = walker@ros_bar_lager_guard_enterance
+combat_ignore = combat_ignore@ros_bar_lager
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_guard_enterance]
+path_walk = guard_enterance_walk
+path_look = guard_enterance_look
+danger = danger@ros_bar_lager
+combat_ignore = combat_ignore@ros_bar_lager
+def_state_standing = guard
+meet = no_meet
+on_actor_dist_le = 4| %=play_snd(characters_voice\scenario\bar\bar_enter\bar_guard_enter_2)% walker@ros_bar_lager_guard_enterance_1
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_guard_enterance_1]
+path_walk = guard_enterance_walk
+path_look = guard_enterance_look
+danger = danger@ros_bar_lager
+combat_ignore = combat_ignore@ros_bar_lager
+def_state_standing = guard
+meet = no_meet
+on_actor_dist_ge_nvis = 5| walker@ros_bar_lager_guard_enterance_2
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_guard_enterance_2]
+path_walk = guard_enterance_walk
+path_look = guard_enterance_look
+danger = danger@ros_bar_lager
+combat_ignore = combat_ignore@ros_bar_lager
+def_state_standing = guard
+meet = no_meet
+on_actor_dist_le = 4| %=play_snd(characters_voice\scenario\bar\bar_enter\bar_guard_enter_1)% walker@ros_bar_lager_guard_enterance_3
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_guard_enterance_3]
+path_walk = guard_enterance_walk
+path_look = guard_enterance_look
+danger = danger@ros_bar_lager
+combat_ignore = combat_ignore@ros_bar_lager
+def_state_standing = guard
+meet = no_meet
+on_actor_dist_ge_nvis = 5| walker@ros_bar_lager_guard_enterance
+threshold = threshold@ros_bar_lager
+
+;************************************************** hole watcher *************************************************
+[logic@ros_bar_lager_hole_watcher]
+active = walker@ros_bar_lager_hole_watcher_wait
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_hole_watcher_wait]
+path_walk = hole_watcher_walk
+path_look = hole_watcher_look
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;******************************************************************************************************************
+[logic@ros_bar_lager_duty_guard1]
+active = walker@ros_bar_lager_duty_guard1
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard1]
+path_walk = duty_guard1_walk
+path_look = duty_guard1_look
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard2]
+active = walker@ros_bar_lager_duty_guard2
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard2]
+path_walk = duty_guard2_walk
+path_look = duty_guard2_look
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard3]
+active = walker@ros_bar_lager_duty_guard3a
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard3a]
+path_walk = duty_guard3_walk1
+path_look = duty_guard3_look1
+on_timer = 240000 | walker@ros_bar_lager_duty_guard3b
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard3b]
+path_walk = duty_guard3_walk2
+path_look = duty_guard3_look2
+on_info {=npc_stay_on_point(180:reached)} walker@ros_bar_lager_duty_guard3c
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard3c]
+path_walk = duty_guard3_walk3
+on_signal = reached | walker@ros_bar_lager_duty_guard3a
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard4]
+active = walker@ros_bar_lager_duty_guard4
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard4]
+path_walk = duty_guard4_walk
+path_look = duty_guard4_look
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard5]
+active = walker@ros_bar_lager_duty_guard5
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard5]
+path_walk = duty_guard5_walk
+path_look = duty_guard5_look
+danger = danger@ros_bar_lager
+;target = bar_cs_guard1_look, 0
+threshold = threshold@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard6]
+active = walker@ros_bar_lager_duty_guard6
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard6]
+path_walk = duty_guard6_walk
+path_look = duty_guard6_look
+danger = danger@ros_bar_lager
+;target = bar_cs_guard2_look, 0
+threshold = threshold@ros_bar_lager
+
+[logic@ros_bar_lager_duty_commander]
+active = walker@ros_bar_lager_duty_commander1
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_commander1]
+path_walk = commander_walk1
+path_look = commander_look1
+def_state_moving1 = ward
+def_state_moving2 = ward
+def_state_moving3 = ward
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_duty_commander2]
+path_walk = commander_walk2
+;path_look = commander_look2
+def_state_moving1 = walk
+on_signal = reached | walker@ros_bar_lager_duty_commander1
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;************************************************** barman *******************************************************
+[logic@ros_bar_lager_barman]
+active = walker@ros_bar_lager_barman
+combat_ignore = combat_ignore@ros_bar_lager
+trade = misc\trade\trade_barman.ltx
+inv_max_weight = 10000
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_barman]
+path_walk = barman_walk
+path_look = barman_look
+combat_ignore_cond = always
+def_state_standing = barman_wait_free
+def_state_moving1 = barman_walk_free
+def_state_moving2 = barman_walk_free
+def_state_moving3 = barman_walk_free
+meet = meet@ros_bar_lager_barman
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[meet@ros_bar_lager_barman]
+meet_state = 2|barman_talk_free@bar_bar_barmen_hello
+meet_state_wpn = 2|barman_talk_free@bar_bar_barmen_hello
+victim = 2|actor
+victim_wpn = 2|actor
+use = true
+use_wpn = true
+;meet_dialog =  bar_bar_barmen_start
+
+;******************************************************************************************************************
+[logic@ros_bar_lager_osvedomitel]
+active = walker@ros_bar_lager_osvedomitel
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_osvedomitel]
+path_walk = osvedomitel_walk
+path_look = osvedomitel_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager_osvedomitel
+threshold = threshold@ros_bar_lager
+on_info = {+bar_actor_got_all_informer_info} walker@ros_bar_lager_osvedomitel_after
+
+[walker@ros_bar_lager_osvedomitel_after]
+path_walk = osvedomitel_walk
+path_look = osvedomitel_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager_osvedomitel_after
+threshold = threshold@ros_bar_lager
+
+[meet@ros_bar_lager_osvedomitel]
+use = true
+use_wpn = false
+meet_talk_enabled = true
+meet_state = 10|ward@bar_bar_osvedomitel_hello|2|ward
+meet_state_wpn = 10|ward@bar_bar_osvedomitel_hello|2|ward
+victim = 2|actor|10|nil
+victim_wpn = 2|actor|10|nil
+threshold = threshold@ros_bar_lager
+trade_enable = false
+
+[meet@ros_bar_lager_osvedomitel_after]
+use = true
+use_wpn = false
+meet_talk_enabled = true
+meet_state = 10|ward
+meet_state_wpn = 10|ward
+victim = 2|actor|10|nil
+victim_wpn = 2|actor|10|nil
+threshold = threshold@ros_bar_lager
+trade_enable = false
+
+;***************************************** hunter ********************************************************
+[logic@ros_bar_lager_hunter]
+active = walker@ros_bar_lager_hunter
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_hunter]
+path_walk = hunter_walk
+path_look = hunter_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;************************************************ map watcher **************************************
+[logic@ros_bar_lager_map_watcher]
+active = walker@ros_bar_lager_map_watcher1
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_map_watcher1]
+path_walk = map_watcher_walk
+path_look = map_watcher_look
+soundgroup = bar_visitors1
+def_state_standing = ward
+def_state_moving1 = walk
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;********************************************* visitor 1 *****************************************************
+[logic@ros_bar_lager_bar_stalker1]
+active = walker@ros_bar_lager_bar_stalker1
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker1]
+path_walk = stalker_walk1
+path_look = stalker_look1
+danger = danger@ros_bar_lager
+;on_info = {+bar_bad_mood} walker@ros_bar_lager_bar_stalker1_badmood %=play_snd(characters_voice\scenario\bar\leave_me_alone) -bar_bad_mood%
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker1_badmood]
+path_walk = stalker_walk1_2
+path_look = stalker_look1_2
+danger = danger@ros_bar_lager
+on_timer = 100000| walker@ros_bar_lager_bar_stalker1_1
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker1_1]
+path_walk = stalker_walk1
+path_look = stalker_look1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;******************************************* visitor 2 (empty) *********************************************************
+[logic@ros_bar_lager_bar_stalker2]
+active = walker@ros_bar_lager_bar_stalker2
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker2]
+path_walk = stalker_walk2
+path_look = stalker_look2
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;******************************************** visitor 3 ********************************************************
+[logic@ros_bar_lager_bar_stalker3]
+active = walker@ros_bar_lager_bar_stalker3
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker3]
+path_walk = stalker_walk3
+path_look = stalker_look3
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker3_grumpy]
+path_walk = stalker_walk3_2
+path_look = stalker_look3_2
+danger = danger@ros_bar_lager
+on_timer = 8000| walker@ros_bar_lager_bar_stalker3_1
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker3_1]
+path_walk = stalker_walk3
+path_look = stalker_look3
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;********************************************* visitor 4 *********************************************************
+[logic@ros_bar_lager_bar_stalker4]
+active = walker@ros_bar_lager_bar_stalker4
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker4]
+path_walk = stalker_walk4
+path_look = stalker_look4
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;****************************************** visitor 5 *******************************************************
+[logic@ros_bar_lager_bar_stalker5]
+active = walker@ros_bar_lager_bar_stalker5
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker5]
+path_walk = stalker_walk5
+path_look = stalker_look5
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;******************************************** visitor 6 ****************************************************
+[logic@ros_bar_lager_bar_stalker6]
+active = walker@ros_bar_lager_bar_stalker6
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker6]
+path_walk = stalker_walk6
+path_look = stalker_look6
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;******************************************** visitor 7 ******************************************************
+[logic@ros_bar_lager_bar_stalker7]
+active = walker@ros_bar_lager_bar_stalker7
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker7]
+path_walk = stalker_walk7
+path_look = stalker_look7
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;****************************************** petrenko *********************************************************
+[logic@ros_bar_lager_petrenko]
+active = walker@ros_bar_lager_petrenko
+on_hit = hit@ros_bar_lager
+inv_max_weight = 10000
+threshold = threshold@ros_bar_lager
+trade = misc\trade\trade_dolg.ltx
+
+[walker@ros_bar_lager_petrenko]
+path_walk = assistant_walk
+path_look = assistant_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager_petrenko
+def_state_standing = ward
+def_state_moving1 = walk
+threshold = threshold@ros_bar_lager
+
+[meet@ros_bar_lager_petrenko]
+meet_state = 10 | wait
+meet_state_wpn = 10 | wait
+victim = 10 | actor
+victim_wpn = 10 | actor
+use = true
+use_wpn = true
+allow_break		= false
+
+;******************************************** assistant guard *******************************************
+[logic@ros_bar_lager_assistant_guard]
+active = walker@ros_bar_lager_assistant_guard
+on_hit = hit@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+[walker@ros_bar_lager_assistant_guard]
+path_walk = assistant_guard_walk
+path_look = assistant_guard_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+threshold = threshold@ros_bar_lager
+
+;********************************************* state arena *********************************************************
+[logic@ros_bar_lager_bar_stalker_arena_1]
+active = walker@ros_bar_lager_bar_stalker_arena_1
+threshold = threshold@ros_bar_lager
+combat_ignore = combat_ignore@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker_arena_1]
+path_walk = stalker_walk1
+path_look = stalker_look1
+danger = danger@ros_bar_lager
+meet = no_meet
+threshold = threshold@ros_bar_lager
+on_info = {-bar_visitor_7_teleported} %=teleport_npc_not_seen(bar_arena_walk1:bar_visitor_7_teleported)%
+on_info2 = {+bar_visitor_7_teleported} remark@ros_bar_lager_bar_stalker_arena_1_scene
+
+[remark@ros_bar_lager_bar_stalker_arena_1_scene]
+anim = arena_expressions
+target = bar_arena_walk1_look, 0
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_info = {+bar_arena_fight} remark@ros_bar_lager_bar_stalker_arena_1_silence
+
+[remark@ros_bar_lager_bar_stalker_arena_1_silence]
+anim = arena_expressions
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_info = {+bar_arena_fight -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_1
+
+[remark@ros_bar_lager_bar_stalker_arena_1]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_1_cycle
+on_timer = 5000 | remark@ros_bar_lager_bar_stalker_arena_1_silence
+
+[remark@ros_bar_lager_bar_stalker_arena_1_cycle]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_1
+on_timer = 5000 | remark@ros_bar_lager_bar_stalker_arena_1_silence
+
+
+[logic@ros_bar_lager_bar_stalker_arena_3]
+active = walker@ros_bar_lager_bar_stalker_arena_3
+threshold = threshold@ros_bar_lager
+combat_ignore = combat_ignore@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker_arena_3]
+path_walk = stalker_walk3
+path_look = stalker_look3
+danger = danger@ros_bar_lager
+meet = no_meet
+threshold = threshold@ros_bar_lager
+on_info = {-bar_visitor_4_teleported} %=teleport_npc_not_seen(bar_arena_walk4:bar_visitor_4_teleported)%
+on_info2 = {+bar_visitor_4_teleported} remark@ros_bar_lager_bar_stalker_arena_3_scene
+
+[remark@ros_bar_lager_bar_stalker_arena_3_scene]
+anim = arena_expressions
+target = bar_arena_walk4_look, 0
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_info = {+bar_arena_fight} remark@ros_bar_lager_bar_stalker_arena_3_silence
+
+[remark@ros_bar_lager_bar_stalker_arena_3_silence]
+anim = arena_expressions
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_info = {+bar_arena_fight -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_3
+
+[remark@ros_bar_lager_bar_stalker_arena_3]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_3_cycle
+on_timer = 5000 | remark@ros_bar_lager_bar_stalker_arena_3_silence
+
+[remark@ros_bar_lager_bar_stalker_arena_3_cycle]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_3
+on_timer = 5000 | remark@ros_bar_lager_bar_stalker_arena_3_silence
+
+[logic@ros_bar_lager_bar_stalker_arena_4]
+active = walker@ros_bar_lager_bar_stalker4
+threshold = threshold@ros_bar_lager
+combat_ignore = combat_ignore@ros_bar_lager
+
+[walker@ros_bar_lager_bar_stalker_arena_4]
+path_walk = stalker_walk4
+path_look = stalker_look4
+danger = danger@ros_bar_lager
+meet = no_meet
+threshold = threshold@ros_bar_lager
+on_info = {-bar_visitor_3_teleported} %=teleport_npc_not_seen(bar_arena_walk5:bar_visitor_3_teleported)%
+on_info2 = {+bar_visitor_3_teleported} remark@ros_bar_lager_bar_stalker_arena_4_scene
+
+[remark@ros_bar_lager_bar_stalker_arena_4_scene]
+anim = arena_expressions
+target = bar_arena_walk5_look, 0
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_info = {+bar_arena_fight} remark@ros_bar_lager_bar_stalker_arena_4_silence
+
+[remark@ros_bar_lager_bar_stalker_arena_4_silence]
+anim = arena_expressions
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_info = {+bar_arena_fight -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_4
+
+[remark@ros_bar_lager_bar_stalker_arena_4]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_4_cycle
+on_timer = 5000 | remark@ros_bar_lager_bar_stalker_arena_4_silence
+
+[remark@ros_bar_lager_bar_stalker_arena_4_cycle]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_bar_lager_bar_stalker_arena_4
+on_timer = 5000 | remark@ros_bar_lager_bar_stalker_arena_4_silence

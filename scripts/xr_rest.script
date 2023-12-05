@@ -1,0 +1,488 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_rest.script
+ Description: scheme: "Dude walking, eating, sleaping."
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Editors    : gr1ph00n(26.09.2012)
+ Last edit  : 27.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Rest = xr_evaluators_id.sidor_rest + 0
+local iEvl_Food = xr_evaluators_id.sidor_rest + 1
+local iEvl_Pos  = xr_evaluators_id.sidor_rest + 2
+local iAct_Rest   = xr_actions_id.sidor_act_rest + 0
+local iAct_Pos    = xr_actions_id.sidor_act_rest + 1
+local iAct_NoFood = xr_actions_id.sidor_act_rest + 2
+local iAct_Stand  = xr_actions_id.sidor_act_rest + 3
+local iAct_Stand2 = xr_actions_id.sidor_act_rest + 4
+local tBindEvls = {} --/ array of 'external' activation scheme conditions
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout    and xr_blowout.get_ai_evl(0),   flg = false}, --/ don't see blowout
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+
+function has_food(npc)
+	if npc:object("bread") or npc:object("kolbasa") or npc:object("vodka") then
+		return true
+	end
+	return false
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_rest" (property_evaluator)
+--/ -----------------------------------------------------------------
+function evaluator_rest:__init (name, st) super (nil, name)
+	self.st = st
+end
+function evaluator_rest:evaluate()
+	return xr_logic.is_active(self.object, self.st)
+end
+--/ -----------------------------------------------------------------
+class "evaluator_food" (property_evaluator)
+--/ -----------------------------------------------------------------
+function evaluator_food:__init (name, st) super (nil, name)
+	self.st = st
+end
+function evaluator_food:evaluate()
+	return this.has_food(self.object)
+end
+--/ -----------------------------------------------------------------
+class "evaluator_pos" (property_evaluator)
+--/ -----------------------------------------------------------------
+function evaluator_pos:__init (name, st) super (nil, name)
+	self.st = st
+end
+function evaluator_pos:evaluate()
+	return self.st.on_position
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTION
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_position" (action_base)
+--/ -----------------------------------------------------------------
+function action_position:__init (name, st) super (nil, name)
+	self.st = st
+	self.move_mgr = move_mgr.move_mgr(self.st.npc)
+	self.on_position = false
+	self.set         = false
+	self.was_reset   = false
+end
+
+function action_position:initialize()
+	action_base.initialize (self)
+	if self.log then log("action_position:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+	self:reset_scheme()
+	self.set = false
+end
+
+function action_position:reset_scheme()
+	self.object:clear_animations()
+	
+	if not self.st.path_walk_info then
+		local pp = get_patrol(self.st.path_rest)
+		if pp then
+			local wp_count = pp:count()
+			if wp_count == 1 then
+				self.st.path_walk      = self.st.path_rest
+				self.st.path_walk_info = utils.path_parse_waypoints_from_arglist(self.st.path_walk, 1, { 0, "wp00|ret=1" } )
+				self.st.path_look = nil
+				self.st.path_look_info = nil
+			elseif wp_count == 2 then
+				self.st.path_walk      = self.st.path_rest
+				self.st.path_walk_info = utils.path_parse_waypoints_from_arglist(self.st.path_walk, 2, { 1, "wp00" }, { 0, "wp01" } )
+				self.st.path_look = self.st.path_walk
+				self.st.path_look_info = utils.path_parse_waypoints_from_arglist(self.st.path_walk, 2, { 0, "wp00" }, { 1, "wp01|ret=1" } )
+			else
+				abort("object '%s': path_main '%s' contains %d waypoints, while 1 or 2 were expected", self.object:name(), self.st.path_rest, wp_count)
+			end
+		else
+			abort("object '%s': unable to find path_main '%s' on the map", self.object:name(), self.st.path_rest)
+		end
+	end
+	
+	--/ Last parameter (true) disable ways validation,
+	--/ so won't be error cause of using one-point path_walk way without proper path_look.
+	self.move_mgr:reset(self.st.path_walk, self.st.path_walk_info, self.st.path_look, self.st.path_look_info, nil, nil, { obj = self, func = self.callback }, true )
+	self.was_reset = true
+end
+
+function action_position:activate_scheme()
+	self.was_reset = false
+end
+
+function action_position:execute()
+	action_base.execute(self)
+	
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+	
+	if self.on_position == false then
+		self.move_mgr:update()
+	elseif self.object:active_item() then
+		self.object:set_item(object.deactivate, self.object:active_item ())
+	elseif self.set == false then
+		xr_state.change_state (self.object, 3)
+		--log("Change state at %d", device ():time_global ())
+		self.set = true
+	elseif xr_state.finish_state(self.object) == true then
+		--log("End of change state at %d", device():time_global())
+		self.st.on_position = true
+		self.st.standing = false
+	end
+	if self.log then log("action_position:NPC=[%s]", self.object:name(), "") end --/#~#
+end
+
+function action_position:finalize()
+	if self.log then log("action_position:fin:NPC=[%s]:(%s)", self.object:name(), "x") end --/#~#
+	self.move_mgr:finalize()
+	action_base.finalize(self)
+end
+
+function action_position:callback(mode, number)
+--	log("CALLBACK CALLED")
+	if self.on_position == true then return end --/>
+	self.object:set_movement_type(move.stand)
+	self.object:set_body_state(move.crouch)
+	self.object:set_mental_state(anim.danger)
+	self.on_position = true
+	self.object:set_item(object.deactivate, self.object:active_item())
+	return true --/>
+end
+
+--/ -----------------------------------------------------------------
+class "action_rest" (action_base)
+--/ -----------------------------------------------------------------
+function action_rest:__init (name, st) super (nil, name)
+	self.st = st
+	self.was_reset = false
+end
+
+function action_rest:reset_scheme()
+	self.state = 0
+	self.stage = 0
+	self.time_to_eat = 0
+	self.st.signals = {}
+	self.was_reset = true
+	self.rest_end_signalled = false
+	
+	self.item_drink = self.object:object("vodka")
+	self.item_eat = self.object:object("bread")
+	if not self.item_eat then
+		self.item_eat = self.object:object("kolbasa")
+	end
+	
+	self.eat_enable = self.item_eat ~= nil
+	self.drink_enable = self.item_drink ~= nil
+end
+
+function action_rest:activate_scheme()
+	self.was_reset = false
+end
+
+function action_rest:initialize()
+	action_base.initialize(self)
+	self:reset_scheme()
+end
+
+function action_rest:execute()
+	action_base.execute(self)
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+	local hand_item = self.object:active_item()
+	
+	if self.eat_enable == true then
+		if self.stage == 0 then
+			if hand_item and hand_item:id() == self.item_eat:id() then
+				self.time_to_eat = time_global() + 30*1000
+				self.object:clear_animations()
+				self.stage = 1
+			end
+			self.object:set_item(object.use, self.item_eat)
+			self.time_to_eat = time_global() + 30*1000
+		elseif time_global() > self.time_to_eat then
+			self.time_to_eat = time_global() + 20*1000
+			self.eat_enable = false
+			self.stage = 0
+		end
+		return --/>
+	elseif self.drink_enable == true then
+		if self.stage == 0 then
+			if hand_item and hand_item:id() == self.item_drink:id() then
+				self.object:clear_animations()
+				self.stage = 1
+			end
+			self.object:set_item(object.use, self.item_drink)
+			self.time_to_eat = time_global() + 20*1000
+		elseif time_global() > self.time_to_eat then
+			self.object:set_item(object.deactivate, self.item_drink)
+			self.drink_enable = false
+			self.state = 2
+			--xr_state.change_state (self.object, 0)
+		end
+		return --/>
+	end
+	--if xr_state.finish_state (self.object) ~= true then return end --/>
+	
+	if self.rest_end_signalled == false then
+		--log("ON SIGNAL!") 
+		self.st.signals["rest_end"] = true
+		self.rest_end_signalled = true
+	end
+	
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return --/>
+	end
+	self.object:set_item(object.activate, self.object:best_weapon())
+end
+
+function  action_rest:finalize ()
+	--[[
+	if self.object:best_enemy() then
+		self.object:clear_animations()
+		self.object:set_item(object.deactivate, self.object:active_item ())
+	end
+	--]]
+	action_base.finalize(self)
+end
+----------------------
+
+--/ -----------------------------------------------------------------
+class "action_no_food" (action_base)
+--/ -----------------------------------------------------------------
+function action_no_food:__init (name, st) super (nil, name)
+	self.st = st
+	self.rest_end_signalled = false
+	self.was_reset = false
+end
+
+function action_no_food:initialize()
+	action_base.initialize (self)
+	self:reset_scheme()
+end
+
+function action_no_food:reset_scheme()
+	self.was_reset = true
+	self.rest_end_signalled = false
+end
+
+function action_no_food:activate_scheme()
+	self.was_reset = false
+end
+
+function action_no_food:execute()
+	action_base.execute(self)
+	
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+	
+	if self.rest_end_signalled == false then
+		self.st.signals["rest_end"] = true
+		self.rest_end_signalled = true
+	end
+	
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+
+function action_no_food:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------
+class "action_stand" (action_base)
+--/ -----------------------------------------------------------------
+function action_stand:__init (name, storage) super (nil, name)
+	self.st = storage
+	self.was_reset = false
+end
+
+function action_stand:initialize()
+	action_base.initialize(self)
+	self.set = false
+	self:reset_scheme()
+end
+
+function action_stand:reset_scheme()
+	self.set = false
+	self.was_reset = true
+end
+
+function action_stand:activate_scheme()
+	self.was_reset = false
+end
+
+function action_stand:execute()
+	action_base.execute(self)
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+	
+	if self.object:active_item() then
+		self.object:set_item(object.deactivate, self.object:active_item())
+	elseif self.set == false then
+		xr_state.change_state(self.object, 0)
+		self.set = true
+	elseif xr_state.finish_state(self.object) == true then
+		self.st.on_position = false
+	end
+end
+
+function action_stand:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------
+class "action_stand2" (action_base)
+--/ -----------------------------------------------------------------
+function action_stand2:__init (name, st) super (nil, name)
+	self.st = st
+	self.was_reset = false
+end
+
+function action_stand2:initialize()
+	action_base.initialize(self)
+	self.reset_scheme()
+end
+
+function action_stand2:reset_scheme()
+	self.was_reset = true
+end
+
+function action_stand2:activate_scheme()
+	self.was_reset = false
+end
+
+function action_stand2:execute()
+	action_base.execute(self)
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+	self.st.on_position = false
+end
+
+function action_stand2:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder (npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:[(%s)", npc:name(), scheme, section, ">") --/#~#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:add_evaluator(iEvl_Rest, this.evaluator_rest("rest_need_rest", st))
+	oPlanner:add_evaluator(iEvl_Food, this.evaluator_food("rest_have_food", st))
+	oPlanner:add_evaluator(iEvl_Pos,  this.evaluator_pos ("rest_on_position", st))
+	--/ NewActions ----------------------------------------------------
+	local oNewAction = this.action_position("ac_rest_position", st)
+	xr_motivator.addMainPrecondition(oNewAction)
+	oNewAction:add_precondition(world_property(iEvl_Rest, true))
+	oNewAction:add_precondition(world_property(iEvl_Pos, false))
+	oNewAction:add_effect(world_property (iEvl_Pos, true))
+	oPlanner:add_action(iAct_Pos, oNewAction)
+	
+	xr_logic.subscribe_action_for_events (npc, st, oNewAction)
+	
+	oNewAction = this.action_rest("ac_rest", st)
+	xr_motivator.addMainPrecondition(oNewAction)
+	oNewAction:add_precondition( world_property(iEvl_Food, true))
+	oNewAction:add_precondition( world_property(iEvl_Rest, true))
+	oNewAction:add_precondition( world_property(iEvl_Pos,  true))
+	oNewAction:add_effect( world_property (iEvl_Rest, false))
+	oPlanner:add_action(iAct_Rest, oNewAction)
+	--/ registration of action, to call method 'reset_scheme' when scheme setting changed:
+	xr_logic.subscribe_action_for_events (npc, st, oNewAction)
+	
+	oNewAction = this.action_no_food("ac_rest_no_food", st)
+	xr_motivator.addMainPrecondition(oNewAction)
+	oNewAction:add_precondition( world_property(iEvl_Food, false))
+	oNewAction:add_precondition( world_property(iEvl_Rest,  true))
+	oNewAction:add_precondition( world_property(iEvl_Pos,   true))
+	oNewAction:add_effect( world_property (iEvl_Rest, false))
+	oPlanner:add_action(iAct_NoFood, oNewAction)
+	xr_logic.subscribe_action_for_events (npc, st, oNewAction)
+	
+	oNewAction = this.action_stand("ac_rest_stand", st)
+	xr_motivator.addMainPrecondition(oNewAction)
+	oNewAction:add_precondition( world_property(iEvl_Rest, true))
+	oNewAction:add_precondition( world_property(iEvl_Pos,  true))
+	oNewAction:add_effect( world_property (iEvl_Pos, false))
+	oPlanner:add_action(iAct_Stand, oNewAction)
+	xr_logic.subscribe_action_for_events (npc, st, oNewAction)
+	
+	oNewAction = this.action_stand2("ac_rest_stand2", st)
+	xr_motivator.addMainPrecondition(oNewAction)
+	oNewAction:add_precondition( world_property(iEvl_Rest, false))
+	oNewAction:add_precondition( world_property(iEvl_Pos,   true))
+	oNewAction:add_effect( world_property (iEvl_Pos, false))
+	oPlanner:add_action(iAct_Stand2, oNewAction)
+	xr_logic.subscribe_action_for_events (npc, st, oNewAction)
+	
+	--/ Actions -------------------------------------------------------
+	local oAction = oPlanner:action(xr_actions_id.alife)
+	oAction:add_precondition( world_property(iEvl_Rest, false) )
+	oAction = oPlanner:action(stalker_ids.action_combat_planner)
+	oAction:add_precondition( world_property (iEvl_Pos, false) )
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme (npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind (npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions (ini, section, npc)
+	
+	st.on_position = false
+	st.path_rest = Get_Cfg_String(ini, section, "path_rest", nil, true, gulag_name)
+	ASSERT(validate_patrol_path(st.path_rest, npc, true), "set_scheme: section=[%s] path_rest=[%s] wrong!", section, st.path_rest, "")
+	--/ ways will be initialized with reset(), now they can be still not loaded.
+	st.path_walk      = nil
+	st.path_walk_info = nil
+	st.path_look      = nil
+	st.path_look_info = nil
+	--/ fot debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s],path=[%s]", npc:name(), scheme, section, gulag_name, st.path_rest, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/< "rest"
+	local stor = npc and db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(npc, st)
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]", npc:name(), scheme, "") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

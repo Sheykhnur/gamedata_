@@ -1,0 +1,33 @@
+[logic]
+active = sr_idle@start
+
+[sr_idle@start]
+on_info = {+rosf_barman_meet_duty} sr_idle
+on_info2 = {+rosf_gaszone_cleared} sr_idle@shutdown
+
+[sr_idle]
+on_actor_inside = {-rosf_gaszone_cleared +rosf_barman_meet_duty} sr_idle@check_mask
+on_info = {+rosf_gaszone_cleared} sr_idle@shutdown
+
+[sr_idle@check_mask]
+on_info = {!current_helmet(helm_gasmask) !current_helmet(helm_protective) !current_helmet(helm_battle_stalker) !is_closed_cycle} sr_postprocess
+on_info2 = {=current_helmet(helm_gasmask)} %=item_in_slot_break(11:0.1)%
+on_info3 = {=current_helmet(helm_gasmask) !current_helmet_cond_ge(0.2)} sr_postprocess
+on_info4 = {=current_helmet(helm_battle_stalker)} %=item_in_slot_break(11:0.02)%
+on_info5 = {=current_helmet(helm_battle_stalker) !current_helmet_cond_ge(0.2)} sr_postprocess
+on_info6 = {+rosf_gaszone_cleared} sr_idle@shutdown 
+on_actor_outside = sr_idle
+
+[sr_postprocess]
+on_info = {=current_helmet(helm_gasmask) =current_helmet_cond_ge(0.2)} sr_idle
+on_info2 = {=current_helmet(helm_protective)} sr_idle
+on_info3 = {=is_closed_cycle} sr_idle
+on_info4 = {=current_helmet(helm_battle_stalker) =current_helmet_cond_ge(0.2)} sr_idle
+on_info5 = {+rosf_gaszone_cleared} sr_idle@shutdown
+on_actor_outside = sr_idle
+intensity = 0.2
+intensity_speed = 0.1
+hit_intensity = 0.2
+
+[sr_idle@shutdown]
+on_info = nil %=release%

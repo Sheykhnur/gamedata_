@@ -1,0 +1,17 @@
+[combat_ignore@gen_mad_guy]
+
+[logic]
+active = remark@gen_mad_guy
+combat_ignore = combat_ignore@gen_mad_guy
+
+[walker@gen_mad_guy]
+path_walk = gen_convulsi_near
+on_timer = 5 | remark@gen_mad_guy
+combat_ignore_cond = always
+
+
+[remark@gen_mad_guy]
+anim = psycho_pain
+target = gen_convulsi_near, 0
+combat_ignore_cond = always
+on_info = {+gen_sc3_end} %=release%

@@ -1,0 +1,71 @@
+[death@mono_guards]
+on_info = {=is_gulag_population_inactive(aes_gates_guards)} %+aes_raid_done%
+
+[danger@monolith]
+ignore_distance = 50
+
+[combat_ignore@mono_gates]
+
+[logic@aes_gates_guards_walk1]
+active = walker@mono_guard1
+combat_ignore = combat_ignore@mono_gates
+on_death = death@mono_guards
+
+[walker@mono_guard1]
+path_walk = guard1
+path_look = look
+combat_ignore_cond = {=fighting_dist_ge(40)}
+danger = danger@monolith
+on_signal = walkend | walker@mono_guard_fight1
+
+[walker@mono_guard_fight1]
+path_walk = guard1
+path_look = look
+
+[logic@aes_gates_guards_walk2]
+active = walker@mono_guard2
+combat_ignore = combat_ignore@mono_gates
+on_death = death@mono_guards
+
+[walker@mono_guard2]
+path_walk = guard2
+path_look = look
+combat_ignore_cond = {=fighting_dist_ge(40)}
+danger = danger@monolith
+on_signal = walkend | walker@mono_guard_fight2
+
+[walker@mono_guard_fight2]
+path_walk = guard2
+path_look = look
+
+[logic@aes_gates_guards_walk3]
+active = walker@mono_guard3
+combat_ignore = combat_ignore@mono_gates
+on_death = death@mono_guards
+
+[walker@mono_guard3]
+path_walk = guard3
+path_look = look
+combat_ignore_cond = {=fighting_dist_ge(40)}
+danger = danger@monolith
+on_signal = walkend | walker@mono_guard_fight3
+
+[walker@mono_guard_fight3]
+path_walk = guard3
+path_look = look
+
+[logic@aes_gates_guards_walk4]
+active = walker@mono_guard
+combat_ignore = combat_ignore@mono_gates
+on_death = death@mono_guards
+
+[walker@mono_guard]
+path_walk = guard4
+path_look = look
+combat_ignore_cond = {=fighting_dist_ge(40)}
+danger = danger@monolith
+on_signal = walkend | walker@mono_guard_fight4
+
+[walker@mono_guard_fight4]
+path_walk = guard4
+path_look = look

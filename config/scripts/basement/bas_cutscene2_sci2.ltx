@@ -1,0 +1,63 @@
+[combat_ignore@scene2]
+
+[danger@bas_scene2]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_scene2]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@scene2_lab_checking
+combat_ignore = combat_ignore@scene2
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+
+[remark@scene2_lab_checking]
+anim = probe
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+meet = no_meet
+on_info = {+bas_scene2_info1} remark@scene2_lab_dialog1
+
+[remark@scene2_lab_dialog1]
+anim = ordinary_talk3
+snd = bas_replics28
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+target = bas_cs2_look,0
+meet = no_meet
+on_signal = sound_end | %+bas_scene2_info2%
+on_info = {+bas_scene2_seq_start} remark@scene2_lab_seq2
+
+[remark@scene2_lab_seq1]
+anim = press
+target = bas_cs2_look2, 0
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+meet = no_meet
+on_info = {+bas_scene2_seq2} remark@scene2_lab_seq2
+on_info2 = {+bas_cutscene2_finale_end} remark@scene2_lab_end
+
+[remark@scene2_lab_seq2]
+anim = wait
+target = bas_cs2_look2, 0
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+meet = no_meet
+on_info = {+bas_scene2_seq1} %=lab_gen_off% remark@scene2_lab_seq1
+on_info2 = {+bas_cutscene2_finale_end} remark@scene2_lab_end %=play_snd(ambient\x16\x16_psy)%
+
+[remark@scene2_lab_end]
+anim = sci_monster
+target = actor
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+on_timer = 5000 | %=rad_psy_basic +bas_cs2_end =release%

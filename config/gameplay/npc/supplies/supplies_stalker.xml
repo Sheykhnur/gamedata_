@@ -1,0 +1,318 @@
+	<!-- Supply templates for Stalkers -->
+
+	<template id="stalker_common">
+		<include id="alcohol_normal"/>
+
+		<item s="mineral_water" 		prob="0.1"		cond="1.0"/>
+
+		<!-- Meds -->
+		<item s="bandage" 				prob="0.2"		cond="1.0"/>
+		<item s="antirad" 				prob="0.05"		cond="1.0"/>
+		<item s="medkit" 				prob="0.1"		cond="1.0"/>
+
+		<!-- Items -->
+		<item s="harmonica_a" 			prob="0.2"		cond="1.0"/>
+		<item s="guitar_a" 				prob="0.08"		cond="1.0"/>
+		<item s="device_torch" 			prob="0.4"		cond="1.0"/>
+	</template>
+
+	<template id="stalker_novice_common">
+		<include id="stalker_common"/>
+		<include id="food_low"/>
+		<include id="money_low"/>
+		<item s="energy_drink" 			prob="0.05"		cond="1.0"/>
+		<item s="detector_af_bad" 		prob="0.16"		cond="1.0"/>
+	</template>
+	<template id="stalker_general_common">
+		<include id="stalker_common"/>
+		<include id="food_med"/>
+		<include id="money_low"/>
+		<include id="boosters_low"/>
+		<item s="energy_drink" 			prob="0.1"		cond="1.0"/>
+		<item s="medkit" 				prob="0.05"		cond="1.0"/>
+		<item s="grenade_rgd5" 			prob="0.1"		cond="1.0"/>
+		<item s="detector_af_bad" 		prob="0.1"		cond="1.0"/>
+	</template>
+	<template id="stalker_veteran_common">
+		<include id="stalker_common"/>
+		<include id="food_high"/>
+		<include id="money_med"/>
+		<include id="boosters_low"/>
+		<item s="energy_drink"			prob="0.1"		cond="1.0"/>
+		<item s="medkit" 				prob="0.1"		cond="1.0"/>
+		<item s="grenade_rgd5" 			prob="0.25"		cond="1.0"/>
+		<item s="grenade_f1" 			prob="0.15"		cond="1.0"/>
+	</template>
+	<template id="stalker_master_common">
+		<include id="stalker_common"/>
+		<include id="food_high"/>
+		<include id="money_high"/>
+		<include id="boosters_high"/>
+		<item s="medkit_scientic"		prob="0.1"		cond="1.0"/>
+		<random_select prob="0.2">
+			<opt><item s="grenade_f1"		cond="1.0"/></opt>
+			<opt><item s="grenade_rgd5"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+
+
+<!-- Tier 1 -->
+	<!-- Novices -->
+	<template id="stalker_t1_novice">
+		<random_select>
+			<opt w="3"><include id="stalker_t1_novice_pistol"/></opt>
+			<opt w="1"><include id="stalker_t1_novice_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="stalker_t1_novice_pistol">
+		<random_select>
+			<opt w="8"><include id="weapon_pm"/></opt>
+			<opt w="1"><include id="weapon_fort"/></opt>
+			<opt w="1"><include id="weapon_walther"/></opt>
+		</random_select>
+		<include id="stalker_novice_common"/>
+	</template>
+	<template id="stalker_t1_novice_shotgun">
+		<include id="weapon_bm16_sawedoff"/>
+		<include id="weapon_pm" prob="0.5"/>
+		<include id="stalker_novice_common"/>
+	</template>
+
+	<!-- General/Regular -->
+	<template id="stalker_t1_general">
+		<random_select>
+			<opt w="3"><include id="stalker_t1_general_auto"/></opt>
+			<opt w="1"><include id="stalker_t1_general_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="stalker_t1_general_auto">
+		<random_select>
+			<opt w="1"><include id="weapon_mp5"/></opt>
+			<opt w="1"><include id="weapon_aks74u"/></opt>
+		</random_select>
+		<random_select prob="0.33">
+			<opt w="1"><include id="weapon_fort"/></opt>
+			<opt w="1"><include id="weapon_walther"/></opt>
+		</random_select>
+		<include id="stalker_general_common"/>
+	</template>
+	<template id="stalker_t1_general_shotgun">
+		<random_select>
+			<opt><include id="weapon_bm16_long"/></opt>
+			<opt><include id="weapon_bm16_long_slug"/></opt>
+		</random_select>
+		<random_select prob="0.5">
+			<opt w="1"><include id="weapon_fort"/></opt>
+			<opt w="1"><include id="weapon_walther"/></opt>
+		</random_select>
+		<include id="stalker_general_common"/>
+	</template>
+
+	<!-- Veteran -->
+	<template id="stalker_t1_veteran">
+		<random_select>
+			<opt w="4"><include id="weapon_mp5_ap"/></opt>
+			<opt w="4"><include id="weapon_aks74u"/></opt>
+			<opt w="2"><include id="weapon_aks74u_ap"/></opt>
+			<opt w="2"><include id="weapon_bizon_ap"/></opt>
+			<opt w="1"><include id="weapon_l85_m1"/></opt>
+		</random_select>
+		<random_select prob="0.33">
+			<opt w="1"><include id="weapon_fort"/></opt>
+			<opt w="1"><include id="weapon_walther"/></opt>
+		</random_select>
+		<include id="stalker_veteran_common"/>
+	</template>
+
+<!-- Tier 2 -->
+	<!-- Novices -->
+	<template id="stalker_t2_novice">
+		<random_select>
+			<opt w="1"><include id="stalker_t1_novice_pistol"/></opt>
+			<opt w="1"><include id="stalker_t1_novice_shotgun"/></opt>
+			<opt w="3"><include id="stalker_t1_general_auto"/></opt>
+			<opt w="3"><include id="stalker_t1_general_shotgun"/></opt>
+		</random_select>
+	</template>
+
+	<!-- General -->
+	<template id="stalker_t2_general">
+		<random_select>
+			<opt w="3"><include id="stalker_t2_general_auto"/></opt>
+			<opt w="1"><include id="stalker_t2_general_shotgun"/></opt>
+			<opt w="1"><include id="stalker_t2_general_sniper"/></opt>
+		</random_select>
+	</template>
+	<template id="stalker_t2_general_auto">
+		<random_select>
+			<opt w="6"><include id="weapon_ak74"/></opt>
+			<opt w="2"><include id="weapon_lr300"/></opt>
+			<opt w="2"><include id="weapon_mp5_ap"/></opt>
+			<opt w="2"><include id="weapon_bizon_ap"/></opt>
+			<opt w="1"><include id="weapon_p90"/></opt>
+			<opt w="1"><include id="weapon_groza"/></opt>
+			<opt w="1"><include id="weapon_akm"/></opt>
+		</random_select>
+		<random_select prob="0.33">
+			<opt w="1"><include id="weapon_fort"/></opt>
+			<opt w="1"><include id="weapon_walther"/></opt>
+			<opt w="1"><include id="weapon_colt1911"/></opt>
+			<opt w="1"><include id="weapon_hpsa"/></opt>
+			<opt w="1"><include id="weapon_fn57"/></opt>
+		</random_select>
+		<include id="stalker_general_common"/>
+	</template>
+	<template id="stalker_t2_general_shotgun">
+		<random_select>
+			<opt><include id="weapon_toz34"/></opt>
+			<opt><include id="weapon_toz34_dart"/></opt>
+			<opt><include id="weapon_wincheaster1300"/></opt>
+		</random_select>
+		<random_select prob="0.6">
+			<opt w="1"><include id="weapon_walther"/></opt>
+			<opt w="1"><include id="weapon_colt1911"/></opt>
+			<opt w="1"><include id="weapon_hpsa"/></opt>
+			<opt w="1"><include id="weapon_fn57"/></opt>
+		</random_select>
+		<include id="stalker_general_common"/>
+	</template>
+	<template id="stalker_t2_general_sniper">
+		<random_select>
+			<opt><include id="weapon_sks_ap"/></opt>
+			<opt><include id="weapon_m1891_ap"/></opt>
+			<opt><include id="weapon_svd"/></opt>
+		</random_select>
+		<random_select prob="0.6">
+			<opt w="1"><include id="weapon_hpsa"/></opt>
+			<opt w="1"><include id="weapon_fn57"/></opt>
+		</random_select>
+		<include id="stalker_general_common"/>
+	</template>
+
+	<!-- Veteran -->
+	<template id="stalker_t2_veteran">
+		<random_select>
+			<opt w="3"><include id="stalker_t2_veteran_auto"/></opt>
+			<opt w="1"><include id="stalker_t2_veteran_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="stalker_t2_veteran_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_ak74_ap"/></opt>
+			<opt w="2"><include id="weapon_lr300_ap"/></opt>
+			<opt w="2"><include id="weapon_bizon_pmm"/></opt>
+			<opt w="2"><include id="weapon_mp5_ap"/></opt>
+			<opt w="1"><include id="weapon_p90_ap"/></opt>
+			<opt w="1"><include id="weapon_groza"/></opt>
+			<opt w="1"><include id="weapon_akm"/></opt>
+		</random_select>
+		<random_select prob="0.25">
+			<opt w="1"><include id="weapon_hpsa"/></opt>
+			<opt w="1"><include id="weapon_fn57"/></opt>
+			<opt w="1"><include id="weapon_sig220"/></opt>
+		</random_select>
+		<include id="stalker_veteran_common"/>
+	</template>
+	<template id="stalker_t2_veteran_shotgun">
+		<random_select>
+			<opt w="1"><include id="weapon_wincheaster1300"/></opt>
+			<opt w="1"><include id="weapon_wincheaster1300_slug"/></opt>
+		</random_select>
+		<random_select>
+			<opt w="1"><include id="weapon_sig220"/></opt>
+			<opt w="3"><include id="weapon_beretta"/></opt>
+		</random_select>
+		<include id="stalker_veteran_common"/>
+	</template>
+
+	<!-- Master -->
+	<template id="stalker_t2_master">
+		<random_select>
+			<opt w="2"><include id="weapon_akm_ap"/></opt>
+			<opt w="2"><include id="weapon_ak74_ap"/></opt>
+			<opt w="2"><include id="weapon_lr300_ap"/></opt>
+			<opt w="1"><include id="weapon_groza_sp5"/></opt>
+			<opt w="1"><include id="weapon_p90_ap"/></opt>
+		</random_select>
+		<random_select prob="0.25">
+			<opt w="3"><include id="weapon_beretta"/></opt>
+			<opt w="3"><include id="weapon_sig220"/></opt>
+			<opt w="3"><include id="weapon_aps_pmm"/></opt>
+		</random_select>
+		<include id="stalker_master_common"/>
+	</template>
+
+	<!-- Sniper -->
+	<template id="stalker_t2_sniper">
+		<random_select>
+			<opt><include id="weapon_sks_scope_ap"/></opt>
+			<opt><include id="weapon_m1891_scope_h14"/></opt>
+			<opt><include id="weapon_svd_h14"/></opt>
+		</random_select>
+		<random_select>
+			<opt w="1"><include id="weapon_walther"/></opt>
+			<opt w="1"><include id="weapon_pb"/></opt>
+		</random_select>
+		<include id="stalker_veteran_common"/>
+	</template>
+
+<!-- Tier 3 -->
+	<!-- General -->
+	<template id="stalker_t3_general">
+		<random_select>
+			<opt w="1"><include id="weapon_aek971"/></opt>
+			<opt w="1"><include id="weapon_aek973"/></opt>
+			<opt w="1"><include id="weapon_abakan"/></opt>
+			<opt w="1"><include id="weapon_sig550"/></opt>
+			<opt w="1"><include id="weapon_rpk"/></opt>
+			<opt w="1"><include id="weapon_rpk74m"/></opt>
+			<opt w="1"><include id="weapon_vepr_buck"/></opt>
+		</random_select>
+		<random_select prob="0.25">
+			<opt w="3"><include id="weapon_usp45_auto"/></opt>
+			<opt w="2"><include id="weapon_aps"/></opt>
+			<opt w="1"><include id="weapon_deagle"/></opt>
+		</random_select>
+		<include id="stalker_master_common"/>
+	</template>
+	
+	<template id="stalker_t3_veteran">
+		<random_select>
+			<opt w="1"><include id="weapon_aek971_ap"/></opt>
+			<opt w="1"><include id="weapon_aek973_ap"/></opt>
+			<opt w="1"><include id="weapon_abakan_ap"/></opt>
+			<opt w="1"><include id="weapon_sig550_ap"/></opt>
+			<opt w="1"><include id="weapon_rpk_ap"/></opt>
+			<opt w="1"><include id="weapon_rpk74m_ap"/></opt>
+			<opt w="1"><include id="weapon_vepr_buck"/></opt>
+		</random_select>
+		<random_select prob="0.25">
+			<opt w="3"><include id="weapon_usp45_auto_ap"/></opt>
+			<opt w="2"><include id="weapon_aps"/></opt>
+			<opt w="1"><include id="weapon_deagle"/></opt>
+		</random_select>
+		<include id="stalker_master_common"/>
+	</template>
+
+	<!-- Master -->
+	<template id="stalker_t3_master">
+		<random_select>
+			<opt w="1"><include id="weapon_aek971_ap"/></opt>
+			<opt w="1"><include id="weapon_aek973_ap"/></opt>
+			<opt w="1"><include id="weapon_abakan_scope_ap"/></opt>
+			<opt w="1"><include id="weapon_sig550_ap"/></opt>
+			<opt w="1"><include id="weapon_rpk_ap"/></opt>
+			<opt w="1"><include id="weapon_rpk74m_ap"/></opt>
+			<opt w="1"><include id="weapon_vepr_buck"/></opt>
+			<opt w="1"><include id="weapon_vepr_slug"/></opt>
+			<opt w="1"><include id="weapon_ks23_ap"/></opt>
+			<opt w="1"><include id="weapon_ks23_slug"/></opt>
+		</random_select>
+		<random_select prob="0.25">
+			<opt w="3"><include id="weapon_usp45_auto_ap"/></opt>
+			<opt w="2"><include id="weapon_aps_pmm"/></opt>
+			<opt w="2"><include id="weapon_oc33"/></opt>
+			<opt w="1"><include id="weapon_deagle"/></opt>
+		</random_select>
+		<include id="stalker_master_common"/>
+	</template>

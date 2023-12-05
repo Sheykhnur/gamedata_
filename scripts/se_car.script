@@ -1,0 +1,141 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : se_car.script
+ Description: Регистрация автотранспорта
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin(06.07.2010),vintar(25.02.2013)
+ Last edit  : 19.04.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_car" (cse_alife_car)
+--/ -----------------------------------------------------------------------------------------------
+function se_car:__init(section) super(section)
+	self.ini = nil
+	self.spawner_present = false
+end
+
+function se_car:on_register() --/#+#
+	cse_alife_car.on_register(self)
+	--/ проверяем кастомдату обьекта на наличие стори айди.
+	story_objects.check_spawn_ini_for_story_id(self)
+	--/ регистрация в таскменеджере
+	task_manager.register_target(self)
+end
+
+function se_car:on_unregister() --/#+#
+	--/ отрегистрация в таскменеджере
+	task_manager.unregister_target(self)
+	unregister_story_object_by_id(self.id)
+	cse_alife_car.on_unregister(self)
+end
+
+function se_car:can_switch_offline()
+	if db.is_switchings(self.id) == true then --/#+# ожидание перевода в офф-лайн
+		return true --/>
+	end
+	return cse_alife_car.can_switch_offline(self)
+end
+
+function se_car:can_switch_online()
+	if db.is_switchings(self.id) then --/#+# ожидание перевода в офф-лайн (== false)
+		return false --/>
+	end
+	if self.ini == nil then
+		self.ini = self:spawn_ini()
+		self.spawner_present = (self.ini and self.ini:section_exist("spawner")) or false
+	end
+	if self.spawner_present == true then
+		return xr_spawner.check_spawn(self) --/>
+	end
+	return cse_alife_car.can_switch_online(self) --/>
+end
+
+function se_car:keep_saved_data_anyway()
+	return true --/>
+end
+
+function se_car:STATE_Read(reader, size)
+	cse_alife_car.STATE_Read(self, reader, size)
+end
+
+function se_car:STATE_Write(writer)
+	if self.cb_netpk then self.cb_netpk(self, packet) end --/#+# call read/change 'cse_abstract'
+	cse_alife_car.STATE_Write(self, writer)
+end
+
+--/ ----------------------------------------------
+function se_car:get_level_id()
+	return game_graph():vertex(self.m_game_vertex_id):level_id() --/>
+end
+
+function se_car:get_level_name()
+	return alife():level_name( self:get_level_id() ) --/>
+end
+
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_heli" (cse_alife_helicopter) --/ Helicopter
+--/ -----------------------------------------------------------------------------------------------
+function se_heli:__init(section) super(section)
+	self.ini = nil
+	self.spawner_present = false
+end
+
+function se_heli:on_register() --/#+#
+	cse_alife_helicopter.on_register(self)
+	--/ проверяем кастомдату обьекта на наличие стори айди.
+	story_objects.check_spawn_ini_for_story_id(self)
+	--/ регистрация в таскменеджере
+	task_manager.register_target(self)
+end
+
+function se_heli:on_unregister() --/#+#
+	--/ отрегистрация в таскменеджере
+	task_manager.unregister_target(self)
+	unregister_story_object_by_id(self.id)
+	cse_alife_helicopter.on_unregister(self)
+end
+
+function se_heli:can_switch_offline() --/#+#
+	if db.is_switchings(self.id) == true then --/#+# ожидание перевода в офф-лайн
+		return true --/>
+	end
+	return cse_alife_helicopter.can_switch_offline(self) --/>
+end
+
+function se_heli:can_switch_online() --/#+#
+	if db.is_switchings(self.id) then --/#+# ожидание перевода в офф-лайн (== false)
+		return false --/>
+	end
+	if not self.ini then
+		self.ini = self:spawn_ini()
+		self.spawner_present = (self.ini and self.ini:section_exist("spawner")) or false
+	end
+	if self.spawner_present == true then
+		return xr_spawner.check_spawn(self) == true --/>
+	end
+	return cse_alife_helicopter.can_switch_online(self) --/>
+end
+
+function se_heli:keep_saved_data_anyway()
+	return true
+end
+
+function se_heli:STATE_Read(reader, iSize) --/#+#
+	cse_alife_helicopter.STATE_Read(self, reader, iSize)
+end
+
+function se_heli:STATE_Write(packet) --/#+#
+	if self.cb_netpk then self.cb_netpk(self, packet) end --/#+# call read/change 'cse_abstract'
+	cse_alife_helicopter.STATE_Write(self, packet)
+end
+--/ -----------------------------------------------------------------------------------------------

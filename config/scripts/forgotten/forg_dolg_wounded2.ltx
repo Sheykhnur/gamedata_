@@ -1,0 +1,40 @@
+[combat_ignore@forg_dolg_wounded2]
+
+[threshold@forg_dolg_wounded2]
+max_ignore_distance = 3
+ignore_monster      = 0
+
+[death@forg_dolg_wounded2]
+on_info = %+forg_wounded2_dead%
+
+[logic]
+active = walker@forg_dolg_wounded_group2
+combat_ignore = combat_ignore@forg_dolg_wounded2
+threshold = threshold@forg_dolg_wounded2
+on_death = death@forg_dolg_wounded2
+
+[walker@forg_dolg_wounded_group2]
+path_walk = forg_dolg_veteran_wounded2
+wounded = wounded@forg_dolg_wounded2
+threshold = threshold@forg_dolg_wounded2
+on_info = {+forg_helped_wounded_one +forg_helped_wounded_two} walker@forg_dolg_wounded2 %+forg_dolg_wounded_group_helped%
+on_info2 = {+forg_helped_wounded_two +forg_wounded1_dead} walker@forg_dolg_wounded2 %+forg_dolg_wounded_group_helped%
+
+[wounded@forg_dolg_wounded2]
+hp_state = 40|wounded_heavy_3@help_heavy
+hp_state_see = 40|wounded_heavy_3@help_see
+hp_victim = 20|nil|10|nil
+hp_cover = 10|false
+hp_fight = 10|false
+use_medkit = true
+help_dialog = forg_dolg_wounded_help_another
+
+[walker@forg_dolg_wounded2]
+path_walk = forg_dolg_veteran_wounded2_walk
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(2)}
+threshold = threshold@forg_dolg_wounded2
+meet = no_meet
+;on_signal = w2reached | {-forg_dolg_wounded_group_helped} %+forg_dolg_wounded_group_helped%

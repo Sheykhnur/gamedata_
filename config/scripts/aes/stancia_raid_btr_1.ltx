@@ -1,0 +1,12 @@
+[logic]
+active = ph_car
+
+[ph_car]
+path_walk = aes_btr_move1
+on_signal = btr1wait | ph_car@wait
+
+[ph_car@wait]
+on_info = {+btr_move1} ph_car@wait_go
+
+[ph_car@wait_go]
+path_walk = aes_btr_move11

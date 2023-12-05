@@ -1,0 +1,31 @@
+[combat_ignore@gen_ghost_after]
+
+[threshold@gen_ghost_after]
+max_ignore_distance = 0
+ignore_monster      = 0
+
+[danger@gen_ghost_after]
+ignore_distance = 0
+
+[logic]
+active = walker@gen_ghost_game_finale
+combat_ignore = combat_ignore@gen_ghost_after
+threshold = threshold@gen_ghost_after
+
+[walker@gen_ghost_game_finale]
+path_walk = gen_ghost_meet
+combat_ignore_cond = always
+meet = meet@gen_ghost_game_finale
+threshold = threshold@gen_ghost_after
+
+[meet@gen_ghost_game_finale]
+use = true
+use_wpn = true
+abuse = false
+precond = visibility
+meet_talk_enabled = true
+meet_state = 5|hello|3|wait
+meet_state_wpn = 5|hello_wpn|3|wait
+victim = 5|actor
+victim_wpn = 5|actor
+meet_dialog	= gen_la_finale_dialog

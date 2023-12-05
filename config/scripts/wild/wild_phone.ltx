@@ -1,0 +1,11 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-wild_phone_rang} sr_idle@play %=play_sound_looped_from_name(scripts\phone\phone_ring_wild:wild_phone_booth) +wild_phone_rang%
+
+[sr_idle@play]
+on_timer = 10000 | sr_idle@nil %=stop_sound_looped(scripts\phone\phone_ring_wild)%
+
+[sr_idle@nil]
+on_info = nil %=release%

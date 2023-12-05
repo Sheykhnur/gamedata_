@@ -1,0 +1,51 @@
+[combat_ignore@ratcatcher]
+
+[threshold@ratty]
+ignore_monster = 0
+
+[danger@ratcatcher]
+ignore_distance = 0
+
+[death@ratcatcher]
+on_info = %+sar2_death_11 +agr_ratcatcher_dead%
+
+[meet@ratcatcher]
+meet_state     =	15| wait
+meet_state_wpn =	15| wait | 7| wait @ agr_dont_shoot
+victim         =	15| actor
+victim_wpn     =	15| actor
+use            =	true
+use_wpn        =	true
+meet_dialog    =	agr_ratcatcher_start
+
+[logic@agr_ratcatcher_terrain_hiding]
+active = walker@agr_ratcatcher_terrain1
+combat_ignore = combat_ignore@ratcatcher
+danger = danger@ratcatcher
+on_death = death@ratcatcher
+threshold = threshold@ratty
+
+[walker@agr_ratcatcher_terrain1]
+path_walk = walk_way
+path_look = way_look
+on_info = {+agr_help_ratcatcher_done} walker@agr_ratcatcher_terrain_after_talk
+danger = danger@ratcatcher
+threshold = threshold@ratty
+meet = meet@ratcatcher
+invulnerable = {!hit_by_actor} true
+
+[walker@agr_ratcatcher_terrain_after_talk]
+path_walk = walk_after_talk
+path_look = walk_after_talk_look
+danger = danger@ratcatcher
+on_info = {+agr_ratcatcher_dialog_finished} walker@agr_ratcatcher_terrain_after_case
+threshold = threshold@ratty
+meet = meet@ratcatcher
+invulnerable = {!hit_by_actor} true
+
+[walker@agr_ratcatcher_terrain_after_case]
+path_walk = walk_after_talk
+path_look = walk_after_talk_look
+danger = danger@ratcatcher
+meet = no_meet
+threshold = threshold@ratty

@@ -1,0 +1,63 @@
+--[[ ---------------------------------------------------------------------------------------------
+ File       : mob_death.script
+ Description: Схема: "Регистрация смерти монстра"
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey) af@svitonline.com
+ Editors    : 
+ Last edit  : 03.07.2013 [...]
+--]] ---------------------------------------------------------------------------------------------
+
+--[[ NOTE:
+Схема является рудиментом и следует использовать схему 'death' из xr_death.script!
+
+Now we should use scheme 'death' from xr_death.script!
+--]]
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "mob_death"
+--/ -----------------------------------------------------------------------------------------------
+function mob_death:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function mob_death:death_callback(oVictim, oWho)
+	log("death_callback:Victim=[%s],Who=[%s]", oVictim and oVictim:name(), oWho and oWho:name(), "") --/#~#
+	if oWho then
+		self.st.killer = oWho:id()
+		self.st.killer_name = oWho:name()
+	else
+		self.st.killer = -1
+		self.st.killer_name = nil
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	local oNewAction = this.mob_death(npc, st)
+	--/ registration action, for a call of method 'callback'
+	xr_logic.subscribe_action_for_events(npc, st, oNewAction)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ fot debug:
+	log("set_scheme: Mob=[%s],scheme=[%s],section=[%s],gulag=[%s]:<%s>", npc:name(), scheme, section, gulag_name, "Warning!") --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

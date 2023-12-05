@@ -1,0 +1,118 @@
+
+-- file: pcImageViewer.script
+-- author: barin
+-- date: 2008-12-16
+-- edited by: barin
+-- last edited: 2009-09-09
+
+class "uiImageViewer" (CUIScriptWnd)
+
+function uiImageViewer:__init(parent, x, y) super()
+	self:SetWindowName("uiImageViewer")
+	self.owner = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 428
+	self.wnd_height = 370
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+end
+
+function uiImageViewer:__finalize()
+end
+
+function uiImageViewer:reset(data)
+	if data.name then
+		local wname = game.translate_string("ui_pc_static_image_viewer")
+		local fname = game.translate_string(data.name)
+		self.wnd_frame:SetCaption(wname .. " - " .. fname)
+	else
+		self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_image_viewer"))
+	end
+	
+	if data.image then
+		self:GetStatic("stc_image"):InitTexture(data.image)
+		self:GetStatic("stc_image"):Show(true)
+	else
+		self:GetStatic("stc_image"):Show(false)
+	end
+	
+	if data.description then
+		self:GetStatic("stc_description"):SetText(game.translate_string(data.description))
+	else
+		self:GetStatic("stc_description"):SetText("")
+	end
+end
+
+function uiImageViewer:OnChildDialogExit(child_name)
+end
+
+function uiImageViewer:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiImageViewer:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_image_viewer"))
+	self.wnd_frame:Show(true)
+	
+	local dlg = nil
+	local left_margin = self.wnd_x + 10
+	local top_margin = self.wnd_y + 35
+	local ctrl_width = 410
+	local ctrl_height = 310
+	
+	dlg = CUIFrameWindow()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("image_frame")
+	dlg:Init("ui_tablist_textbox", left_margin, top_margin, ctrl_width, ctrl_height)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("stc_image")
+	dlg:SetWndPos(left_margin + 3, top_margin + 3)
+	dlg:SetWidth(ctrl_width - 10)
+	dlg:SetHeight(ctrl_height - 10)
+	dlg:SetStretchTexture(true)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("stc_description")
+	dlg:SetWndRect(left_margin, top_margin + ctrl_height, 400, 20)
+	dlg:SetText("Description")
+	dlg:SetTextColor(pcTextViewer.get_colour("full_white"))
+	dlg:SetFont(pcTextViewer.get_font("letterica18"))
+	dlg:SetTextAlign(CGameFont.alCenter)
+	self:AttachChild(dlg)
+end
+
+function uiImageViewer:InitCallBacks()
+end
+
+function uiImageViewer:OnExit()
+	self.owner:OnChildDialogExit(self:WindowName())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiImageViewer:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+	
+	return true
+end

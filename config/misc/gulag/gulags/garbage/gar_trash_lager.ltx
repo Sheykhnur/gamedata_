@@ -1,0 +1,107 @@
+[logic@gar_trash_lager_walk1]
+active = walker@gar_trash_lager_walk1a
+
+[walker@gar_trash_lager_walk1a]
+path_walk = walker_1_walk
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_walk2]
+active = walker@gar_trash_lager_walk2a
+
+[walker@gar_trash_lager_walk2a]
+path_walk = walker_2_walk
+danger = danger@gar_trash_lager
+on_signal = reached | walker@gar_trash_lager_walk2b
+
+[walker@gar_trash_lager_walk2b]
+path_walk = walker_5_walk
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_walk3]
+active = walker@gar_trash_lager_walk3a
+
+[walker@gar_trash_lager_walk3a]
+path_walk = walker_3_walk
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_sleeper1]
+active = sleeper@gar_trash_lager_sleeper1
+
+[sleeper@gar_trash_lager_sleeper1]
+path_main = sleep_1
+wakeable = true
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_sleeper2]
+active = sleeper@gar_trash_lager_sleeper2
+
+[sleeper@gar_trash_lager_sleeper2]
+path_main = sleep_2
+wakeable = true
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_kamping1]
+active = kamp@gar_trash_lager1_kamp
+danger = danger@gar_trash_lager
+
+[kamp@gar_trash_lager1_kamp]
+center_point = kamp_look
+path_walk = kamp_1_task
+radius = 2
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_kamping2]
+active = kamp@gar_trash_lager2_kamp
+
+[kamp@gar_trash_lager2_kamp]
+center_point = kamp_look
+path_walk = kamp_2_task
+radius = 2
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_kamping3]
+active = kamp@gar_trash_lager3_kamp
+
+[kamp@gar_trash_lager3_kamp]
+center_point = kamp_look
+path_walk = kamp_3_task
+radius = 2
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_ass1]
+active = remark@gar_trash_lager_sit1
+
+[remark@gar_trash_lager_sit1]
+path_walk = sit_1
+anim = sit
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_ass2]
+active = remark@gar_trash_lager_sit2
+
+[remark@gar_trash_lager_sit2]
+path_walk = sit_2
+anim = sit_ass
+danger = danger@gar_trash_lager
+
+[logic@gar_trash_lager_guarding1]
+active = patrol@gar_trash_lager_guard1
+
+[patrol@gar_trash_lager_guard1]
+path_walk = patrol_1_walk
+move_type = patrol
+danger = danger@gar_trash_lager2
+
+[logic@gar_trash_lager_guarding2]
+active = patrol@gar_trash_lager_guard2
+
+[patrol@gar_trash_lager_guard2]
+path_walk = guard_1_walk
+move_type = walk
+danger = danger@gar_trash_lager2
+
+[danger@gar_trash_lager]
+;ignore_distance = 0
+
+[danger@gar_trash_lager2]
+;ignore_distance = 30

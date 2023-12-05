@@ -1,0 +1,200 @@
+[danger@esc_stalker_factory]
+;ignore_types  = grenade, corpse, sound, hit
+;ignore_distance  = 75
+
+[threshold@esc_stalker_factory]
+;max_ignore_distance = 12
+ignore_monster = 0
+
+[combat_ignore@esc_stalker_factory]
+
+[danger@esc_stalker_factory_wolf]
+ignore_distance  = 75
+danger_inertion_time = 3000
+danger_inertion_time_corpse = 0
+
+[danger@esc_stalker_factory_wolf_pre]
+;ignore_distance  = 5
+danger_inertion_time = 4000
+danger_inertion_time_corpse = 0
+
+[danger@esc_stalker_factory_wolf_after]
+;ignore_distance  = 0
+danger_inertion_time = 5000
+
+[threshold@esc_stalker_factory_wolf]
+ignore_monster = 1
+
+[death@factory_wolf]
+on_info = %+esc_factory_wolf_dead%
+
+[logic@esc_stalker_factory_wolf]
+active = walker@esc_stalker_factory_wolf_guard
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory_wolf
+on_death = death@factory_wolf
+
+[meet@esc_stalker_factory_wolf]
+use = true
+use_wpn = true
+victim 	= 10| actor
+victim_wpn = 10| actor
+meet_state = 5|guard
+meet_state_wpn = 5|guard
+
+[walker@esc_stalker_factory_wolf_guard]
+path_walk = wolf_path
+path_look = wolf_look
+combat_ignore_cond = {=fighting_dist_ge(30)}
+danger = danger@esc_stalker_factory_wolf_after
+threshold = threshold@esc_stalker_factory_wolf
+def_state_standing = guard
+
+[logic@esc_stalker_factory_wolf_off]
+active = walker@esc_stalker_factory_wolf_off
+
+[walker@esc_stalker_factory_wolf_off]
+path_walk = wolf_path
+path_look = wolf_look
+
+[logic@esc_stalker_factory_guard]
+active = walker@esc_stalker_factory_guard
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[walker@esc_stalker_factory_guard]
+path_walk = guard_path
+path_look = guard_look
+combat_ignore_cond = {=fighting_dist_ge(35)} 
+def_state_standing = guard
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+danger = danger@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[logic@esc_stalker_factory_walker1]
+active = walker@esc_stalker_factory_walker1
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[walker@esc_stalker_factory_walker1]
+path_walk = walker1_path
+combat_ignore_cond = {=fighting_dist_ge(20)} 
+danger = danger@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[logic@esc_stalker_factory_walker2]
+active = walker@esc_stalker_factory_walker2
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[walker@esc_stalker_factory_walker2]
+path_walk = walker2_path
+combat_ignore_cond = {=fighting_dist_ge(20)} 
+danger = danger@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[logic@esc_stalker_factory_walker3]
+active = walker@esc_stalker_factory_walker3
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[walker@esc_stalker_factory_walker3]
+path_walk = walker3_path
+combat_ignore_cond = {=fighting_dist_ge(25)} 
+danger = danger@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[logic@esc_stalker_factory_kamper1]
+active = kamper@esc_stalker_factory_kamper1
+
+[kamper@esc_stalker_factory_kamper1]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+;on_info = {-esc_corpses_release_new} %=release_by_sid(6024) =release_by_sid(6021) +esc_corpses_release_new%
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_kamper2]
+active = kamper@esc_stalker_factory_kamper2
+
+[kamper@esc_stalker_factory_kamper2]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp1
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_kamper3]
+active = kamper@esc_stalker_factory_kamper3
+
+[kamper@esc_stalker_factory_kamper3]
+path_walk = kamp3_walk
+path_look = kamp3_look
+kamp_name = kamp1
+danger = danger@esc_stalker_factory
+
+
+
+
+
+
+[logic@esc_stalker_factory_sleeper1]
+active = sleeper@esc_stalker_factory_sleeper1
+
+[sleeper@esc_stalker_factory_sleeper1]
+path_main = sleep1_path
+wakeable = true
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_sleeper2]
+active = sleeper@esc_stalker_factory_sleeper2
+
+[sleeper@esc_stalker_factory_sleeper2]
+path_main = sleep2_path
+wakeable = true
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_sleeper3]
+active = sleeper@esc_stalker_factory_sleeper3
+
+[sleeper@esc_stalker_factory_sleeper3]
+path_main = sleep3_path
+wakeable = true
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_sleeper4]
+active = sleeper@esc_stalker_factory_sleeper4
+
+[sleeper@esc_stalker_factory_sleeper4]
+path_main = sleep4_path
+wakeable = true
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_sleeper5]
+active = sleeper@esc_stalker_factory_sleeper5
+
+[sleeper@esc_stalker_factory_sleeper5]
+path_main = sleep5_path
+wakeable = true
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_sleeper6]
+active = sleeper@esc_stalker_factory_sleeper6
+
+[sleeper@esc_stalker_factory_sleeper6]
+path_main = sleep6_path
+wakeable = true
+danger = danger@esc_stalker_factory
+
+[logic@esc_stalker_factory_wolf_sleep]
+active = walker@esc_stalker_factory_wolf_sleep
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory_wolf
+on_death = death@factory_wolf
+
+[walker@esc_stalker_factory_wolf_sleep]
+path_main = wolf_path
+combat_ignore_cond = {=fighting_dist_ge(30)}
+danger = danger@esc_stalker_factory_wolf_after
+threshold = threshold@esc_stalker_factory_wolf

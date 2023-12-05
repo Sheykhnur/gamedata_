@@ -1,0 +1,19 @@
+;*********************************state 0*******************************************
+
+[logic@pri_station_burer_terrain_offburer]
+active = mob_walker@pri_station_burer_terrain_offburer
+
+[mob_walker@pri_station_burer_terrain_offburer]
+path_walk = walk
+
+;*********************************state 1*******************************************
+
+[death@pri_station_burer]
+on_info = {+pri_help_ecos} %+pri_terminal_burer_dead%
+
+[logic@pri_station_burer_terrain_burer]
+active = mob_walker1@pri_station_burer_terrain
+on_death = death@pri_station_burer
+
+[mob_walker1@pri_station_burer_terrain]
+path_walk = walk

@@ -1,0 +1,165 @@
+[wpn_gauss]:weapon_base
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\gauss"
+animation_slot                          = 2
+class                                   = WP_SVD
+ef_main_weapon_type                     = 3
+ef_weapon_type                          = 8
+hand_dependence                         = 1
+repair_compatibility                    = gauss
+scheduled                               = off
+weapon_class                            = sniper_rifle
+weapon_rank                             = 4
+
+; Inventory icon
+inv_grid_width                          = 6
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 18
+
+; Text
+inv_name                                = wpn-gauss
+inv_name_short                          = wpn-gauss
+description                             = enc_weapons1_wpn-gauss
+
+; Visual
+hud                                     = wpn_gauss_hud
+position                                = -0.026, -0.070, 0.0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_gauss
+strap_position                          = -0.26, -0.11, 0.15
+strap_orientation                       = -15, -9, 110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_gauss\wpn_gauss.ogf
+
+; Effects
+fire_point                              = 0.00, 0.12, 0.69
+flame_particles                         = weapons\generic_weapon_gauss
+smoke_particles                         = weapons\generic_weapon07
+shell_point                             = 0.00, 0.12, 0.174
+light_color                             = 1.3, 1.5, 2
+light_range                             = 4.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.5
+
+; Sounds
+snd_draw                                = weapons\generic_draw
+snd_empty                               = weapons\gen_empty, 0.5
+snd_holster                             = weapons\generic_holster
+snd_reload                              = weapons\gauss_reload, 1.0, 1.0
+snd_shoot                               = weapons\gauss_shoot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_Gauss
+upgr_icon_x                             = 298
+upgr_icon_y                             = 939
+upgr_icon_width                         = 297
+upgr_icon_height                        = 81
+
+; Cost & Weight
+cost                                    = 80000
+inv_weight                              = 5.5
+ph_mass                                 = 3
+
+; Ammo
+ammo_limit                              = 60
+ammo_class                              = ammo_gauss
+ammo_mag_size                           = 10
+
+; Features
+scope_status                            = 1
+scope_zoom_factor                       = 15 ;x4
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                        		= 1.0
+hit_impulse                             = 300
+hit_type                                = fire_wound
+
+; Ballistics
+bullet_speed                            = 5000
+fire_dispersion_base                    = 0.001
+fire_dispersion_condition_factor        = 2
+fire_direction_offset                   = 0, 0, 0
+
+; Performance
+rpm                                     = 30
+rpm_semi                                = 30
+rpm_empty_click                         = 120
+
+; Reliability
+misfire_start_prob                      = 0.05
+misfire_end_prob                        = 0.85
+condition_shot_dec                      = 0.0001
+condition_queue_shot_dec                = 0.0001
+
+; Handling
+zoom_inertion_factor                    = 1.1
+control_inertion_factor                 = 1.8f
+PDM_disp_base                           = 4.0
+PDM_disp_vel_factor                     = 2.0
+PDM_disp_accel_factor                   = 2.0
+sprint_allowed                          = false
+
+; Recoil
+cam_relax_speed                         = 3
+cam_dispersion                          = 0.05
+cam_dispersion_inc                      = 0.01
+cam_dispersion_frac                     = 1.0
+cam_max_angle                           = 4.0
+cam_max_angle_horz                      = 5.0
+cam_step_angle_horz                     = 0.5
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_gauss
+upgrades                                = up_gr_firstab_gauss, up_gr_seconab_gauss, up_gr_thirdab_gauss
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 0
+max_radius                              = 50
+holder_range_modifier                   = 2.85
+holder_fov_modifier                     = 0.5
+
+
+[wpn_gauss_hud]:hud_base
+aim_hud_offset_pos                      = -0.103000,0.019500,-0.148000
+aim_hud_offset_rot                      = -0.002000,0.001600,-0.010000
+aim_hud_offset_pos_16x9                 = -0.128500,0.057500,-0.130500
+aim_hud_offset_rot_16x9                 = 0.012500,0.002500,-0.010000
+anim_bore                               = gauss_idle_bore
+anim_hide                               = gauss_holster
+anim_idle                               = gauss_idle
+anim_idle_aim                           = gauss_idle_aim
+anim_idle_moving                        = gauss_idle_moving
+anim_idle_sprint                        = gauss_idle_sprint
+anim_reload                             = gauss_reload
+anim_shots                              = gauss_shoot
+anim_show                               = gauss_draw
+attach_place_idx                        = 0
+fire_bone                               = wpn_body
+fire_point                              = 0,		0.058, 0.788
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = -1.150000,0.150000,2.649999
+hands_orientation_16x9                  = -1.050000,0.300000,2.949999
+hands_position                          = -0.063000,-0.144499,0.096000
+hands_position_16x9                     = -0.032000,-0.161999,0.073500
+item_orientation                        = 1.239378,-0.134046,-2.052052
+item_position                           = 0.000746,-0.000321,0.003479
+item_visual                             = dynamics\weapons\wpn_gauss\wpn_gauss_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_dir                               = 0.0, 1.0, 0.0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true

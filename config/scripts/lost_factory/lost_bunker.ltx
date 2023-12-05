@@ -1,0 +1,11 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-lost_scientist_talked} sr_idle@in, nil %=release%
+
+[sr_idle@in]
+on_actor_outside = {+lost_scientist_talked -lost_timer_started} sr_idle@nil %+lost_timer_started%, {+lost_timer_started} sr_idle@nil, {-lost_scientist_talked} sr_idle
+
+[sr_idle@nil]
+on_info = nil %=release%

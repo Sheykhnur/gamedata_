@@ -1,0 +1,67 @@
+for monitor you should add logic:
+
+[logic]
+active = ph_computer
+
+[ph_computer]
+availability = accessible
+pc_type = desktop
+icons_alignment = vertical
+wallpaper = wallpaper3
+show_tips = true
+...
+
+OK SO:
+
+availability can be: accessible, malfunction, locked
+
+- locked will display info that this pc is locked
+is controlled by infoportion so we can use it and thus make sure that user won't use it before he finds infoportion
+
+- malfunction - will display that pc is bsoded 
+
+- accessible means that you can use it
+
+
+
+pc_type:
+
+- desktop
+- laptop (not finished)
+
+----------------------
+NOT NECESSARY BUT FUN:
+
+user_name = xxx just a name to display, like in fallout when you started pc and you could see 'logged as 'fuck you''
+
+password - password to unlock pc, useless if availability is accessible or malfunction, used only for locked availability
+
+password_info - infoportion name, will be given when you type password (that was just to prevent situation when you have to type password everytime you use pc)
+
+----------------------
+
+icons_alignment = "horizontal" or "vertical" or "mess"
+
+wallpaper = wallpaper1, wallpaper2, ..., wallpaper7
+
+other wallpapers: wallpaper_iaea (atomic sign), wallpaper_water, wallpaper_dso (un military police sign as on niva)
+
+
+show_tips = true or false - whether show text tips when you target monitor with your crosshair ...text like: turn on/off pc (if availability is available), this pc is not operational (malfunction) or you can't use this pc now (locked)
+
+----------------------
+GAMES:
+
+tetris = true or false - whether pc should contain tetris game
+puzzle - true or false - whether pc should contain puzzle game
+solitare = true or false - whether pc should contain solit. game
+----------------------
+
+known_info = comma-separated list with text files (those are actually section names from config\lost_alpha\pc_data\pc_data.ltx)
+
+known_image = test_pc_known_image_001, test_pc_known_image_002 (etc)
+
+known_code =
+known_audio =
+known_video =
+known_hex = X where X=number 1-5, so  this just a number of random files with some hex dump in it which will be added to the pc

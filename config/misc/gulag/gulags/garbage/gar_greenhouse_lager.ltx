@@ -1,0 +1,36 @@
+[danger@gar_greenhouse_lager]
+;ignore_distance = 15
+;ignore_distance_sound = 15
+;danger_inertion_time = 3000
+
+[threshold@gar_greenhouse_lager]
+;max_ignore_distance = 10
+;ignore_monster      = 0
+
+[logic@gar_greenhouse_lager_guard]
+active = walker@gar_greenhouse_lager_guard
+threshold = threshold@gar_greenhouse_lager
+danger = danger@gar_greenhouse_lager
+
+[walker@gar_greenhouse_lager_guard]
+path_walk = guard_point
+path_look = guard_look
+threshold = threshold@gar_greenhouse_lager
+danger = danger@gar_greenhouse_lager
+def_state_standing = guard
+def_state_moving1 = walk
+def_state_moving2 = run
+
+
+[logic@gar_greenhouse_lager_leader]
+active = walker@gar_greenhouse_lager_leader
+threshold = threshold@gar_greenhouse_lager
+danger = danger@gar_greenhouse_lager
+
+[walker@gar_greenhouse_lager_leader]
+path_walk = leader_point
+path_look = leader_look
+threshold = threshold@gar_greenhouse_lager
+danger = danger@gar_greenhouse_lager
+def_state_moving1 = walk
+def_state_moving2 = run

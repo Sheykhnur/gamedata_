@@ -1,0 +1,81 @@
+
+[smart_terrains]
+none = true
+
+[spawner]
+cond = {+cit_jail_scene_start}
+
+[combat_ignore]
+
+[danger]
+ignore_types 			 = corpse
+ignore_distance 		 = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+
+[logic]
+active = walker@1
+combat_ignore = combat_ignore
+
+[walker@1]
+path_walk = cit_actor_teleport
+path_look = cit_doctor_look
+combat_ignore_cond = always
+danger = danger
+def_state_standing = ward
+def_state_moving1 = walk
+on_info = {+cit_doctor_arrived} walker@2
+
+[walker@2]
+path_walk = cit_actor_walk1
+path_look = cit_colonel_wait_point1
+combat_ignore_cond = always
+danger = danger
+def_state_standing = ward
+def_state_moving1 = walk
+on_signal = reached | %+cit_colonel_dialog_start% remark@3
+;on_info = {+cit_colonel_dialog_start} remark@3
+
+[remark@3]
+target = 7212
+anim = ward
+combat_ignore_cond = always
+danger = danger
+on_timer = 9000 | remark@4
+
+[remark@4]
+target = 7212
+anim = ward
+combat_ignore_cond = always
+danger = danger
+snd = cit_colonel_dlg2
+on_timer = 2000 | remark@5
+
+[remark@5]
+target = 7212
+anim = ward
+combat_ignore_cond = always
+danger = danger
+on_timer = 25000 | remark@6
+
+[remark@6]
+target = 7212
+anim = ward
+combat_ignore_cond = always
+danger = danger
+snd = cit_colonel_dlg4
+on_timer = 3000 | walker@4
+
+[walker@4]
+path_walk = cit_actor_walk1
+path_look = cit_colonel_wait_point1
+combat_ignore_cond = always
+danger = danger
+def_state_standing = ward
+def_state_moving1 = walk
+on_info = {+cit_jail_scene_end} %=release%
+
+
+

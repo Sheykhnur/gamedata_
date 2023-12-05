@@ -1,0 +1,70 @@
+[combat_ignore]
+
+[logic]
+active = walker@war_commander_walk
+combat_ignore = combat_ignore
+
+[walker@war_commander_walk]
+path_walk = war_scene1_commander_walk
+path_look = war_scene1_commander_walk_look
+combat_ignore_cond = always
+meet = no_meet
+def_state_standing = sar_kgb
+on_signal = sreached | remark@war_commander1 %+war_sc1_talk1%
+
+[remark@war_commander1]
+anim = sar_kgb
+target = war_scene1_commander_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_talk2} remark@war_commander2
+
+[remark@war_commander2]
+anim = sar_kgb
+snd = war_replics3
+target = war_scene1_burer3, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc1_talk3%
+on_info = {+war_sc1_talk4} remark@war_commander3
+
+[remark@war_commander3]
+anim = mil_nope
+snd = war_replics5
+target = war_scene1_commander_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc1_talk5%
+on_info = {+war_sc1_talk6} remark@war_commander4
+
+[remark@war_commander4]
+anim = wait
+snd = war_replics7
+target = war_scene1_commander_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_commander5
+
+[remark@war_commander5]
+anim = ordinary_talk4
+snd = war_replics8
+combat_ignore_cond = always
+target = war_scene1_commander_look, 0
+meet = no_meet
+on_signal = sound_end | %+war_sc1_talk8% remark@war_commander6
+
+[remark@war_commander6]
+anim = sar_kgb_sign
+snd = war_replics9
+meet = no_meet
+target = war_scene1_burer3, 0
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc1_talk9% walker@war_commander_away
+
+[walker@war_commander_away]
+path_walk = war_scene1_commander_away
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 2000 | %+war_sc1_corpses1%
+on_signal = sc1comaw | %=release%
+

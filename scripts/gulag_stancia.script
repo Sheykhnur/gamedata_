@@ -1,0 +1,654 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_stancia.script
+ Description: Gulags Stancia
+ Copyright  : 2013 © LA-team
+ Author     : loxotron
+ Editors    : vintar, loxotron(23.02.2013)
+ Last edit  : 17.11.2017 (by lox) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	aes_raiders                 = {comm = {"military"}},
+	aes_mil_recon               = {comm = {"military"}},
+	aes_mil_recon_after         = {comm = {"military"}},
+	aes_dolg1_terrain           = {comm = {"dolg"}},
+	aes_mono_ambush             = {comm = {"monolith"}, out_rest = "aes_mono_ambush_out_rest"},
+	aes_mono_ambush2            = {comm = {"monolith"}, out_rest = "aes_mono_ambush2_out_rest"},
+	aes_gates_guards            = {comm = {"monolith"}},
+	aes_heli_hunters            = {comm = {"monolith"}, out_rest = "aes_heli_hunters_out_rest"},
+	aes_mono_bridge             = {comm = {"monolith"}, out_rest = "aes_mono_bridge_out_rest"},
+	aes_mono_npp                = {comm = {"monolith"}, out_rest = "aes_mono_npp_out_rest"},
+	aes_mono_npp2               = {comm = {"monolith"}, out_rest = "aes_mono_npp2_out_rest"},
+	aes_mono_north_east_terrain = {comm = {"monolith"}},
+	aes_ghost_group				= {comm = {"dolg"}},
+	--/ for monsters ------------------------------
+	aes_dog_smart1          = {comm = {"dog"}},
+	aes_dog_smart2          = {comm = {"dog"}},
+	aes_dog_smart3          = {comm = {"dog"}},
+	aes_dog_smart4          = {comm = {"dog"}},
+	aes_dog_smart5          = {comm = {"dog"}},
+	aes_dog_smart6          = {comm = {"dog"}},
+	aes_boars_smart1        = {comm = {"boar"}},
+	aes_boars_smart2        = {comm = {"boar"}},
+	aes_boars_smart3        = {comm = {"boar"}},
+	aes_flesh_smart         = {comm = {"flesh"}},
+	aes_snork_smart         = {comm = {"snork"}},
+	aes_snork_smart2        = {comm = {"snork"}},
+	aes_snork_smart3        = {comm = {"snork"}},
+	aes_sucker_smart        = {comm = {"bloodsucker"}},
+	aes_rats_smart          = {comm = {"rat","tushkano"}},
+	aes_zombied_smart       = {comm = {"zombied"}},
+	aes_pseudodog_terrain   = {comm = {"pseudodog"}},
+	npp_poltergeist_terrain = {comm = {"poltergeist"}},
+	--/ swamp beasts ------------------------------
+	aes_ghosts_smart1       = {comm = {"swampbeast"}},
+	aes_ghosts_smart2       = {comm = {"swampbeast"}},
+	aes_ghosts_smart3       = {comm = {"swampbeast"}},
+	aes_ghosts_smart4       = {comm = {"swampbeast"}},
+	aes_ghosts_smart5       = {comm = {"swampbeast"}},
+	aes_ghosts_smart6       = {comm = {"swampbeast"}},
+	--/ mutants waves -----------------------------
+	aes_mutants_wave_smart  = {comm = {"chimera","flesh","pseudodog","dog"}, out_rest = "aes_mutants_wave_smart_outrestrictor"},
+	aes_zombied_wave1       = {comm = {"zombied"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local is_online = "{=xr_gulag.actor_on_gulag_level()}"
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ raid
+--/ ---------------------------------------------
+local helper = {
+["npp_stalker_raiders1"] = true, ["npp_stalker_raiders2"] = true, ["npp_stalker_raiders3"] = true, ["npp_stalker_raiders4"] = true, ["npp_stalker_raiders5"] = true, ["npp_stalker_raiders6"] = true, ["npp_stalker_raiders7"] = true, ["npp_stalker_raiders8"] = true, ["npp_stalker_raiders9"] = true, ["npp_stalker_raiders10"] = true, ["npp_stalker_raiders11"] = true } 
+
+gulags.aes_raiders.leader_pred = function(info) return info.name == "npp_military_leader" end
+
+gulags.aes_raiders.raid_pred = function(info) return helper[info.name] == true end
+
+gulags.aes_raiders.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader",  0, 7, {0}, squad, groups[1], "", "", nil, type, gulags.aes_raiders.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("guard1",  0, 5, {0}, squad, groups[1], "", "", is_online, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("guard2",  0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("patrol",  0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("cleaner", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("talkers" .. i, 0, 5, {0}, squad, groups[1], "",  "", is_online, type, on_level_pred))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("prepare" .. i, 0, 5, {0}, squad, groups[1], "",  "", nil, type, on_level_pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("raid_lead", 0, 7, {1}, squad, groups[1], "", "", is_online, type, gulags.aes_raiders.leader_pred))
+	for i = 1, 11 do
+		table.insert(sj, gulag_tasks.getJob("raid"..i, 0, 5, {1}, squad, groups[1], "", "", nil, type, gulags.aes_raiders.raid_pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("lead_mutants", 0, 7, {2}, squad, groups[1], "", "", is_online, type, gulags.aes_raiders.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("raid_mutants1", 0, 5, {2}, squad, groups[1], "", "", nil, type, gulags.aes_raiders.raid_pred))
+	table.insert(sj, gulag_tasks.getJob("raid_mutants2", 0, 7, {2}, squad, groups[1], "", "", nil, type, gulags.aes_raiders.raid_pred))	
+	for i = 3, 11 do
+		table.insert(sj, gulag_tasks.getJob("raid_mutants"..i, 0, 5, {2}, squad, groups[1], "", "", nil, type, gulags.aes_raiders.raid_pred))
+	end
+end
+
+gulags.aes_raiders.state = function(gulag)
+	if has_info("aes_mutants_wave_start") then
+		return 2
+	elseif not has_info("aes_mutants_wave_start") then
+		if has_info("aes_raid_start") or has_info("npp_chose_dolg1") or has_info("aes_help_raiders_refuse") then
+			return 1
+		end
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ aes mil recon
+--/ ---------------------------------------------
+gulags.aes_mil_recon.leader_pred         = function(info) return info.name == "npp_recon_leader" end
+gulags.aes_mil_recon.raider_pred         = function(info) return info.profile_name == "aes_Soldier_sniper" end
+gulags.aes_mil_recon.raiders_pred        = function(info) return info.profile_name == "aes_Soldier_specnaz_aes" end
+gulags.aes_mil_recon.raiders_leader_pred = function(info) return info.profile_name == "npp_military_leader" end
+gulags.aes_mil_recon.raiders_raid_pred   = function(info) return info.name:match("^npp_stalker_raiders") end
+
+gulags.aes_mil_recon.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("raiders_leader_off",     0, 7,   {0}, squad, groups[1], "", "", false, type, gulags.aes_mil_recon.raiders_leader_pred)) --/#?#
+	table.insert(sj, gulag_tasks.getJob("raiders_leader",     0, 7, {1,2}, squad, groups[1], "", "",   nil, type, gulags.aes_mil_recon.raiders_leader_pred)) --/#?#
+	for i = 1, 11 do
+		table.insert(sj, gulag_tasks.getJob("off_raiders" .. i, 0, 5,   {0}, squad, groups[1], "", "", false, type, gulags.aes_mil_recon.raiders_raid_pred))
+		table.insert(sj, gulag_tasks.getJob("raiders"     .. i, 0, 5, {1,2}, squad, groups[1], "", "",   nil, type, gulags.aes_mil_recon.raiders_raid_pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("leader",        0, 7, {0,1}, squad, groups[1], "", "", nil, type, gulags.aes_mil_recon.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("raid_meet",     0, 5, {0,1}, squad, groups[1], "", "", nil, type, gulags.aes_mil_recon.raider_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("raid" .. i,   0, 5, {0,1}, squad, groups[1], "", "", nil, type, gulags.aes_mil_recon.raiders_pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("attack_leader", 0, 7,   {2}, squad, groups[1], "", "", nil, type, gulags.aes_mil_recon.leader_pred))
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("attack" .. i, 0, 5,   {2}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("prepare" .. i, 0, 5, {0,1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.aes_mil_recon.state = function(gulag)
+	if has_info("npp_chose_dolg1") and has_info("aes_dolg1_sar_details") then
+		return 2
+	elseif has_info("aes_raiders_to_recon") then
+		if has_info("aes_dudaev_raid_start") then
+			return 2
+		end
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ npp recon after
+--/ ---------------------------------------------
+gulags.aes_mil_recon_after.leader_pred = function(info) return info.name == "npp_recon_leader" end
+
+gulags.aes_mil_recon_after.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader",       0, 7, {0}, squad, groups[1], "", "", nil, type, gulags.aes_mil_recon_after.leader_pred))
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ aes_dolg1_terrain
+--/ ---------------------------------------------
+gulags.aes_dolg1_terrain.leader_pred = function(info) return info.name == "aes_dolg1_terrain_leader" end
+
+gulags.aes_dolg1_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader",      0, 7, {0}, squad, groups[1], "", "", nil, type, gulags.aes_dolg1_terrain.leader_pred))
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("dolg" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ monolith ambush
+--/ ---------------------------------------------
+gulags.aes_mono_ambush.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("walk_off" .. i, 0, 5, {0}, squad, groups[1], "", gulags.aes_mono_ambush.out_rest, false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("walk" .. i,     0, 5, {1}, squad, groups[1], "", gulags.aes_mono_ambush.out_rest,   nil, type, on_level_pred))
+	end
+end
+
+gulags.aes_mono_ambush.state = function(gulag)
+	if has_info("aes_btr_death2_delay") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ monolith gates guards
+--/ ---------------------------------------------
+gulags.aes_gates_guards.common_pred = function(info) return info.name:match("^npp_stalker_mono_gate_guard") end
+
+gulags.aes_gates_guards.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("walk" .. i, 0, 5, {0}, squad, groups[1], "",  "aes_gates_guards_out_restrictor", nil, type, gulags.aes_gates_guards.common_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ monolith heli hunters
+--/ ---------------------------------------------
+gulags.aes_heli_hunters.rpg_pred = function(info) return info.name:match("^npp_stalker_mono_heli_hunter_rpg") end
+
+gulags.aes_heli_hunters.guard_pred = function(info) return info.name:match("^npp_stalker_mono_heli_hunter_guard") end
+
+gulags.aes_heli_hunters.jobs = function(sj, gname, type, squad, groups) --/#?#
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("air_combat" .. i, 0, 5, {0,1}, squad, groups[1], "", gulags.aes_heli_hunters.out_rest, is_online, type, gulags.aes_heli_hunters.rpg_pred))
+	end
+	for i = 9, 12 do
+		table.insert(sj, gulag_tasks.getJob("air_combat" .. i, 0, 5,   {1}, squad, groups[1], "", gulags.aes_heli_hunters.out_rest, is_online, type, gulags.aes_heli_hunters.rpg_pred))
+	end
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("off" .. i,   0, 5,   {0}, squad, groups[1], "", gulags.aes_heli_hunters.out_rest, false, type, gulags.aes_heli_hunters.rpg_pred))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i, 0, 5, {0,1}, squad, groups[1], "", gulags.aes_heli_hunters.out_rest,   is_online, type, gulags.aes_heli_hunters.guard_pred))
+	end
+end
+
+gulags.aes_heli_hunters.state = function(gulag)
+	if has_info("aes_hunter_task_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ monolith bridge
+--/ ---------------------------------------------
+gulags.aes_mono_bridge.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i,  0, 5, {0}, squad, groups[1], "", gulags.aes_mono_bridge.out_rest, nil, type, on_level_pred))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i, 0, 5, {0}, squad, groups[1], "", gulags.aes_mono_bridge.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ monolith npp
+--/ ---------------------------------------------
+gulags.aes_mono_npp.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i, 0, 5, {0}, squad, groups[1], "", gulags.aes_mono_npp.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ monolith npp 2
+--/ ---------------------------------------------
+gulags.aes_mono_npp2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i, 0, 5, {0}, squad, groups[1], "", gulags.aes_mono_npp2.out_rest, nil, type, on_level_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("walk" .. i,  0, 5, {0}, squad, groups[1], "", gulags.aes_mono_npp2.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ monolith ambush 2
+--/ ---------------------------------------------
+gulags.aes_mono_ambush2.rpg_pred = function(info) return info.name:match("^aes_mono_ambush2_rpg") end
+
+gulags.aes_mono_ambush2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("wait_off" .. i, 0, 5, {0}, squad, groups[1], "", gulags.aes_mono_ambush2.out_rest, false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("wait" .. i,     0, 5, {1}, squad, groups[1], "", gulags.aes_mono_ambush2.out_rest, nil, type, on_level_pred))
+	end
+	for i = 9, 12 do
+		table.insert(sj, gulag_tasks.getJob("wait_off" .. i, 0, 5, {0}, squad, groups[1], "", gulags.aes_mono_ambush2.out_rest, false, type, gulags.aes_mono_ambush2.rpg_pred))
+		table.insert(sj, gulag_tasks.getJob("wait" .. i,     0, 5, {1}, squad, groups[1], "", gulags.aes_mono_ambush2.out_rest, nil, type, gulags.aes_mono_ambush2.rpg_pred))
+	end
+end
+
+gulags.aes_mono_ambush2.state = function(gulag)
+	if has_info("aes_monolith_ambush2_start") or has_info("aes_dolg1_sar_details") or has_info("aes_raiders_to_recon") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ aes_mutants_wave_smart
+--/ ---------------------------------------------
+gulags.aes_mutants_wave_smart.wave1_pred = function(info) return info.name:match("^aes_mutants_wave1") end
+gulags.aes_mutants_wave_smart.wave2_pred = function(info) return info.name:match("^aes_mutants_wave2") end
+
+gulags.aes_mutants_wave_smart.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 16 do
+		table.insert(sj, gulag_tasks.getJob("raid_wave1_off" .. i, 0, 5, {0,2}, squad, groups[1], "", "aes_mutants_wave_smart_outrestrictor", false, type, gulags.aes_mutants_wave_smart.wave1_pred))
+		table.insert(sj, gulag_tasks.getJob("raid_wave2_off" .. i, 0, 5, {0,1}, squad, groups[1], "", "aes_mutants_wave_smart_outrestrictor", false, type, gulags.aes_mutants_wave_smart.wave2_pred))
+		table.insert(sj, gulag_tasks.getJob("raid_wave1_" .. i,    0, 5,   {1}, squad, groups[1], "", "aes_mutants_wave_smart_outrestrictor", is_online, type, gulags.aes_mutants_wave_smart.wave1_pred))
+		table.insert(sj, gulag_tasks.getJob("raid_wave2_" .. i,    0, 5,   {2}, squad, groups[1], "", "aes_mutants_wave_smart_outrestrictor", is_online, type, gulags.aes_mutants_wave_smart.wave2_pred))
+	end
+end
+
+gulags.aes_mutants_wave_smart.state = function(gulag)
+	if has_info("aes_mutants_wave_start") then
+		if has_info("aes_12mutants_dead") then
+			return 2
+		end
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ aes_mono_north_east_terrain
+--/ ---------------------------------------------
+gulags.aes_mono_north_east_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("walk_off" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("walk" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.aes_mono_north_east_terrain.state = function(gulag)
+	if has_info("aes_find_recon_start") or has_info("aes_raid_dolg1_checked") or has_info("aes_after_wave_speak") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ aes_zombied_wave1
+--/ ---------------------------------------------
+gulags.aes_zombied_wave1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("off" .. i,  0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("walk" .. i, 0, 5, {1}, squad, groups[1], "", "", is_online, type, on_level_pred))
+	end
+end
+
+gulags.aes_zombied_wave1.state = function(gulag)
+	if has_info("aes_12mutants_dead") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ aes_pseudodog_terrain
+--/ ---------------------------------------------
+gulags.aes_pseudodog_terrain.pred = function(info)
+	return info.name:match("^aes_pseudodog_terrain")
+end
+
+gulags.aes_pseudodog_terrain.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_pseudodog_terrain.ltx = smart_dyn_ltx.add_mob_home(type, 7, 10, 25)
+	
+	for i = 1, 7 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.aes_pseudodog_terrain.pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ npp_poltergeist_terrain
+--/ ---------------------------------------------
+gulags.npp_poltergeist_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("poltergeist" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs smart 1
+--/ ---------------------------------------------
+gulags.aes_dog_smart1.pred = function(info) return info.name:match("^aes_dog_smart1") end
+
+gulags.aes_dog_smart1.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_dog_smart1.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.aes_dog_smart1.pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs smart 2
+--/ ---------------------------------------------
+gulags.aes_dog_smart2.pred = function(info) return info.name:match("^aes_dog_smart2") end
+
+gulags.aes_dog_smart2.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_dog_smart2.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 20)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.aes_dog_smart2.pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs smart 3
+--/ ---------------------------------------------
+gulags.aes_dog_smart3.pred = function(info) return info.name:match("^aes_dog_smart3") end
+
+gulags.aes_dog_smart3.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_dog_smart3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 25)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.aes_dog_smart3.pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs smart 4
+--/ ---------------------------------------------
+gulags.aes_dog_smart4.pred = function(info) return info.name:match("^aes_dog_smart4") end
+
+gulags.aes_dog_smart4.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_dog_smart4.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 25)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.aes_dog_smart4.pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs smart 5
+--/ ---------------------------------------------
+gulags.aes_dog_smart5.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_dog_smart5.ltx = smart_dyn_ltx.add_mob_home(type, 4, 10, 25)
+	
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs smart 6
+--/ ---------------------------------------------
+gulags.aes_dog_smart6.pred = function(info) return info.name:match("^aes_dog_smart6") end
+
+gulags.aes_dog_smart6.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_dog_smart6.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 25)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.aes_dog_smart6.pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ aes_flesh_smart
+--/ ---------------------------------------------
+gulags.aes_flesh_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_flesh_smart.ltx = smart_dyn_ltx.add_mob_home(type, 9, 10, 25)
+	
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ aes_zombied_smart
+--/ ---------------------------------------------
+gulags.aes_zombied_smart.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("walk" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snork smart
+--/ ---------------------------------------------
+gulags.aes_snork_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_snork_smart.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 15)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snork smart 2
+--/ ---------------------------------------------
+gulags.aes_snork_smart2.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_snork_smart2.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 25)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ snork smart 3
+--/ ---------------------------------------------
+gulags.aes_snork_smart3.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_snork_smart3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 35)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ bloodsucker smart
+--/ ---------------------------------------------
+gulags.aes_sucker_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_sucker_smart.ltx = smart_dyn_ltx.add_mob_home(type, 1, 10, 35)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ boars smart 1
+--/ ---------------------------------------------
+gulags.aes_boars_smart1.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_boars_smart1.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ boars smart 2
+--/ ---------------------------------------------
+gulags.aes_boars_smart2.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_boars_smart2.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ boars smart 3
+--/ ---------------------------------------------
+gulags.aes_boars_smart3.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_boars_smart3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ rats smart
+--/ ---------------------------------------------
+gulags.aes_rats_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_rats_smart.ltx = smart_dyn_ltx.add_mob_home(type, 12, 10, 30)
+	
+	for i = 1, 12 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp beasts 1
+--/ ---------------------------------------------
+gulags.aes_ghosts_smart1.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_ghosts_smart1.ltx = smart_dyn_ltx.add_mob_home(type, 1, 10, 30)
+	
+  table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ swamp beasts 2
+--/ ---------------------------------------------
+gulags.aes_ghosts_smart2.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_ghosts_smart2.ltx = smart_dyn_ltx.add_mob_home(type, 4, 10, 30)
+	
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp beasts 3
+--/ ---------------------------------------------
+gulags.aes_ghosts_smart3.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_ghosts_smart3.ltx = smart_dyn_ltx.add_mob_home(type, 6, 10, 20)
+	
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp beasts 4
+--/ ---------------------------------------------
+gulags.aes_ghosts_smart4.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_ghosts_smart4.ltx = smart_dyn_ltx.add_mob_home(type, 7, 10, 25)
+	
+	for i = 1, 7 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp beasts 5
+--/ ---------------------------------------------
+gulags.aes_ghosts_smart5.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_ghosts_smart5.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp beasts 6
+--/ ---------------------------------------------
+gulags.aes_ghosts_smart6.jobs = function(sj, gname, type, squad, groups)
+	gulags.aes_ghosts_smart6.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ aes_ghost_group
+--/ ---------------------------------------------
+gulags.aes_ghost_group.pred = function(info) return info.name:match("^aes_ghost_group") end
+
+gulags.aes_ghost_group.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("off_kamper" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, gulags.aes_ghost_group.pred))
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, gulags.aes_ghost_group.pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("off_patrol" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, gulags.aes_ghost_group.pred))
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, gulags.aes_ghost_group.pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("off_sleeper1", 0, 5, {0}, squad, groups[1], "", "", false, type, gulags.aes_ghost_group.pred))
+	table.insert(sj, gulag_tasks.getJob("sleeper1",  	0, 5, {1}, squad, groups[1], "", "",   nil, type, gulags.aes_ghost_group.pred))
+	table.insert(sj, gulag_tasks.getJob("off_guard1", 	0, 5, {0}, squad, groups[1], "", "", false, type, gulags.aes_ghost_group.pred))
+	table.insert(sj, gulag_tasks.getJob("guard1",  		0, 5, {1}, squad, groups[1], "", "",   nil, type, gulags.aes_ghost_group.pred))
+end
+
+gulags.aes_ghost_group.state = function(gulag)
+	if has_info("has_freeplay_info") then
+		return 1
+	end
+	return 0
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,471 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_light_guard.script
+ Description: scheme: "Illuminator: guard for 'Projector'" ("Lighter man")
+ Copyright  : 2008 © LA-team
+ Author     : barin (25.08.2008)
+ Editors    : 26.09.2012 (by gr1ph00n)
+ Last edit  : 30.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local sSchemeName = "light_guard" --/ string name of the scheme
+local iEvl_LGuard = xr_evaluators_id.la_light_guard_base --/ property_base
+local iAct_LGuard = xr_actions_id.la_light_guard_base --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+local tBindActs = {} --/ array of 'external' actions disconnected in case of the active scheme
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ --------------------------
+function PreSets(e)
+	tBindActs = {
+		[1] = stalker_ids.action_alife_planner,
+		[2] = stalker_ids.action_combat_planner,
+		[3] = stalker_ids.action_danger_planner,
+		[4] = xr_actions_id.chugai_heli_hunter_base, --/#?#
+		[5] = xr_actions_id.stohe_meet_base +1,
+		[6] = stalker_ids.action_gather_items, --/ gathering (of items)
+	}
+	tBindEvls = {
+		[1] = { stalker_ids.property_alive,          true  }, --/ NPC alive
+		[2] = { stalker_ids.property_anomaly,        false }, --/ no anomalies
+		[3] = { xr_evaluators_id.sidor_wounded_base, false }, --/ NPC not wounded
+	}
+	local tbl = {
+		[1] = {id = db.xr_blowout   and xr_blowout.get_ai_evl(0),   flg = false}  --/ no blowout
+	}
+	--/ AddProperty to tBindEvls
+	for _,v in ipairs(tbl) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+--/ Evaluators
+--/ ------------------------------------------------------------------
+class "evaluator_light_guard" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/ condition: current section of logic active (true/false)
+function evaluator_light_guard:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_light_guard:evaluate()
+	return xr_logic.is_active(self.object, self.st)
+end
+--/ ------------------------------------------------------------------
+class "evaluator_projector_reach" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/ NPC not on position (not near projector)?
+function evaluator_projector_reach:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_projector_reach:evaluate()
+	return not self.st.on_position
+end
+--/ ------------------------------------------------------------------
+class "evaluator_projector_found" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/ projector not broken?
+function evaluator_projector_found:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_projector_found:evaluate()
+	return self.st.projector ~= nil
+end
+
+--/ ------------------------------------------------------------------
+--/ Actions
+--/ ------------------------------------------------------------------
+class "action_projector_reach" (action_base)
+--/ ------------------------------------------------------------------
+function action_projector_reach:__init (action_name, st) super(nil, action_name)
+	self.st = st
+	self.log = st.log
+	self.move_mgr = st.move_mgr
+end
+
+function action_projector_reach:initialize()
+	action_base.initialize(self)
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	--self.object:disable_talk()
+	self.st.signals = {}
+	if not self.st.path_walk_info then
+		ASSERT(validate_patrol_path(self.st.path_walk, self.object, true), "ac_projector_reach:ini: section=[%s] path_walk=[%s] wrong!", self.st.path_walk, "")
+		self.path_walk = get_patrol(self.st.path_walk)
+		self.st.path_walk_info = utils.path_parse_waypoints(self.st.path_walk)
+		if self.path_walk:count() == 1 and self.st.path_look and level.patrol_path_exists(self.st.path_look) then
+			self.st.path_look_info = utils.path_parse_waypoints(self.st.path_look)
+		end
+		self:set_terminal()
+	end
+	self.move_mgr:reset(self.st.path_walk, self.st.path_walk_info, self.st.path_look, self.st.path_look_info, nil, self.st.suggested_state)
+	xr_sound.set_sound(self.object, self.st.sound_idle)
+	if self.log then log("ac_projector_reach:ini:NPC=[%s],path_walk=[%s]", self.object:name(), self.st.path_walk, "") end --/#~#
+end
+
+function action_projector_reach:execute()
+	action_base.execute(self)
+	
+	self.move_mgr:update()
+	
+	if not xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		if self.has_terminal then
+			self.st.on_position = self.move_mgr:standing_on_terminal_waypoint() --/ we standing on last point?
+		elseif self.wp_sig then
+			self.st.on_position = self.st.signals["ready"] == true
+			if not self.st.on_position then
+				self.st.on_position = utils.stalker_at_waypoint(self.object, self.path_walk, self.wp_sig)
+			end
+		elseif self.wp_terminal then
+			self.st.on_position = utils.stalker_at_waypoint(self.object, self.path_walk, self.wp_terminal)
+		else
+			self.st.on_position = true --/ stub
+		end
+		if self.log then log("ac_projector_reach:exe:NPC=[%s] on_position=(%s)", self.object:name(), self.st.on_position, "") end --/#~#
+	end
+end
+
+function action_projector_reach:finalize()
+	if self.log then log("ac_projector_reach:fin:NPC=[%s]:(%s)", self.object:name(), "x") end --/#~#
+	self.move_mgr:finalize()
+	action_base.finalize(self)
+end
+
+function action_projector_reach:activate_scheme()
+	if self.log then log("ac_projector_reach:activate_scheme:NPC=[%s],projector=[%s]/[%s]", self.object:name(), self.st.projector_str, self.st.projector_id, "") end --/#~#
+	self.st.projector = nil
+	self.st.projector_broken = nil
+	self.st.on_position = false
+end
+
+function action_projector_reach:set_terminal()
+	--/ checking if there is terminal point or signal 'where to stand'
+	--table.print(self.st.path_walk_info, sModule..":path_info|"..self.st.path_walk) --/#~#
+	local wp_count = self.path_walk:count()
+	for i=0, wp_count -1 do
+		if self.path_walk:terminal(i) then
+			self.has_terminal = i
+			break
+		elseif self.st.path_walk_info[i].sig and self.st.path_walk_info[i].sig == "ready" then
+			self.wp_sig = i
+			break
+		end
+	end
+	if not (self.has_terminal or self.wp_sig) and self.st.projector_id then
+		local obj = level.object_by_id(self.st.projector_id)
+		if obj then
+			self.wp_terminal = utils.get_nearest_waypoint(obj, self.st.path_walk, self.path_walk, wp_count)
+		end
+		if not self.wp_terminal then
+			log("ac_projector_reach:set_terminal:NPC=[%s],path_walk=[%s] NOT terminal :<%s>", self.object:name(), self.st.path_walk, "Warning!") --/#~#
+		end
+	end
+end
+
+--/ ------------------------------------------------------------------
+class "action_projector_find" (action_base)
+--/ ------------------------------------------------------------------
+function action_projector_find:__init (action_name, st) super(nil, action_name)
+	self.st = st
+	self.log = st.log
+end
+
+function action_projector_find:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_projector_find:ini: NPC=[%s] projector=[%s]/[%s]", self.object:name(), self.st.projector_str, self.st.projector_id, "") end --/#~#
+end
+
+function action_projector_find:execute()
+	action_base.execute(self)
+	
+	if not self.st.projector and self.st.projector_id then
+		local sobj = alife():object(self.st.projector_id)
+		local obj = sobj and level.object_by_id(sobj.id)
+		if sobj then
+			if obj then
+				self.st.projector = projector.get(obj, self.st.rot_hspeed, self.st.rot_vspeed, sModule)
+				if self.log then log("ac_projector_find:exe: projector=[%s]/[%s] found", obj:name(), sobj.id, "") end --/#~#
+			elseif self.log then log("ac_projector_find:exe: projector=[%s]/[%s] wait", sobj:name(), sobj.id, "") --/#~# waiting when appear online
+			end
+		else
+			log("ac_projector_find:exe: projector=[%s]/[%s] does not exist:<%s>", self.st.projector_str, self.st.projector_id, "Error!")
+			disable_scheme(self.object, sSchemeName)
+		end
+	end
+end
+
+function action_projector_find:finalize()
+	action_base.finalize(self)
+	if self.log then log("ac_projector_find:fin: NPC=[%s] projector=[%s]/[%s]:(%s)", self.object:name(), self.st.projector_str, self.st.projector_id, "x") end --/#~#
+end
+
+--/ ------------------------------------------------------------------
+class "action_light_guard" (action_base)
+--/ ------------------------------------------------------------------
+function action_light_guard:__init(action_name, st) super(nil, action_name)
+	self.st        = st
+	self.log       = st.log
+end
+
+function action_light_guard:initialize()
+	action_base.initialize(self)
+	
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	
+	self.path_look = get_patrol(self.st.path_look)
+	self.wp_count  = self.path_look:count() --/TODO: better add check on >1 point...
+	self.rnd_wp    = self.st.rnd_wp
+	self.timeout   = self.st.timeout
+	self.anim      = self.st.anim
+	self.mode      = "forward"
+	self.curr_wp   = 0
+	self.look_time = time_global() + self.timeout
+	self.st.signals = {}
+	if self.log then log("ac_light_guard:ini:NPC=[%s],projector=(%s)", self.object:name(), self.st.projector ~= nil, "") end --/#~#
+	local wp_pos = level.vertex_position( self.path_look:level_vertex_id(self.curr_wp) )
+	--/ setting state for NPC
+	state_mgr.set_state(self.object, self.anim, nil, nil, {look_position = wp_pos}, {animation = true})
+	--/ setting state for projector
+	if self.st.projector then
+		if self.st.projector:IsBroken() then
+			self.st.projector_broken = true
+			self.st.signals["broken"] = true --/#?# do we need it?
+		else
+			self.st.projector:turn_on()
+			self.st.projector:look_at( self.path_look:point(self.curr_wp) )
+		end
+	end
+end
+
+function action_light_guard:execute()
+	action_base.execute(self)
+	
+	if time_global() > (self.look_time or 0) then
+		self.look_time = time_global() + self.timeout
+		self:look_at_waypoint()
+	end
+	
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+
+function action_light_guard:finalize()
+	action_base.finalize(self)
+	if self.st.projector then
+		self.st.projector:remove()
+		self.st.projector = nil
+	end
+end
+
+function action_light_guard:look_at_waypoint()
+	local look_pos = nil
+	--vintar: its better to check only for enemy actor so no confusion for light direction, also best_enemy() seems triggered only when hit
+	local stor = db.storage[self.object:id()]
+	if stor and stor.enemy_id and stor.enemy_id == idActor and xr_combat_ignore.is_enemy(self.object, db.actor, nil) then
+		--log("lighguard [%s] has enemy [%s]", self.object:name(), "actor","")
+		look_pos = db.actor:position()
+	else
+		if self.rnd_wp then
+			self.curr_wp = math.random(self.wp_count) -1
+		else
+			if self.curr_wp == (self.wp_count -1) then
+				self.mode = "backward"
+			elseif self.curr_wp == 0 then
+				self.mode = "forward"
+			end
+			if self.mode == "forward" then
+				self.curr_wp = self.curr_wp + 1
+			else
+				self.curr_wp = self.curr_wp - 1
+			end
+		end
+		look_pos = level.vertex_position( self.path_look:level_vertex_id(self.curr_wp) )
+		if self.log then log("ac_light_guard:look_at_waypoint: NPC=[%s], wp=[%s]/[%s]/rnd(%s)", self.object:name(), self.curr_wp, self.wp_count, self.rnd_wp, "") end --/#~#
+	end
+	--/ setting state for NPC
+	state_mgr.set_state(self.object, self.anim, nil, nil, {look_position = look_pos}, {animation = true})
+	--/ setting state for projector
+	if self.st.projector and not self.st.projector_broken then
+		if self.st.projector:IsBroken() then
+			self.st.projector_broken = true
+			self.st.signals["broken"] = true --/#?# do we need it?
+		else
+			self.st.projector:look_at(look_pos) --/ self.path_look:point(self.curr_wp)
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder: NPC=[%s], scheme=[%s], section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.move_mgr = db.storage[npc:id()].move_mgr --/#!#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	oPlanner:add_evaluator(iEvl_LGuard +0, this.evaluator_light_guard("ev_light_guard", st)) --/ scheme active
+	oPlanner:add_evaluator(iEvl_LGuard +1, this.evaluator_projector_reach("ev_projector_reach", st) ) --/ take position
+	oPlanner:add_evaluator(iEvl_LGuard +2, this.evaluator_projector_found("ev_projector_found", st) ) --/ projector found
+	
+	--/ New Action(0): NPC goes on position (to projector)
+	oNewAction = this.action_projector_reach("ac_projector_reach", st)
+	for idx,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition(world_property( iEvl_LGuard +0, true)) --/ scheme active
+	oNewAction:add_precondition(world_property( iEvl_LGuard +1, true)) --/ take position
+	oNewAction:add_effect( world_property(iEvl_LGuard +1, false))
+	oPlanner:add_action(iAct_LGuard +0, oNewAction)
+	st.action = oNewAction --/#!# for subscribe for events
+	
+	--/ New Action(1): search of projector on location
+	local oNewAction = this.action_projector_find("ac_projector_find", st)
+	oNewAction:add_precondition( world_property(iEvl_LGuard +2, false) ) --/ projector still not found
+	oNewAction:add_effect( world_property(iEvl_LGuard +2, true) )
+	oPlanner:add_action(iAct_LGuard +1, oNewAction)
+	
+	--/ New Action(2): NPC stand near projector and lighting points
+	local oNewAction = this.action_light_guard("ac_light_guard", st)
+	for idx,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition( world_property(iEvl_LGuard +0,  true)) --/ scheme active
+	oNewAction:add_precondition( world_property(iEvl_LGuard +1, false)) --/ already on position
+	oNewAction:add_precondition(world_property( iEvl_LGuard +2,  true)) --/ projector found
+	oNewAction:add_effect( world_property(iEvl_LGuard +0, false))
+	oPlanner:add_action(iAct_LGuard +2, oNewAction)
+	
+	--/ Actions -----------------------------------------------------
+	local oAction
+	for _,v in ipairs(tBindActs) do
+		oAction = oPlanner:action(v)
+		oAction:add_precondition( world_property(iEvl_LGuard +0, false) )
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	
+	st.path_walk = Get_Cfg_String(ini, section, "path_walk", nil, true, gulag_name)
+	st.path_look = Get_Cfg_String(ini, section, "path_look", nil, true, gulag_name)
+	ASSERT(validate_patrol_path(st.path_walk, npc, true), "set_scheme: section=[%s] path_walk=[%s] wrong!", section, st.path_walk, "")
+	ASSERT(validate_patrol_path(st.path_look, npc, true), "set_scheme: section=[%s] path_look=[%s] wrong!", section, st.path_look, "")
+	st.projector_str = Get_Cfg_String(ini, section, "projector", "")
+	if st.projector_str == "" then st.projector_str = Get_Cfg_String(ini, section, "proj_name", "") end --/#x# rudiment
+	if tonumber(st.projector_str) then --/ sid given
+		st.projector_id = id_by_sid( tonumber(st.projector_str) )
+	else --/ name given
+		local sobj = alife():object(st.projector_str)
+		st.projector_id = sobj and sobj.id
+	end
+	st.enabled = st.projector_id ~= nil
+	ASSERT(st.enabled, "set_scheme: section=[%s] turret=[%s] wrong!", section, st.projector_str, "")
+	
+	st.rnd_wp     = Get_Cfg_Bool  (ini, section, "rnd_wp", false)
+	st.timeout    = Get_Cfg_Num32 (ini, section, "duration", 15*1000)
+	st.anim       = Get_Cfg_String(ini, section, "anim", "guard")
+	
+	st.rot_hspeed = Get_Cfg_Number(ini, section, "rot_hspeed", 0.52)
+	st.rot_vspeed = Get_Cfg_Number(ini, section, "rot_vspeed", 0.22)
+	
+	st.sound_idle = Get_Cfg_String(ini, section, "sound_idle")
+	st.suggested_state = {
+		moving1  = Get_Cfg_String(ini, section, "def_state_moving1"),
+		moving2  = Get_Cfg_String(ini, section, "def_state_moving2"),
+		moving3  = Get_Cfg_String(ini, section, "def_state_moving3"),
+		standing = Get_Cfg_String(ini, section, "def_state_standing")
+	}
+	--/ for debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s],path_look=[%s]", npc:name(), scheme, section, gulag_name, st.path_look, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = npc and db.storage[ npc:id() ]
+	local st = stor and stor[scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		st.enabled = false
+	end
+end
+--/ ----------------------------------------------
+function is_npc_illuminator(npc)
+	local stor = npc and db.storage[ npc:id() ]
+	local st = stor and stor[sSchemeName]
+	return st ~= nil and st.enabled --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+function is_projector_broken(npc)
+	local stor = npc and db.storage[ npc:id() ]
+	local st = stor and stor[sSchemeName]
+	return st and st.projector_broken == true
+end
+--[[
+class Projector : CGameObject,... {
+	Projector(CGameObject*, number, number, string)
+	
+	function look_at(vector)
+	function turn_on()
+	function turn_off()
+	function reset(number, number)
+	function remove()
+	function IsBroken()
+	function id()
+}
+--]]
+--[[
+NOTE: the scheme requires finishing!
+1. Scheme moved under control of standard schemes logic mean sections in logic configs;
+2. Parameter of specifing target turret now can be setted by two ways: sid or name;
+3. Added subscheme 'walker' - NPC approaches to projector, for that need way 'path_walk';
+4. If enemy - look and give some light at his direction, and not by setted static way points;
+5. Projector breaks/fade when damaged by hit.
+
+TODO:
+1. Finish disabling scheme when "breaking" and/or when missing/dissapearing project from game.
+2. Do possibility to check for 3rd-party schemes.
+
+EXAMPLE:
+
+[logic]
+active = light_guard@
+
+[light_guard@]
+path_walk = path_search_way ;--/ way should have terminal and/or signal ('sig=ready')
+path_look = path_search_look ;--/ way should have at least 2 points
+projector = name_search_light ;--/ name or story_id
+;on_info = {=is_proj_broken} scheme@section ;--/ vintar: from xr_conditions.script optional check, if projector broken then switch to scheme@section
+duration = 5000
+rnd_wp = true
+;rot_hspeed = 0.52
+;rot_vspeed = 0.22
+anim = caution ;--/ animation 'how to stand near projector'
+;def_state_standing = pkm_idle
+;def_state_moving1 = run
+;def_state_moving2 = run
+;def_state_moving3 = run
+;sound_idle = ...
+--]]

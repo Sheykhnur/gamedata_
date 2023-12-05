@@ -1,0 +1,118 @@
+;====================================================================
+;--/ for la_patrols.script (it is optional)
+;--/ Last edit: 25.07.2013 [...]
+;====================================================================
+;--/ Note: for personal operation!
+;--/ ----------------------------------------------------------------
+[ai_test_wolf_way] ;--/ example: a copy of an existing
+points = p0
+p0:name = name00
+p0:flags = 0x1
+p0:position = -9.5675,0.0496,-33.5014
+p0:game_vertex_id = 7908
+p0:level_vertex_id = 13720
+
+
+[esc_karlik_smart_camp_look]
+points = p0,p1,p2,p3,p4
+p0:name = name00
+p0:flags = 0x4
+p0:position = -72.132,2.778,226.308
+p0:game_vertex_id = 329
+p0:level_vertex_id = 216444
+p0:links = p1(1)
+
+p1:name = name01
+p1:flags = 0x8
+p1:position = -74.966,3.282,221.806
+p1:game_vertex_id = 329
+p1:level_vertex_id = 212162
+p1:links = p2(1)
+
+p2:name = name02
+p2:flags = 0x10
+p2:position = -73.499,3.160,222.896
+p2:game_vertex_id = 329
+p2:level_vertex_id = 214290
+p2:links = p3(1)
+
+p3:name = name03
+p3:flags = 0x2
+p3:position = -77.319,2.642,227.518
+p3:game_vertex_id = 329
+p3:level_vertex_id = 208920
+p3:links = p4(1)
+
+p4:name = name04
+p4:flags = 0x1
+p4:position = -81.215,3.043,223.942
+p4:game_vertex_id = 329
+p4:level_vertex_id = 202484
+p4:links = p0(1)
+
+
+[esc_karlik_smart_camp_home]
+points = p0,p1,p2,p3,p4
+p0:name = name00
+p0:flags = 0x4
+p0:position = -71.814,2.550,228.335
+p0:game_vertex_id = 329
+p0:level_vertex_id = 216447
+p0:links = p1(1)
+
+p1:name = name01
+p1:flags = 0x8
+p1:position = -76.200,3.094,223.483
+p1:game_vertex_id = 329
+p1:level_vertex_id = 209997
+p1:links = p2(1)
+
+p2:name = name02
+p2:flags = 0x10
+p2:position = -71.365,3.108,223.361
+p2:game_vertex_id = 329
+p2:level_vertex_id = 217530
+p20:links = p3(1)
+
+p3:name = name03
+p3:flags = 0x2
+p3:position = -76.149,2.723,226.799
+p3:game_vertex_id = 329
+p3:level_vertex_id = 210000
+p0:links = p4(1)
+
+p4:name = name04
+p4:flags = 0x1
+p4:position = -80.500,3.231,222.265
+p4:game_vertex_id = 329
+p4:level_vertex_id = 203571
+p4:links = p0(1)
+
+[ros_bar_lager_guard_walk2_out]
+points = p0
+p0:name = name00
+p0:flags = 0x1
+p0:position = 127.826,-4.824,25.358
+p0:game_vertex_id = 2243
+p0:level_vertex_id = 230209
+
+
+;--/ ----------------------------------------------------------------
+[create_ways_fix] ;--/ create  new ways
+;--/ ----------------------------------------------------------------
+;ai_test_wolf_way ;--/ example:it is commented out!
+;esc_karlik_smart_camp_look ;--/ create new way
+;esc_karlik_smart_camp_home ;--/ create new way
+
+;esc_psevdo_lair_walker1_walk = esc_psevdo_lair_raid_1
+;esc_psevdo_lair_walker2_walk = esc_psevdo_lair_raid_2
+;esc_psevdo_lair_walker3_walk = esc_psevdo_lair_raid_3
+
+;--/ ----------------------------------------------------------------
+[replace_ways_fix] ;--/ changeover (substitution) of ways
+;--/ ----------------------------------------------------------------
+;--pri_monolith_hq_kamp2_look3 = fake_path_with_flags ;--/ example (it is commented out!)
+;esc_karlik_smart_karlik_look_1 = esc_karlik_smart_camp_look
+;esc_karlik_smart_karlik_way_1 = esc_karlik_smart_camp_home
+;ros_bar_lager_guard_walk2_out = ros_bar_lager_guard_walk2_out
+;====================================================================

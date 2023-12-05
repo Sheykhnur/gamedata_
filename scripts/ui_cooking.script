@@ -1,0 +1,347 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_cooking.script
+ Description: ...
+ Copyright  : 2009 © LA-team
+ Author     : Gr1ph00n (07.09.2009)
+ Editors    : 
+ Last edit  : 05.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ FIX ME cooking tip !!!!!!
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local cooking_foods = parser.read_section(db.lost_alpha_cfg, "cooking_foods")
+local MAX_COOKABLE_FOODS = 5
+is_ui_running = false
+local selected_fire = nil
+local cs_tip = nil
+local useless_removed = false
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "ListViewCookingItem" (CUIListBoxItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function ListViewCookingItem:__init(section, id, timer_started) super()
+	self:SetWndRect(0, 0, 395, 22)
+	self.timer = game_timer.GameTimer()
+	self.section = section
+	self.timer_started = timer_started
+	self.id = id
+	self.inv_name, self.inv_desc, self.item_weight, self.item_cost, self.fridged_item = nil, nil, nil, nil, nil
+	self.item_name = CUIStatic()
+	self.item_name:SetAutoDelete(true)
+	self:AttachChild(self.item_name)
+	self.item_name:SetWndRect(18, 0, 377, 22)
+	self.item_name:SetFont(GetFontLetterica18Russian())
+	self.item_name:SetTextColor(255, 255, 255, 255)
+	self:SetInfo()
+end
+
+function ListViewCookingItem:ResetTimer(h, m, s, ms)
+	self.timer:reset(h, m, s, ms)
+end
+
+function ListViewCookingItem:SetInfo()
+	local sini = system_ini()
+	self.inv_name = game.translate_string(Get_Cfg_String(sini, self.section, "inv_name")) or self.section
+	self.inv_desc     = Get_Cfg_String(sini, self.section, "description")
+	self.item_weight  = Get_Cfg_Number(sini, self.section, "inv_weight")
+	self.item_cost    = Get_Cfg_Num32 (sini, self.section, "cost")
+	self.fridged_item = Get_Cfg_String(sini, self.section, "fridged_item")
+	self.item_name:SetText(string.format("%s", self.inv_name))
+end
+
+function ListViewCookingItem:Reset(section, id)
+	self.section = section
+	self.id = id
+	self:SetInfo()
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiCookingWnd" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiCookingWnd:__init(fire) super()
+	la_utils.custom_ui_usage("show", script_name())
+	self.fire_place = fire
+	is_ui_running = true
+	self.cooking_foods = 0
+	self.selected_item = nil
+	self:InitControls()
+	self:InitCallBacks()
+	self:FillFoodList()
+end
+
+function uiCookingWnd:__finalize()
+	la_utils.custom_ui_usage("hide", script_name())
+end
+
+function uiCookingWnd:InitControls()
+
+	self:Init(0, 0, device().width, device().height)
+	
+	local xml = CScriptXmlInit()
+	local dlg = nil
+	
+	xml:ParseFile("ui_cooking_wnd.xml")
+	
+	dlg = xml:InitStatic("background", self)
+	dlg:SetWndPos(1024 / 2 - dlg:GetWidth() / 2, (768 / 2 - dlg:GetHeight() / 2))
+	xml:InitStatic("upper_line", self)
+	xml:InitStatic("bottom_line", self)
+	
+	self.main_wnd = xml:InitStatic("main_wnd", self)
+	
+	self:Register(xml:InitListBox("main_wnd:food_list", self.main_wnd), "food_list")
+	self:Register(xml:Init3tButton("btn_exit", self), "btn_exit")
+	self.item_info = xml:InitStatic("main_wnd:item_info", self.main_wnd)
+	self:Register(xml:InitStatic("main_wnd:item_info:item_name", self.item_info), "item_info_name")
+	self:Register(xml:InitStatic("main_wnd:item_info:cooking_time", self.item_info), "item_cooking_time")
+--	self:Register(xml:InitStatic("main_wnd:item_info:item_icon", self.item_info), "item_icon")
+	dlg = xml:InitListBox("main_wnd:item_info:item_description", self.item_info)
+	dlg:ShowSelectedItem(true)
+	self:Register(dlg, "item_info_description")
+	self:Register(xml:InitStatic("main_wnd:item_info:timer", self.item_info), "timer")
+	dlg = xml:Init3tButton("btn_take", self)
+	dlg:Enable(false)
+	self:Register(dlg, "btn_take")
+	dlg = xml:Init3tButton("btn_cook", self)
+	dlg:Enable(false)
+	self:Register(dlg, "btn_cook")
+	
+	
+end
+
+function uiCookingWnd:InitCallBacks()
+	self:AddCallback("btn_exit", ui_events.BUTTON_CLICKED, self.OnQuit, self)
+	self:AddCallback("btn_cook", ui_events.BUTTON_CLICKED, self.OnCookBtnClicked, self)
+	self:AddCallback("btn_take", ui_events.BUTTON_CLICKED, self.OnTakeBtnClicked, self)
+	self:AddCallback("food_list", ui_events.LIST_ITEM_CLICKED, self.OnFoodListClicked, self)
+end
+
+function uiCookingWnd:OnCookBtnClicked()
+	local t = nil
+	if self.selected_item == nil then
+		return
+	end
+	if not self.selected_item.timer_started then
+		self.selected_item.timer_started = true
+		t = parser.r_time(Get_Cfg_String(system_ini(), self.selected_item.section, "cooking_time"))
+		self.selected_item.timer:reset(t.h, t.m, t.s, t.ms)
+		la_utils.release_object(self.selected_item.id)
+		self.cooking_foods = self.cooking_foods + 1
+		self:GetStatic("btn_cook"):Enable(false)
+	end
+end
+
+function uiCookingWnd:OnTakeBtnClicked()
+	la_utils.spawn_object_parent(self.selected_item.section, db.actor)
+	self:GetListBox("food_list"):RemoveItem(self:GetListBox("food_list"):GetSelectedItem())
+	self:GetListBox("food_list"):ScrollToBegin()
+	self:GetStatic("item_icon"):Show(false)
+	self:GetStatic("item_info_name"):SetText("")
+	self:GetListBox("item_info_description"):RemoveAll()
+	self:GetStatic("item_cooking_time"):SetText("")
+	self:GetStatic("timer"):SetText("")
+	self:GetStatic("btn_cook"):Enable(false)
+	self:GetStatic("btn_take"):Enable(false)
+	self.selected_item = nil
+end
+
+function uiCookingWnd:OnFoodListClicked()
+	local list = self:GetListBox("food_list")
+	list:ShowSelectedItem(true)
+	if list:GetSize() ~= 0 then
+		if list:GetSelectedItem() ~= -1 then
+			self.selected_item = list:GetItem(list:GetSelectedItem())
+			if self.selected_item then
+				self:DisplayItemInfo()
+			end
+		end
+	end
+end
+
+function uiCookingWnd:Save()
+	local list = self:GetListBox("food_list")
+	local tbl, item = {}, nil
+	for index = 0, list:GetSize() - 1 do
+		item = list:GetItem(index)
+		table.insert(tbl, {section = item.section, timer = item.timer})
+	end
+	self.fire_place:set_foods(tbl)
+end
+
+function uiCookingWnd:Load()
+	local tbl = self.fire_place:get_foods()
+	local game_time = game.get_game_time()
+	local Y, M, D, h, m, s, ms = 0, 0, 0, 0, 0, 0, 0
+	local item = nil
+	for k, v in pairs(tbl) do
+		if v.timer:diffSec(game_time) <= (25 * 60 * 60) then
+			Y, M, D, h, m, s, ms = v.timer.timer:get(Y, M, D, h, m, s, ms)
+			item = ListViewCookingItem(v.section, 65536, not v.timer:expired())
+			item.timer.timer:set(Y, M, D, h, m, s, ms)
+			self:GetListBox("food_list"):AddItem(item)
+			Y, M, D, h, m, s, ms = 0, 0, 0, 0, 0, 0, 0
+		end
+	end
+end
+
+function uiCookingWnd:OnQuit()
+	self:Save()
+	self:GetHolder():start_stop_menu(self, true)
+	is_ui_running = false
+	la_utils.custom_ui_usage("hide", script_name())
+end
+
+function uiCookingWnd:FillFoodList()
+	local item = nil
+	for index = 0, db.actor:object_count() - 1 do
+		item = db.actor:object(index)
+		if cooking_foods[item:section()] then
+			self:GetListBox("food_list"):AddItem(ListViewCookingItem(item:section(), item:id(), false))
+		end
+	end
+	self:Load()
+end
+
+function uiCookingWnd:GetCookingTime(sect)
+	local ret = ""
+	local str = Get_Cfg_String(system_ini(), sect, "cooking_time", nil)
+	if not str then
+		return "already cooked"
+	end
+	local timer = parser.r_time(str)
+	if timer.h > 0 then
+		ret = ret .. string.format("%d %s %s ", timer.h, if_then_else(timer.h > 1, 
+				game.translate_string("st_hours"), game.translate_string("st_hour")), 
+				game.translate_string("st_and"))
+	end
+	ret = ret .. string.format("%d %s", timer.m, if_then_else(timer.m > 1, 
+				game.translate_string("st_minutes"), game.translate_string("st_minute")))
+	parser.dbg_print(ret)
+	return ret
+end
+
+function uiCookingWnd:DisplayItemInfo()
+	if not self.selected_item then
+		return
+	end
+	la_utils.add_item_icon(self, "item_icon", self.selected_item.section, 660, 215)
+	self:GetStatic("item_info_name"):SetText(self.selected_item.inv_name)
+	self:GetListBox("item_info_description"):RemoveAll()
+	pcTextViewer.AddText(self:GetListBox("item_info_description"), 40, self.selected_item.inv_desc, true, "letterica16", "full_white")
+	self:GetStatic("item_cooking_time"):SetText(string.format("%s: %s", game.translate_string("st_cooking_time"), self:GetCookingTime(self.selected_item.section)))
+	self:GetStatic("btn_cook"):Enable(self.cooking_foods <= MAX_COOKABLE_FOODS and not self.selected_item.timer_started)
+	self:GetStatic("timer"):SetText("")
+	self.selected_item.timer:update()
+	self:GetStatic("btn_take"):Enable(self.selected_item.timer:expired())
+end
+
+local t_trigger = time_global()
+
+function uiCookingWnd:Update()
+	CUIScriptWnd.Update(self)
+	local list = self:GetListBox("food_list")
+	local se_obj = nil
+	for i = 0, list:GetSize() - 1 do
+		if list:GetItem(i).timer_started and list:GetItem(i).fridged_item then
+			list:GetItem(i).timer:update()
+			if list:GetSelectedItem() == i then
+				if t_trigger < time_global() then
+					self:GetStatic("timer"):SetText(self.selected_item.timer:diffString())
+					t_trigger = time_global() + 300	
+				end
+			end
+			if list:GetItem(i).timer:expired() then
+				self.cooking_foods = self.cooking_foods - 1
+				list:GetItem(i).timer_started = false
+				self:GetStatic("timer"):SetText("Cooked")
+				list:GetItem(i):Reset(list:GetItem(i).fridged_item, 65536)
+				self:DisplayItemInfo()
+				self:GetStatic("btn_take"):Enable(true)
+				self:GetStatic("btn_cook"):Enable(false)
+			end
+		end
+	end
+end
+
+function uiCookingWnd:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			return true
+		end
+	end
+	return true
+end
+
+--/ ------------------------------------------------------------------
+function remove_useless()
+	local sobj, level_sobj, current_level = nil, nil, level.name()
+	local to_remove = {}
+	for id, v in pairs(db.flame_zones) do
+		sobj = alife():object(id)
+		level_sobj = alife():level_name(game_graph():vertex(sobj.m_game_vertex_id):level_id())
+		if level_sobj ~= current_level then
+			table.insert(to_remove, id)
+		end
+	end
+	for k, v in pairs(to_remove) do
+		db.flame_zones[v] = nil
+	end
+	useless_removed = true
+end
+
+function update()
+	local sobj = nil
+	local hud = get_hud()
+	if not useless_removed then
+		remove_useless()
+	end
+	if not cs_tip then
+		hud:AddCustomStatic("hud_tip", true)
+		cs_tip = hud:GetCustomStatic("hud_tip")
+	end
+	if not is_ui_running then
+		for id, v in pairs(db.flame_zones) do
+			sobj = alife():object(id)
+			if sobj.position:distance_to(db.actor:position()) <= 2.0 then
+				selected_fire = sobj
+				if cs_tip then
+					local cstip = cs_tip:wnd()
+					if cstip then
+						cstip:SetTextST("ui_st_cooking")
+					end
+					return
+				end
+			end
+		end
+	end
+	if selected_fire and cs_tip then
+		selected_fire = nil
+		local cstip = cs_tip:wnd()
+		if cstip then
+			cs_tip:wnd():SetText("")
+		end
+	end
+end
+
+--[[
+N.B.:
+- it`s not possible to use the 'set_tip_text' method for anomalies and other "not physic" items, so i had to make this walkaround
+- since anomalies server classes are loaded before than actor (hence level.name() does not work) i could not exclude the ones which are on another level 
+--]]
+
+function display(sobj)
+	if selected_fire and not is_ui_running then
+		cs_tip = nil
+		get_hud():RemoveCustomStatic("hud_tip")
+		level.start_stop_menu(ui_cooking.uiCookingWnd(selected_fire), true)
+		selected_fire = nil
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,437 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_inv_wnd_items.script
+ Description: 
+ Copyright  : 2009 © LA-team
+ Author     : barin(29.08.2009)
+ Editors    : barin(06.07.2010)
+ Last edit  : 0705.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+ITEM_GENERIC = 0
+ITEM_AMMO    = 1
+ITEM_MONEY   = 2
+ITEM_WEAPON  = 3
+ITEM_OUTFIT  = 4
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Priocess
+--/ -----------------------------------------------------------------
+function get_round_weight(section)
+	local box_size = system_ini():r_u32(section, "box_size")
+	local box_weight = system_ini():r_float(section, "inv_weight")
+	
+	return (box_weight / box_size)
+end
+
+function get_ammo_weight(section, counter)
+	local box_size = system_ini():r_u32(section, "box_size")
+	local box_weight = system_ini():r_float(section, "inv_weight")
+	
+	local boxes_of_rounds = math.modf(counter / box_size)
+	local rounds = counter - (boxes_of_rounds * box_size)
+	
+	return ((boxes_of_rounds * box_weight) + ((rounds * box_weight) / box_size))
+end
+
+--/ ------------------------------------------------------------------------------------------------
+class "ListViewItem" (CUIListItemEx)
+--/ ------------------------------------------------------------------------------------------------
+function ListViewItem:__init(section, t) super()
+	self.item_section = section
+	self.item_count = t.count
+	self.item_condition = t.cond
+	self.item_type = t.item_type
+	
+	self.is_ammo = (t.item_type == ITEM_AMMO)
+	
+	if self.item_type == ITEM_WEAPON then
+		self.ammo_elapsed = t.ammo_elapsed
+		self.ammo_type = t.ammo_type
+		self.addon_flags = t.addon_flags
+		if t.gl_mode ~= nil then
+			self.gl_mode = t.gl_mode
+		end
+	end
+	
+	self.item_weight = system_ini():r_float(section, "inv_weight")
+	self.item_cost   = system_ini():r_u32(section, "cost")
+	self.inv_name = game.translate_string(system_ini():r_string(section, "inv_name"))
+	self.inv_desc = game.translate_string(system_ini():r_string(section, "description"))
+	
+	self.icon = {
+		inv_grid_width  = system_ini():r_u32(section, "inv_grid_width") * 50,
+		inv_grid_height = system_ini():r_u32(section, "inv_grid_height") * 50,
+		inv_grid_x = system_ini():r_u32(section, "inv_grid_x") * 50,
+		inv_grid_y = system_ini():r_u32(section, "inv_grid_y") * 50
+	}
+	
+	if self.is_ammo then
+		self.round_weight = get_round_weight(self.item_section)
+	end
+	
+	self.item_name = CUIStatic()
+	self.item_name:SetAutoDelete(true)
+	self.item_name:SetFont(pcTextViewer.get_font("letterica18"))
+	self.item_name:SetTextColor(pcTextViewer.get_colour("full_white"))
+	self:AttachChild(self.item_name)
+	self:SetLabelText()
+	--self:SetDebugColor(GetARGB(255,0,128,0), GetARGB(255,220,20,60), GetARGB(255,0,255,0))
+	--self:SetWindowName("ListViewItem|" .. section .. "|" .. tostring(t.count))
+end
+
+function ListViewItem:SetLabelText()
+	self.item_name:SetText(string.format("%dx %s", self.item_count, self.inv_name))
+end
+
+function ListViewItem:SetCount(count)
+	self.item_count = self.item_count + count
+	self:SetLabelText()
+end
+
+function ListViewItem:GetWeight()
+	if self.is_ammo then
+		return self.round_weight
+	else
+		return self.item_weight
+	end
+end
+
+function ListViewItem:Highlight(b)
+	if b then
+		self.item_name:SetTextColor(pcTextViewer.get_colour("yellow"))
+	else
+		self.item_name:SetTextColor(pcTextViewer.get_colour("full_white"))
+	end
+end
+
+function ListViewItem:Clone()
+	local t = {}
+	t.count = self.item_count
+	t.cond = self.item_condition
+	t.item_type = self.item_type
+	
+	if self.item_type == ITEM_WEAPON then
+		t.ammo_elapsed = self.ammo_elapsed
+		t.ammo_type = self.ammo_type
+		t.addon_flags = self.addon_flags
+		if self.gl_mode ~= nil then
+			t.gl_mode = self.gl_mode
+		end
+	end
+	
+	return ListViewItem(self.item_section, t)
+end
+
+--/ ------------------------------------------------------------------------------------------------
+class "uiItemsPanel" (CUIScriptWnd)
+--/ ------------------------------------------------------------------------------------------------
+function uiItemsPanel:__init(parent, x, y, w, h) super()
+	self.parent = parent
+	self.active_item = -1
+	
+	self.items_parent = nil
+	self.target_container = nil
+	
+	self.curr_weight = 0
+	self.capacity = 0
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self.wnd_width = w
+	self.wnd_height = h
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiItemsPanel:__finalize()
+end
+
+function uiItemsPanel:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiItemsPanel:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self:SetWindowName("uiItemsPanel")
+	self.caption = self.parent.xml:InitStatic("items_panel:caption", self)
+	self.weight = self.parent.xml:InitStatic("items_panel:weight", self)
+	
+	self.list = self.parent.xml:InitList("items_panel:listview", self)
+--	self.list:SetDebugColor(GetARGB(255,0,128,0), GetARGB(255,220,20,60), GetARGB(255,0,255,0))
+	self:Register(self.list, "items_list")
+	
+	self.btn_move_all = self.parent.xml:Init3tButton("items_panel:btn_move_all", self)
+	self:Register(self.btn_move_all, "btn_move_all")
+	
+	self.item_menu = ui_inv_wnd_menu.uiInvWndMenu(self)
+	self.item_menu:SetAutoDelete(true)
+	self.item_menu:Show(false)
+	self.item_menu:Enable(false)
+end
+
+function uiItemsPanel:InitCallBacks()
+	self:AddCallback("items_list",   ui_events.LIST_ITEM_CLICKED,       self.OnListItemClick,    self)
+	self:AddCallback("items_list",   ui_events.WINDOW_LBUTTON_DB_CLICK, self.OnListItemDBLClick, self)
+	self:AddCallback("btn_move_all", ui_events.BUTTON_CLICKED,          self.OnMoveAllItems,     self)
+end
+
+function uiItemsPanel:OnListItemClick()
+	self.target_container:UnHighlightAll()
+	--log("uiItemsPanel:OnListItemClick()")
+	if self.list:GetSize() ~= 0 then
+		if self.active_item ~= -1 then
+			self.list:GetItem(self.active_item):Highlight(false)
+		end
+		self.active_item = self.list:GetSelectedItem()
+		--log("uiItemsPanel:OnListItemClick(%s)", tostring(self.active_item))
+		self.list:GetItem(self.active_item):Highlight(true)
+		self.parent.info_panel:DisplayItemInfo(self.list:GetItem(self.active_item))
+	end
+end
+
+function uiItemsPanel:OnListItemDBLClick()
+	if self.active_item == -1 then
+		return
+	end
+	
+	local x = 0
+	local y = 0
+	
+	local item = self.list:GetItem(self.active_item)
+	local index = self.active_item
+	
+	if index > 24 then
+		index = (24 - index) + 250
+	else
+		index = index  * 15
+	end
+	
+	--x = x + string.len(item.item_name:GetText()) * 5 + self.wnd_x
+	x = x + string.len(item.item_name:GetText()) * 8
+	y = index + self.wnd_y
+	
+	self.item_menu:Show(true)
+	self.item_menu:Enable(true)
+	self.list:Enable(false)
+	self.item_menu:UpdateControls(x, y, item.item_count, item.item_type)
+	--level.start_stop_menu(self.item_menu, true)
+end
+
+function uiItemsPanel:OnMenuItemSelected(btn, item_count)
+	if btn == "one" then
+		self:OnMoveSelectedItem(1)
+	elseif btn == "half" then
+		self:OnMoveSelectedItem(math.floor(item_count / 2))
+	elseif btn == "all" then
+		self:OnMoveSelectedItem(item_count)
+	end
+	self.list:Enable(true)
+end
+
+function uiItemsPanel:CalcWeight()
+	local weight = 0
+	local item = nil
+	
+	for index = 0, self.list:GetSize() - 1 do
+		item = self.list:GetItem(index)
+		if item.is_ammo then
+			weight = weight + get_ammo_weight(item.item_section, item.item_count)
+		else
+			weight = weight + (item.item_count * item.item_weight)
+		end
+	end
+	
+	local s = game.translate_string("st_weight")
+	s = string.format("%s: %.2f / %.2f KG", s, weight, self.capacity)
+	self.weight:SetText(s)
+	
+	self.curr_weight = weight
+end
+
+function uiItemsPanel:CanOverloadContainer(weight, parent)
+	if parent == "trunk" then
+		return false -- actor can be overloaded
+	end
+	
+	return (self.curr_weight + weight > self.capacity)
+end
+
+function uiItemsPanel:UpdateMoveAllButton()
+	if self.list:GetSize() > 0 then
+		if self.target_container:CanOverloadContainer(self.curr_weight, self.items_parent) then
+			self.btn_move_all:Enable(false)
+		else
+			self.btn_move_all:Enable(true)
+		end
+	else
+		self.btn_move_all:Enable(false)
+	end
+end
+
+function uiItemsPanel:FindItemOnList(itm)
+	local item = nil
+	
+	for index = 0, self.list:GetSize() - 1 do
+		item = self.list:GetItem(index)
+		if item.item_section == itm.item_section and
+			item.item_condition == itm.item_condition
+		then
+			if item.item_type == ITEM_WEAPON then
+				if item.ammo_elapsed == itm.ammo_elapsed then
+					if item.ammo_type == itm.ammo_type then
+						if item.addon_flags == itm.addon_flags then
+							-- no need to check for gl_mode
+							return index
+						end
+					end
+				end
+			else
+				return index
+			end
+		end
+	end
+	
+	return -1
+end
+
+function uiItemsPanel:OnMoveSelectedItem(counter)
+	local selected_item = self.list:GetItem(self.active_item)
+	if counter > selected_item.item_count then
+		counter = selected_item.item_count
+	end
+	
+	for index = 1, counter do
+		if self.target_container:CanOverloadContainer(selected_item:GetWeight(), self.items_parent) then
+			self.parent:OnTrunkCapacityReached()
+			self.target_container:UpdateMoveAllButton()
+			self:UpdateMoveAllButton()
+			selected_item:Highlight(false)
+			return
+		end
+		
+		fnd = self.target_container:FindItemOnList(selected_item)
+		if fnd == -1 then
+			self.target_container:AddNewItem(selected_item)
+		else
+			self.target_container:SetItemCount(fnd, 1)
+		end
+		
+		selected_item:SetCount(-1)
+		self.target_container:CalcWeight()
+		self:CalcWeight()
+	end
+	
+	--parser.dbg_print("%dx %s %s -> %s", counter, selected_item.item_section,
+		--self.items_parent, self.target_container.items_parent)
+	
+	selected_item:Highlight(false)
+	
+	if selected_item.item_count == 0 then
+		self.list:RemoveItem(self.active_item)
+		self.active_item = -1
+	end
+	
+	self.target_container:UpdateMoveAllButton()
+	self:UpdateMoveAllButton()
+end
+
+function uiItemsPanel:OnMoveAllItems()
+	for index = self.list:GetSize() - 1, 0, -1 do
+		self.active_item = index
+		self:OnMoveSelectedItem(self.list:GetItem(index).item_count)
+	end
+end
+
+function uiItemsPanel:SetTargetContainer(ct)
+	self.target_container = ct
+end
+
+function uiItemsPanel:SetCaption(str)
+	self.caption:SetTextST(str)
+end
+
+function uiItemsPanel:SetCapacity(c)
+	self.capacity = c
+end
+
+function uiItemsPanel:reset(caption, capacity, parent, items)
+	self:SetCaption(caption)
+	self:SetCapacity(capacity)
+	self:AddItems(parent, items)
+end
+
+function uiItemsPanel:SetItemCount(index, count)
+	self.list:GetItem(index):SetCount(count)
+end
+
+function uiItemsPanel:UnHighlightAll()
+	if self.active_item ~= -1 then
+		self.list:GetItem(self.active_item):Highlight(false)
+	end
+end
+
+function uiItemsPanel:AddNewItem(item)
+	local it = item:Clone()
+	it:SetCount(1 - it.item_count)
+	it:Highlight(false)
+	self.list:AddItem(it)
+end
+
+function uiItemsPanel:ItemsToArray()
+	local it, idx = nil, nil
+	local items, t = {}, {}
+	
+	for index = 0, self.list:GetSize() - 1 do
+		it = self.list:GetItem(index)
+		if not items[it.item_section] then
+			items[it.item_section] = {}
+		end
+		
+		t = {}
+		t.cond      = it.item_condition
+		t.count     = it.item_count
+		t.item_type = it.item_type
+		
+		if it.item_type == ITEM_WEAPON then
+			t.ammo_elapsed = it.ammo_elapsed
+			t.ammo_type    = it.ammo_type
+			t.addon_flags  = it.addon_flags
+			if it.gl_mode then
+				t.gl_mode = it.gl_mode
+			end
+		end
+		
+		idx = ui_safe.get_idx_by_cond(items[it.item_section], t)
+		
+		if idx == -1 then
+			table.insert(items[it.item_section], t)
+		else
+			t = items[it.item_section][idx].count + it.item_count
+			items[it.item_section][idx].count = t
+		end
+	end
+	
+	return items
+end
+
+function uiItemsPanel:AddItems(parent, tbl)
+	self.items_parent = parent
+	
+	for k, v in pairs(tbl) do
+		for kk, vv in pairs(v) do
+			self.list:AddItem(ListViewItem(k, vv))
+		end
+	end
+	
+	self:CalcWeight()
+end
+--/ ------------------------------------------------------------------------------------------------

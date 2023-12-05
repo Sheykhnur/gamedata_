@@ -1,0 +1,70 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_military.script
+ Description: Dialog & InfoPortions Function for Military
+ Copyright  : 2004 © GSC Game World
+ Author     : gr1phoon
+ Editors    : vintar, lox (13.02.2013)
+ Last edit  : 21.06.18 (tomilovsenya) – fixed PDA messages
+--]] -----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function ghost_contacts_actor()
+	start_real_timer(4, "dialog_military.ghost_message")
+end
+
+function ghost_message()
+	news_manager.send_tip_hud(game.translate_string("ghost_message_header"), game.translate_string("st_mil_ghost_contacts_actor"), "ghost")
+end
+
+function give_cristall_task()
+	if db.actor:get_task_state("mil_wipe_mercs", 0) < 0 then
+		dialogs.give_items("wpn_groza", 1)
+		dialogs.give_items("ammo_9x39_sp5", 2)
+		local task = CGameTask()
+		task:load("mil_wipe_mercs")
+		db.actor:give_task(task, 0, false)
+	end
+end
+
+function have_artifact(oSpeaker1, oSpeaker2)
+	local oActor = dialogs.get_actor(oSpeaker1, oSpeaker2)
+	return oActor:object("maddog_af_cristall") ~= nil
+end
+
+function got_crystal_artifact()
+	return has_info("mil_leader_killed") and db.actor:object("maddog_af_cristall") ~= nil
+end
+
+function have_lr_weapon(oSpeaker1, oSpeaker2)
+	local oActor = dialogs.get_actor(oSpeaker1, oSpeaker2)
+	return oActor:object("wpn_lr300_m1") ~= nil
+end
+
+function give_stash(oSpeaker1, oSpeaker2)
+	give_info("mil_task_mad_guy_done")
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	treasure_manager.get_treasure_manager():give_treasure("mil_village_cache", oNPC)
+end
+
+function fang_told_all()
+	if has_info("mil_fang_mech_talk") and has_info("mil_fang_ghost_talk") then
+		return false
+	end
+	return true
+end
+
+--[[ function give_art_ghost(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oSpeaker1, "maddog_af_cristall", "out")
+	dialogs.relocate_money(oSpeaker2, 8000, "in")
+end --]]
+--/ -----------------------------------------------------------------------------------------------

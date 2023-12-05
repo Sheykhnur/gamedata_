@@ -1,0 +1,59 @@
+
+-- file: pcLoader.script
+-- author: barin
+-- date: 2008-12-17
+-- edited by: barin
+-- last edited: 2009-09-18
+
+class "pcLoader"
+
+function pcLoader:__init(pc_data)
+	self.name = "pcLoader"
+	self.pc_data = pc_data
+	
+	self.xml = CScriptXmlInit()
+	self.xml:ParseFile("ui_wnd\\ui_desktop.xml")
+end
+
+function pcLoader:WindowName()
+	return self.name
+end
+
+function pcLoader:__finalize()
+end
+
+function pcLoader:OnChildDialogExit(child_name)
+	if child_name == "uiPasswordEditBox" then
+		self:DisplayDesktop()
+	end
+end
+
+function pcLoader:PowerOn()
+	if self.pc_data.password then
+		if self.pc_data.password_info then
+			if has_alife_info(self.pc_data.password_info) then
+				self:DisplayDesktop()
+				return
+			end
+		end
+		self:PasswordRequest()
+	else
+		self:DisplayDesktop()
+	end
+end
+
+function pcLoader:DisplayDesktop()
+	xr_sound.get_safe_sound_object("pc\\beep"):play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	--xr_sound.get_safe_sound_object("pc\\start"):play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	level.start_stop_menu(pcDesktop.uiDesktop(self), true)
+end
+
+function pcLoader:PasswordRequest()
+	local passwd = pcPasswdBox.uiPasswordEditBox(self, self.pc_data.password, self.pc_data.password_info, la_utils.get_hud_center(290, 140))
+	level.start_stop_menu(passwd, true)
+end
+
+-- fake function for common use
+function pcLoader:AttachChild(child)
+	log("pcLoader:AttachChild(child=%s)", child:WindowName())
+end

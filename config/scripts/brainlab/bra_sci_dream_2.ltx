@@ -1,0 +1,146 @@
+[logic]
+active = remark@scilead
+combat_ignore = combat_ignore
+
+[remark@scilead]
+anim = sci_panel_big
+combat_ignore_cond = always
+no_move = true
+no_rotate = true
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_info = {+x16_path2_finished +x16_actor_near} remark@scilead_synth
+
+[remark@scilead_synth]
+anim = wait
+no_rotate = true
+no_move = true
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 500 | walker@sciscene
+
+[walker@sciscene]
+path_walk = x16_sci_embrace_way
+path_look = x16_sci_embrace
+combat_ignore_cond = always
+meet = no_meet
+on_signal = reachedmeet | remark@sciscene_roto_synth
+
+[remark@sciscene_roto_synth]
+anim = wait
+target = x16_sci_embrace, 0
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 1000 | remark@sciscene %+x16_reached_meet%
+
+[remark@sciscene]
+anim = sci_meeting
+snd = x16_replics7
+;no_rotate = true
+;no_move = true
+target = x16_sci_embrace, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+x16_meet_end% remark@sciscene_synth 
+
+[remark@sciscene_synth]
+anim = wait
+meet = no_meet
+combat_ignore_cond = always
+target = x16_sci_embrace, 0
+on_timer = 2000 | %+x16_cutscene_talk1% walker@meet_back
+
+[walker@meet_back]
+path_walk = x16_sc_meet_back
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_signal = scileadback | remark@replics_sc2_scene1
+
+[remark@replics_sc2_scene1]
+anim = wait
+target = x16_sci_embrace, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+x16_cutscene_talk2} remark@replics_sc2_scene2
+
+[remark@replics_sc2_scene2]
+anim = sci_think
+snd = x16_replics9
+target = x16_sci_embrace, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+x16_cutscene_talk3%
+on_info = {+x16_cutscene_talk4} remark@replics_sc2_scene3
+
+[remark@replics_sc2_scene3]
+anim = wait
+snd = x16_replics11f
+combat_ignore_cond = always
+meet = no_meet
+target = actor
+on_info = {+x16_cutscene_talk5} remark@replics_sc2_scene4
+
+[remark@replics_sc2_scene4]
+anim = wait
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_info = {+x16_cutscene_talk6} remark@replics_sc2_scene5
+
+[remark@replics_sc2_scene5]
+anim = wait
+snd = x16_replics13
+combat_ignore_cond = always
+meet = no_meet
+target =  x16_sci_embrace, 0
+on_signal = sound_end | %+x16_cutscene_talk7%
+on_info = {+x16_cutscene_talk9} remark@replics_sc2_scene6
+
+[remark@replics_sc2_scene6]
+anim = sci_think
+snd = x16_replics16
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_signal = sound_end | %+x16_brain_signals_2%
+on_info = {+x16_cutscene_talk10} remark@replics_sc2_scene6_synth
+
+[remark@replics_sc2_scene6_synth]
+anim = sci_think
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace, 0
+on_info = {+x16_cutscene_talk11} remark@replics_sc2_scene7
+
+[remark@replics_sc2_scene7]
+anim = wait
+snd = x16_replics18
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace, 0
+on_signal = sound_end | %+x16_cutscene_talk12% remark@replics_sc2_scene7_synth
+
+
+[remark@replics_sc2_scene7_synth]
+anim = sci_worried
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_info = {+x16_brain_sci_no} remark@replics_sc2_no
+
+[remark@replics_sc2_no]
+anim = sci_blind2
+snd = x16_replics21
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_info = {+x16_start_waves} remark@scipsy_lead
+
+[remark@scipsy_lead]
+anim = psycho_mind
+snd = x16_replics24
+combat_ignore_cond = always
+meet = no_meet
+target = x16_psy_look, 0
+on_info = {+x16_dream_ended} %=release%

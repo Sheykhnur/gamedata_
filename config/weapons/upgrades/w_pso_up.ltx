@@ -1,0 +1,156 @@
+[up_sect_firsta_pso]
+;Îïòèêà 4.0èêñ
+;------------------
+cost		      		= 6000
+
+scope_zoom_factor       = -3
+
+[up_sect_firstc_pso]
+;Ðåãóëèðóåìûé ïðèöåë
+;------------
+cost		      		= 10000
+
+scope_dynamic_zoom = on
+
+[up_sect_firste_pso]
+;Òåïëîâèçîð
+;------------------
+cost		      		= 20000
+
+scope_alive_detector = scope_detector
+
+[up_sect_secona_pso]
+;Êîíòðàñòíûé ïðèöåë
+;------------------
+cost		      		= 6500
+
+scope_nightvision = scope_contrast
+
+[up_sect_seconc_pso]
+;ÏÍÂ
+;------------------
+cost		      		= 15000
+
+scope_nightvision = scope_nightvision
+
+
+[up_firsta_pso]
+scheme_index            = 0, 0
+known                   = 1
+effects                 = up_gr_firstcd_pso
+section                 = up_sect_firsta_pso
+property                = prop_scope_5x
+
+precondition_functor    = inventory_upgrades.precondition_functor_a
+precondition_parameter  = a & b
+
+effect_functor          = inventory_upgrades.effect_functor_a
+effect_parameter        = on_weapon_upgrade_something_here
+
+; ui
+prereq_functor          = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params           =
+name                    = st_up_opt_a3_name
+description             = st_up_opt_a3_descr
+icon                    = ui_inGame2_upgrade_Vintar_VS_14
+
+[up_firstc_pso]
+scheme_index            = 1, 0
+known                   = 1
+effects                 = up_gr_firstef_pso
+section                 = up_sect_firstc_pso
+property                = prop_scope
+
+precondition_functor    = inventory_upgrades.precondition_functor_a
+precondition_parameter  = a & b
+
+effect_functor          = inventory_upgrades.effect_functor_a
+effect_parameter        = something_here
+
+; ui
+prereq_functor          = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params           =
+name                    = st_up_opt_c3_name
+description             = st_up_opt_c3_descr
+icon                    = ui_inGame2_upgrade_SVUmk2_15
+
+[up_firste_pso]
+scheme_index            = 2, 0
+known                   = 1
+effects                 =
+section                 = up_sect_firste_pso
+property                = prop_autolockscope
+
+precondition_functor    = inventory_upgrades.precondition_functor_a
+precondition_parameter  = a & b
+
+effect_functor          = inventory_upgrades.effect_functor_a
+effect_parameter        = something_here
+
+; ui
+prereq_functor          = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params           =
+name                    = st_up_opt_c1_name
+description             = st_up_opt_c1_descr
+icon                    = ui_inGame2_upgrade_Vintar_VS_17
+
+[up_secona_pso]
+scheme_index            = 0, 1
+known                   = 1
+effects                 = up_gr_seconcd_pso
+section                 = up_sect_secona_pso
+property                = prop_contrast
+
+precondition_functor    = inventory_upgrades.precondition_functor_a
+precondition_parameter  = a & b
+
+effect_functor          = inventory_upgrades.effect_functor_a
+effect_parameter        = something_here
+
+; ui
+prereq_functor          = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params           =
+name                    = st_up_opt_b1_name
+description             = st_up_opt_b1_descr
+icon                    = ui_inGame2_upgrade_Vintar_VS_15
+
+[up_seconc_pso]
+scheme_index            = 1, 1
+known                   = 1
+effects                 =
+section                 = up_sect_seconc_pso
+property                = prop_nightvision
+
+precondition_functor    = inventory_upgrades.precondition_functor_a
+precondition_parameter  = a & b
+
+effect_functor          = inventory_upgrades.effect_functor_a
+effect_parameter        = something_here
+
+; ui
+prereq_functor          = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params           =
+name                    = st_up_opt_c2_name
+description             = st_up_opt_c2_descr
+icon                    = ui_inGame2_upgrade_Vintar_VS_16
+
+
+[up_gr_firstab_pso]
+elements                = up_firsta_pso
+
+[up_gr_firstcd_pso]
+elements                = up_firstc_pso
+
+[up_gr_firstef_pso]
+elements                = up_firste_pso
+
+[up_gr_seconab_pso]
+elements                = up_secona_pso
+
+[up_gr_seconcd_pso]
+elements                = up_seconc_pso

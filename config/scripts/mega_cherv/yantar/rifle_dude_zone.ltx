@@ -1,0 +1,20 @@
+[logic]
+active = sr_idle@0
+
+[sr_idle@0]
+on_info = {+yan_scientist_parts_start} sr_idle@1
+
+[sr_idle@1]
+on_actor_inside = {+yan_scientist_parts_start} sr_tip %+yan_talk_to_rifle_dude_start%
+
+[sr_tip]
+header = stalker_message_header
+name = yan_talk_to_rifle_dude_tip
+sender = novice
+type = tips
+single = true
+on_signal = tip_sended|sr_idle@2
+showtime = 15000
+
+[sr_idle@2]
+on_info = {+yan_bloodsucker_den_done} nil %=release%

@@ -1,0 +1,134 @@
+[logic]
+active = sr_idle@start
+
+[sr_idle@start]
+on_info = {+cordon_case_task -cordon_case_task3} sr_idle@task, {+cordon_case_task +cordon_case_task3} sr_idle@task2
+
+[sr_idle@task]
+on_actor_inside = {=is_day} sr_tip@day, {!is_day =torch_check} sr_tip@torch
+on_actor_inside2 = {=actor_in_zone(cordon_blockpost_zone) !actor_in_zone(task_kazarma_zone) !is_day} sr_tip@return
+on_actor_inside3 = {=actor_in_zone(task_kazarma_zone) !is_day} sr_tip@good %+cordon_case_task3%
+on_info = {+cordon_case_task_done} nil %=release%
+on_info2 = {+cordon_case_task3} sr_idle@task2
+on_info3 = {+cordon_military_hostile} nil %=release%
+on_actor_outside = sr_idle@start
+
+[sr_tip@day]
+header = trader_message_header
+name = cordon_case_task_day
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended||sr_idle@timer1
+on_actor_outside = sr_idle@start
+
+[sr_tip@good]
+header = trader_message_header
+name = cordon_case_task_good
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended||sr_idle@task2
+
+[sr_tip@torch]
+header = trader_message_header
+name = cordon_case_task_torch
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended||sr_idle@timer3
+
+[sr_tip@torch2]
+header = trader_message_header
+name = cordon_case_task_torch
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended||sr_idle@timer31
+
+[sr_idle@task2]
+on_actor_inside = {=actor_in_zone(cordon_blockpost_zone) !actor_in_zone(task_kazarma_zone) !is_day} sr_tip@return2
+on_actor_inside2 = {=torch_check} sr_tip@torch2
+on_info = {+cordon_case_task_done} nil %=release%
+on_info2 = {+cordon_military_hostile} nil %=release%
+on_actor_outside = sr_idle@start
+
+[sr_tip@return]
+header = trader_message_header
+name = cordon_case_task_return
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended|sr_idle@timer2
+
+[sr_tip@return2]
+header = trader_message_header
+name = cordon_case_task_return2
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended|sr_idle@timer21
+
+[sr_idle@timer1]
+on_timer = 5000| sr_tip@fail_day
+on_info = {!is_day} sr_idle@task
+on_actor_outside = sr_idle@start
+
+[sr_idle@timer2]
+on_info = {!actor_in_zone(cordon_blockpost_zone)} sr_idle@task
+on_info2 = {=actor_in_zone(task_kazarma_zone)} sr_idle@task
+on_timer = 6000| sr_tip@fail
+on_actor_outside = sr_idle@task
+
+[sr_idle@timer3]
+on_timer = 5000| sr_tip@fail
+on_info = {!torch_check} sr_idle@task
+on_actor_inside = {=actor_in_zone(cordon_blockpost_zone) !actor_in_zone(task_kazarma_zone) !is_day} sr_tip@fail2
+on_actor_outside = sr_idle@task
+
+[sr_idle@timer31]
+on_timer = 5000| sr_tip@fail
+on_info = {!torch_check} sr_idle@task2
+on_actor_inside = {=actor_in_zone(cordon_blockpost_zone) !actor_in_zone(task_kazarma_zone) !is_day} sr_tip@fail2
+on_actor_outside = sr_idle@task2
+
+[sr_idle@timer21]
+on_info = {=actor_in_zone(task_kazarma_zone)} sr_idle@task2
+on_timer = 5000| sr_tip@fail2
+on_actor_outside = sr_idle@task2
+
+[sr_idle@prefight]
+on_timer = 2500| sr_tip@fight
+
+[sr_tip@fail]
+header = trader_message_header
+name = cordon_case_task_fail
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended| sr_idle@prefight
+
+[sr_tip@fail_day]
+header = trader_message_header
+name = cordon_case_task_fail_day
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended| sr_idle@prefight
+on_actor_outside = sr_idle@start
+
+[sr_tip@fail2]
+header = trader_message_header
+name = cordon_case_task_fail2
+sender = sid
+showtime = 5000
+single = true
+on_signal = tip_sended| sr_idle@prefight
+
+[sr_tip@fight]
+header = hijacked_message
+name = cordon_case_task_atack
+sender = military
+showtime = 5000
+single = true
+on_signal = tip_sended| nil %-cordon_case_task +cordon_case_task_fail +cordon_military_hostile =release%

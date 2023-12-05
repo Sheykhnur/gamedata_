@@ -1,0 +1,68 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : dialog_rostok_factory.script
+ Description: Dialog & InfoPortions Function for Rostok factory
+ Copyright  : 2011 © LA
+ Author     : barin
+ Editors    : vintar (2011-06-08)
+ Last edit  : 05.02.2013 (by ...) (Extended Edition)
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ Print-Log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function give_mask()
+	la_utils.spawn_items(db.actor, "helm_gasmask", 1, true)
+end
+
+function remove_pdas()
+	local pda1 = alife():story_object(7607)
+	if pda1 then
+		dialogs.relocate_items(nil, pda1:section_name(), "out", 3)
+	end
+	local pda2 = alife():story_object(7608)
+	if pda2 then la_utils.release_object(pda2) end
+	local pda3 = alife():story_object(7609)
+	if pda3 then la_utils.release_object(pda3) end
+end
+
+function return_dolg_supplies(actor, npc)
+	dialogs.relocate_items(npc, "ammo_5.45x39_ap", "out", 10)
+	dialogs.relocate_items(npc, "conserva", "out", 10)
+	dialogs.relocate_items(npc, "korn_conserva", "out", 10)
+	dialogs.relocate_items(npc, "medkit_army", "out", 10)
+end
+
+function have_dolg_supplies(first_speaker, second_speaker)
+	return Has_Items("ammo_5.45x39_ap",10)
+	   and Has_Items("conserva",10)
+	   and Has_Items("korn_conserva",10)
+	   and Has_Items("medkit_army",10)
+end
+
+function has_gas_mask_money()
+	return db.actor:money() >= 3500
+end
+
+function give_gas_mask_money()
+	dialogs.relocate_money(oNPC, 3500, "out")
+end
+
+function dolg_supplies_dialog_precond()
+	return has_alife_info("bar_dolg_join_quest_start") and not has_alife_info("bar_dolg_supplies_given")
+end
+
+function pdas_or_suckers_missing()
+	if not has_info("rosf_pdas_have") or not has_info("rosf_bloodsuckers_dead") then
+		return true
+	end
+	return false
+end
+--/ -----------------------------------------------------------------------------------------------

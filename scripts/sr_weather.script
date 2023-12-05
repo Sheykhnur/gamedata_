@@ -1,0 +1,119 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_weather.script
+ Description: 
+ Copyright  : 2009 © LA-team
+ Author     : barin (2009-11-25)
+ Editors    : Gr1ph00n(2011-03-09)
+ Last edit  : 05.06.2014 [vintar]
+--]]-----------------------------------------------------------------------------------------------
+--/ TODO: sr_weather scheme doesn't work on undeground locations when actor by default spawned in restrictor already.
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local SPACE_REST = {}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+function is_actor_inside()
+	for k, v in pairs(SPACE_REST) do
+		if v.state then
+			return true
+		end
+	end
+	return false
+end
+
+function sr_weather_type()
+	for k, v in pairs(SPACE_REST) do
+		if v.state then
+			return v.weather
+		end
+	end
+	return "indoor"
+end
+
+--/ ---------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_change_weather"
+--/ -----------------------------------------------------------------------------------------------
+function action_change_weather:__init(obj, st)
+	self.object = obj
+	self.obj_id = obj:id()
+	self.st     = st
+	self.log    = st.log
+	self.actor_inside = false
+	self.current_weather = nil
+	self.weather_fx = nil
+	--log("action_change_weather:__init called","")
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_change_weather:reset_scheme()
+	--log("ac:reset_scheme:Obj=[%s]:[%s]:[%s]:[%s]", self.object:name(), self.st.weather, self.st.level_weather,">")--/#~#
+	if not SPACE_REST[self.obj_id] then
+		SPACE_REST[self.obj_id] = {}
+		SPACE_REST[self.obj_id].state = self.actor_inside
+		SPACE_REST[self.obj_id].weather = self.st.weather
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_change_weather:update(delta)
+	if not db.actor then return end --/>
+	if self.object:inside(db.actor:center()) then
+		if not self.actor_inside then
+			level_weathers.get_weather_manager():Active(false)
+			self.actor_inside = true
+			SPACE_REST[self.obj_id].state = true
+			if level_weathers.is_blowout_active() then
+				self.weather_fx_time = level.get_wfx_time()
+			end
+			log("acw:update:actor_inside:Obj=[%s] set_weather=%s", self.object:name(), self.st.weather) --/#~#
+		end
+	elseif self.actor_inside then
+		level_weathers.get_weather_manager():Active(true)
+		self.actor_inside = false
+		SPACE_REST[self.obj_id].state = false
+		if self.weather_fx_time then
+			if (level.get_time_hours() >= 5 and level.get_time_hours() <= 20) then
+				level.start_weather_fx_from_time("blowout_day", self.weather_fx_time)
+			else
+				level.start_weather_fx_from_time("blowout_night", self.weather_fx_time)
+			end
+		end
+		log("acw:update:actor_outside:Obj=[%s]", self.object:name()) --/#~#
+	end
+	
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local new_action = this.action_change_weather(obj, st)
+	--/ registration of 'action' to call method 'reset_scheme' when settings of scheme changed:
+	xr_logic.subscribe_action_for_events(obj, st, new_action)
+	--/ for debug!
+	--log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, "+")--/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.weather       = Get_Cfg_String(ini, section, "weather", "indoor")
+	st.level_weather = Get_Cfg_String(game_ini(), Get_MapNameObj(obj), "weathers", "default")
+	st.forced        = Get_Cfg_Bool(ini, section, "forced", true)
+	--/ for debug!
+	--log("set_scheme:Obj=[%s],scheme=[%s],section=[%s],weather(%s)=[%s]%s", obj:name(), scheme, section, Get_MapNameObj(obj), st.level_weather, "") --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,159 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ph_radio.script
+ Description: scheme: "..."
+ Copyright  : 2008 © LA
+ Author     : barin (2008-11-21)
+ Editors    : barin(2010-06-26)
+ Last edit  : 24.07.2012 (by ...)
+--]] ----------------------------------------------------------------------------------------------
+
+
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+class "action_radio"
+--/------------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ---------------------------------------------
+function action_radio:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_radio:reset_scheme()
+--	log("reset_scheme:obj=[%s]%s", self.object:name(), "") --/#~#
+	if self.st.status == "off" then
+		self.object:set_tip_text("ph_radio_on")
+	elseif self.st.status == "on" then
+		self.object:set_tip_text("ph_radio_off")
+	else
+		self.st.status = "destroyed"
+		self.object:set_tip_text("ph_radio_destroyed")
+	end
+	
+	local destroyed = xr_logic.pstor_retrieve(self.object, "destr", false)
+	self.snd_source = ph_sound.snd_source(self.object, self.st)
+	self.snd_source:reset_scheme(destroyed)
+	
+	if destroyed then
+		self.st.status = "destroyed"
+		self.object:set_tip_text("ph_radio_destroyed")
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_radio:update()
+	if db.actor then
+		if self.st.status == "on" then
+			self.snd_source:update()
+		else
+			if self.snd_source.played_sound ~= nil and self.snd_source.played_sound:playing() then
+				self.snd_source.played_sound:stop()
+			end
+		end
+		
+		if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+			return
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function action_radio:use_callback(radio, actor)
+	if not db.actor then
+		return
+	end
+	
+	if self.st.status == "on" then
+		self.object:set_tip_text("ph_radio_on")
+		self.st.status = "off"
+	elseif self.st.status == "off" then
+		self.object:set_tip_text("ph_radio_off")
+		self.st.status = "on"
+	else
+		self.object:set_tip_text("ph_radio_destroyed")
+	end
+	
+	if self.st.on_use then
+		if xr_logic.switch_to_section(self.object, self.st,
+			xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.on_use.condlist))
+		then
+			return
+		end
+	end
+end
+
+function action_radio:hit_callback(...)
+	self.snd_source:hit_callback(unpack({...}))
+	
+	if self.st.no_hit == false then
+		self.st.status = "destroyed"
+		self.object:set_tip_text("ph_radio_destroyed")
+	end
+end
+--/------------------------------------------------------------------
+--/ 
+--/------------------------------------------------------------------
+function action_radio:save()
+	self.snd_source:save()
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function action_radio:deactivate()
+	self.snd_source:deactivate()
+	self.object:set_tip_text("")
+end
+
+--/------------------------------------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local oNewAction = this.action_radio(obj, st)
+	--/ action registration, for 'reset_scheme' method call in case of change of settings of the scheme:
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+--	log("set_scheme: Obj=[%s],scheme=[%s],section=[%s],gulag=[%s]:[%s]", obj:name(), scheme, section, gulag_name, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.status    = Get_Cfg_String(ini, section, "status",   "off")
+	st.theme     = Get_Cfg_String(ini, section, "snd",      "")
+	st.looped    = parser.r_bool  (ini, section, "looped",   false)
+	st.random    = parser.r_bool  (ini, section, "random",   true)
+	st.pause_min = parser.r_sint (ini, section, "min_idle", 0)
+	st.pause_max = parser.r_sint (ini, section, "max_idle", 0)
+	st.no_hit    = parser.r_bool  (ini, section, "no_hit",   false)
+	st.on_use    = xr_logic.cfg_get_condlist(ini, section, "on_use", obj)
+	
+	if st.pause_max < st.pause_min then
+		abort("%s:set_scheme: invalid time range!:<%s>", sModule, "Error!")
+		st.pause_min = 0
+		st.pause_max = 0
+	end
+	--/ fot debug:
+	if st.log then log("set_scheme: Obj=[%s],scheme=[%s],section=[%s]%s", obj:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	local st = db.storage[obj:id()][scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(obj, st, st.action)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

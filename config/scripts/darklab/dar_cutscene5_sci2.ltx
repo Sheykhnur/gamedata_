@@ -1,0 +1,72 @@
+[combat_ignore@dar_sc5]
+
+[danger@dar_sc5]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_sc5]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = remark@darklab_sci_dar_dialog
+combat_ignore = combat_ignore@dar_sc5
+threshold = threshold@dar_sc5
+
+[remark@darklab_sci_dar_dialog]
+snd = dar_replics21
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_start, 0
+on_signal = sound_end | %+dar_sci5_info1%
+on_info =  {+dar_sci5_info2} remark@darklab_sci_dar_dialog2
+
+[remark@darklab_sci_dar_dialog2]
+snd = dar_replics23
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_start, 0
+on_timer = 3000 | %+dar_sci5_info3%
+on_signal = sound_end | %+dar_sci5_finish%
+on_info =  {+dar_sci5_finish +dar_eco_here} remark@darklab_sci_dar_dialog3
+
+[remark@darklab_sci_dar_dialog3]
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point, 0
+on_info = {+dar_sci5_info4} remark@darklab_sci_dar_dialog4
+
+[remark@darklab_sci_dar_dialog4]
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point2, 0
+on_info = {+dar_sci5_eff} remark@darklab_sci_dar_dialog5
+
+[remark@darklab_sci_dar_dialog5]
+anim = sci_fear
+snd = dar_replics32
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point2, 0
+on_info = {+dar_earthquake_scene5} remark@darklab_sci_dar_dialog6
+on_signal = sound_end | %+dar_sci5_info5%
+
+[remark@darklab_sci_dar_dialog6]
+anim = hide
+snd = dar_replics27
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+on_timer = 500 | %+dar_sci_fall_timer%
+on_info = {+dar_sc5_end} nil %+dar_soldier_release =release%

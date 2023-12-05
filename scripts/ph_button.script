@@ -1,0 +1,110 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : ph_button.script
+ Description: Схема: "Physic Button control"
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey) af@svitonline.com
+ Last edit  : 27.02.2013 (by ...) [...]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "ph_button"
+--/ -----------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ---------------------------------------------
+function ph_button:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function ph_button:reset_scheme()
+	if self.log then log("reset_scheme:Obj=[%s]", self.object:name(), "") end --/#~#
+	if self.st.anim ~= "$editor" then
+		self.object:play_cycle(self.st.anim, self.st.blending)
+	end
+	--self.last_hit_tm = time_global()
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function ph_button:update(delta)
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function ph_button:hit_callback(oObj, iAmount, vLocalDirection, oWho, iBoneIndex)
+	if self.log then log("hit_callback:Obj=[%s],Amount=[%s],Who=[%s]", oObj:name(), iAmount, oWho and oWho:name(), "") end --/#~#
+	--[[
+	if (self.last_hit_tm or 0) < time_global() then
+		self.last_hit_tm = time_global() + 500
+		if self:try_switch() then
+			return --/>
+		end
+	end
+	--]]
+end
+
+function ph_button:use_callback(oVictim, oWho)
+	if self.log then log("use_callback:Obj=[%s] used by [%s]", oVictim and oVictim:name(), oWho and oWho:name(), "") end --/#~#
+	self:try_switch()
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTION
+--/------------------------------------------------------------------
+function ph_button:try_switch()
+	if self.st.on_press and self.st.on_press.condlist then
+		local st = db.storage[self.object:id()]
+		if st.active_scheme and st.active_scheme == "ph_button" then
+			--if xr_logic.try_switch_to_another_section(obj, self.st, db.actor) then
+			if xr_logic.switch_to_section(self.object, self.st, xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.on_press.condlist)) then
+				return true --/>
+			end
+		end
+	end
+	return false --/>
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function ph_button:deactivate()
+	self.object:set_tip_text("")
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oObj, ini, sScheme, sSection, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:[%s]", oObj:name(), sScheme, sSection, ">") --/#~#
+	local oNewAction = this.ph_button(oObj, st)
+	--/ регистрация action, для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(oObj, st, oNewAction)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:(%s)", oObj:name(), sScheme, sSection, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(oObj, ini, sScheme, sSection, sGulagName)
+	local st = xr_logic.assign_storage_and_bind(oObj, ini, sScheme, sSection)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, sSection, oObj)
+	st.on_press = xr_logic.cfg_get_condlist(ini, sSection, "on_press", oObj)
+	st.tooltip  = Get_Cfg_String(ini, sSection, "tooltip", "")
+	--st.anim     = Get_Cfg_String(ini, sSection, "anim", "", true)
+	st.anim     = parser.r_string(ini, sSection, "anim", "$editor")
+	st.blending = Get_Cfg_Bool  (ini, sSection, "anim_blend", true)
+	oObj:set_tip_text(st.tooltip or "")
+	--/ fot debug:
+	if st.log then log("set_scheme:Obj=[%s/%s],scheme=[%s],section=[%s]", oObj:name(), oObj:id(), sScheme, sSection, "") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,95 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_idle.script
+ Description: 
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : 
+ Last edit  : 27.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--[[ NOTE:
+1. Добавлен параметр схемы 'can_disable' по которому схема отключается и более не нагружает коллбэки;
+2. Добавлен параметр схемы 'can_remove' по которому схема отключается и рестриктор удаляется из игры;
+3. Добавлена проверка на отсутствие логики в активной секции схемы, по которой схема отключается и не нагружает коллбэки.
+   хотя... такой рестриктор нужно просто удалять из игры!
+--]]
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_idle" --/ Do nothing
+--/ -----------------------------------------------------------------------------------------------
+function action_idle:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_idle:reset_scheme()
+	if self.log then log("ac:reset_scheme:Obj=[%s],section=[%s]", self.object:name(), self.st.section, "") end --/#~#
+	self.st.signals = {} --/#?#
+	--/#+#
+	if self.st.can_disable or self.st.can_remove then
+		--/ есть параметры отключения/удаления - отключаем...
+		this.disable_scheme(self.object, self.st.scheme)
+	elseif xr_logic.is_active(self.object, self.st) then
+		--/ схема активна и если нет логики - отключаем, дабы не нагружать 'update'!
+		if table.size(self.st.logic) == 0 then
+			this.disable_scheme(self.object, self.st.scheme)
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE (callback)
+--/------------------------------------------------------------------
+function action_idle:update(delta)
+--	if self.log then log("ac:update:Obj=[%s],section=[%s]", self.object:name(), self.st.section, "") end --/#~#
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, ">") --/#~#
+	st.action = this.action_idle(obj, st)
+	--/ регистрация 'action', для вызова методов 'update' и 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.can_disable = Get_Cfg_Bool(ini, section, "can_disable", false) --/#+#
+	st.can_remove  = Get_Cfg_Bool(ini, section, "can_remove",  false) --/#+#
+	--/ for debug!
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme) --/#+# отрегистрация 'reset_scheme' и 'update'
+	local stor = obj and db.storage[obj:id()]
+	local st = stor and stor[scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(obj, st, nil)
+		local sobj = st.can_remove and alife():object( obj:id() )
+		if sobj then
+			if db.is_dbg1 or st.log then log("disable_scheme:=[%s],section=[%s],Obj=[%s]~>release:(%s)", scheme, st.section, obj:name(), "x") end --/#~#
+			alife():release(sobj, true) --/ удаляем!
+		elseif db.is_dbg1 or st.log then
+			log("disable_scheme:scheme=[%s],section=[%s],Obj=[%s]:(%s)", scheme, st.section, obj:name(), table.size(st.logic), "") --/#~#
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

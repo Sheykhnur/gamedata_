@@ -1,0 +1,226 @@
+;*****************************************state 0*****************************************
+
+[hit@forest_killer]
+on_info = {=hit_by_actor} %+forest_killer_attack =smart_terrain_force_update(forest_task_bandits) =smart_terrain_force_update(forest_task_killers) +forest_killer_fail%
+
+[combat_ignore@forest_killer]
+
+[logic@forest_task_killers_regular1]
+active = walker@forest_task_killers_regular10
+on_hit = hit@forest_killer
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_regular10]
+path_walk = reg1_walk0
+path_look = reg1_look0
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move1} walker@forest_task_killers_regular11
+
+[walker@forest_task_killers_regular11]
+path_walk = reg1_walk1
+path_look = reg1_look1
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move2} walker@forest_task_killers_regular12
+
+[walker@forest_task_killers_regular12]
+path_walk = reg1_walk2
+path_look = reg1_look2
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+;on_info = {+forest_killer_sdelka} walker@forest_task_killers_regular1_end
+
+[logic@forest_task_killers_regular2]
+active = walker@forest_task_killers_regular20
+on_hit = hit@forest_killer
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_regular20]
+path_walk = reg2_walk0
+path_look = reg2_look0
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move1} walker@forest_task_killers_regular21
+
+[walker@forest_task_killers_regular21]
+path_walk = reg2_walk1
+path_look = reg2_look1
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move2} walker@forest_task_killers_regular22
+
+[walker@forest_task_killers_regular22]
+path_walk = reg2_walk2
+path_look = reg2_look2
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+;on_info = {+forest_killer_sdelka} walker@forest_task_killers_regular2_end
+
+[logic@forest_task_killers_regular3]
+active = walker@forest_task_killers_regular30
+on_hit = hit@forest_killer
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_regular30]
+path_walk = reg3_walk0
+path_look = reg3_walk0
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move1} walker@forest_task_killers_regular31
+
+[walker@forest_task_killers_regular31]
+path_walk = reg3_walk1
+path_look = reg3_walk1
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move2} walker@forest_task_killers_regular32
+
+[walker@forest_task_killers_regular32]
+path_walk = reg3_walk2
+path_look = reg3_look2
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+;on_info = {+forest_killer_sdelka} walker@forest_task_killers_regular3_end
+
+[logic@forest_task_killers_regular4]
+active = walker@forest_task_killers_regular40
+on_hit = hit@forest_killer
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_regular40]
+path_walk = reg4_walk0
+path_look = reg4_look0
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move1} walker@forest_task_killers_regular41
+
+[walker@forest_task_killers_regular41]
+path_walk = reg4_walk1
+path_look = reg4_look1
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_move2} walker@forest_task_killers_regular42
+
+[walker@forest_task_killers_regular42]
+path_walk = reg4_walk1
+path_look = reg4_look1
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+;on_info = {+forest_killer_sdelka} walker@forest_task_killers_regular4_end
+
+[logic@forest_task_killers_boss]
+active = walker@forest_task_killers_boss0
+on_hit = hit@forest_killer
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_boss0]
+path_walk = boss_walk0
+path_look = boss_look0
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_signal = tochka1 |  walker@forest_task_killers_boss0w
+
+[walker@forest_task_killers_boss0w]
+path_walk = boss_walk0
+path_look = boss_look0
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_timer = 12000| walker@forest_task_killers_boss1 %+forest_killer_move1%
+
+[walker@forest_task_killers_boss1]
+path_walk = boss_walk1
+path_look = boss_look1
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_signal = tochka2 |  walker@forest_task_killers_boss1w
+
+[walker@forest_task_killers_boss1w]
+path_walk = boss_walk1
+path_look = boss_look1
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_timer = 12000| walker@forest_task_killers_boss2 %+forest_killer_move2%
+
+[walker@forest_task_killers_boss2]
+path_walk = boss_walk2
+path_look = boss_look2
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_signal = tochka3 |  %+forest_killer_move3%
+on_npc_in_zone = 10020|sdelka_zone|walker@forest_task_killers_boss3
+
+[walker@forest_task_killers_boss3]
+path_walk = boss_walk2
+path_look = boss_look2
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+;on_info = {+forest_killer_meet} walker@forest_task_killers_boss4
+
+[walker@forest_task_killers_boss4]
+path_walk = boss_walk2
+path_look = boss_look4
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+;on_timer = 12000| walker@forest_task_killers_boss_end %+forest_killer_sdelka%
+
+;******************************************state 1***********************************************
+
+[logic@forest_task_killers_boss_run]
+active = walker@forest_task_killers_boss_run
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_boss_run]
+path_walk = boss_run
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+combat_ignore_cond = always
+on_signal = run |  %=release%
+
+;******************************************state 2***********************************************
+
+[logic@forest_task_killers_boss_talk]
+active = walker@forest_task_killers_boss_talk0
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_boss_talk0]
+path_walk = boss_walk2
+path_look = boss_look2
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_info = {+forest_killer_meet} remark@forest_task_killers_boss_talk0
+
+[remark@forest_task_killers_boss_talk0]
+target = com_talk, 0
+anim = sci_meeting
+combat_ignore_cond = always
+on_signal = anim_end | remark@forest_task_killers_boss_talk1
+
+[remark@forest_task_killers_boss_talk1]
+target = logic@forest_task_bandits_com_talk, forest_task_bandits
+anim = wait_trade
+combat_ignore_cond = always
+on_info = {+forest_killer_talk1} remark@forest_task_killers_boss_talk2
+
+[remark@forest_task_killers_boss_talk2]
+target = logic@forest_task_bandits_com_talk, forest_task_bandits
+anim = ordinary_talk3
+combat_ignore_cond = always
+on_signal = anim_end | remark@forest_task_killers_boss_talk3 %+forest_killer_talk2%
+
+[remark@forest_task_killers_boss_talk3]
+target = logic@forest_task_bandits_com_talk, forest_task_bandits
+anim = wait_trade
+combat_ignore_cond = always
+on_info = {+forest_killer_sdelka} walker@forest_task_killers_boss_end
+
+[walker@forest_task_killers_boss_end]
+path_walk = boss_run
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+combat_ignore_cond = always
+on_signal = run |  %=release%

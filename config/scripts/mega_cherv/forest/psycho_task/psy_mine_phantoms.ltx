@@ -1,0 +1,15 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {+fore_wounded_mine} sr_idle@2 %=run_postprocess(alcohol:5004:true)%
+on_info = {+fore_trap_free} nil %=release%
+
+[sr_idle@2]
+on_actor_inside = %=gen_phantoms(10)%
+on_timer = 5000| {=actor_has_item(af_compass) -fore_has_compass} sr_idle@3 %+fore_has_compass%
+on_info = {+fore_trap_free} nil %=stop_postprocess(5004) =release%
+
+[sr_idle@3]
+on_actor_inside = %=gen_phantoms(10)%
+on_info = {+fore_trap_free} nil %=stop_postprocess(5004) =release%

@@ -1,0 +1,1022 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : smart_terrain.script
+ Description: Smart Terrain (mechanism, which organizes all stalkers and some mutants to scenes)
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : barin(2010-08-13),dezodor(2010-11-04),gr1ph00n(2011-02-15), 10.01.2014 [vintar]
+ Last edit  : 12.12.2017 [Maximless]
+--]] ----------------------------------------------------------------------------------------------
+--/ Comment : !doesn't work without simulation!
+--/ vintar : added ability to use stay and idle interval for general lager.
+--/ stay parameter is used for the time the gulag will be active once populated,
+--/ once the stay time is reached then the gulag will be removed and all npc's unregistered from it.
+--/ idle parameter is used for the time the gulag will be unavailable once stay time is reached,
+--/ after idle time has passed then gulag will be available again.
+--/ optional stay parameters include (from config/misc/smart_terrains.ltx) :
+--/ stay = quick  (between 2  and 5  game hours) or
+--/ stay = medium (between 6  and 8  game hours) or
+--/ stay = long   (between 12 and 14 game hours) else
+--/ stay will be set to default (between 10000 and 10001, basically always)
+--/ optional idle parameters include : 
+--/ idle = num1, num2  (where num1 is minimum idle time and num2 is max idle time in game hours.
+--/ note: num2 must be larger than num1. If no idle is set then default 2, 4 will be used.
+--/ note: there must be more than one general lager per map and the amout of jobs must be at least double the amount of npcs.
+--/ -----------------------------------------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+exclusives = {}
+local monster_classes = nil
+
+local smart_terrains         = {}
+local smart_terrains_by_name = {}
+local disagreed        = 0
+local agreed           = 1
+local agreed_exclusive = 2
+
+--/ level constrains
+local level_groups = {
+	["la01_escape"]         = "group1",
+	["la02_garbage"]        = "group1",
+	["la03_agroprom"]       = "group1",
+	["la04_darkdolina"]     = "group1",
+	["la04u_darklab"]       = "group1u",
+	["la05_bar_rostok"]     = "group2",
+	["la06_yantar"]         = "group2",
+	["la07_military"]       = "group2",
+	["la08_deadcity"]       = "group2",
+	["la09_swamp"]          = "group2",
+	["la10_radar"]          = "group3",
+	["la10u_bunker"]        = "group3u",
+	["la11_pripyat"]        = "group4",
+	["la12_stancia"]        = "group4",
+	["la12u_sarcofag"]      = "group4u",
+	["la13_generators"]     = "group4",
+	["la13u_warlab"]        = "group4u",
+	["la14_rostok_factory"] = "group1",
+	["la14u_secret_lab"]    = "group1u",
+	["la15_darkscape"]      = "group1",
+	["la16_lost_factory"]   = "group3",
+	["la16u_labx16"]        = "group3u",
+	["la17_outskirts"]      = "group3",
+	["la17u_labx7"]         = "group3u",
+	["la18_damned"]         = "group4",
+	["la19_country"]        = "group3",
+	["la20_forgotten"]      = "group2",
+	["la22_forest"]         = "group2",
+	["la23_oldroad"]        = "group3",
+}
+--/ for debug
+local tDbgName = {}
+local bDebug   = false
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+function InitDebug()
+	if db.tDbgName then
+		tDbgName = db.tDbgName
+		bDebug = true
+	end
+end
+--/ -----------------------------------------------------------------
+--/ CLASS CONSTRUCTION
+--/ -----------------------------------------------------------------------------------------------
+class "se_smart_terrain" (cse_alife_smart_zone)
+--/ -----------------------------------------------------------------------------------------------
+function se_smart_terrain:__init(section) super(section)
+	self.initialized = false
+	self.registred   = false
+	self.log = false
+	self.timer_name = ""
+	self.idle_timer = ""
+end
+
+function se_smart_terrain:detect_probability()
+	return 0
+end
+
+function se_smart_terrain:STATE_Write(packet)
+	cse_alife_smart_zone.STATE_Write(self, packet)
+	
+	packet:w_stringZ(self.timer_name)
+	packet:w_stringZ(self.idle_timer)
+	if self.gulag_working then
+		packet:w_bool(true)
+		self.gulag:save_common(packet)
+		
+		local n = 0
+		for _, v in pairs(self.npc_info) do
+			n = n + 1
+		end
+		
+		packet:w_u8(n)
+		
+		for id, v in pairs(self.npc_info) do
+			packet:w_u16(id)
+			packet:w_u8(v.o_group)
+			packet:w_u8(v.o_squad)
+			packet:w_bool(v.exclusive)
+			self.gulag:save_obj(packet, id)
+		end
+		
+		packet:w_bool(self.population_locked)
+	else
+		packet:w_bool(false)
+	end
+end
+
+function se_smart_terrain:STATE_Read(packet, size)
+	cse_alife_smart_zone.STATE_Read(self, packet, size)
+	
+	self:read_params()
+	
+	if editor() then
+		return
+	end
+	
+	self.level_id = game_graph():vertex(self.m_game_vertex_id):level_id() --/#?#
+	self.timer_name = packet:r_stringZ()
+	self.idle_timer = packet:r_stringZ()
+	
+	self.gulag_working = packet:r_bool()
+	
+	if self.gulag_working then
+		self.check_time = 0 --CTime_0 --/#~#
+		self.gulag:load_common(packet)
+		
+		local iCnt = packet:r_u8()
+		local idNPC, t = nil, nil
+--		log("STATE_Read:[%s],Cnt=[%s]", self:name(), iCnt ) --/#~#
+		for i=1, iCnt do
+			t = {}
+			idNPC       = packet:r_u16()
+			t.o_group   = packet:r_u8()
+			t.o_squad   = packet:r_u8()
+			t.exclusive = packet:r_bool()
+			
+			self.npc_info[idNPC] = t
+			
+			self.gulag:load_obj(packet, idNPC)
+		end
+		
+		self.population_locked = packet:r_bool()
+	end
+	--/Show smart mapspot(for debug) for online map 
+	--self:show_smart_debug_spot1(true)
+end
+
+function se_smart_terrain:initialize_if_needed()
+	if not self.initialized then
+		self:get_se_objs()
+		self:preserve_exclusives()
+		self.initialized = true
+	end
+	--/Show smart mapspot(for debug) for all
+	--self:show_smart_debug_spot1(true)
+end
+
+function se_smart_terrain:preserve_exclusives()
+	local cnt = exclusives[self:name()]
+	if cnt then
+		self.exclusives = cnt
+		self.gulag.capacity_non_exclusive = self.gulag.capacity_non_exclusive - cnt
+		exclusives[self:name()] = nil
+	else
+		self.exclusives = 0
+	end
+end
+
+--/debug feature
+function print_exclusives()
+	table.print(exclusives)
+end
+
+function se_smart_terrain:get_se_objs()
+	local sim,se_obj = alife(),nil
+	for id, v in pairs(self.npc_info) do
+		se_obj = sim:object(id)
+		if se_obj then
+			self:fill_npc_info(se_obj, v)
+		else
+			abort("(%s):get_se_objs: id =[%d] can't get server object", self:name(), id, "")
+		end
+	end
+end
+
+function se_smart_terrain:fill_npc_info(se_obj, npc_info)
+--	log("(%s):fill_npc_info:[%s]", self:name(), se_obj:name(), "") --/#~#
+	if not npc_info then
+		npc_info = {}
+	end
+	npc_info.se_obj       = se_obj
+	npc_info.section_name = se_obj:section_name()
+	npc_info.name         = se_obj:name()
+	npc_info.class_id     = se_obj:clsid()
+	npc_info.story_id     = se_obj.m_story_id
+	npc_info.community    = self:get_obj_community(se_obj)
+	npc_info.profile_name = se_obj.profile_name and se_obj:profile_name()
+	npc_info.rank         = se_obj:rank()
+	npc_info.group        = se_obj:g_group()
+	npc_info.squad        = se_obj:g_squad()
+	npc_info.team         = se_obj:g_team()
+	
+	if npc_info.profile_name then
+		npc_info.is_sniper      = npc_info.profile_name:match("sniper") ~= nil
+		npc_info.is_sniper_name = npc_info.name:match("sniper") ~= nil
+	end
+	
+	if se_obj.smart_terrain_conditions then
+		npc_info.cond = se_obj.smart_terrain_conditions[self:name()]
+	end
+	
+	--if self.log then log("(%s):fill_npc_info:[%s],cid=[%d],comm=[%s]", self:name(), se_obj:name(), se_obj:clsid(), self:get_obj_community(se_obj), "") end
+	return npc_info --/>
+end
+
+function se_smart_terrain:get_obj_community(obj)
+	local cls = obj:clsid()
+	if cls == clsid.script_stalker then
+		return obj:community(), true --/>
+	end
+	return monster_classes[cls], false --/>
+end
+
+function se_smart_terrain:read_params()
+	local sSection = "smart_terrain"
+	local ini = self:spawn_ini()
+	
+	local filename = nil
+	
+	if not editor() then
+		filename = Get_Cfg_String(ini, "smart_terrain", "cfg")
+	end
+	
+	if filename then
+		ini = ini_file(filename)
+		if not ini:section_exist("smart_terrain") then
+			abort("[%s] file '%s' does not exist or invalid!", self:name(), filename)
+			return
+		end
+		--log("se_smart_terrain:read_params: %s [cfg=%s]", tostring(self:name()), tostring(filename))
+	end
+	--log("se_smart_terrain:read_params: %s [cfg=%s]", tostring(self:name()), tostring(filename))
+
+	if not ini:line_exist(sSection, "type") then
+		self.disabled = true
+		if not ini:section_exist(sSection) then
+			abort("%s:read_params:[%s]~no_configuration!", sModule, self:name(), "")
+		else
+			abort("%s:read_params:[%s]<~type_is_not_specified", sModule, self:name(), "")
+		end
+		return --/>
+	elseif bDebug and self.id ~= 65535 then --/#+# (for debug)
+		self.log = tDbgName[self:name()] ~= nil
+	end
+	
+	local squad_id = 99
+	if self.id then
+		squad_id = string.format("%02d", self.id )
+		squad_id = string.reverse( squad_id )
+		squad_id = string.match( squad_id , "%d%d")
+		squad_id = string.reverse(squad_id)
+		squad_id = tonumber(squad_id)
+		--log("squad_id = [%s][%d]", squad_id, squad_id)
+	end
+	local gp = { --/ gulag params
+		type        = ini:r_string(sSection, "type"),
+		preset_name = r_str(ini, sSection, "preset"),
+		--respawn     = r_str(ini, sSection, "respawn"),
+		cond        = r_str(ini, sSection, "cond"),
+		groups      = r_str(ini, sSection, "groups"),
+		squad       = r_num(ini, sSection, "squad", squad_id),
+		capacity    = r_num(ini, sSection, "capacity", 100)
+	}
+	gp.duration_min, gp.duration_max = r_2nums(ini, sSection, "duration", 10000, 10001)
+	gp.idle_min,     gp.idle_max     = r_2nums(ini, sSection, "idle", 4, 6)
+	gp.stay_min,     gp.stay_max     = smart_terrain_params.get_stay_time_interval(r_str(ini, sSection, "stay", "default"))
+	
+	if gp.cond then
+		gp.cond = xr_logic.parse_condlist(nil, sSection, "cond", gp.cond)
+	end
+	if gp.groups then
+		gp.groups = parse_nums(gp.groups)
+	end
+	
+	self.gparams = gp
+	self.npc_info = {}
+	
+	if editor() then
+		-- self.in_restrictions  = ini:r_string(sSection, "in_restrictions")
+		-- self.out_restrictions = ini:r_string(sSection, "out_restrictions")
+	else
+		self.in_restrictions  = Get_Cfg_String(ini, sSection, "in_restrictions", "")
+		self.out_restrictions = Get_Cfg_String(ini, sSection, "out_restrictions", "")
+	end
+	
+
+	
+	self.accepted_communities = nil
+	
+	local str = r_str(ini, sSection, "communities")
+	if str then
+		self.accepted_communities = {}
+		for _,v in ipairs( parse_names(str) ) do
+			self.accepted_communities[v] = true
+		end
+	end
+	
+	local sini = system_ini()
+	self.rank_inc_min = sini:r_string("smart_terrain_rank_change", "min")
+	self.rank_inc_max = sini:r_string("smart_terrain_rank_change", "max")
+	self.population_locked = false
+	
+	--if self.log then log("(%s):read_params:ID=[%d],type=[%s]", self:name(), self.id, gp.type, "") end --/#~#
+	self.gulag = xr_gulag.gulag(self, self.gparams.type, self.gparams.squad, self.gparams.groups, self.npc_info, self.gparams.capacity)
+	
+	self.gulag_working = false
+end
+
+function se_smart_terrain:check_preset(npc_community, npc_rank, preset_name)
+	local preset = smart_terrain_params.get_preset(preset_name)
+	if preset == false then
+		return true
+	else
+		local t = preset[npc_community]
+		if t and (npc_rank >= t[1] and npc_rank <= t[2]) then
+			return true
+		end
+	end
+	return false
+end
+
+function se_smart_terrain:smart_terrain_accepts_obj(se_obj, obj_agreement)
+	if obj_agreement == disagreed then
+		return false --/> object disagreed to select this smart terrain
+	end
+	if obj_agreement == agreed_exclusive or self.gulag:get_non_exclusive_population() < self.gulag.capacity_non_exclusive then
+		-- --/ check that smart terrain and NPC are in same claster of levels
+		local smart_level_group = self:get_level_name()
+		local npc_level_group = alife():level_name(game_graph():vertex(se_obj.m_game_vertex_id):level_id())
+		if level_groups[smart_level_group] ~= level_groups[npc_level_group] then
+	--		log("(%s):level constrains NOT_accepts_obj:=[%s]", self:name(), se_obj:name(), "")
+			return false --/> level constrains
+		end
+		--
+		--/ object community is not accepted by this smart terrain
+		local community, is_stalker = self:get_obj_community(se_obj)
+		--if self.accepted_communities then
+		if self.accepted_communities and obj_agreement ~= agreed_exclusive then
+			if not self.accepted_communities[community] then
+				return false --/>
+			end
+		end
+		--/ smart terrain preset constrains (object rank or community doesn't fit)
+		if obj_agreement ~= agreed_exclusive then
+			if not self:check_preset(community, se_obj:rank(), self.gparams.preset_name) then
+				return false --/>
+			end
+		end
+		--if not xr_gulag.checkNpc(community, is_stalker, self.gparams.type, se_obj:rank(), se_obj) then --/#x# change
+		if not gulag_tasks.checkNpc(community, is_stalker, self.gparams.type, se_obj:rank(), se_obj) then
+			return false --/>
+		end
+		--if self.log then log("(%s):smart_terrain_accepts_obj:=[%s]", self:name(), se_obj:name(), "") end --/#~#
+	--	log("(%s):smart_terrain_accepts_obj:=[%s][%d]", self:name(), se_obj:name(), se_obj.id)
+		return self.gulag:is_there_any_suitable_job(self:fill_npc_info(se_obj), obj_agreement == agreed_exclusive) --/>
+	end
+	--/ not enough space for non-exclusive object
+	return false --/>
+end
+
+function se_smart_terrain:obj_accepts_smart_terrain(obj)
+	if obj.smart_terrain_conditions then
+		local s = nil
+		for name, condlist in pairs(obj.smart_terrain_conditions) do
+			s = xr_logic.pick_section_from_condlist(db.actor_proxy, obj, condlist)
+			if s then
+				if name == "none" then
+					return disagreed --/>
+				elseif name == self:name() or s == self:name() then
+					return agreed_exclusive --/>
+				end
+			elseif name == self:name() then
+				return disagreed --/>
+			end
+		end
+	end
+	
+	return agreed --/> non-exclusive
+end
+
+function se_smart_terrain:enabled(se_obj)
+	if self.disabled then
+		return false --/>
+	end
+	
+	self:register_if_needed()
+	self:initialize_if_needed()
+	
+	if not se_obj:can_use_smart_terrain() then
+		return false
+	end
+	
+	if self:is_gulag_available() and not self.population_locked then
+		local b = self:obj_accepts_smart_terrain(se_obj) --/ whether object accepts this smart terrain
+		local a = self:smart_terrain_accepts_obj(se_obj, b) --/ whether smart terrain accepts this object
+--		log("(%s):enabled:obj=[%s] accept %s => %s", self:name(), se_obj:name(), a, b, "") --/#~#
+		return a --/>
+	end
+	return false --/>
+end
+
+function se_smart_terrain:suitable(obj)
+	local v = 0
+	
+	if self:obj_accepts_smart_terrain(obj) == agreed_exclusive then
+		v = 100000
+	end
+	
+	for id, strn in pairs(smart_terrains[self:get_level_name()]) do
+		if strn:is_gulag_available() then
+			v = v + strn.gulag.capacity - strn.gulag:get_population()
+		end
+	end
+	
+	return v
+end
+
+function se_smart_terrain:register_npc(se_obj)
+	--log("(%s):register_npc:[%s]", self:name(), se_obj:name(), "") --/#~#
+	--local ptimer = Start_PT() --/#~# for debug
+	local npc_info = {
+		o_group = se_obj:g_group(),
+		o_squad = se_obj:g_squad(),
+		exclusive = (self:obj_accepts_smart_terrain(se_obj) == agreed_exclusive),
+		--move_offline = o:move_offline(),
+		--stay_end = game.CTime() --/#x# (not used!)
+	}
+	
+	self:fill_npc_info(se_obj, npc_info)
+	
+	if self.gulag_working and
+		 --(self.gulag:get_population() == self.gulag.capacity or
+		 not self.gulag:is_there_any_suitable_job(npc_info, false) --)
+		then
+		self:kick_someone_non_exclusive(npc_info)
+	end
+	
+	self:update_obj_rank(se_obj)
+	
+	self.npc_info[se_obj.id] = npc_info
+	se_obj.was_in_smart_terrain = true
+	
+	if not self.gulag_working then
+		self:create_gulag()
+	end
+	
+	--local ptime_1 = Get_PT(ptimer) --/#~# for debug (create_gulag)
+	self.gulag:addObject(se_obj.id)
+	--local ptime_2 = Get_PT(ptimer) --/#~# for debug (addObject)
+	
+	self.gulag:update()
+	
+	--local ptime_all = Stop_PT(ptimer) --/#~# for debug (update gulag)
+	--if ptime_all > 3000 then
+	--	log("(%s):register_npc(%s) [%s]ms", self:name(), se_obj:name(), string.format("%.3f/%.3f/%.3f",ptime_1*0.001,ptime_2*0.001,ptime_all*0.001))
+	--end
+end
+
+function se_smart_terrain:unregister_npc(se_obj)
+	if not se_obj:alive() and se_obj.smart_terrain_conditions then
+		local s = nil
+		for name, condlist in pairs(se_obj.smart_terrain_conditions) do
+			s = xr_logic.pick_section_from_condlist(db.actor_proxy, se_obj, condlist)
+			if s ~= nil then
+				if name == self:name() then
+					self.exclusives = self.exclusives - 1
+					if self.exclusives < 0 then
+						self.exclusives = 0
+					end
+					self.gulag.capacity_non_exclusive = self.gulag.capacity_non_exclusive + 1
+				--	log("(%s):unregister_npc_excl:=[%s] #excl=[%s] nonexcap=[%s]", self:name(), se_obj:name(), self.exclusives, self.gulag.capacity_non_exclusive, "")
+				end
+			end
+		end
+	end
+	
+	local t = self.npc_info[se_obj.id]
+	if t then
+		self.gulag:removeObject(se_obj.id)
+		se_obj.squad = t.o_squad
+		se_obj.group = t.o_group
+		self.npc_info[se_obj.id] = nil
+	else
+		log("(%s):unregister_npc:[%s],gulag_type=[%s]:<%s>", self:name(), se_obj and se_obj:name(), self.gparams.type, "Warning!")
+		abort("%s:unregister_npc:[%s] trying to unregister not registered object", sModule, self:name())
+	end
+	se_obj:clear_smart_terrain()
+	--log("(%s):unregister_npc:=[%s]", self:name(), se_obj:name(), "")
+end
+
+function se_smart_terrain:update_obj_rank(obj)
+	local community, is_stalker = self:get_obj_community(obj)
+	if is_stalker then
+		obj:set_rank(obj:rank() + math.random(self.rank_inc_min, self.rank_inc_max))
+	end
+end
+
+function se_smart_terrain:kick_someone_non_exclusive(new_npc_info)
+	for obj_id, npc_info in pairs(self.npc_info) do
+		if not npc_info.exclusive and self.gulag:obj1_job_suits_obj2(obj_id, new_npc_info) then
+			--/ object is not exclusive for this smart terrain and his job
+			--/ is suitable for new (exclusive) object
+			self:unregister_npc(npc_info.se_obj)
+			return
+		end
+	end
+	abort("%s:cannot kick npc, all are exclusive or there are no suitable jobs", self:name())
+end
+
+function se_smart_terrain:clear_non_exclusive()
+	if self.gulag:get_non_exclusive_population() > self.gulag.capacity_non_exclusive then
+	for obj_id, npc_info in pairs(self.npc_info) do
+		if not npc_info.exclusive then
+			--/ object is not exclusive for this smart terrain
+			log("%s:kick not exclusive npc", self:name())
+			self:unregister_npc(npc_info.se_obj)
+			return
+		end
+	end
+	end
+	--log("%s:cannot kick npc, all are exclusive", self:name())
+end
+
+function se_smart_terrain:get_gulag()
+	if self.gulag then
+		return self.gulag
+	end
+	abort("%s:get_gulag: not valid", self:name())
+end
+
+
+function se_smart_terrain:task(se_obj)
+	local path_name = self.gulag:get_obj_job_path_name(se_obj.id)
+	if path_name then
+		if level.patrol_path_exists(path_name) then
+			--if self.log then log("(%s):task:NPC=[%s/%d]=>path=[%s]%s", self:name(), se_obj:name(), se_obj.id, path_name, "") end --/#~#
+			return CALifeSmartTerrainTask(path_name) --/>
+		end
+		log("(%s)(map=%s):task:NPC=[%s](map=%s)~>JobPath=[%s]~wrong!:<%s>", self:name(), self:get_level_name(), se_obj:name(), self:get_obj_level_name(se_obj), path_name, "Warning!")
+	end
+	log("(%s)(map=%s):task:NPC=[%s](map=%s)~not_Job:<%s>", self:name(), self:get_level_name(), se_obj:name(), self:get_obj_level_name(se_obj), "Warning!")
+	self:unregister_npc(se_obj) --/< stub against crash
+	return CALifeSmartTerrainTask("out_pri_blocker_walk") -- simulation_default_path doesn't exist, let's change it to something else to avoid crash cause of bad job
+end
+
+function se_smart_terrain:is_gulag_available()
+	if self.gparams.type == "general_lager" then
+		if self.gparams.cond and not (xr_logic.pick_section_from_condlist(db.actor_proxy, self, self.gparams.cond) ~= nil) then
+			return false
+		end
+		if self.idle_timer and self.idle_timer ~= "" then
+			if timer_exists(self.idle_timer) then
+				return false
+			end
+		end
+	elseif self.gparams.cond then
+		return xr_logic.pick_section_from_condlist(db.actor_proxy, self, self.gparams.cond) ~= nil
+	end
+	return true
+end
+
+function se_smart_terrain:lock_population(need_lock)
+	self.population_locked = need_lock
+end
+
+function se_smart_terrain:create_gulag()
+	--log("creating gulag name = [%s]",self:name())
+	self.check_time = 0 --CTime_0 --/#~#
+	self.gulag:initialize()
+	self.gulag_working = true
+	if self.gparams.type == "general_lager" then
+		self.idle_timer = ""
+		local stay_interval = r_str(self:spawn_ini(), "smart_terrain", "stay", "default")
+		if stay_interval and type(stay_interval) == 'string' then
+			self.timer_name = self:name() .. "stay"
+			local inter = math.random(self.gparams.stay_min, self.gparams.stay_max)
+			--log("smart terrain timer [%s] has interval of [%s]",self.timer_name,tostring(inter))
+			if timer_exists(self.timer_name) then -- insurance
+				start_game_timer(inter*60*60, sModule .. ".stub", {}):set_name(self.timer_name)
+			else
+				start_game_timer(inter*60*60, sModule .. ".stub", {}, self.timer_name)
+			end
+		end
+	end
+end
+
+function se_smart_terrain:remove_gulag(disable)
+	self.disabled = disable
+	if not self.gulag_working then
+		return
+	end
+	--log("removing gulag name = [%s]",self:name())
+	if self.gparams.type == "general_lager" then
+		self.timer_name = ""
+		local idle_time = math.random(self.gparams.idle_min, self.gparams.idle_max)
+		self.idle_timer = self:name() .. "idle"
+		--log("smart terrain idle timer [%s] has interval of [%s]",self.idle_timer,tostring(idle_time))
+		if timer_exists(self.idle_timer) then -- insurance
+			start_game_timer(idle_time*60*60, sModule .. ".stub", {}):set_name(self.idle_timer)
+		else
+			start_game_timer(idle_time*60*60, sModule .. ".stub", {}, self.idle_timer)
+		end
+		--log("ST name = [%s] has population of [%s] and is NOT available",self:name(),tostring(pop))
+	end
+	for _, npc_info in pairs(self.npc_info) do
+		self:unregister_npc(npc_info.se_obj)
+	end
+	
+	self.gulag = xr_gulag.gulag(self, self.gparams.type, self.gparams.squad, self.gparams.groups, self.npc_info, self.gparams.capacity)
+	self.gulag:load_jobs()
+	
+	self.gulag_working = false
+	
+	self.gulag.capacity_non_exclusive = self.gulag.capacity_non_exclusive - self.exclusives
+end
+
+--/#+# returns ID of level, on which there is smart-terrain
+function se_smart_terrain:get_level_id()
+	--return game_graph():vertex(self.m_game_vertex_id):level_id() --/>
+	return self.level_id --/>
+end
+--/#+# returns ID of level, on which there is object
+function se_smart_terrain:get_obj_level_id(soObj)
+	if soObj then
+		return game_graph():vertex(soObj.m_game_vertex_id):level_id() --/>
+	end
+	--return game_graph():vertex(self.m_game_vertex_id):level_id() --/>
+	return self.level_id --/>
+end
+
+--/ returns name of level on which there is smart-terrain
+function se_smart_terrain:get_level_name()
+	--return alife():level_name( game_graph():vertex(self.m_game_vertex_id):level_id() )
+	--return alife():level_name( self:get_level_id() ) --/>
+	return alife():level_name( self.level_id ) --/>
+end
+--/ returns name of level, on which there is object
+function se_smart_terrain:get_obj_level_name(soObj)
+	return alife():level_name( self:get_obj_level_id(soObj) ) --/>
+end
+
+--/ registering of object (smart-terrain) in simulator (called by simulator)
+function se_smart_terrain:on_register()
+	cse_alife_smart_zone.on_register(self)
+	
+	self:register_if_needed()
+	self:initialize_if_needed()
+end
+
+function se_smart_terrain:fill_monster_classes()
+	if not monster_classes then
+		monster_classes = xr_statistic.monster_classes --/#+#
+	end
+end
+
+function se_smart_terrain:register_if_needed()
+	if self.registred == true then
+		return --/>
+	end
+	self.registred = true
+	if self.disabled then
+		return --/>
+	end
+	
+	self:fill_monster_classes()
+	
+	local level_name = self:get_level_name()
+	
+	if not self.gparams.preset_name then
+		self.gparams.preset_name = level_name
+	end
+	
+	if not smart_terrains[level_name] then
+		smart_terrains[level_name] = {}
+	end
+	
+	smart_terrains[level_name][self.id] = self
+	smart_terrains_by_name[self:name()] = self
+	
+--	if self.gparams.respawn then
+--		db.strn_by_respawn[self.gparams.respawn] = self
+--	end
+	
+	self.gulag:load_jobs()
+	
+	if self.gulag_working then
+		self.gulag:initialize()
+	end
+	
+	task_manager.register_target(self)
+end
+
+function se_smart_terrain:on_unregister()
+	cse_alife_smart_zone.on_unregister(self)
+	
+	local lvl_smarts = smart_terrains[self:get_level_name()]
+	if lvl_smarts then
+		lvl_smarts[self.id] = nil
+	end
+	
+	smart_terrains_by_name[self:name()] = nil
+	
+--	if self.gparams and self.gparams.respawn then
+--		db.strn_by_respawn[self.gparams.respawn] = nil
+--	end
+	
+	db.actor_proxy:deinit()
+end
+
+--function se_smart_terrain:call_respawn()
+	--if self.gparams.respawn then
+--	log("(%s):call_respawn:=[%s]", self:name(), self.gparams.respawn, "")
+	--	se_respawn.spawn(self.gparams.respawn, self)
+	--end
+--end
+
+function se_smart_terrain:update(bForce)
+	cse_alife_smart_zone.update(self)
+	
+	if self.gparams.type == "general_lager" and self:is_gulag_available() then
+		if self.timer_name and self.timer_name ~= "" then
+			if not timer_exists(self.timer_name) then
+				self:remove_gulag()
+			end
+		end
+		if self.idle_timer and self.idle_timer ~= "" then
+			if timer_exists(self.idle_timer) then
+				if self.gulag_working then
+					self:remove_gulag()
+				end
+			else
+				self:create_gulag()
+			end
+		end
+	elseif not self.gulag_working then
+		return
+	elseif self:is_gulag_available() then
+		if (bForce or time_global() > (self.check_time or 0)) and db.actor then --/#+#
+			--start debug, remove before release
+			if self.timer_name and self.timer_name ~= "" then
+				local t = get_timer(self.timer_name)
+				if t then
+					log("smart terrain stay timer = [%s]",t:__tostring())
+				end
+			end
+			if self.idle_timer and self.idle_timer ~= "" then
+				local tt = get_timer(self.idle_timer)
+				if tt then
+					log("smart terrain idle time info = [%s]",tt:__tostring())
+				end
+			end
+			-- end debug
+			--local iDistance = db.actor:position():distance_to_sqr(self.position)
+			local pos = self.gulag:pos_job() -- Fixed by Maximless!!!!
+			--log("pos job %s", pos)
+			local iDistance = db.actor:position():distance_to_sqr(pos)
+			local iTimeIdle = math.max(5, 0.003 * iDistance) --/ 1 time per minute or less
+			self.check_time = time_global() + iTimeIdle --/ set time of next check
+			
+			--if self.log then  log("(%s):update:dist=[%s/%s],idle=[%s]s%s", self:name(), ShortStr(iDistance), ShortStr(math.sqrt(iDistance)), ShortStr(iTimeIdle), "") end
+			for _, npc_info in pairs(self.npc_info) do
+				if npc_info.cond and xr_logic.pick_section_from_condlist(db.actor_proxy, npc_info.se_obj, npc_info.cond) == nil then
+					self:unregister_npc(npc_info.se_obj)
+				end
+			end
+			
+			if self.gulag:get_population() == 0 then
+				self:remove_gulag()
+			else
+				self.gulag:update()
+			end
+		end
+	else
+		self:remove_gulag()
+	end
+	--self:show_smart_debug_spot1(true)
+end
+
+function se_smart_terrain:show_smart_debug_spot(avail)
+	if sim_statistic.show_smart_spot == true then
+		--/ Show mark
+		local str = self:name().." ("..tostring(self.gulag.state)..")\\n".."pop = "..tostring(self.gulag:get_population()).."("..tostring(self.gulag.capacity_non_exclusive)..":"..tostring(self.gulag.capacity)..") comed = "..tostring(self.gulag:get_population_comed())
+		
+		if self.debug_avail ~= avail then
+			if self.debug_avail == true then
+				level.map_remove_object_spot(self.id, "green_location")
+			elseif self.debug_avail == false then
+				level.map_remove_object_spot(self.id, "green_location")
+			end
+			if avail == true then
+				level.map_add_object_spot(self.id, "green_location", str)
+			else
+				level.map_add_object_spot(self.id, "green_location", str)
+			end
+			self.debug_avail = avail
+		else
+			if avail == true then
+				level.map_change_spot_hint(self.id, "green_location", str)
+			else
+				level.map_change_spot_hint(self.id, "green_location", str)
+			end
+		end
+		 self.spot_showed = true
+	else
+		--/ Hide mark
+		if self.spot_showed == nil then
+			return
+		end
+		self.spot_showed = nil
+		if self.debug_avail == true then
+			level.map_remove_object_spot(self.id, "green_location")
+		else
+			level.map_remove_object_spot(self.id, "green_location")
+		end
+	end
+end
+
+--/ Show mark
+function se_smart_terrain:show_smart_debug_spot1(param)
+		local p1 = self:name()
+		local p2 = tostring(self.gulag.state)
+		local p5 = tostring(self.gulag:get_population())
+		local p6 = tostring(self.gulag.capacity)
+		local p7 = self.gulag:get_non_exclusive_population()
+		local p8 = tostring(self.gulag.capacity_non_exclusive)
+		local p9 = tostring(self.gulag:get_population_comed())
+
+		local str = p1.." ("..p2..")\\n".."popul = "..p5.."("..p6..")\\nnonex = "..p7.."("..p8..")\\ncomed = "..p9
+			if self.spot_showed ~= true then
+				level.map_add_object_spot(self.id, "green_location", str)
+			else
+				level.map_change_spot_hint(self.id, "green_location", str)
+			end
+
+		 self.spot_showed = true
+		local str, p1, p2, p5, p6, p7, p8, p9 = nil,nil,nil,nil,nil,nil,nil,nil
+end
+
+
+
+function se_smart_terrain:show_smart_debug_spot2(param)
+		local npc_list = "npc_info = "
+		for obj_id, npc_info in pairs(self.npc_info) do
+			npc_list = npc_list .. npc_info.name .. "\\n"--"[" .. obj_id .. "], "
+		end
+
+		local p1 = self:name()
+		local p2 = tostring(self.gulag.state)
+		local p3 = self.gparams.type
+--		local p4 = self.gparams.respawn or "NIL"
+		local p5 = tostring(self.gulag:get_population())
+		local p6 = tostring(self.gulag.capacity)
+		local p7 = self.gulag:get_non_exclusive_population()
+		local p8 = tostring(self.gulag.capacity_non_exclusive)
+		local p9 = tostring(self.gulag:get_population_comed())
+		local p10 = self.gparams.squad or "NIL"
+
+		local str = p1.." ("..p2..")".."\\ntype = "..p3.."\\nsquad_id = "..p10.."\\nPopulation:\\npopul = "..p5.."("..p6..")\\nnonex = "..p7.."("..p8..")\\ncomed = "..p9.."\\n"..npc_list
+
+			if self.spot_showed ~= true then
+				level.map_add_object_spot(self.id, "green_location", str)
+			else
+				level.map_change_spot_hint(self.id, "green_location", str)
+			end
+
+		 self.spot_showed = true
+		local npc_list, str, p1, p2, p3, p4, p5, p6, p7, p8, p9 = nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil
+end
+--/ ------------------------------------------------------------------
+--/ HELPERs - for reading ini (custom data)
+--/ ------------------------------------------------------------------
+function r_str(spawn_ini, section, field, default)
+	if spawn_ini:line_exist(section, field) then
+		return spawn_ini:r_string(section, field) --/>
+	end
+	return default --/>
+end
+
+function r_num(spawn_ini, section, field, default)
+	if spawn_ini:line_exist(section, field) then
+		return spawn_ini:r_float(section, field) --/>
+	end
+	return default --/>
+end
+
+function r_2nums(spawn_ini, section, field, def1, def2)
+	if spawn_ini:line_exist(section, field) then
+		local t = parse_nums(spawn_ini:r_string(section, field))
+		--/ if default's more, then values in ini, then fill missing with defaults
+		return t[1] or def1, t[2] or def2 --/>
+	end
+	return def1, def2 --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ HELPERs (functions, which can be called outside)
+--/ -----------------------------------------------------------------------------------------------
+function read_smart_terrain_conditions(se_obj)
+	if se_obj.ini and se_obj.ini:section_exist("smart_terrains") then
+		local cnt = se_obj.ini:line_count("smart_terrains")
+		if cnt > 0 then
+			local conds, result, field, str = {}, nil, nil, nil
+			for i=0, cnt-1 do
+				result, field, str = se_obj.ini:r_line("smart_terrains", i, "", "")
+				conds[field] = xr_logic.parse_condlist(se_obj, "smart_terrains", field, str)
+			end
+			return conds --/>
+		end
+	end
+	return nil
+end
+
+function get_smart_terrain_id(soNPC)
+	if soNPC and IsNPC(soNPC) then
+		return soNPC:smart_terrain_id() or 65535
+	end
+	return 65535
+end
+function get_smart_terrain(soNPC)
+	if soNPC and IsNPC(soNPC) then
+		local idStrn = soNPC:smart_terrain_id()
+		if idStrn and idStrn ~= 65535 then
+			local soStrn = alife():object(idStrn)
+			if soStrn and soStrn:clsid() == clsid.smart_terrain then
+				return soStrn --/>
+			end
+		end
+	end
+	return nil --/>
+end
+--/ Deletes object from smart-terrain
+function unregister_npc(npc,npc_id)
+	local id = npc_id or (npc and npc.id)
+	if type(id) == 'function' then
+		id = npc:id()
+	end
+	local soNPC = id and alife():object(id) --/ and alife()
+	if soNPC then
+		local soStrn = this.get_smart_terrain(soNPC)
+		if soStrn then
+			soStrn:unregister_npc(soNPC)
+		end
+	end
+end
+--/ Removing object from smart-terrain when dead
+function on_death(idNPC)
+	local soNPC = idNPC and alife():object(idNPC) --/ and alife()
+	if soNPC then
+		local soStrn = this.get_smart_terrain(soNPC) --/#fix#
+		if soStrn then
+			if soStrn.gulag then
+				soStrn.gulag:clear_dead(idNPC)
+			else
+				soStrn:clear_dead(idNPC)
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ for debug
+--/ -----------------------------------------------------------------------------------------------
+function InitDebug() --/#+#
+	if db.tDbgName then
+		tDbgName = db.tDbgName
+		bDebug = true
+	end
+end
+
+function debug_st()
+	parser.debug_table(smart_terrains)
+end
+
+local error_tbl = {
+	"entity didnt accept the gulag",
+	"level restriction",
+	"entity community is not accepted",
+	"entity rank is not accepted",
+	"gulag check failed",
+	"no suitable jobs"
+}
+function debug_entity(obj)
+	local t = obj.refused_gulags
+	if t then
+		for k, v in pairs(t) do
+			log("npc [%s] refused gulag [%s] because: %s", obj:name(), k, error_tbl[v])
+		end
+	end
+end
+
+function stub()
+end
+--/ -----------------------------------------------------------------------------------------------

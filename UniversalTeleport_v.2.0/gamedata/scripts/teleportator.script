@@ -1,0 +1,226 @@
+local maps = {
+{"esc","gar","agr","dar","bar","ros","mil","yan","rad","pri","chaes1","chaes2","under_ground"},
+{"agrund","x18","x16","x10","sar","contr","on_surfaces"}
+}
+
+function use_tele(item)
+	if item and item:section() == "teleportator" then
+		db.actor:give_info_portion("teleport_on_surfaces")
+		this.stop_hud()
+		local hud = ui_tele(get_hud())
+		level.start_stop_menu(hud, true)
+		alife():create("teleportator", db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+	end
+end
+
+class "ui_tele"(CUIScriptWnd)
+function ui_tele:__init(owner) super()
+	self.owner = owner
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function ui_tele:InitControls()
+	self:Init(0,0,1024,768)
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_teleport.xml")
+	
+	if has_alife_info("teleport_on_surfaces") then
+		xml:InitStatic("back_map",self)
+	elseif has_alife_info("teleport_under_ground") then
+		xml:InitStatic("back_monster",self)
+	end
+	xml:InitStatic("background",self)
+	
+	if has_alife_info("teleport_on_surfaces") then
+		self:Register(xml:Init3tButton("caption",self),		"caption")
+		local params = maps[1]
+		for a=1,#params,1 do
+			local btn = "btn_"..params[a]
+			self:Register(xml:Init3tButton(btn,self), btn)
+		end
+	elseif has_alife_info("teleport_under_ground") then
+		self:Register(xml:Init3tButton("caption_und",self),		"caption_und")
+		local params = maps[2]
+		for a=1,#params,1 do
+			local btn = "btn_"..params[a]
+			self:Register(xml:Init3tButton(btn,self), btn)
+		end
+	end
+	self:Register(xml:Init3tButton("btn_telecoord",self),	"btn_telecoord")
+	self:Register(xml:Init3tButton("btn_quit",self),	"btn_quit")
+end
+
+function ui_tele:InitCallBacks()
+	if has_alife_info("teleport_on_surfaces") then
+		self:AddCallback("btn_esc",		ui_events.BUTTON_CLICKED,	self.tele_to_esc,		self)
+		self:AddCallback("btn_gar",		ui_events.BUTTON_CLICKED,	self.tele_to_gar,		self)
+		self:AddCallback("btn_agr",		ui_events.BUTTON_CLICKED,	self.tele_to_agr,		self)
+		self:AddCallback("btn_dar",		ui_events.BUTTON_CLICKED,	self.tele_to_dar,		self)
+		self:AddCallback("btn_bar",		ui_events.BUTTON_CLICKED,	self.tele_to_bar,		self)
+		self:AddCallback("btn_ros",		ui_events.BUTTON_CLICKED,	self.tele_to_ros,		self)
+		self:AddCallback("btn_mil",		ui_events.BUTTON_CLICKED,	self.tele_to_mil,		self)
+		self:AddCallback("btn_yan",		ui_events.BUTTON_CLICKED,	self.tele_to_yan,		self)
+		self:AddCallback("btn_rad",		ui_events.BUTTON_CLICKED,	self.tele_to_rad,		self)
+		self:AddCallback("btn_pri",		ui_events.BUTTON_CLICKED,	self.tele_to_pri,		self)
+		self:AddCallback("btn_chaes1",	ui_events.BUTTON_CLICKED,	self.tele_to_chaes1,	self)
+		self:AddCallback("btn_chaes2",	ui_events.BUTTON_CLICKED,	self.tele_to_chaes2,	self)
+		self:AddCallback("btn_under_ground",	ui_events.BUTTON_CLICKED,	self.switch_menu,	self)
+	elseif has_alife_info("teleport_under_ground") then
+		self:AddCallback("btn_agrund",	ui_events.BUTTON_CLICKED,	self.tele_to_agrund,	self)
+		self:AddCallback("btn_x18",		ui_events.BUTTON_CLICKED,	self.tele_to_x18,		self)
+		self:AddCallback("btn_x16",		ui_events.BUTTON_CLICKED,	self.tele_to_x16,		self)
+		self:AddCallback("btn_x10",		ui_events.BUTTON_CLICKED,	self.tele_to_x10,		self)
+		self:AddCallback("btn_sar",		ui_events.BUTTON_CLICKED,	self.tele_to_sar,		self)
+		self:AddCallback("btn_contr",	ui_events.BUTTON_CLICKED,	self.tele_to_contr,		self)
+		self:AddCallback("btn_on_surfaces",	ui_events.BUTTON_CLICKED,	self.switch_menu,		self)
+	end
+	self:AddCallback("btn_telecoord",	ui_events.BUTTON_CLICKED,	self.on_telecoord,	self)
+	self:AddCallback("btn_quit",		ui_events.BUTTON_CLICKED,	self.on_quit,		self)
+end
+
+function ui_tele:OnKeyboard(dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:on_quit()
+		elseif dik == DIK_keys.DIK_TAB then
+			self:switch_menu()
+		end
+	end
+	return true
+end
+
+function ui_tele:on_telecoord()
+	self:on_quit()
+	local hud = tele_to_coord.tele_coord(get_hud())
+	level.start_stop_menu(hud, true)
+end
+function ui_tele:switch_menu()
+	self:on_quit()
+	if has_alife_info("teleport_on_surfaces") then
+		db.actor:give_info_portion("teleport_under_ground")
+	else
+		db.actor:give_info_portion("teleport_on_surfaces")
+	end
+	this.new_menu()
+end
+function ui_tele:on_quit()
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function ui_tele:tele_to_esc()
+	tele_to_level.goToMap(1)
+	self:on_quit()
+end
+function ui_tele:tele_to_gar()
+	tele_to_level.goToMap(2)
+	self:on_quit()
+end
+function ui_tele:tele_to_agr()
+	tele_to_level.goToMap(3)
+	self:on_quit()
+end
+function ui_tele:tele_to_agrund()
+	tele_to_level.goToMap(13)
+	self:on_quit()
+end
+function ui_tele:tele_to_dar()
+	tele_to_level.goToMap(4)
+	self:on_quit()
+end
+function ui_tele:tele_to_x18()
+	tele_to_level.goToMap(14)
+	self:on_quit()
+end
+function ui_tele:tele_to_bar()
+	tele_to_level.goToMap(5)
+	self:on_quit()
+end
+function ui_tele:tele_to_ros()
+	tele_to_level.goToMap(6)
+	self:on_quit()
+end
+function ui_tele:tele_to_mil()
+	tele_to_level.goToMap(7)
+	self:on_quit()
+end
+function ui_tele:tele_to_yan()
+	tele_to_level.goToMap(8)
+	self:on_quit()
+end
+function ui_tele:tele_to_x16()
+	tele_to_level.goToMap(15)
+	self:on_quit()
+end
+function ui_tele:tele_to_rad()
+	tele_to_level.goToMap(9)
+	self:on_quit()
+end
+function ui_tele:tele_to_x10()
+	tele_to_level.goToMap(16)
+	self:on_quit()
+end
+function ui_tele:tele_to_pri()
+	tele_to_level.goToMap(10)
+	self:on_quit()
+end
+function ui_tele:tele_to_chaes1()
+	tele_to_level.goToMap(11)
+	self:on_quit()
+end
+function ui_tele:tele_to_chaes2()
+	tele_to_level.goToMap(12)
+	self:on_quit()
+end
+function ui_tele:tele_to_sar()
+	tele_to_level.goToMap(17)
+	self:on_quit()
+end
+function ui_tele:tele_to_contr()
+	tele_to_level.goToMap(18)
+	self:on_quit()
+end
+
+-- прочие функции
+function new_menu()
+	local hud = ui_tele(get_hud())
+	level.start_stop_menu(hud, true)
+end
+
+function stop_hud()
+	local self = level.main_input_receiver()
+	if self ~= nil then
+		self:GetHolder():start_stop_menu(self, true)
+	end
+end
+
+function spawn_teleportator()
+	if not has_alife_info("actor_give_teleport") then
+		alife():create("teleportator", db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+		db.actor:give_info_portion("actor_give_teleport")
+	end
+end
+
+-- Арты за перемещение
+function need_art()
+	local f = false
+	db.actor:iterate_inventory(
+		function(npc,item)
+			local sect = item:section()
+			local sim = alife()
+			if teleport_base.needed_artefacts[sect] and (not f) then
+				sim:release(sim:object(item:id()), true)
+				sim:create("af_kamen", db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+				f = true
+			end
+		end
+		,db.actor)
+	return f
+end
+
+function tele_msg()
+	local snd = xr_sound.get_safe_sound_object([[device\pda\pda_tip]])
+	snd:play(db.actor, 0, sound_object.s2d)
+	local msg = "%c[255,160,160,160]Телепортатор\\n%c[255,255,0,0]Артефакты не обнаружены - телепортация невозможна!"
+	db.actor:give_game_news(msg, "ui\\ui_iconsTotal", Frect():set(166,517,83,47), 0, 10000)
+end

@@ -1,0 +1,52 @@
+[logic]
+active = sr_idle@idle
+
+[sr_idle@idle]
+on_info = {+bar_arena_start} sr_idle@arena
+
+[sr_idle@arena]
+on_actor_inside = {+bar_arena_dogs_choosen -bar_arena_spawn1 -bar_arena_dogs_defeated} sr_cutscene@arena %=tasks_bar_rostok.bar_arena_teleport +bar_arena_spawn1%, {+bar_arena_pseudodog_choosen -bar_arena_spawn1_1 -bar_arena_pseudodog_defeated} sr_cutscene@arena %=tasks_bar_rostok.bar_arena_teleport +bar_arena_spawn1_1%, {+bar_arena_snork_choosen -bar_arena_spawn2 -bar_arena_snork_defeated} sr_cutscene@arena %=tasks_bar_rostok.bar_arena_teleport +bar_arena_spawn2%, {+bar_arena_bloodsucker_choosen -bar_arena_spawn3 -bar_arena_bloodsucker_defeated} sr_cutscene@arena_big %=tasks_bar_rostok.bar_arena_teleport +bar_arena_spawn3%, {+bar_arena_burer_choosen -bar_arena_spawn4 -bar_arena_burer_defeated} sr_cutscene@arena_big %=tasks_bar_rostok.bar_arena_teleport +bar_arena_spawn4%, {+bar_arena_savage_choosen -bar_arena_spawn5 -bar_arena_savage_defeated} sr_cutscene@arena_savage %=tasks_bar_rostok.bar_arena_teleport +bar_arena_spawn5%
+
+[sr_cutscene@arena]
+point = bar_arena_point
+look = bar_arena_look
+cam_effector = bar_arena
+pp_effector = blink
+on_timer = 21000 | %+bar_open_cage%
+on_signal = cameff_end | sr_idle@fight %+bar_arena_fight =tasks_bar_rostok.bar_arena_weapon_slot()%
+
+[sr_cutscene@arena_big]
+point = bar_arena_point2
+look = bar_arena_look2
+cam_effector = bar_arena_big
+pp_effector = blink
+on_timer = 20500 | %+bar_arena_door_2_open%
+on_signal = cameff_end | sr_idle@fight %+bar_arena_fight =tasks_bar_rostok.bar_arena_weapon_slot()%
+
+[sr_cutscene@arena_savage]
+point = bar_arena_point
+look = bar_arena_look
+cam_effector = bar_arena_savage
+pp_effector = blink
+on_signal = cameff_end | sr_idle@fight %+bar_arena_fight =tasks_bar_rostok.bar_arena_weapon_slot()%
+
+[sr_idle@fight]
+on_info = {+bar_arena_monstr_dead} sr_idle@wait_finish
+on_info2 = {+bar_arena_actor_dead} ph_sound@bar_arena_public_dead
+
+[ph_sound@bar_arena_public_dead]
+snd = bar_arena_public_start
+min_idle = 0 ;1000
+max_idle = 0 ;1500
+random = true
+on_timer = 20000 | sr_idle@wait_finish
+
+[sr_idle@wait_finish]
+on_info = {+bar_arena_dogs_defeated} sr_idle@pause %+bar_arena_dogs_reward +bar_arena_pause%,{+bar_arena_pseudodog_defeated} sr_idle@pause %+bar_arena_pseudodog_reward +bar_arena_pause%,{+bar_arena_snork_defeated} sr_idle@pause %+bar_arena_snork_reward +bar_arena_pause%,{+bar_arena_bloodsucker_defeated} sr_idle@pause %+bar_arena_bloodsucker_reward +bar_arena_pause%,{+bar_arena_burer_defeated} sr_idle@pause %+bar_arena_burer_reward +bar_arena_pause%,{+bar_arena_savage_defeated} sr_idle@pause %+bar_arena_savage_reward +bar_arena_pause%
+
+[sr_idle@pause]
+on_info = {+bar_arena_megafon_finished} sr_idle@wait_pause %-bar_arena_start =tasks_bar_rostok.bar_arena_reset%
+
+[sr_idle@wait_pause]
+on_info = {+bar_arena_game_timer} sr_idle@arena %-bar_arena_pause +bar_arena_reset -bar_arena_game_timer%
+;on_game_timer = 5 | sr_idle@arena %-bar_arena_pause +bar_arena_reset%

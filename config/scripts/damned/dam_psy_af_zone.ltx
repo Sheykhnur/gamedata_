@@ -1,0 +1,9 @@
+[logic]
+active = {!actor_has_item(af_psy_zone_heart1)} sr_idle, {=actor_has_item(af_psy_zone_heart1)} nil %=stop_postprocess(5021) =stop_sound_looped(ambient\random\rnd_the_horror2) =stop_sound_looped(ambient\random\rnd_the_horror3) =release%
+
+[sr_idle]
+on_actor_inside = {!actor_has_item(af_psy_zone_heart1)} sr_idle@psy %=run_postprocess(psi4:5021:true) =play_sound_looped(ambient\random\rnd_the_horror2) =play_sound_looped(ambient\random\rnd_the_horror3) =psy_hit(0.05) =gen_phantoms(4:10)%, {=actor_has_item(af_psy_zone_heart1)} nil %=stop_postprocess(5021) =stop_sound_looped(ambient\random\rnd_the_horror2) =stop_sound_looped(ambient\random\rnd_the_horror3) =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker) =psy_hit(0.3) =release%
+
+[sr_idle@psy]
+on_actor_outside = sr_idle %=stop_postprocess(5021) =stop_sound_looped(ambient\random\rnd_the_horror2) =stop_sound_looped(ambient\random\rnd_the_horror3)%
+on_info = {=actor_has_item(af_psy_zone_heart1)} nil %=stop_postprocess(5021) =stop_sound_looped(ambient\random\rnd_the_horror2) =stop_sound_looped(ambient\random\rnd_the_horror3) =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker) =psy_hit(0.7) =release%

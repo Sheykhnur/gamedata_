@@ -1,0 +1,95 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_lost_factory.script
+ Description: Tasks lost_factory
+ Copyright  : 2011 © LA-team
+ Author     : vintar
+ Editors    : vintar(2011-09-13), lox(15.02.2013)
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local lost_info_tbl = {
+	"lost_scientist_yourself",
+	"lost_scientist_study",
+	"lost_scientist_monos"
+}
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if lost_info_tbl and has_info_portions(lost_info_tbl) then
+		lost_info_tbl = nil --/ clear
+		give_info("lost_scientist_asked_all")
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^lost_') then
+		return false --/>
+	end
+	if info_id == "lost_scan_message" then
+		news_manager.send_tip_hud(game.translate_string("ecolog_message_header"), game.translate_string("lost_scan_message"), "ecolog")
+		return true --/>
+	end
+	if info_id == "lost_actor_scanning" then
+		news_manager.send_tip_hud(game.translate_string("ecolog_message_header"), game.translate_string("lost_scanning_message"), "ecolog")
+		return true --/>
+	end
+	if info_id == "lost_scan_cleared" then
+		news_manager.send_tip_hud(game.translate_string("ecolog_message_header"), game.translate_string("lost_scanned_clear"), "ecolog")
+		return true --/>
+	end
+	if info_id == "lost_exit_found" then
+		start_real_timer(2, "tasks_lost_factory.give_hermit_task")
+		return true
+	end
+	if info_id == "lost_scientist_music_task_start" then
+		give_info("forest_spawn_music")
+		return true
+	end
+	if info_id == "lost_scientist_music_task_completed" then
+		local obj = db.actor:object("forest_sheet_music")
+		alife():release(alife():object(obj:id()), true)
+		dialogs.give_money(8000)
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function psy_helmet_task_fail()
+	level.add_cam_effector("camera_effects\\dis_consciousness.anm", 2345, true, "")
+	start_real_timer(4.5, "tasks_lost_factory.start_pp_effect") --/ ~ 4.5sec (real-time)
+	start_real_timer(6.5, "tasks_lost_factory.start_pp_effect2")
+	start_real_timer(10, "xr_effects.kill_actor") --/ ~ 10sec (real-time)
+end
+
+function start_pp_effect()
+	level.add_pp_effector("dark_fade.ppe", 4567, false)
+end
+
+function start_pp_effect2()
+	level.remove_cam_effector(2345)
+	level.add_pp_effector("agr_u_fade.ppe", 5678, false)
+end
+
+function give_hermit_task()
+	give_info("lab_hermit_meet")
+	give_info("rad_find_hermit_start")
+	news_manager.send_tip_hud(game.translate_string("doc_message_header"), game.translate_string("lab_hermit_meet"), "doc")
+end
+
+function decontamination_reset()
+	local hours = math.random(6,12)
+	start_game_timer(hours*60*60, nil, {info_id = "lost_decon_reset"})
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,322 @@
+;*************************************
+; Драм момент, блядь! Охуеть просто...
+;*************************************
+
+[threshold@gar_dram_bandits]
+;max_ignore_distance = 10
+
+[danger@gar_dram_bandit_1]
+ignore_types                = corpse
+ignore_distance = 120
+
+[death@gar_dram_bandit_1]
+on_info = %+gar_dm_bandit1_dead =tasks_garbage.gar_dm_bandits_fight%
+
+[combat@gar_dram_bandit_1]
+on_info = %=disable_combat_handler =tasks_garbage.gar_dm_bandits_fight%
+
+[hit@gar_dram_bandit_1]
+on_info = %=tasks_garbage.gar_dm_bandits_fight%
+
+[logic@gar_dram_moment_terrain_ambush_1]
+active = walker1@gar_dram_bandit_1
+on_death = death@gar_dram_bandit_1
+on_combat = combat@gar_dram_bandit_1
+on_hit = hit@gar_dram_bandit_1
+combat_ignore = true
+
+[walker1@gar_dram_bandit_1]
+path_walk = walk1
+path_look = walk1_look
+combat_ignore_cond = {=fighting_gar_novice}
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_1 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_1 %+gar_dm_bandit2_warned_plr%
+on_info3 = {+gar_dm_bandit1_demand} remark@demand_gar_dram_bandit_1 %-gar_dm_bandit1_demand%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark@demand_gar_dram_bandit_1]
+snd = gar_dm_bandit_demand
+anim = claim
+target = gar_newbie_terrain_walk, 0
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end | walker1@gar_dram_bandit_1 %+gar_dm_newbie_no_money%
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_1 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_1 %+gar_dm_bandit2_warned_plr%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark1@gar_dram_bandit_1]
+anim = backoff
+snd = gar_dm_bandit_backoff1
+target = actor
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end | %+gar_dm_bandit2_warn_plr%
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark2@gar_dram_bandit_1]
+target = actor
+snd = gar_dm_bandit_backoff2
+anim = backoff2
+combat_ignore_cond = {-gar_bandits_attacked}
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+;*************************************
+
+[death@gar_dram_bandit_2]
+on_info = %+gar_dm_bandit2_dead =tasks_garbage.gar_dm_bandits_fight%
+
+[combat@gar_dram_bandit_2]
+on_info = %=disable_combat_handler =tasks_garbage.gar_dm_bandits_fight%
+
+[hit@gar_dram_bandit_2]
+on_info = %=tasks_garbage.gar_dm_bandits_fight%
+
+[logic@gar_dram_moment_terrain_ambush_2]
+active = walker1@gar_dram_bandit_2
+on_death = death@gar_dram_bandit_2
+on_combat = combat@gar_dram_bandit_2
+on_hit = hit@gar_dram_bandit_2
+combat_ignore = true
+
+[walker1@gar_dram_bandit_2]
+path_walk = walk2
+path_look = walk2_look
+combat_ignore_cond = {=fighting_gar_novice}
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_2 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_2 %+gar_dm_bandit2_warned_plr%
+on_info3 = {+gar_dm_bandit2_demand} remark@demand_gar_dram_bandit_2 %-gar_dm_bandit2_demand%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark@demand_gar_dram_bandit_2]
+anim = claim
+snd = gar_dm_bandit_demand
+target = gar_newbie_terrain_walk, 0
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end | walker1@gar_dram_bandit_2 %+gar_dm_newbie_no_money%
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_2 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_2 %+gar_dm_bandit2_warned_plr%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark1@gar_dram_bandit_2]
+snd = gar_dm_bandit_backoff1
+anim = backoff
+target = actor
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end | %+gar_dm_bandit2_warn_plr%
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark2@gar_dram_bandit_2]
+target = actor
+snd = gar_dm_bandit_backoff2
+anim = backoff2
+combat_ignore_cond = {=fighting_gar_novice}
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+;*************************************
+
+[death@gar_dram_bandit_3]
+on_info = %+gar_dm_bandit3_dead =tasks_garbage.gar_dm_bandits_fight%
+
+[combat@gar_dram_bandit_3]
+on_info = %=disable_combat_handler =tasks_garbage.gar_dm_bandits_fight%
+
+[hit@gar_dram_bandit_3]
+on_info = %=tasks_garbage.gar_dm_bandits_fight%
+
+[logic@gar_dram_moment_terrain_ambush_3]
+active = walker1@gar_dram_bandit_3
+on_death = death@gar_dram_bandit_3
+on_combat = combat@gar_dram_bandit_3
+on_hit = hit@gar_dram_bandit_3
+combat_ignore = true
+
+[walker1@gar_dram_bandit_3]
+path_walk = walk4
+path_look = walk4_look
+combat_ignore_cond = {=fighting_gar_novice}
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_3 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_3 %+gar_dm_bandit2_warned_plr%
+on_info3 = {+gar_dm_bandit3_demand} remark@demand_gar_dram_bandit_3 %-gar_dm_bandit3_demand%
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark@demand_gar_dram_bandit_3]
+anim = claim
+snd = gar_dm_bandit_demand
+target = gar_newbie_terrain_walk, 0
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end | walker1@gar_dram_bandit_3 %+gar_dm_newbie_no_money%
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_3 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_3 %+gar_dm_bandit2_warned_plr%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark1@gar_dram_bandit_3]
+anim = backoff
+snd = gar_dm_bandit_backoff1
+target = actor
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end| %+gar_dm_bandit2_warn_plr%
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark2@gar_dram_bandit_3]
+anim = backoff2
+snd = gar_dm_bandit_backoff2
+target = actor
+combat_ignore_cond = {=fighting_gar_novice}
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+;*************************************
+
+[death@gar_dram_bandit_4]
+on_info = %+gar_dm_bandit4_dead =tasks_garbage.gar_dm_bandits_fight%
+
+[combat@gar_dram_bandit_4]
+on_info = %=disable_combat_handler =tasks_garbage.gar_dm_bandits_fight%
+
+[hit@gar_dram_bandit_4]
+on_info = %=tasks_garbage.gar_dm_bandits_fight%
+
+[logic@gar_dram_moment_terrain_ambush_4]
+active = walker1@gar_dram_bandit_4
+on_death = death@gar_dram_bandit_4
+on_combat = combat@gar_dram_bandit_4
+on_hit = hit@gar_dram_bandit_4
+combat_ignore = true
+
+[walker1@gar_dram_bandit_4]
+path_walk = walk3
+path_look = walk3_look
+combat_ignore_cond = {=fighting_gar_novice}
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_4 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_4 %+gar_dm_bandit2_warned_plr%
+on_info3 = {+gar_dm_bandit4_demand} remark@demand_gar_dram_bandit_4 %-gar_dm_bandit4_demand%
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark@demand_gar_dram_bandit_4]
+anim = claim
+snd = gar_dm_bandit_demand
+target = gar_newbie_terrain_walk, 0
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end | walker1@gar_dram_bandit_4 %+gar_dm_newbie_no_money%
+on_info = {+gar_dm_novice_asked_for_help -gar_dm_bandit_warned_plr} remark1@gar_dram_bandit_4 %+gar_dm_bandit_warned_plr%
+on_info2 = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%, {+gar_dm_bandit2_warn_plr -gar_dm_bandit2_warned_plr =gar_dm_2nd_nearest_bandit} remark2@gar_dram_bandit_4 %+gar_dm_bandit2_warned_plr%
+;reactions = ignore
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark1@gar_dram_bandit_4]
+anim = backoff
+snd = gar_dm_bandit_backoff1
+target = actor
+combat_ignore_cond = {=fighting_gar_novice}
+on_signal = sound_end | %+gar_dm_bandit2_warn_plr%
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+[remark2@gar_dram_bandit_4]
+anim = backoff2
+snd = gar_dm_bandit_backoff2
+target = actor
+on_info = {+gar_dm_novice_dead} %+gar_dm_bandits_change_st%
+danger = danger@gar_dram_bandit_1
+threshold = threshold@gar_dram_bandits
+
+;*************************************************
+[danger@gar_dram_bandits_after]
+ignore_distance = 80
+
+[logic@gar_dram_moment_terrain_ambush_1_after]
+active = walker1@gar_dram_bandit_1_after
+
+[walker1@gar_dram_bandit_1_after]
+path_walk = walk1_1
+danger = danger@gar_dram_bandits_after
+
+[logic@gar_dram_moment_terrain_ambush_2_after]
+active = walker1@gar_dram_bandit_2_after
+
+[walker1@gar_dram_bandit_2_after]
+path_walk = walk2_1
+danger = danger@gar_dram_bandits_after
+
+[logic@gar_dram_moment_terrain_ambush_3_after]
+active = walker1@gar_dram_bandit_3_after
+
+[walker1@gar_dram_bandit_3_after]
+path_walk = walk4_1
+path_look = look4_1
+danger = danger@gar_dram_bandits_after
+def_state_standing = guard
+
+[logic@gar_dram_moment_terrain_ambush_4_after]
+active = walker1@gar_dram_bandit_4_after
+
+[walker1@gar_dram_bandit_4_after]
+path_walk = walk3_1
+path_look = look3_1
+danger = danger@gar_dram_bandits_after
+def_state_standing = guard
+
+;*************************************************
+
+[logic@gar_dram_moment_terrain_ambush_1_off]
+active = walker1@gar_dram_bandit_1_off
+combat_ignore = true
+
+[walker1@gar_dram_bandit_1_off]
+path_walk = walk1
+path_look = walk1_look
+combat_ignore_cond = always
+
+[logic@gar_dram_moment_terrain_ambush_2_off]
+active = walker1@gar_dram_bandit_2_off
+combat_ignore = true
+
+[walker1@gar_dram_bandit_2_off]
+path_walk = walk2
+path_look = walk2_look
+combat_ignore_cond = always
+
+[logic@gar_dram_moment_terrain_ambush_3_off]
+active = walker1@gar_dram_bandit_3_off
+combat_ignore = true
+
+[walker1@gar_dram_bandit_3_off]
+path_walk = walk4
+path_look = walk4_look
+combat_ignore_cond = always
+
+[logic@gar_dram_moment_terrain_ambush_4_off]
+active = walker1@gar_dram_bandit_4_off
+combat_ignore = true
+
+[walker1@gar_dram_bandit_4_off]
+path_walk = walk3
+path_look = walk3_look
+combat_ignore_cond = always

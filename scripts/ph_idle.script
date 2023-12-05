@@ -1,0 +1,85 @@
+----------------------------------------------------------------------------------------------------
+-- Do nothing	06.2018 [07]
+----------------------------------------------------------------------------------------------------
+-- Исходный скрипт: Oleg Hryptul (Haron) haronk@ukr.net
+----------------------------------------------------------------------------------------------------
+
+class "action_idle"
+function action_idle:__init(obj, storage)
+	self.object = obj
+	self.st = storage
+end
+function action_idle:reset_scheme()
+	printf("_hr: action_idle:reset_scheme: self.object:name()='%s'", self.object:name())
+	
+	self.object:set_nonscript_usable(self.st.nonscript_usable)
+end
+function action_idle:update(delta)
+	--printf("_hr: action_idle:update()")
+
+	--if not xr_logic.is_active(self.object, self.st) then
+	--	return
+	--end
+
+	local actor = db.actor
+
+	if xr_logic.try_switch_to_another_section(self.object, self.st, actor) then
+		return
+	end	
+end
+function action_idle:hit_callback(obj, amount, local_direction, who, bone_index)
+	local who_name
+	if who then
+		who_name = who:name()
+	else
+		who_name = "nil"
+	end
+
+	printf("IDLE: hit_callback: obj='%s', amount=%d, who='%s', bone='%s'", obj:name(), amount, who_name, bone_index)
+	if self.st.hit_on_bone[bone_index] ~= nil then
+		local section = xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.hit_on_bone[bone_index].state)
+		xr_logic.switch_to_section(obj, self.st, section)
+		return
+	end
+end
+function action_idle:use_callback(obj, actor)
+	if self.st.on_use then		
+		if xr_logic.switch_to_section(self.object, self.st,
+		   xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.on_use.condlist)) then
+			return true
+		end
+	end
+end
+function action_idle:deactivate()
+	self.object:set_tip_text("")
+end
+---------------------------------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, storage)
+	printf("DEBUG: add_to_binder: scheme='%s', section='%s'", scheme, section)
+
+	local new_action = action_idle(npc, storage)
+
+	-- Зарегистрировать все actions, в которых должен быть вызван метод reset_scheme при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(npc, storage, new_action)
+end
+
+function set_scheme(script_object, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(script_object, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, script_object)
+
+	st.hit_on_bone		= utils.parse_data_1v(script_object, utils.cfg_get_string(ini, section, "hit_on_bone", script_object, false, ""))
+	st.nonscript_usable	= utils.cfg_get_bool(ini, section, "nonscript_usable", script_object, false)
+	st.on_use		= xr_logic.cfg_get_condlist(ini, section, "on_use", script_object)
+	st.tips  		= utils.cfg_get_string(ini, section, "tips", script_object, false, "", "   ") --/default invis spaces
+	st.is_safe		= utils.cfg_get_bool(ini, section, "is_safe", script_object, false)
+	script_object:set_tip_text(st.tips)
+	--log("[%s] scheme=[%s] tips=[%s]",section, scheme, st.tips, "")
+	--Передача параметров сэйфа в движек
+	if st.is_safe then
+		st.safe_code  		= utils.cfg_get_string(ini, section, "code", script_object, false, "", "8888")
+		st.on_unlock 		= Get_Cfg_String(ini, section, "on_unlock", "")
+		script_object:set_stash_as_safe(st.is_safe)
+		script_object:set_safe_code(st.safe_code)
+		script_object:set_unlock_info(st.on_unlock)
+	end
+end

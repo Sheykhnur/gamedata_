@@ -1,0 +1,97 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_outskirts.script
+ Description: Dialog & InfoPortions Function for outskirts
+ Copyright  : 2011 © LA
+ Author     : vintar
+ Editors    : vintar (16.04.2012), lox(18.02.2013)
+ Last edit  : 18.02.2013 (by ...) [...]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ ------------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function out_bar_active()
+	return has_info("yan_bar_help_start")
+end
+
+function check_actor_bad_community()
+	return (db.actor:character_community() == "actor_bandit" or db.actor:character_community() == "actor_mono" or db.actor:character_community() == "zombied")
+end
+
+function out_bar_veronin()
+	if has_info("yan_bar_help_start") then
+		if has_info("bar_dolg_bandits_task_done") and not has_info("yan_dolg_bandits_report_veronin") then
+			return false
+		end
+		return true
+	end
+	return false
+end
+
+function give_compass()
+	dialogs.give_items("af_compass")
+end
+
+function break_dialog_set_enemy(oSpeaker1, oSpeaker2)
+	dialogs.break_dialog(oSpeaker1, oSpeaker2)
+	relation_registry.set_community_goodwill("freedom", db.actor:id(), -1000)
+	give_info("out_actor_returned")
+end
+
+function out_freedom_hate(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oSpeaker1, "out_freedom_flash", "out")
+end
+
+function out_give_flashcard_merc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oSpeaker1, "out_freedom_flash", "out")
+	give_info("out_actor_gave_flash_merc")
+end
+
+function give_lukash_reward(oSpeaker1, oSpeaker2)
+	--dialogs.give_items("svoboda_medium_outfit", 1)
+	dialogs.give_items("af_fuzz_bagel", 1)
+	dialogs.give_items("af_fuzz_cupcake", 1)
+	dialogs.give_items("af_fuzz_kolobok", 1)
+end
+
+function give_machine(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "rad_anom_machine")
+end
+
+function can_join_freedom()
+	if has_info("out_lukash_task_complete") and has_info("out_veronin_radar_talked") then
+		if has_info("bar_dolg_actor_joined") and not has_info("bar_dolg_actor_leaved") then
+			return false
+		end
+		return true
+	end
+	return false
+end
+
+function out_give_bas_reward(oSpeaker1, oSpeaker2)
+	dialogs.give_items("af_dummy_spring", 1)
+	dialogs.give_items("af_dummy_dummy", 1)
+end
+
+function join_freedom(oSpeaker1, oSpeaker2)
+	dialogs.give_items("svoboda_medium_outfit", 1)
+	if db.actor then
+		db.actor:set_character_community("actor_freedom", 0, 0)
+	end
+end
+
+function teleport_to_damned()
+	xr_effects.set_safe_zone(nil, nil, {"out"})
+	guiders_main.transport("la18_damned_start_point","la18_damned")
+end
+	
+--/ ------------------------------------------------------------------------------------------------

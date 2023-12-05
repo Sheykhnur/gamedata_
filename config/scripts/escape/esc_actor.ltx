@@ -1,0 +1,42 @@
+[logic]
+active = remark@ready
+combat_ignore = combat_ignore@esc_hero
+danger = danger@esc_hero
+threshold = threshold@esc_hero
+
+[remark@ready]
+anim = actor_ready
+meet = no_meet
+no_move = true
+combat_ignore_cond = always
+on_info = {+esc_actor_scene} remark@main ;%=tasks_escape.intro_blink_timer%
+danger = danger@esc_hero
+threshold = threshold@esc_hero
+target = esc_actor_start_point, 0
+
+[remark@main]
+anim = actor_start
+meet = no_meet
+no_move = true
+combat_ignore_cond = always
+danger = danger@esc_hero
+threshold = threshold@esc_hero
+target = esc_actor_start_point, 0
+
+[combat_ignore@esc_hero]
+
+[danger@esc_hero]
+ignore_types                = grenade, corpse, sound, hit
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+danger_inertion_time_grenade = 0
+danger_inertion_time_corpse  = 0
+danger_inertion_time_hit     = 0 
+danger_inertion_time_sound   = 0
+
+[threshold@esc_hero]
+max_ignore_distance = 0
+ignore_monster      = 0

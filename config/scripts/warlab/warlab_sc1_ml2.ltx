@@ -1,0 +1,67 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc1_mil2
+combat_ignore = combat_ignore
+
+[remark@war_sc1_mil2]
+anim = guard
+target = war_scene1_sld2, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_radio} remark@war_sc1_mil21
+
+[remark@war_sc1_mil21]
+anim = guard_rac
+snd = war_replics10
+target = war_scene1_sld2, 0
+meet = no_meet
+combat_ignore_cond = always
+anim_reset = false
+on_signal = sound_end | %+war_sc1_corpses2%
+on_info = {+war_sc1_corpses3} remark@war_sc1_mil22
+
+[remark@war_sc1_mil22]
+anim = guard_rac
+snd = war_replics12
+target = war_scene1_sld2, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc1_massacre% walker@war_sc1_mil2
+anim_reset = false
+
+[walker@war_sc1_mil2]
+path_walk = war_sc1_guard2
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sc1sld2rch | remark@war_sc1_mil24
+
+[remark@war_sc1_mil24]
+anim = assault_fire
+target = war_scene1_burer3w, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_bur3_death} remark@war_sc1_mil25
+
+[remark@war_sc1_mil25]
+anim = assault_fire
+target = war_scene1_burer4w, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_bur4_death} remark@war_sc1_mil_wait
+
+[remark@war_sc1_mil_wait]
+anim = guard
+target = war_scene1_burer4w, 0
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 2350 | {+war_sc1_bur1_death +war_sc1_bur4_death} walker@war_sc1_mil2_away
+
+[walker@war_sc1_mil2_away]
+path_walk = war_sc1_sld2_away
+meet = no_meet
+combat_ignore_cond = always
+def_state_moving1 = walk
+def_state_moving2 = walk
+def_state_moving3 = walk
+on_info = {+war_sc1_end} %=release%

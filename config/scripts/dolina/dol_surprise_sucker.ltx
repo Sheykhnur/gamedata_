@@ -1,0 +1,26 @@
+[death@surprise_sucker]
+on_info = %+dol_surprise_sucker_dead%
+
+[logic]
+active = mob_camp@dol_surprise_sucker
+on_death = death@surprise_sucker
+
+[mob_camp@dol_surprise_sucker]
+path_look = dol_surprise_sucker_look
+path_home = dol_surprise_sucker_stay
+;time_change_point = 60000 ;we have one point only
+home_min_radius = 1
+home_max_radius = 3
+state = invis
+;skip_transfer_enemy = true ;no group to send signal
+on_info = {+dol_surprise_sucker_trigger} mob_walker@attack %=play_snd(monsters\bloodsucker\sucker_growl_3)%
+
+[mob_walker@attack]
+path_walk = dol_surprise_sucker_attack
+on_actor_dist_le_nvis = 10 | mob_home@downstairs
+
+[mob_home@downstairs]
+path_home = dol_surprise_sucker_attack_home
+home_max_radius = 25
+aggressive_home = true
+on_actor_dist_ge_nvis = 40 | mob_camp@dol_surprise_sucker %-dol_surprise_sucker_trigger%

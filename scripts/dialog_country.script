@@ -1,0 +1,37 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_agroprom.script
+ Description: Dialog & InfoPortions function for Agroprom
+ Copyright  : 2010 © LA-team
+ Author     : vintar
+ Editors    : 
+ Last edit  : 14.02.2014 [vintar]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function give_59()
+	if db.actor:object("bcr_47") then
+		alife():release(alife():object(db.actor:object("bcr_47"):id()), true)
+		Spawn_ItemsInInv("bcr_5947", 1)
+		give_info("country_has_5947")
+	else
+		Spawn_ItemsInInv("bcr_59", 1)
+	end
+end
+
+function give_47()
+	if db.actor:object("bcr_59") then
+		alife():release(alife():object(db.actor:object("bcr_59"):id()), true)
+		Spawn_ItemsInInv("bcr_5947", 1)
+		give_info("country_has_5947")
+	else
+		Spawn_ItemsInInv("bcr_47", 1)
+	end
+end

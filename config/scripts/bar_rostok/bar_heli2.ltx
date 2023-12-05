@@ -1,0 +1,25 @@
+[logic]
+active = heli_move@idle
+on_death = death@bar_attack_heli2
+
+[heli_move@idle]
+path_move = bar_attack_choppa_2_wait
+engine_sound = false
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 60
+on_info = {+bar_attack_helis_start} heli_move@path1
+
+[heli_move@path1]
+path_move = bar_attack_choppa_2_attack1
+path_look = bar_attack_choppa2_look1
+engine_sound = true
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 60
+invulnerable = true
+
+[death@bar_attack_heli2]
+on_info = %+bar_attack_heli2_dead%

@@ -1,0 +1,526 @@
+
+-- file: pcTextViewer.script
+-- author: barin
+-- date: 2008-12-16
+-- edited by: Gr1ph00n
+-- last edited: 2010-10-07
+
+local FontByName = {
+	["small"]       = GetFontSmall,
+	["medium"]      = GetFontMedium,
+	["letterica16"] = GetFontLetterica16Russian,
+	["letterica18"] = GetFontLetterica18Russian,
+	["letterica25"] = GetFontLetterica25,
+	["graffiti19"]  = GetFontGraffiti19Russian,
+	["graffiti22"]  = GetFontGraffiti22Russian,
+	["graffiti32"]  = GetFontGraffiti32Russian,
+	["graffiti50"]  = GetFontGraffiti50Russian
+}
+local ColourByName = {
+	["full_white"] = {255, 255, 255, 255},
+	["white"]      = {255, 240, 217, 182},
+	["yellow"]     = {255, 238, 155,  23},
+	["orange"]     = {255, 238, 153,  26},
+	["red"]        = {255, 255,   0,   0},
+	["green"]      = {255,   0, 255,   0},
+	["light_blue"] = {255,  70, 150, 180},
+	["blue"]       = {255,   0,   0, 255},
+	["light_grey"] = {255, 150, 150, 180},
+	["dark_grey"]  = {255, 128, 128, 128}
+}
+
+function get_font(name)
+	return name and FontByName[name]() or FontByName["letterica16"]() --/>
+end
+
+function get_colour(name)
+	if name and ColourByName[name] then
+		return unpack(ColourByName[name]) --/>
+	end
+	return unpack(ColourByName["full_white"]) --/>
+end
+
+class "TextLine" (CUIListItemEx)
+
+function TextLine:__init(str, font, colour) super()
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetText(str)	
+	self.text:SetFont(get_font(font))
+	self.text:SetTextColor(get_colour(colour))
+end
+
+function TextLine:InsertImage(texture, x, y, w, h)
+	self.image = CUIStatic()
+	self.image:SetAutoDelete(true)
+	self:AttachChild(self.image)
+	self.image:Init(texture, x, y, w, h)
+	self.image:SetStretchTexture(true)
+end
+
+class "TextLineBox" (CUIListBoxItemEx)
+
+function TextLineBox:__init(str, font, colour) super()
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetText(str)	
+	self.text:SetFont(get_font(font))
+	self.text:SetTextColor(get_colour(colour))
+end
+
+function TextLineBox:InsertImage(texture, x, y, w, h)
+	self.image = CUIStatic()
+	self.image:SetAutoDelete(true)
+	self:AttachChild(self.image)
+	self.image:Init(texture, x, y, w, h)
+	self.image:SetStretchTexture(true)
+end
+
+class "DoubleTextLine" (CUIListItemEx)
+
+function DoubleTextLine:__init(str, font, colour, str1, colour1) super()
+	if not str1 then
+		str1 = ""
+	end
+	if not colour1 then
+		colour1 = colour
+	end
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)	
+	self.text:SetFont(get_font(font))
+	self.text:SetTextColor(get_colour(colour))
+	self.text:SetText(str)
+	self.text1 = CUIStatic()
+	self.text1:SetAutoDelete(true)
+	self:AttachChild(self.text1)	
+	self.text1:SetWndPos(130, 0)
+	self.text1:SetFont(get_font(font))
+	self.text1:SetTextColor(get_colour(colour1))
+	self.text1:SetText(str1)
+end
+
+--[[
+function get_char_num(n)
+	return (math.modf(n * device().width / 1024))
+end
+
+function AddText(dlg, char_num, str, translate, font, colour, scroll_up)
+	if scroll_up == nil then scroll_up = true end
+	if translate then str = game.translate_string(str) end
+	
+	str = string.gsub(str, "\\t", string.rep(" ", 2))
+	str = string.gsub(str, "\\n", "\n")
+	
+	--char_num = get_char_num(char_num)
+	
+	local text_lines = {}
+	local ENTER = 10
+	local index = 0
+	local tmp = nil
+	
+	while string.len(str) > 0 do
+		index = index + 1
+		curr_char = string.byte(str, index)
+		if curr_char == ENTER then
+			table.insert(text_lines, string.sub(str, 1, index - 1))
+			str = string.sub(str, index + 1)
+		else
+			if index % char_num == 0 then
+				tmp = find_last_space(string.sub(str, 1, index))
+				if tmp ~= nil and tmp ~= string.len(string.sub(str, 1, index)) then
+					table.insert(text_lines, string.sub(str, 1, tmp - 1))
+					str = string.sub(str, tmp + 1)
+				else
+					table.insert(text_lines, string.sub(str, 1, index))
+					str = string.sub(str, index + 1)
+				end
+				index = 0
+			end
+		end
+		
+		if string.len(str) ~= 0 and string.len(str) < char_num then
+			index = 0
+			while true do
+				index = index + 1
+				if string.byte(str, index) == ENTER then
+					table.insert(text_lines, string.sub(str, 1, index - 1))
+					str = string.sub(str, index + 1)
+					index = 0
+				end
+				if index == #str then
+					if #str > 0 then
+						table.insert(text_lines, str)
+					end
+					break
+				end
+			end
+			break
+		end
+	end
+	
+	for k, v in ipairs(text_lines) do
+		dlg:AddItem(TextLine(v, font, colour))
+	end
+	
+	if scroll_up then
+		dlg:ScrollToBegin()
+	else
+		--dlg:ScrollToEnd() -- !!!
+		if dlg:GetSize() > 0 then
+			dlg:ScrollToPos(dlg:GetSize() - 1)
+		end
+	end
+end
+--]]
+function parse_colour(str, def_colour)
+	local ret = {}
+	local first, last, colour = string.find(str, "%%c%[([^%]]*)%]")
+	if not first then 
+		ret.str1 = str
+		ret.colour1 = def_colour
+		ret.str2 = ""
+		ret.colour2 = def_colour
+	else
+		ret.str1 = string.sub(str, 0, first - 2)
+		ret.colour1 = def_colour
+		ret.str2 = string.sub(str, last + 1, string.len(str))
+		if colour == "default" then
+			ret.colour2 = def_colour
+		else
+			ret.colour2 = colour
+		end
+	end
+	return ret
+end
+
+function AddDoubleText(dlg, char_num, str, translate, font, colour)
+	if translate then
+		str = game.translate_string(str)
+	end
+	str = string.gsub(str, "\\n", "\n")
+	local length = string.len(str)
+	local last_space, curr_char = nil, nil
+	local ENTER, SPACE = 10, 32
+	local counter, line = 0, 1	
+	local index = 0
+	local temp = nil
+	while index ~= length do
+		index = index + 1
+		counter = counter + 1
+		curr_char = string.byte(str, index)		
+		if curr_char == ENTER then
+			temp = parse_colour(string.sub(str, line, index - 1), colour)
+			dlg:AddItem(DoubleTextLine(temp.str1, font, temp.colour1, temp.str2, temp.colour2))
+			last_space = nil
+			line = index + 1
+			counter = 0
+		else
+			if curr_char == SPACE then
+				last_space = index
+			end			
+			if counter == char_num then
+				if string.byte(str, index + 1) ~= SPACE and last_space ~= nil then
+					index = last_space
+					curr_char = string.sub(str, line, index)
+					line = line + string.len(curr_char)
+					temp = curr_char
+					dlg:AddItem(DoubleTextLine(temp, font, colour))
+				else
+					temp = parse_colour(string.sub(str, line, index), colour)
+					dlg:AddItem(DoubleTextLine(temp.str1, font, temp.colour1, temp.str2, temp.colour2))
+					line = line + char_num
+				end
+				last_space = nil
+				counter = 0
+			elseif index == length then
+				if string.byte(str, line) == SPACE then
+					line = line + 1 -- skip leading space
+				end
+				temp = parse_colour(string.sub(str, line, length), colour)
+				dlg:AddItem(DoubleTextLine(temp.str1, font, temp.colour1, temp.str2, temp.colour2))
+			end
+		end
+	end
+end
+
+function RemoveText(dlg)
+	dlg:RemoveAll()
+	dlg:ScrollToBegin()
+end
+
+function split_by_enter(str)
+	local ENTER = 10
+	local index = 0
+	local t = {}
+	
+	if not str:find("\n") then
+		table.insert(t, str)
+		return t
+	end
+	
+	while string.len(str) > 0 do
+		index = index + 1
+		if str:byte(index) == ENTER then
+			if str:sub(1, index - 1) ~= "" then
+				table.insert(t, str:sub(1, index - 1))
+			end
+			table.insert(t, "{$ENTER$}")
+			str = str:sub(index + 1, #str)
+			index = 0
+		end
+		if index == #str then
+			table.insert(t, str)
+			break
+		end
+	end
+	
+	local c_enter = 0
+	local tbl = {}
+	
+	for index = 1, #t do
+		if t[index] == "{$ENTER$}" then
+			c_enter = c_enter + 1
+		else
+			c_enter = c_enter - 1
+			if c_enter <= 0 then
+				c_enter = 0
+			else
+				for i = 1, c_enter do
+					table.insert(tbl, "{$ENTER$}")
+				end
+			end
+			c_enter = 0
+			table.insert(tbl, t[index])
+		end
+	end
+	
+	return tbl
+end
+
+function AddText(dlg, char_num, str, translate, font, colour, scroll_up)
+	if scroll_up == nil then scroll_up = true end
+	if translate then str = game.translate_string(str) end
+	
+	str = string.gsub(str, "\\t", string.rep(" ", 2))
+	str = string.gsub(str, "\\n", "\n")
+	
+	local t = split_by_enter(str)
+	local SPACE = 32
+	local temp = nil
+	
+	for k, v in ipairs(t) do
+		if v == "{$ENTER$}" then
+			dlg:AddItem(TextLine("", font, colour))
+		elseif #v <= char_num then
+			dlg:AddItem(TextLine(v, font, colour))
+		else
+			while true do
+				if v:byte(char_num) == SPACE or v:byte(char_num + 1) == SPACE then
+					dlg:AddItem(TextLine(v:sub(1, char_num), font, colour))
+					v = v:sub(char_num + 1, #v)
+				else
+					temp = find_last_space(v:sub(1, char_num))
+					if temp then
+						dlg:AddItem(TextLine(v:sub(1, temp - 1), font, colour))
+						v = v:sub(temp + 1, #v)
+					else
+						dlg:AddItem(TextLine(v:sub(1, char_num), font, colour))
+						v = v:sub(char_num + 1, #v)
+					end
+				end
+				if #v == 0 then
+					break
+				elseif #v <= char_num then
+					dlg:AddItem(TextLine(v, font, colour))
+					break
+				end
+			end
+		end
+	end
+	
+	if scroll_up then
+		dlg:ScrollToBegin()
+	else
+		--dlg:ScrollToEnd() -- !!!
+		if dlg:GetSize() > 0 then
+			dlg:ScrollToPos(dlg:GetSize() - 1)
+		end
+	end
+end
+
+function AddTextBox(dlg, char_num, str, translate, font, colour, scroll_up)
+	if scroll_up == nil then scroll_up = true end
+	if translate then str = game.translate_string(str) end
+	
+	str = string.gsub(str, "\\t", string.rep(" ", 2))
+	str = string.gsub(str, "\\n", "\n")
+	
+	local t = split_by_enter(str)
+	local SPACE = 32
+	local temp = nil
+	
+	for k, v in ipairs(t) do
+		if v == "{$ENTER$}" then
+			dlg:AddItem(TextLineBox("", font, colour))
+		elseif #v <= char_num then
+			dlg:AddItem(TextLineBox(v, font, colour))
+		else
+			while true do
+				if v:byte(char_num) == SPACE or v:byte(char_num + 1) == SPACE then
+					dlg:AddItem(TextLineBox(v:sub(1, char_num), font, colour))
+					v = v:sub(char_num + 1, #v)
+				else
+					temp = find_last_space(v:sub(1, char_num))
+					if temp then
+						dlg:AddItem(TextLineBox(v:sub(1, temp - 1), font, colour))
+						v = v:sub(temp + 1, #v)
+					else
+						dlg:AddItem(TextLineBox(v:sub(1, char_num), font, colour))
+						v = v:sub(char_num + 1, #v)
+					end
+				end
+				if #v == 0 then
+					break
+				elseif #v <= char_num then
+					dlg:AddItem(TextLineBox(v, font, colour))
+					break
+				end
+			end
+		end
+	end
+	
+	if scroll_up then
+		dlg:ScrollToBegin()
+	else
+		--dlg:ScrollToEnd() -- !!!
+		if dlg:GetSize() > 0 then
+			dlg:ScrollToPos(dlg:GetSize() - 1)
+		end
+	end
+end
+
+function find_last_space(str)
+	local n = string.len(str)
+    while n > 0 do
+		if string.find(str, "^%s", n) then
+			return n
+		end
+		n = n - 1
+	end
+  return nil
+end
+
+-- ******************************************************************************************* --
+
+class "uiTextViewer" (CUIScriptWnd)
+
+function uiTextViewer:__init(parent, x, y) super()
+	self:SetWindowName("uiTextViewer")
+	self.owner = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 430
+	self.wnd_height = 370
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+end
+
+function uiTextViewer:__finalize()
+end
+
+function uiTextViewer:reset(data)
+	local dlg = self:GetListWnd("string_list")
+	if dlg:GetSize() ~= 0 then
+		dlg:RemoveAll()
+	end
+	
+	AddText(dlg, 56, data.article, true, "letterica16", "full_white")
+	local wname = game.translate_string("ui_pc_static_text_viewer")
+	local fname = game.translate_string(data.name)
+	self.wnd_frame:SetCaption(wname .. " - " .. fname)
+	
+	if data.downloadable and has_info("pda_downloads_enabled") then
+		if type(data.give_info) == "string" then
+			if not has_alife_info(data.give_info) then
+				self.on_download_info = data.give_info
+				self:GetButton("btn_download"):Enable(true)
+				return
+			end
+		end
+	end
+	
+	self:GetButton("btn_download"):Enable(false)
+end
+
+function uiTextViewer:OnChildDialogExit(child_name)
+end
+
+function uiTextViewer:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiTextViewer:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_text_viewer"))
+	self.wnd_frame:Show(true)
+	
+	local dlg = self.owner.xml:InitList("text_viewer:string_list", self)
+	dlg:SetWndPos(self.wnd_x + 10, self.wnd_y + 35)
+	dlg:ShowSelectedItem(false)
+	self:Register(dlg, "string_list")
+	
+	dlg = self.owner.xml:InitStatic("text_viewer:horizontal_line", self)
+	dlg:SetWndPos(self.wnd_x + 5, self.wnd_y + self:GetListWnd("string_list"):GetHeight() + 40)
+	
+	dlg = self.owner.xml:Init3tButton("button_ordinary", self)
+	dlg:SetWndPos(self.wnd_x + self.wnd_width / 2 - dlg:GetWidth() / 2,
+		self.wnd_y + self:GetListWnd("string_list"):GetHeight() + 45)
+	dlg:SetText(game.translate_string("ui_pc_static_save_to_pda"))
+	dlg:Enable(false)
+	self:Register(dlg, "btn_download")
+end
+
+function uiTextViewer:InitCallBacks()
+	self:AddCallback("btn_download", ui_events.BUTTON_CLICKED, self.OnDownload, self)
+end
+
+function uiTextViewer:OnDownload()
+	if not has_alife_info(self.on_download_info) then
+		db.actor:give_info_portion(self.on_download_info)
+		snd_obj = xr_sound.get_safe_sound_object("device\\pda\\pda_tip")
+		if snd_obj then
+			snd_obj:play(db.actor, 0, sound_object.s2d)
+		end
+	    --log("infoiportion=%s given", self.on_download_info)
+	end
+	self:GetButton("btn_download"):Enable(false)
+end
+
+function uiTextViewer:OnExit()
+	self.owner:OnChildDialogExit(self:WindowName())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiTextViewer:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+	
+	return true
+end

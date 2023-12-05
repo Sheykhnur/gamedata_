@@ -1,0 +1,167 @@
+[wpn_rpd]:weapon_base,weapon_7.62x39
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\wpn_rpd"
+animation_slot                          = 2
+class                                   = WP_LR300
+hand_dependence                         = 1
+repair_compatibility                    = rpd
+scheduled                               = off
+weapon_class                            = assault_rifle
+weapon_rank                             = 4
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 6
+inv_grid_y                              = 36
+
+; Text
+inv_name                                = st_wpn_rpd
+inv_name_short                          = st_wpn_rpd
+description                             = st_wpn_rpd_descr
+
+; Visual
+hud                                     = wpn_rpd_hud
+position                                = -0.026, -0.175, 0.0
+orientation                             = 0, 0, 0
+strap_position                          = -0.26,-0.11,0.25
+strap_orientation                       = -15,-9,110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_rpd\wpn_rpd.ogf
+
+; Effects
+fire_point                              = 0,0.218,0.656
+fire_point2                             = 0,0.161,0.583
+shell_point                             = 0.02,0.04,0.5
+shell_dir                               = 0, 0, 0.4
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\rpk\draw
+snd_empty                               = weapons\rpk\empty
+snd_holster                             = weapons\rpk\holster
+snd_reload                              = weapons\rpd\rpd_reload
+snd_shoot                               = weapons\rpd\rpd_shoot
+snd_silncer_shot                        = weapons\rpk\sil_shot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 0
+upgr_icon_y                             = 400
+upgr_icon_width                         = 300
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 12400
+inv_weight                              = 7.4
+ph_mass                                 = 7
+
+; Ammo
+ammo_mag_size                           = 100
+
+; Features
+fire_modes                              = 1, -1
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Ballistics
+bullet_speed                			= 735 
+fire_dispersion_base                    = 0.9
+
+; Impact
+hit_power                               = 1.0
+hit_impulse                 			= 200
+
+; Performance
+rpm                                     = 460
+
+; Reliability
+misfire_start_condition                 = 0.5
+misfire_end_condition                   = 0.0
+misfire_start_prob                      = 0.001   ; misfire probability for every shot when condition == misfire_start_condition (value interpolates between this and misfire_end_prob)
+misfire_end_prob                        = 0.07    ; misfire probability for every shot when condition is below misfire_end_condition
+condition_shot_dec                      = 0.00024 ; weapon deterioration for every shot
+condition_queue_shot_dec                = 0.00024 ; weapon deterioration for every shot in automatic mode
+
+; Handling
+control_inertion_factor                 = 3.0f
+PDM_disp_base                           = 4.4
+PDM_disp_vel_factor                     = 1.5
+PDM_disp_accel_factor                   = 1.5
+sprint_allowed							= false
+
+; Recoil
+cam_dispersion                          = 1.2
+cam_dispersion_inc                      = 0.4
+cam_dispersion_frac                     = 0.9
+cam_step_angle_horz                     = 1.5
+zoom_cam_dispersion                     = 0.6
+zoom_cam_dispersion_inc                 = 0.4
+zoom_cam_step_angle_horz                = 2.0
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.96
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_10plus3
+upgrades                                = up_gr_firstab_rpd, up_gr_seconab_rpd, up_gr_thirda_rpd, up_gr_thirdc_rpd
+installed_upgrades                      =
+
+; AI Params
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+min_radius                              = 30
+max_radius                              = 100
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 0.7
+
+
+[wpn_rpd_hud]
+aim_hud_offset_pos_16x9				= -0.109900,0.066500,-0.137000
+aim_hud_offset_rot_16x9				= 0.039250,0.009200,-0.006000
+aim_hud_offset_pos				= -0.109900,0.066500,-0.137000
+aim_hud_offset_rot				= 0.039250,0.009200,-0.006000
+anim_bore                                           = lancew_rpd_no_reload
+anim_hide                                           = lancew_rpd_holster
+anim_idle                                           = lancew_rpd_idle
+anim_idle_aim                                       = lancew_rpd_idle_aim
+anim_idle_moving                                    = lancew_rpd_moving
+anim_idle_sprint                                    = lancew_rpd_sprint
+anim_reload                                         = lancew_rpd_reload, reload
+anim_shots                                          = lancew_rpd_shoot, shoot
+anim_show                                           = lancew_rpd_draw
+attach_place_idx                                   = 0
+fire_bone                                          = wpn_body
+fire_bone2                                         = wpn_body
+fire_point                                         = -0.011,0.074029,0.848113
+fire_point2                                        = 0,-0.011,0.6
+gl_hud_offset_pos                                  = 0,0,0
+gl_hud_offset_pos_16x9                             = 0,0,0
+gl_hud_offset_rot                                  = 0,0,0
+gl_hud_offset_rot_16x9                             = 0,0,0
+hands_orientation                                  = 0.55,2.4,0.15
+hands_orientation_16x9                             = 0.55,2.4,0.15
+hands_position                                     = -0.044,-0.192,0.1355
+hands_position_16x9                                = -0.044,-0.192,0.1355
+item_orientation                                   = 0,0,0
+item_position                                      = 0,0,0
+item_visual                                        = dynamics\weapons\wpn_rpd\wpn_rpd_hud.ogf
+lean_hud_offset_pos                                = 0,0,0
+lean_hud_offset_rot                                = 0,0,0
+shell_bone                                         = wpn_body
+shell_dir                                          = 0, 1, 0
+shell_point                                        = 0.028,0.078,0.113
+zoom_hide_crosshair                                = true

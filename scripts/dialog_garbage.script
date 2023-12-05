@@ -1,0 +1,143 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_garbage.script
+ Description: Dialog & InfoPortions Function for garbage
+ Copyright  : 2010 © LA-team
+ Author     : griphoon
+ Editors    : lox, vintar
+ Last edit  : 28.04.2013 [...]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function can_start_yarik_dialogue()
+	return has_info("gar_got_seriy_sos") and not has_info("gar_yarik_talked") and not has_info("gar_hangar_cleaned")
+end
+
+function start_hangar_assault(oSpeaker1, oSpeaker2)
+	give_info("gar_yarik_talked")
+	dialogs.break_dialog(oSpeaker1, oSpeaker2)
+end
+
+function bes_reward_pred()
+	return has_info("gar_sniper_task_start") and has_info("gar_sniper_killed") and not has_info("gar_bes_reward_given")
+end
+
+function bes_alternate_reward_pred()
+	return dont_has_info("gar_sniper_task_start") and has_info("gar_sniper_killed") and not has_info("gar_bes_reward_given")
+end
+
+function can_get_strelok_info()
+	return has_info("gar_assault_hangar_done") and not has_info("agr_krot_band_start") and not has_info("gar_seriy_failed") and not has_info("gar_seriy_give_info")
+end	
+
+function can_get_strelok_info_bad()
+	return has_info("gar_assault_hangar_done") and not has_info("agr_krot_band_start") and has_info("gar_seriy_failed") and not has_info("gar_seriy_give_info")
+end	
+
+function bes_give_reward()
+	dialogs.give_items("medkit", 1)
+	dialogs.give_items("bandage", 2)
+	dialogs.give_items("antirad", 1)
+	dialogs.give_items("ammo_5.45x39_fmj", 2)
+	give_info("gar_sniper_task_done")
+	give_info("gar_sniper_task_completed")	
+	give_info("gar_bes_reward_given")	
+	if has_info("gar_dm_sos") and not dialog_garbage.dram_bandits_dead() then
+		give_info("gar_dm_end")
+		xr_effects.kill_level_object("gar_dram_novice")
+		give_info("sar_newbie_died")
+	end
+end
+
+function become_friend(oSpeaker1, oSpeaker2)
+	la_utils.set_npc_relation(oSpeaker1, oSpeaker2, "friend")
+end
+
+function actor_in_dolg()
+	return (db.actor and db.actor:character_community() == "actor_dolg")
+end
+
+function actor_not_in_dolg()
+	return not actor_in_dolg()
+end
+
+function actor_set_dolg()
+	db.actor:set_character_community("actor_dolg", 0, 0)
+end
+
+function gar_sin_has_artefact(oSpeaker1, oSpeaker2)
+	return oSpeaker1:object("af_gold_fish") ~= nil
+end
+
+function gar_sin_break_set_enemy(oSpeaker1, oSpeaker2)
+	oSpeaker1:stop_talk()
+	oSpeaker2:stop_talk()
+	relation_registry.set_community_goodwill("dark_stalker", idActor, -1000)
+	give_info("gar_sin_negatiations_failed")
+end
+
+function gar_sin_trick(oSpeaker1, oSpeaker2)
+	dialogs.become_enemy(oSpeaker2, oSpeaker1)
+	oSpeaker1:stop_talk()
+	oSpeaker2:stop_talk()
+end
+
+function gar_sin_enemy()
+	relation_registry.set_community_goodwill("dark_stalker", idActor, -1000)
+end
+
+function gar_dolg_ready_precond() --/#?#
+	return has_info("gar_sin_negatiations_success") and not has_info("gar_dolg_blockpost_attack_ready")
+	    or has_info("gar_sin_negatiations_failed") and not has_info("gar_dolg_blockpost_attack_ready")
+end
+
+function actor_clear_community()
+	if db.actor then
+		db.actor:set_character_community("actor", 0, 0)
+	end
+end
+
+function blokpost_pass()
+	if actor_in_dolg() == true or has_info("gar_free_pass") then
+		return true
+	end
+	return false
+end
+
+function spoken_pass()
+	return (has_info("gar_dolg_leader_spoke") and not has_info("gar_free_pass"))
+end
+
+function give_weird_reward()
+	dialogs.give_money(10000)
+end
+
+function give_wounded_poison()
+	start_real_timer(3, nil, {info_id = "gar_weird_died"})
+end
+
+function give_weird_wounded_medkit(actor, npc)
+	if npc and npc:alive() and npc:object("medkit_scientic") then
+		npc:eat(npc:object("medkit_scientic"))
+	end
+end
+
+function dram_bandits_dead()
+	return (has_info("gar_dm_bandit1_dead") and has_info("gar_dm_bandit2_dead") and has_info("gar_dm_bandit3_dead")) --and has_info("gar_dm_bandit4_dead"))
+end
+
+function dram_newbie_reward()
+	dialogs.give_items("af_electra_flash", 1)
+end
+
+function teleport_to_dscape_mine()
+	xr_effects.set_safe_zone(nil, nil, {"out"})
+	guiders_main.transport("ds_dolg_terrain_walk3","la15_darkscape")
+end
+
+--/ -----------------------------------------------------------------------------------------------

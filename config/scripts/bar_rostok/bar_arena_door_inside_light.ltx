@@ -1,0 +1,14 @@
+[logic]
+active = ph_light_mgr@arena_big_off
+
+[ph_light_mgr@arena_big_off]
+lights_on = always_off
+on_blowout = blink
+osciallator = false
+on_info = {+bar_arena_door_2_open -bar_arena_mute} ph_light_mgr@arena_on
+
+[ph_light_mgr@arena_on]
+lights_on = always_on
+on_blowout = blink
+osciallator = false
+on_info = {+bar_arena_mute !bar_arena_actor_outside} ph_light_mgr@arena_big_off

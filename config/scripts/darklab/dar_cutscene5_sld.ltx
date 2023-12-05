@@ -1,0 +1,45 @@
+[combat_ignore@dar_sc5]
+
+[danger@dar_sc5]
+ignore_distance = 0
+
+[threshold@dar_sc5]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[smart_terrains]
+none = true
+
+[logic]
+active = remark@darklab_sci_dar_warding
+combat_ignore = combat_ignore@dar_sc5
+threshold = threshold@dar_sc5
+danger = danger@dar_sc5
+
+[remark@darklab_sci_dar_warding]
+anim = ward
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sld_look_point, 0
+on_info =  {+dar_sci5_info5} remark@darklab_sld_dar_prisluh
+
+[remark@darklab_sld_dar_prisluh]
+anim = sneak
+snd = dar_replics28
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point2, 0
+on_info = {+dar_earthquake_scene5} remark@darklab_sld_dar_hide
+
+[remark@darklab_sld_dar_hide]
+anim = hide
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point2, 0
+on_info = {+dar_soldier_release} %=release%

@@ -1,0 +1,26 @@
+;DOOR TO SERIY'S HANGAR
+[logic]
+active = ph_door@locked
+
+[ph_door@locked]
+locked = true
+closed = true
+snd_open_start = trader_door_locked
+on_info = {+gar_seriy_go} ph_door@open
+on_info2 = {+gar_seriy_failed} ph_door@open
+
+[ph_door@closed]
+locked = false
+closed = true
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+
+[ph_door@open]
+locked = false
+closed = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed

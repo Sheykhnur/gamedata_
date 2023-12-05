@@ -1,0 +1,262 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_sarcofag.script
+ Description: Gulags Sarcofag
+ Copyright  : 2013 © LA-team
+ Author     : loxotron
+ Editors    : loxotron(23.02.2013)
+ Last edit  : 26.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for monsters ------------------------------
+	sar_rats1    = {comm = {"rat","tushkano"}},
+	sar_rats2    = {comm = {"rat","tushkano"}},
+	sar_rats3    = {comm = {"rat","tushkano"}},
+	sar_zombies1 = {comm = {"zombie"}},
+	sar_zombies2 = {comm = {"zombie"}},
+	sar_zombies3 = {comm = {"zombie"}},
+	sar_zombies4 = {comm = {"zombie"}},
+	sar_zombies5 = {comm = {"zombie"}},
+	sar_zombies6 = {comm = {"zombie"}},
+	sar_karliks1 = {comm = {"karlik"}},
+	sar_karliks2 = {comm = {"karlik"}},
+	sar_burger   = {comm = {"burer"}},
+	sar_chimera  = {comm = {"chimera"}},
+	--sar_sucker = {comm = {"bloodsucker"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+function is_sar_cutscene_playing()
+	return (has_info("sar_scene4_start") and not has_info("sar_scene4_zombies"))
+	    or (has_info("sar_scene3_start") and not has_info("sar_sc3_end"))
+	    or (has_info("sar_scene4_start") and not has_info("sar_sc4_end"))
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.sar_rats1.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_rats1.ltx = smart_dyn_ltx.add_mob_home(type, 3, 5, 20, nil, nil, true)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home_off" .. i, 0, 5, {1}, squad, groups[1], "", "", false, type, on_level_pred))
+	end
+end
+
+gulags.sar_rats1.state = function(gulag)
+	if is_sar_cutscene_playing() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.sar_rats2.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_rats2.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 20, nil, nil, true)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home_off" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.sar_rats2.state = function(gulag)
+	if is_sar_cutscene_playing() then
+		return 0
+	elseif has_info("sar_rats_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.sar_rats3.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_rats3.ltx = smart_dyn_ltx.add_mob_home(type, 3, 5, 20, nil, nil, true)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home_off" .. i, 0, 5, {1}, squad, groups[1], "", "", false, type, on_level_pred))
+	end
+end
+
+gulags.sar_rats3.state = function(gulag)
+	if is_sar_cutscene_playing() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.sar_zombies1.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_zombies1.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 20, nil, nil, true)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home_off" .. i, 0, 5, {1}, squad, groups[1], "", "", false, type, on_level_pred))
+	end
+end
+
+gulags.sar_zombies1.state = function(gulag)
+	if is_sar_cutscene_playing() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.sar_zombies2.jobs = function(sj, gname, type, squad, groups)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.sar_zombies3.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_zombies3.ltx = smart_dyn_ltx.add_mob_home(type, 12, 5, 30, nil, nil, true)
+
+	for i = 1, 12 do
+		table.insert(sj, gulag_tasks.getJob("home_off" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.sar_zombies3.state = function(gulag)
+	if has_info("sar_scene4_zombies") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.sar_zombies4.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_zombies4.ltx = smart_dyn_ltx.add_mob_home(type, 3, 5, 25, nil, nil, true)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home_off" .. i, 0, 5, {1}, squad, groups[1], "", "", false, type, on_level_pred))
+	end
+end
+
+gulags.sar_zombies4.state = function(gulag)
+	if has_info("sar_fake_finale") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.sar_zombies5.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_zombies5.ltx = smart_dyn_ltx.add_mob_home(type, 1, 5, 20)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.sar_zombies6.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_zombies6.ltx = smart_dyn_ltx.add_mob_home(type, 3, 5, 20)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "sar_space_restrictor_0047,sar_space_restrictor_0048", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ karliks
+--/ ---------------------------------------------
+gulags.sar_karliks1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.sar_karliks2.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_karliks2.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 20, nil, nil, true)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home_off" .. i, 0, 5, {1}, squad, groups[1], "", "", false, type, on_level_pred))
+	end
+end
+
+gulags.sar_karliks2.state = function(gulag)
+	if has_info("sar_fake_finale") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ burgers
+--/ ---------------------------------------------
+gulags.sar_burger.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_burger.ltx = smart_dyn_ltx.add_mob_home(type, 1, 5, 30, nil, nil, true)
+	
+	table.insert(sj, gulag_tasks.getJob("home_off1", 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+gulags.sar_burger.state = function(gulag)
+	if is_sar_cutscene_playing() then
+		return 0
+	elseif has_info("sar_higher_levels") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ chimeras
+--/ ---------------------------------------------
+gulags.sar_chimera.jobs = function(sj, gname, type, squad, groups)
+	--gulags.sar_chimera.ltx = smart_dyn_ltx.add_mob_home(type, 1, 5, 30, nil, nil, true)
+	
+	table.insert(sj, gulag_tasks.getJob("home_off1", 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+gulags.sar_chimera.state = function(gulag)
+	if has_info("sar_chimera_start") then
+		return 1
+	end
+	return 0
+end
+
+--[[
+--/ ---------------------------------------------
+--/ bloodsuckers
+--/ ---------------------------------------------
+gulags.sar_sucker.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off", 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	--table.insert(sj, gulag_tasks.getJob("on", 0, 5, {1}, squad, groups[1], "", "",  nil, type, on_level_pred))
+end
+
+gulags.sar_sucker.state = function(gulag)
+	--if has_info("sar_scene_start") then
+		--return 1
+	--end
+	return 0
+end
+--]]
+--/ -----------------------------------------------------------------------------------------------

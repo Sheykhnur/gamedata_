@@ -1,0 +1,37 @@
+[logic]
+active = sr_idle@check
+
+[sr_idle@check]
+on_actor_inside = {=current_helmet(good_psy_helmet)} sr_psy_antenna@good_psy_helmet, {=current_helmet(bad_psy_helmet)} sr_psy_antenna@bad_psy_helmet, sr_psy_antenna@no_helmet
+on_info = {+yantar_attack_start} sr_idle@nil
+on_info2 = {+lab_generator_off} sr_idle@nil
+
+[sr_psy_antenna@no_helmet]
+eff_intensity = +75
+hit_intensity = +55
+postprocess = psy_antenna.ppe
+on_info = {=current_helmet(good_psy_helmet)} sr_psy_antenna@good_psy_helmet, {=current_helmet(bad_psy_helmet)} sr_psy_antenna@bad_psy_helmet
+on_info2 = {+yantar_attack_start} sr_idle@nil
+on_info3 = {+lab_generator_off} sr_idle@nil
+on_actor_outside = sr_idle@check
+
+[sr_psy_antenna@bad_psy_helmet]
+eff_intensity = +20
+hit_intensity = 5
+postprocess = psy_antenna.ppe
+on_info = {!current_helmet(bad_psy_helmet)} sr_idle@check
+on_info2 = {+yantar_attack_start} sr_idle@nil
+on_info3 = {+lab_generator_off} sr_idle@nil
+on_actor_outside = sr_idle@check
+
+[sr_psy_antenna@good_psy_helmet]
+eff_intensity = +20
+hit_intensity = 3
+postprocess = psy_antenna.ppe
+on_info = {!current_helmet(good_psy_helmet)} sr_idle@check
+on_info2 = {+yantar_attack_start} sr_idle@nil
+on_info3 = {+lab_generator_off} sr_idle@nil
+on_actor_outside = sr_idle@check
+
+[sr_idle@nil]
+on_info = nil %=release%

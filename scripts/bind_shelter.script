@@ -1,0 +1,529 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_shelter.script
+ Description: Binder "Covers from blowout"
+ Copyright  : 2009 © LA-team
+ Author     : barin (02.08.2009)
+ Editors    : gr1ph00n
+ Last edit  : 22.03.2017 [SkyLoader]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local shelter_mgr = nil
+--/---------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Binding - registration of objects in binder
+--/------------------------------------------------------------------
+function bind(obj)
+	local data = this.load_data(obj:name())
+	if not bind_actor.binder_check22() and not bind_actor.binder_check_new() then 
+		abort("Do not")
+	end
+	if data then
+		obj:bind_object( this.blowout_shelter(obj, data) )
+	end
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/------------------------------------------------------------------------------------------------
+class "blowout_shelter" (object_binder) --/ 'cover' zones from blowout
+--/------------------------------------------------------------------------------------------------
+function blowout_shelter:__init(obj,data) super(obj)
+	self.obj_id = obj:id() --/#+#
+	self.has_mapspot = false
+	self.objects_inside = {} --/#+#
+	get_shelter_mgr():Add(self, data)
+end
+
+function blowout_shelter:reload(section)
+	object_binder.reload(self, section)
+end
+
+function blowout_shelter:reinit()
+	object_binder.reinit(self)
+	db.storage[self.obj_id] = {} --/#?# why?
+end
+
+function blowout_shelter:net_spawn(server_obj)
+	if not object_binder.net_spawn(self, server_obj) then return false end --/>
+	--db.add_zone(self.object) --/#x# why?
+	--/#+# set callbacks
+	self.object:set_callback(callback.zone_enter, self.on_enter, self)
+	self.object:set_callback(callback.zone_exit,  self.on_exit,  self)
+--	log("bs:net_spawn:Obj=[%s]", self.object:name(), "") --/#~#
+	return true
+end
+
+function blowout_shelter:net_destroy()
+	--/#+# clear callbacks
+	self.object:set_callback(callback.zone_enter, nil)
+	self.object:set_callback(callback.zone_exit,  nil)
+	--/<
+	--db.del_zone(self.object) --/#x#
+	object_binder.net_destroy(self)
+end
+--[[ --/#x# not needed
+function blowout_shelter:net_save_relevant()
+	return true
+end
+function blowout_shelter:save(packet)
+	object_binder.save(self, packet)
+	--xr_logic.save_obj(self.object, packet)
+end
+function blowout_shelter:load(reader)
+	object_binder.load(self, reader)
+	--xr_logic.load_obj(self.object, reader)
+end
+--]]
+--/ -----------------------------------------------------------------
+--/ CALLBACKs (in development!)
+--/ -----------------------------------------------------------------
+--/ callback on zone enter:
+function blowout_shelter:on_enter(zone, obj)
+	if IsStalker(obj) and obj:alive() then --/ IsHuman?
+		self.objects_inside[obj:id()] = true
+		--log("on_enter: zone=[%s], obj=[%s/%s] :(%s)", zone:name(), obj:name(), obj:id(), "+") --/#~#
+		--log("bind shelter surge started = [%s] and psi started = [%s]",tostring(surge_manager.is_started()),tostring(psi_storm_manager.is_started()))
+		if level_weathers.is_blowout_active() and obj:id() ~= idActor then
+			shelter_mgr:AssignShelter(obj) --/#?#
+		end
+	end
+end
+--/ callback on exit from zone:
+function blowout_shelter:on_exit(zone, obj)
+	if self.objects_inside[obj:id()] then
+		self.objects_inside[obj:id()] = nil
+		--log("on_exit: zone=[%s], obj=[%s]/[%s] :(%s)", zone:name(), obj:name(), obj:id(), "-") --/#~#
+		if obj:id() ~= idActor and shelter_mgr then
+			--log("shelter manager exiting zone [%s] and unregistering npc [%s]",zone:name(),obj:name())
+			shelter_mgr:UnregisterNpc(obj,true) --/#?#
+		end
+	end
+end
+--/ ------------------------------------------------------------------
+--/ Helpers
+--/ ------------------------------------------------------------------
+function blowout_shelter:is_inside(obj)
+	--[[
+	if obj and obj:alive() then
+		return self.object:inside( obj:position() ) --/>
+	end
+	--]]
+	if obj and self.objects_inside[obj:id()] then
+		if obj:alive() then
+			return true --/>
+		end
+		self.objects_inside[obj:id()] = nil --/ clear
+	end
+	return false --/>
+end
+
+function blowout_shelter:distance_to(obj)
+	return self.object:position():distance_to( obj:position() ) --/>
+end
+
+local LOCATION      = "blowout_hideplace_location"
+local HINT_DEFAULT  = "%c[255,255,255,0]" .. game.translate_string("blowout_hideplace_hint")
+local HINT_DISTANCE = HINT_DEFAULT .. "\\n%c[default]" .. game.translate_string("blowout_hideplace_hint_d")
+
+function blowout_shelter:Update_MapSpot(bFlg)
+	if bFlg and not self:is_inside(db.actor) then
+		--/ during blowout place a mark
+		if not self.has_mapspot then
+			self.has_mapspot = true
+			if db.is_dbg1 then
+				Add_MapSpot(self.obj_id, LOCATION, HINT_DEFAULT.."\\n: "..self.object:name())
+			else
+				Add_MapSpot(self.obj_id, LOCATION, HINT_DEFAULT)
+			--	log("Add_MapSpot:Obj=[%s]", self.object:name(), "") --/#~#
+			end
+		end
+		--/#?# update hint (for debug)
+		--level.map_change_spot_hint(self.obj_id, LOCATION, string.format("%s = %d m", HINT_DISTANCE, self:distance_to(db.actor)))
+	elseif self.has_mapspot then
+		self.has_mapspot = false
+		Del_MapSpot(self.obj_id, LOCATION)
+		--log("Del_MapSpot:Obj=[%s]", self.object:name(), "") --/#~#
+	end
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "SheltersManager" --/ manager of covers from blowouts
+--/------------------------------------------------------------------------------------------------
+function SheltersManager:__init()
+	self.shelters = {} --/ array of covers
+	self.npcs     = {} --/ array of NPC 'setted' to covers
+	self.accessible = true
+end
+
+function SheltersManager:__finalize()
+	shelter_mgr = nil
+end
+
+function SheltersManager:Add(binder, data)
+	self.shelters[data.name] = {
+		pointer       = binder,
+		name          = data.name,
+		factions      = data.factions,
+		capacity      = data.capacity or 0,
+		cover_pos     = data.cover_pos or {},
+		curr_capacity = 0
+	}
+--	log("SheltersManager:Add: [%s], capacity=[%s]", data.name, data.capacity, "") --/#~#
+--	table.print(data) --/#~#
+end
+
+function SheltersManager:Contains(name)
+	return self.shelters[name] ~= nil --/> is there any cover with setted name
+end
+
+function SheltersManager:isAssigned(npc)
+	return self.npcs[npc:id()] ~= nil --/> setted for NPC cover or not
+end
+
+function SheltersManager:AcceptNpc(shelter, npc)
+	if shelter.curr_capacity < shelter.capacity and shelter.factions[npc:character_community()] then
+		return true --/> NPC can hide in this cover
+	end
+	return false --/>
+end
+
+function SheltersManager:AlreadyInside(npc)
+	if self:isAssigned(npc) then
+		return self:isInside(npc) --/> NPC already in setted to him cover
+	--[[else --/ cover not been yet assigned
+		for name, shelter in pairs(self.shelters) do
+			if shelter.pointer:is_inside(npc) and self:AcceptNpc(shelter, npc) then
+				for idx,v in pairs(shelter.cover_pos) do
+					if not v.reserved then --/ and v.lvid == npc:level_vertex_id()
+						v.reserved = npc:id()
+						self.npcs[npc:id()] = {name = shelter.name, index = idx}
+						shelter.curr_capacity = shelter.curr_capacity + 1
+						return true --/> NPC already in cover and he attached to it
+					end
+				end
+			end
+		end--]]
+	end
+	return false --/> NPC not in cover
+end
+
+function SheltersManager:ReservePosition(shelter, npc)
+	for idx,v in pairs(shelter.cover_pos) do
+		if not v.reserved then --/ and v.lvid == npc:level_vertex_id()
+			v.reserved = npc:id()
+			self.npcs[npc:id()] = {name = shelter.name, index = idx}
+			--log("[%s] is reserved at [%s]",npc:name(),tostring(shelter.name))
+			shelter.curr_capacity = shelter.curr_capacity + 1
+			return --/>
+		end
+	end
+	abort("%s:ReservePosition: '%s' cannot reserve position for '%s'", sModule, shelter.name, npc:name(), "")
+end
+
+function SheltersManager:AssignShelter(npc)
+	--[[
+	if not self.accessible then
+		log("AssignShelter: NPC=[%s] :(%s)", npc:name(), "x") --/#~#
+		return --/> already checked
+	end
+	--]]
+	if self:AlreadyInside(npc) then
+--		log("AssignShelter: NPC=[%s] ~ AlreadyInside", npc:name(), "") --/#~#
+		--self.accessible = true
+		return --/>
+	end
+--	log("AssignShelter:--------------------------------------------") --/#~#
+	local cover = nil
+	local dist_min,dist = 10^6, 0
+	for name, shelter in pairs(self.shelters) do
+--		log("AssignShelter:name=[%s],capacity=[%d/%d],character=[%s]", name, shelter.curr_capacity, shelter.capacity, tostring(shelter.factions[npc:character_community()]), "") --/#~#
+		if self:AcceptNpc(shelter, npc) then
+			dist = shelter.pointer:distance_to(npc)
+			--log("AssignShelter:=[%s] <~ AcceptNpc:=[%s] :[%s]", name, npc:name(), string.short(dist), "") --/#~#
+			if dist and dist < dist_min then
+				dist_min = dist
+				cover = name
+			end
+		end
+	end
+	
+	if cover then
+		--log("AssignShelter:=[%s]/[%s] <= NPC=[%s] :(%s)", cover, math.floor(dist_min), npc:name(), "+") --/#~#
+		self:ReservePosition(self.shelters[cover], npc)
+		--self.accessible = true
+		return --/>
+	end
+	self.accessible = false
+	--abort("%s:AssignShelter: cannot find shelter for [%s]/[%s]:<%s>", sModule, npc:name(), npc:character_community(), "Warning!")
+	log("AssignShelter: cannot find shelter for [%s]/[%s]:<%s>", npc:name(), npc:character_community(), "Warning!")
+end
+
+function SheltersManager:isAvailable(npc)
+	for name, shelter in pairs(self.shelters) do
+		if self:AcceptNpc(shelter, npc) then
+			return true --/> for NPC there is useful cover
+		end
+	end
+	return false --/>
+end
+
+function SheltersManager:isActorInside()
+	for name, shelter in pairs(self.shelters) do
+		if shelter.pointer:is_inside(db.actor) then
+			return true --/>
+		end
+	end
+	return false --/>
+end
+
+function SheltersManager:isInside(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	return shelter.pointer:is_inside(npc) --/>
+end
+
+function SheltersManager:isOnPosition(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	local index = self.npcs[npc:id()].index
+	return shelter.cover_pos[index].lvid == npc:level_vertex_id() --/>
+end
+
+function SheltersManager:GetDistToShelter(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	return shelter.pointer:distance_to(npc) --/>
+end
+
+function SheltersManager:SetInShelterPos(npc, lvid)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	local index = self.npcs[npc:id()].index
+	shelter.cover_pos[index].pos = level.vertex_position(lvid)
+	shelter.cover_pos[index].lvid = lvid
+end
+
+function SheltersManager:GetInShelterPos(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	local index = self.npcs[npc:id()].index
+	return shelter.cover_pos[index].pos --/>
+end
+
+function SheltersManager:GetInShelterLvid(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	local index = self.npcs[npc:id()].index
+	return shelter.cover_pos[index].lvid --/>
+end
+
+function SheltersManager:GetLookPoint(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	local index = self.npcs[npc:id()].index
+	return shelter.cover_pos[index].look_pos --/>
+end
+
+function SheltersManager:GetAnim(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	local index = self.npcs[npc:id()].index
+	if not self.npcs[npc:id()].anim then
+		local anims = shelter.cover_pos[index].anims
+		self.npcs[npc:id()].anim = anims[math.random(#anims)]
+	end
+	return self.npcs[npc:id()].anim --/>
+end
+
+function SheltersManager:RemoveNpc(npc)
+	local shelter = self.shelters[self.npcs[npc:id()].name]
+	local index = self.npcs[npc:id()].index
+	if shelter.cover_pos[index].reserved == npc:id() then
+		shelter.curr_capacity = shelter.curr_capacity - 1
+		shelter.cover_pos[index].reserved = nil
+	end
+	self.npcs[npc:id()] = nil
+end
+
+function SheltersManager:UnregisterNpc(npc,sure)
+	if self:isAssigned(npc) then
+		if sure or not npc:alive() or xr_wounded.is_wounded(npc) then
+			self:RemoveNpc(npc)
+		end
+	end
+end
+
+function SheltersManager:UnregisterAll()
+	for k,v in pairs(self.npcs) do
+		self.shelters[v.name].cover_pos[v.index].reserved = nil
+		self.shelters[v.name].curr_capacity = 0
+		self.npcs[k] = nil
+	end
+end
+
+function SheltersManager:Update(bFlg)
+	--/ binder update of covers
+	for name, shelter in pairs(self.shelters) do
+		shelter.pointer:Update_MapSpot(bFlg)
+	end
+end
+
+function SheltersManager:GetShelterIds()
+	local t = {}
+	for name, shelter in pairs(self.shelters) do
+		table.insert(t, shelter.pointer.obj_id)
+	end
+	return t
+end
+
+--/ ------------------------------------------------------------------
+function get_shelter_mgr()
+	if not shelter_mgr then
+		shelter_mgr = SheltersManager()
+	end
+	return shelter_mgr --/>
+end
+
+function Update(e) --/ 1 time per second (set callback from blowout script)
+	local bActived = false
+	if level_weathers.is_blowout_active() then
+		bActived = true
+	end
+	--log("bind_shelter update bActived = [%s]",tostring(bActived))
+	get_shelter_mgr():Update(bActived)
+	if e and not bActived then
+		e:remove() --/ disabling callback!
+	end
+end
+
+function actor_inside_shelter()
+	return get_shelter_mgr():isActorInside()
+end
+
+function get_shelter_ids()
+	return get_shelter_mgr():GetShelterIds()
+end
+
+--/ ----------------------------------------------
+--/ Helpers
+--/ ----------------------------------------------
+local shelter_ltx   = "lost_alpha\\blowout\\shelter.ltx"
+local FREE_FOR_ALL  = "stalker, ecolog, dolg, freedom, military, killer, bandit, monolith, dark_stalker", "stranger", "clear_sky", "milstalker", "cleaning"
+local SHELTER_ANIMS = {"wait", "stand_wait", "guard", "ward", "sit", "sit_knee", "sit_ass"}
+
+function parse_factions(list)
+	if not list then
+		return nil --/>
+	elseif list == "all" then
+		list = FREE_FOR_ALL
+	end
+	
+	local tbl = {}
+	for faction in string.gfind(list, "%s*([^%,]+)%s*") do
+--		log("parse_factions:set faction=[%s] :(%s)", faction, "+") --/#~#
+		tbl[faction] = true
+	end
+	return tbl --/>
+end
+
+function parse_pos(way_name)
+	if not (way_name and level.patrol_path_exists(way_name)) then
+		abort("%s:parse_pos: way=[%s] does not exist!", sModule, way_name, "")
+		return nil --/>
+	end
+	local p = get_patrol(way_name)
+	if p then
+		local count = p:count()
+		if count < 2 then
+			abort("%s:parse_pos: way=[%s] must have 2 points! has=[%d]", sModule, way_name, count, "")
+			return nil --/>
+		end
+		local tbl = {
+			lvid     = p:level_vertex_id(0),
+			pos      = p:point(0), --level.vertex_position(p:level_vertex_id(0)),
+			look_pos = p:point(1), --level.vertex_position(p:level_vertex_id(1)),
+			anims    = SHELTER_ANIMS,
+			--reserved = nil
+		}
+		local waypoints = utils.path_parse_waypoints(way_name)
+		if waypoints then
+--			log("parse_pos: way=[%s], waypoints=[%s]", way_name, count, "") --/#~#
+			local anim = nil
+			for i = 0, count - 1 do
+				anim = waypoints[i]["a"]
+				if anim then
+					for _,v in pairs(SHELTER_ANIMS) do
+						if v == anim then
+							tbl.anims = {anim} --/ backward compatibility
+							return tbl --/>
+						end
+					end
+				end
+			end
+			return tbl --/>
+		end
+		abort("%s:parse_pos: cannot parse way=[%s] data!", sModule, way_name, "")
+	else
+		abort("%s:parse_pos: cannot access way=[%s]", sModule, way_name, "")
+	end
+	return nil --/>
+end
+
+function load_data(section)
+	local ltx = ini_file(shelter_ltx)
+--	log("load_data: section=[%s]", section, "") --/#~#
+	if not ltx then
+		abort("%s:load_data: file '%s' not found!", sModule, shelter_ltx, "")
+		return nil --/>
+	elseif not ltx:section_exist(section) then
+		abort("%s:load_data: section '%s' not found!", sModule, section, "")
+		return nil --/>
+	elseif get_shelter_mgr():Contains(section) then
+		abort("%s:load_data: duplicated shelter name '%s'", sModule, section, "")
+		return nil --/>
+	end
+	
+	local data = { name = section, capacity=0, cover_pos={} }
+	
+	data.factions = this.parse_factions(Get_Cfg_String(ltx, section, "factions", nil))
+	if not data.factions then
+		abort("%s:load_data: field 'factions' not specified for '%s'", sModule, section, "")
+		return nil --/>
+	elseif data.factions["actor"] then
+--		log("load_data: shelter=[%s] for actor", section, "") --/#~#
+		return data --/>
+	end
+	
+	data.capacity = Get_Cfg_Num32(ltx, section, "capacity", nil)
+	if not data.capacity then
+		abort("%s:load_data: field 'capacity' not specified for '%s'", sModule, section, "")
+		return nil --/>
+	end
+	
+	local cover_pos = nil
+	for i=1, data.capacity do
+		cover_pos = this.parse_pos(Get_Cfg_String(ltx, section, "pos_" .. i, nil))
+		if cover_pos then
+			if not (level.valid_vertex_id(cover_pos.lvid)) then
+				log("%s:load_data: not valid lv id for shelter %s in %s section '%s', %s", sModule, Get_Cfg_String(ltx, section, "pos_" .. i, nil), shelter_ltx, section, "pos_" .. i)
+			end
+		
+			table.insert(data.cover_pos, cover_pos)
+		else
+			abort("%s:load_data: field '%s' not specified for '%s'", sModule, "pos_" .. i, section, "")
+			data.capacity = data.capacity - 1
+		end
+	end
+	
+	if data.capacity > 0 then
+--		log("load_data: shelter=[%s], capacity=[%d]", section, data.capacity, "") --/#~#
+		return data --/>
+	end
+	abort("%s:load_data: capacity = %d for '%s'", sModule, data.capacity, section, "")
+	return nil --/>
+end
+
+
+function binder_check_new()
+	return true
+end
+--/ ------------------------------------------------------------------------------------------------

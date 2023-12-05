@@ -1,0 +1,659 @@
+
+-- file: parser.script
+-- author: barin, Gr1ph00n
+-- date: 2008-07-23
+-- edited by: Gr1ph00n
+-- last edited: 2012-08-31
+
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+
+function get_parser(str)
+	local dot = string.find(str, "%.")
+	if dot then
+		return string.sub(str, 0, dot - 1), string.sub(str, dot + 1)
+	end
+	return nil, str
+end
+
+function read_section(ltx_path, section_name, parser)
+	local string_table = {}	
+	local ltx = nil
+	
+	if type(ltx_path) == "string" then
+		ltx = ini_file(ltx_path)
+	else
+		ltx = ltx_path
+	end
+	
+	if not ltx then
+		return string_table
+	end
+
+	if ltx:section_exist(section_name) then
+		local variable, value, lines = "", "", ltx:line_count(section_name)
+		for current_line = 0, lines - 1 do
+			result, variable, value = ltx:r_line(section_name, current_line, "", "")
+			string_table[variable] = value
+		end
+	end
+	
+	if not parser then
+		return string_table
+	end
+	
+	local scriptName, parserName = get_parser(parser)
+	if not scriptName then
+		scriptName = script_name()
+	end	
+	if not _G[scriptName][parserName] then
+		return string_table
+	end
+	
+	return _G[scriptName][parserName](string_table)
+end
+
+function parse_num(tbl)
+	local temp = nil
+	local data = {}
+	
+	if tbl == nil then
+		return data
+	end
+	
+	for index, value in pairs(tbl) do
+--		temp = string.gsub(value, "[^%d]", "")
+--		if temp == nil or temp == "" then
+--			temp = 0
+--		end
+		temp = tonumber(value)
+		data[index] = temp ~= nil and temp or 0
+	end
+	
+	return data
+end
+
+function parse_bool(tbl)
+	local temp = nil
+	local data = {}
+	
+	if tbl == nil then
+		return data
+	end
+	
+	for index, value in pairs(tbl) do
+		temp = string.gsub(value, "[^%a]", "")
+		if value == "true" then
+			value = true
+		else
+			value = false
+		end
+		data[index] = value
+	end
+	
+	return data
+end
+
+function parse_spawn_data(tbl)
+	local temp = nil
+	local data, t = {}, {}
+
+	if tbl == nil then
+		return data
+	end
+
+	for index, str in pairs(tbl) do
+		temp = string.gsub(str, "(%a)", "")
+		
+		for value in string.gfind(temp, "([%-?%d+%.%d+]+)[%p%s]?") do
+			table.insert(t, tonumber(value))
+		end
+
+		data[index] = {}
+		data[index].position = vector():set(t[1], t[2], t[3])
+		data[index].level_vertex = t[4]
+		data[index].game_vertex = t[5]
+
+		t = {}
+	end
+	
+	return data
+end
+
+function parse_spawn_data_wp(tbl)
+	local temp = nil
+	local data = {}
+	
+	if tbl == nil then
+		return data
+	end
+	
+	local index = 1
+	
+	for i, wp_name in pairs(tbl) do
+		if not level.patrol_path_exists(wp_name) then
+			abort("[%s.script] waypoint '%s' does not exist!", script_name(), wp_name)
+		else
+			local ptr = patrol(wp_name)
+			if ptr then
+				data[index] = {}
+				data[index].position = ptr:point(0)
+				data[index].level_vertex = ptr:level_vertex_id(0)
+				data[index].game_vertex = ptr:game_vertex_id(0)
+				index = index + 1
+			else
+				abort("[%s.script] cannot access waypoint '%s'", script_name(), wp_name)
+			end
+		end
+	end
+	
+	return data
+end
+
+function parse_hideplaces(tbl)
+	local temp = nil
+	local data, t = {}, {}
+
+	if tbl == nil then
+		return data
+	end
+	
+	for index, str in pairs(tbl) do
+		temp = string.gsub(str, "(%a)", "")
+		
+		for value in string.gfind(temp, "([%-?%d+]+)[%p%s]?") do
+			table.insert(t, tonumber(value))
+		end
+		
+		data[index] =
+		{
+			min_x = t[1], max_x = t[2],
+			min_y = t[3], max_y = t[4],
+			min_z = t[5], max_z = t[6]
+		}
+		t = {}
+	end
+	
+	return data
+end
+
+function parse_number_list(tbl)
+	local data = {}
+	if not tbl then
+		return data
+	end
+	for k, v in pairs(tbl) do
+		data[k] = parse_num_list(v)
+	end
+	return data
+end
+function parse_number_string(str)
+	local values = {}
+	
+	for w in string.gfind(str, "([%d%a]+)") do
+		table.insert(values, w)
+	end
+	
+	-- number, string
+	return tonumber(values[1]), values[2]
+end
+
+function parse_string_list(string_list)
+	if not string_list then
+		return {}
+	end
+	
+	local t = {}
+	
+	for str in string.gfind(string_list, "%s*([^%,]+)%s*") do
+		table.insert(t, str)
+	end
+	
+	return t
+end
+
+function parse_string_line(tbl)
+	local data = {}
+	if not tbl then
+		return data
+	end
+	for i, str in pairs(tbl) do
+		data[i] = parse_string_list(str)
+	end
+	return data
+end
+
+function parse_levels_data(tbl)
+	local temp = nil
+	local data, t = {}, {}
+
+	if tbl == nil then
+		return data
+	end
+
+	for level_name, str in pairs(tbl) do
+		temp = string.gsub(str, "(%a)", "")
+		
+		for value in string.gfind(temp, "([%-?%d+%.%d+]+)[%p%s]?") do
+			table.insert(t, tonumber(value))
+		end
+
+		data[level_name]					= {}
+		data[level_name].id 				= t[1]
+		data[level_name].level_id 			= t[2]
+		data[level_name].min_game_vertex_id	= t[3]
+		data[level_name].max_game_vertex_id	= t[4]
+		data[level_name].level_vertex_id 	= t[5]
+		
+		t = {}
+	end
+	
+	return data
+end
+
+function parse_num_list(string_list)
+	if not string_list then
+		return {}
+	end
+	
+	local t = {}
+	
+	for str in string.gfind(string_list, "%s*([^%,]+)%s*") do
+		table.insert(t, tonumber(str))
+	end
+	
+	return t
+end
+
+function iterator(t)
+	local index = 0
+	local size = table.getn(t)
+	
+	return function()
+		index = index + 1
+		if index <= size then
+			if tonumber(t[index]) == nil then
+				if tonumber(t[index + 1]) == nil then
+					return t[index], 1
+				else
+					return t[index], tonumber(t[index + 1])
+				end
+			else
+				return false, false
+			end
+		end
+	end
+end
+
+function parse_str_num_list(tbl)
+	local data = {}
+	if not tbl then
+		return data
+	end
+	for k, str in pairs(tbl) do
+		data[k] = r_str_num_list(str)
+	end
+	return data
+end
+
+function r_str_num_list(str)
+	local ret_tbl = {}	
+	local t = {}
+	
+	for name in string.gfind(str, "([%w_%-.\\]+)%p*") do
+		table.insert(t, name)
+	end
+	
+	if t[1] == nil or t[1] == "" then
+		return ret_tbl
+	end
+	
+	for section, prob in iterator(t) do
+		if section ~= false and prob ~= false then
+			if ret_tbl[section] ~= nil then
+				ret_tbl[section] = ret_tbl[section] + prob
+			else
+				ret_tbl[section] = prob
+			end
+		end
+	end
+	
+	return ret_tbl
+end
+
+function load_patrols(name, quantity)
+	local wp_data = {}
+	local ptr = nil
+	
+	if not quantity then
+		quantity = 1
+	end
+	
+	for index = 1, quantity do
+		if level.patrol_path_exists(name .. index) then
+			ptr = patrol(name .. index)
+			wp_data[index] =
+			{
+				position = ptr:point(0),
+				level_vertex_id = ptr:level_vertex_id(0),
+				game_vertex_id = ptr:game_vertex_id(0),
+			}
+		end
+	end
+	
+	return wp_data
+end
+
+function load_waypoints(name)
+	local wp_data = {}
+	
+	if level.patrol_path_exists(name) then
+		local ptr = patrol(name)
+		for index = 0, ptr:count() - 1 do
+			wp_data[index + 1] =
+			{
+				pos = ptr:point(index),
+				lvid = ptr:level_vertex_id(index),
+				gvid = ptr:game_vertex_id(index)
+			}
+		end
+	else
+		dbg_print("[%s.script] : '%s' patrol does not exist!", script_name(), name)
+	end
+	
+	return wp_data
+end
+
+-- **************************************************************** --
+
+local specifiers = {
+	c = true, d = true, e = true, f = true, g = true,
+	i = true, o = true, s = true, u = true, x = true
+}
+
+function get_specifier(str)
+	for index = 1, string.len(str) do
+		if specifiers[string.sub(str, index, index)] then
+			return string.sub(str, index, index)
+		end
+	end	
+end
+
+function FormatString(str, ...)
+	local args = {...}
+	local args_num = select("#", unpack(args))
+	
+	if args_num == 0 then
+		return str
+	end
+	
+	local proc, spec, temp = nil, nil, nil
+	local current_arg, current_proc = 1, 1
+	
+	while true do
+		proc = string.find(str, "%%", current_proc)
+		if proc == nil then
+			break
+		end
+
+		spec = get_specifier(string.sub(str, proc))
+		temp = select(current_arg, unpack(args))
+		
+		if spec == "s" and type(temp) ~= "string" then
+			-- args[current_arg] = this.ToString(temp)
+			if type(temp) == "boolean" or temp == nil then
+				args[current_arg] = temp ~= nil and tostring(temp) or "<<nil>>"
+			else
+				args[current_arg] = "string expected, got: <" .. type(temp) .. ">"
+			end
+		elseif spec ~= "s" and type(temp) ~= "number" then
+			-- args[current_arg] = this.ToString(temp)
+			args[current_arg] = "number expected, got: <" .. type(temp) .. ">"
+			str = string.sub(str, 0, proc) .. "s" .. string.sub(str, string.find(str, spec, proc) + 1)
+		end
+		
+		current_arg = current_arg + 1
+		current_proc = proc + 1
+	end
+	
+	return string.format(str, unpack(args))
+end
+
+-- **************************************************************** --
+
+local show_debug_info = true
+
+function ToString(arg)
+	local t = type(arg)
+	if t == "string" then
+		return arg
+	elseif t == "number" or t == "boolean" then
+		return tostring(arg)
+	elseif t == "nil" then
+		return "<nil>"
+	elseif t == "table" then
+		return "<table>"
+	else
+		return "<user_data>"
+	end
+end
+--[[
+function debug_print(...)
+	if not show_debug_info then
+		return
+	end
+	
+	local args = {...}
+	if args[1] ~= nil then
+		local con, str = get_console(), ""
+		for k, v in pairs(args) do
+			str = str .. ToString(v) .. " "
+			if string.len(str) >= 190 then
+				con:execute("log_print " .. str)
+				str = ""
+			end
+		end
+		if str ~= "" then
+			con:execute("log_print " .. str)
+		end
+	end
+end
+]]
+function debug_table(tbl)
+	for k, v in pairs(tbl) do
+		if type(v) == "table" then
+			dbg_print("[ %s ] = {", ToString(k))
+			debug_table(v)
+			dbg_print("%s", "},")
+		else
+			dbg_print("[ %s ] = %s,", ToString(k), ToString(v))
+		end
+	end
+end
+
+function string_split(str, char_num)
+	local length = string.len(str)
+	local index, prev_idx = 1, 0
+	local list = {}
+	
+	while true do
+		if index % char_num == 0 then
+			table.insert(list, string.sub(str, prev_idx, index))
+			prev_idx = index + 1
+		end
+		
+		index = index + 1
+		
+		if index == length then
+			table.insert(list, string.sub(str, prev_idx, index))
+			break
+		end
+	end
+	
+	return list
+end
+
+function dbg_print(txt, ...)
+
+	if not show_debug_info then
+		return
+	end
+	
+	local frm = FormatString(txt, ...)
+	local con = get_console()
+	
+	if string.len(frm) < 190 then
+		--con:execute("log_print " .. frm)
+		debug_print(frm)
+	else
+		for k, v in ipairs(string_split(frm, 190)) do
+			--con:execute("log_print " .. v)
+			debug_print(v)
+		end
+	end
+end
+
+-- *************************************************************** --
+
+local ltx_reader_debug = false
+
+function warning(...)
+	if ltx_reader_debug then
+		dbg_print(...)
+	end
+end
+
+function r_common(r_type, ltx, section, field, default_value)
+	if type(ltx) == "string" then
+		ltx = ini_file(ltx)
+	end
+
+	if not ltx then
+		warning("[%s.script] : ltx == nil!", script_name())
+		return default_value
+	elseif not ltx:section_exist(section) then
+		warning("[%s.script] : section(%s) does not exist!", script_name(), section)
+		return default_value
+	elseif not ltx:line_exist(section, field) then
+		warning("[%s.script] : section(%s):field(%s) does not exist!", script_name(), section, field)
+		return default_value
+	end
+	
+	local ret = nil
+	
+	if r_type == "string" then
+		ret = ltx:r_string(section, field)
+	elseif r_type == "float" then
+		ret = ltx:r_float(section, field)
+	elseif r_type == "bool" then
+		ret = ltx:r_bool(section, field)
+	elseif r_type == "vector" then
+		ret = ltx:r_vector(section, field)
+	elseif r_type == "uint" then
+		ret = ltx:r_u32(section, field)
+	elseif r_type == "sint" then
+		ret = ltx:r_s32(section, field)
+	else
+		return default_value
+	end
+	
+	if ret == nil then
+		return default_value
+	else
+		return ret
+	end
+	
+end
+
+function r_string(ltx, section, field, default_value)
+	return r_common("string", ltx, section, field, default_value)
+end
+
+function r_float(ltx, section, field, default_value)
+	return r_common("float", ltx, section, field, default_value)
+end
+
+function r_bool(ltx, section, field, default_value)
+	return r_common("bool", ltx, section, field, default_value)
+end
+
+function r_vector(ltx, section, field, default_value)
+	return r_common("vector", ltx, section, field, default_value)
+end
+
+function r_uint(ltx, section, field, default_value)
+	return r_common("uint", ltx, section, field, default_value)
+end
+
+function r_sint(ltx, section, field, default_value)
+	return r_common("sint", ltx, section, field, default_value)
+end
+
+function r_string_list(ltx, section, field, default_value)
+	local list = r_common("string", ltx, section, field, default_value)
+	return parse_string_list(list)
+end
+
+function r_number_list(ltx, section, field, default_value)
+	local list = r_common("string", ltx, section, field, nil)
+	local ret = {}
+	if not list then
+		return default_value and default_value or ret
+	end
+	for str in string.gfind(list, "%s*([^%,]+)%s*") do
+		table.insert(ret, tonumber(str))
+	end
+	return ret
+end
+
+function r_string_number_list(ltx, section, field, default_value)
+	local list = r_common("string", ltx, section, field, default_value)
+	return r_str_num_list(list)
+end
+
+function line_exists(ltx, section, line)
+	if section_exists(ltx, section) then
+		return ltx:line_exist(section, line)
+	end
+	return false
+end
+
+function parse_token(str)
+	local list = token_list()
+	local var, val = nil, nil
+	
+	for word in string.gmatch(str, "([%w_%-.\\]+)%p*") do
+		if not var then
+			var = word
+		end
+		
+		if not val then
+			val = word
+		end
+		
+		if var and val then
+			list:add(var, tonumber(val))
+			var, val = nil, nil
+		end
+	end
+	
+	return list
+end
+
+function section_exists(ini, section_name)
+	if not ini then
+		return false
+	end
+	return ini:section_exist(section_name)
+end
+
+function r_time(str)
+	local t = {}
+	local ret = {}
+	for n in string.gfind(str, "%d+") do
+		table.insert(t, tonumber(n))
+	end
+	ret.h, ret.m, ret.s = unpack(t)
+	ret.ms = 0
+	return ret
+end
+	

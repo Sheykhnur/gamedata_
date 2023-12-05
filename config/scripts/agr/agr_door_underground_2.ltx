@@ -1,0 +1,25 @@
+;DOOR FROM THE MILITARY BASE SIDE INTO THE UNDERGROUND
+[logic]
+active = ph_door@locked
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = metal_small_locked
+on_info = {+agr_krot_secret_info} ph_door@closed
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed

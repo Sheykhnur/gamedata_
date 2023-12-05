@@ -1,0 +1,84 @@
+[combat_ignore]
+
+[threshold@war_sc3_sci]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = remark@war_sc3_sci
+combat_ignore = combat_ignore
+threshold = threshold@war_sc3_sci
+
+[remark@war_sc3_sci]
+anim = sci_panel2
+target = war_sc3_scientist, 0
+meet = no_meet
+combat_ignore_cond = always
+threshold = threshold@war_sc3_sci
+on_info = {+war_sc3_talk1} remark@war_sc3_sci2
+
+[remark@war_sc3_sci2]
+anim = sar_incident
+snd = war_replics22
+target = war_sc3_scientist, 0
+meet = no_meet
+combat_ignore_cond = always
+threshold = threshold@war_sc3_sci
+on_info = {+war_rebel_reached} remark@war_sc3_sci3
+
+[remark@war_sc3_sci3]
+anim = oso_wait
+target = war_sc3_rebell_run, 2
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc3_talk2} remark@war_sc3_sci4
+
+[remark@war_sc3_sci4]
+anim = hide
+snd = war_replics24
+target = war_sc3_rebell_run, 2
+meet = no_meet
+combat_ignore_cond = always
+threshold = threshold@war_sc3_sci
+on_signal = sound_end | %+war_sc3_talk3%
+on_info = {+war_sc3_talk4} remark@war_sc3_sci5
+
+[remark@war_sc3_sci5]
+anim = mil_nope
+snd = war_replics26
+target = war_sc3_rebell_run, 2
+meet = no_meet
+combat_ignore_cond = always
+threshold = threshold@war_sc3_sci
+on_signal = sound_end | remark@war_sc3_sci5_synth %+war_sc3_talk5%
+
+[remark@war_sc3_sci5_synth]
+anim = sci_worried
+target = war_sc3_rebell_run, 2
+meet = no_meet
+combat_ignore_cond = always
+no_rotate = true
+threshold = threshold@war_sc3_sci
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_info = {+war_sc3_talk6} remark@war_sc3_sci5_rotate
+
+[remark@war_sc3_sci5_rotate]
+anim = wait
+target = war_sc3_sci_run, 0
+meet = no_meet
+no_move = true
+combat_ignore_cond = always
+threshold = threshold@war_sc3_sci
+on_timer = 500 | walker@war_sc3_sci_run_away
+
+[walker@war_sc3_sci_run_away]
+path_walk = war_sc3_sci_run
+meet = no_meet
+threshold = threshold@war_sc3_sci
+combat_ignore_cond = always
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_signal = sc3scirel | %=release%

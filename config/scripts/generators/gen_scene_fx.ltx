@@ -1,0 +1,18 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+gen_sc1_start} sr_particle@fxmain
+
+[sr_particle@fxmain]
+name = anomaly2\group_items\gen_antenna_test
+path = gen_anomaly_antenna
+mode = 2
+looped = true
+on_actor_inside = %+gen_zov =play_snd(characters_voice\scenario\gen\gen_zov)% sr_idle@1
+
+[sr_idle@1]
+on_timer = 4000 | %+gen_horoh_hesterit_infoporhni_luzer% sr_idle@2
+
+[sr_idle@2]
+on_timer = 600 | %=rad_psy_basic_clear +gen_release_ghosts% nil

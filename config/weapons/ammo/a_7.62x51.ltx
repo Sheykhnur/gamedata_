@@ -1,0 +1,151 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_7.62x51_fmj]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_7.62x51_fmj"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_762x51_fmj.ogf
+explosive                   = off
+wm_size                     = 0.15
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 37
+inv_grid_y                  = 28
+
+; Text
+inv_name                    = ammo-7.62x51-fmj
+inv_name_short              = ammo-7.62x51-fmj_s
+description                 = enc_weapons1_ammo_ammo-7.62x51-fmj
+
+; Economy
+cost                        = 650
+inv_weight                  = .7
+box_size                    = 25
+
+; Impact
+k_hit                       = 2.25
+k_ap                        = 0.57
+k_pierce                    = 0.57
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 0.8
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.75
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_7.62x51_ap]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_7.62x51_ap"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_762x51_ap.ogf
+explosive                   = off
+wm_size                     = 0.15
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 37
+inv_grid_y                  = 29
+
+; Text
+inv_name                    = ammo-7.62x51-ap
+inv_name_short              = ammo-7.62x51-ap_s
+description                 = enc_weapons1_ammo_ammo-7.62x51-ap
+
+; Economy
+cost                        = 850
+inv_weight                  = .7
+box_size                    = 25
+
+; Impact
+k_hit                       = 2.05
+k_ap                        = 0.88
+k_pierce                    = 0.88
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 0.75
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.85
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_762_100]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_762_100"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+unique_item					= true
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_pkm.ogf
+wm_size                     = 0.15
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 39
+inv_grid_y                  = 21
+
+; Text
+inv_name                    = st_ammo_762_box
+inv_name_short              = st_ammo_762_box_s
+description                 = st_ammo_762_box_descr
+
+; Economy
+cost                        = 4400
+inv_weight                  = 2.8
+box_size                    = 100
+
+; Impact
+k_hit                       = 2.0
+k_ap                        = 0.88
+k_pierce                    = 0.88
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 0.75
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.85
+
+
+[weapon_7.62x51]
+; Effects
+shell_particles             = amik\weapons\7.62x54_shells_r_01
+flame_particles             = weapons\generic_weapon06
+smoke_particles             = amik\weapons\smoke_particles\sniper\v_smoke_00
+silencer_smoke_particles    = amik\weapons\smoke_particles\silencer_smoke_particles_02
+
+; Ammo
+ammo_class                  = ammo_7.62x51_fmj, ammo_7.62x51_ap
+ammo_limit                  = 80
+
+; Features
+silencer_name               = wpn_addon_silencer_76251
+
+; Ballistics
+bullet_speed                = 830
+
+; Impact
+hit_impulse                 = 300

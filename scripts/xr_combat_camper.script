@@ -1,0 +1,182 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_combat_camper.script
+ Description: Battle scheme for camper, separated from behavior scheme of camper (Just sit and shoot, if enemy far then some distance)
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Last edit  : 27.03.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Base = xr_evaluators_id.combat_camper_base
+local iEvl_Enable = iEvl_Base
+local iEvl_See    = iEvl_Base +1
+
+local iAct_Base = xr_actions_id.combat_camper_base
+local iAct_Shoot      = iAct_Base
+local iAct_LookAround = iAct_Base +1
+
+local iEvl_StateMgr_logic = xr_evaluators_id.state_mgr +4 --/#+#? "state_mgr_logic_active"
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATORs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_combat_camper" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_combat_camper:__init( name, st, glob_storage ) super ( nil, name )
+	self.g_st = glob_storage
+	self.log  = st.log
+end
+
+function evaluator_combat_camper:evaluate()
+--	if self.log then log("ev_combat_zombied:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	return self.g_st ~= nil and self.g_st.script_combat_type == "camper"
+end
+
+--/ -----------------------------------------------------------------
+class "evaluator_see" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_see:__init( name, st ) super ( nil, name )
+	self.st = st
+end
+
+function evaluator_see:evaluate()
+	if self.object:alive() then
+		local oBestEnemy = self.object:best_enemy()
+		if oBestEnemy and self.object:see(oBestEnemy) then
+			self.st.last_seen_pos = oBestEnemy:position()
+			return true --/>
+		end
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_shoot" ( action_base )
+--/ -----------------------------------------------------------------
+function action_shoot:__init( action_name, st )  super ( nil, action_name )
+	self.st  = st
+	self.log = st.log
+end
+
+function action_shoot:initialize()
+	action_base.initialize( self )
+	if self.log then log("ac_shoot:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	state_mgr.set_state( self.object, "hide_fire", nil, nil, { look_object = self.object:best_enemy() } )
+	self.st.camper_combat_action = true
+end
+
+function action_shoot:execute()
+	action_base.execute( self )
+end
+
+function action_shoot:finalize()
+	action_base.finalize( self )
+	self.st.camper_combat_action = false
+end
+
+--/ -----------------------------------------------------------------
+class "action_look_around" ( action_base )
+--/ -----------------------------------------------------------------
+function action_look_around:__init( action_name, st )  super ( nil, action_name )
+	self.st  = st
+	self.log = st.log
+end
+
+function action_look_around:initialize()
+	action_base.initialize( self )
+	if self.log then log("ac_look_around:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self.st.camper_combat_action = true
+	self:reset()
+end
+
+function action_look_around:reset()
+	local iTime = device():time_global()
+	self.forget_time     = iTime + 30000
+	self.change_dir_time = iTime + 15000
+	--/ if we didn't see enemy at all, than still rotate to him
+	if not self.st.last_seen_pos and self.object:best_enemy() then
+		self.st.last_seen_pos = self.object:best_enemy():position()
+	end
+	state_mgr.set_state( self.object, "hide", nil, nil, { look_position = self.st.last_seen_pos } )
+end
+
+function action_look_around:execute()
+	action_base.execute( self )
+	local iTime = device():time_global()
+	if self.forget_time < iTime then
+--		if self.log then log("pl:Disabling_memory_object[8]") end --/#~#
+		--self.object:enable_memory_object( self.object:best_enemy(), false )
+		self.st.last_seen_pos = nil
+	elseif self.change_dir_time < iTime then
+		self.change_dir_time = iTime + Random.I(2000,4000)
+		if self.st.last_seen_pos then
+			local vDir = vector():sub(self.st.last_seen_pos,self.object:position())
+			vDir = vector_rotate_y(vDir, Random.I(0,120)-60)
+			state_mgr.set_state( self.object, "hide", nil, nil, {look_position = self.object:position():add(vDir)} )
+		end
+	end
+end
+
+function action_look_around:finalize()
+	action_base.finalize(self)
+	self.st.last_seen_pos = nil
+	self.st.camper_combat_action = false
+end
+
+--/ Attention: called in all actions
+function action_look_around:hit_callback(oObj, iAmount, vLocalDirection, oWho, iBoneIndex)
+	if oWho and self.object and self.st.camper_combat_action then
+		local oBestEnemy = self.object:best_enemy()
+		--/ if we got hit from current enemy, then we know where is he - rotating to him
+		if oBestEnemy and oBestEnemy:id() == oWho:id() then
+			self.st.last_seen_pos = oBestEnemy:position()
+			self:reset()
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oNPC, ini, st, oPlanner)
+	if st.log then log("add_to_binder:NPC=[%s],comm=[%s]:[%s]", oNPC:name(), oNPC:character_community(), "+") end --/#~#
+	--/ Evaluators
+	oPlanner:add_evaluator( iEvl_Enable, this.evaluator_combat_camper("combat_camper", st, db.storage[oNPC:id()]))
+	oPlanner:add_evaluator( iEvl_See,    this.evaluator_see          ("combat_camper_see", st))
+	--/ New Action(1)
+	local oNewAction = this.action_shoot( "combat_camper_shoot", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_alive,     true ))
+	oNewAction:add_precondition( world_property( stalker_ids.property_enemy,     true ))
+	oNewAction:add_precondition( world_property( stalker_ids.property_anomaly,   false))
+	oNewAction:add_precondition( world_property( xr_evaluators_id.script_combat, true ))
+	oNewAction:add_precondition( world_property( iEvl_Enable,                    true ))
+	oNewAction:add_precondition( world_property( iEvl_See,                       true ))
+	oNewAction:add_effect( world_property( stalker_ids.property_enemy, false) )
+	oNewAction:add_effect( world_property( iEvl_StateMgr_logic,        false) ) --/#+#?
+	oPlanner:add_action( iAct_Shoot, oNewAction )
+	--/ New Action(2)
+	oNewAction = this.action_look_around( "combat_camper_look_around", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_anomaly,   false))
+	oNewAction:add_precondition( world_property( xr_evaluators_id.script_combat, true ))
+	oNewAction:add_precondition( world_property( iEvl_Enable,                    true ))
+	oNewAction:add_precondition( world_property( iEvl_See,                       false))
+	oNewAction:add_effect( world_property( iEvl_See,            true ) )
+	oNewAction:add_effect( world_property( iEvl_StateMgr_logic, false) ) --/#+#?
+	oPlanner:add_action( iAct_LookAround, oNewAction )
+	--/ subscribing on hit callbacks: (one, works in all!)
+	xr_logic.subscribe_action_for_events(oNPC, st, oNewAction)
+	--/
+	st.camper_combat_action = false
+end
+--/ -----------------------------------------------------------------------------------------------

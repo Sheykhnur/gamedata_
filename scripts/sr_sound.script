@@ -1,0 +1,287 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : sr_sound.script
+ Description: Проигровка звуков при входе актёра в рестриктор.
+ Copyright  : 2004 © GSC Game World
+ Author     : Чугай Александр (Sliding sound support: Jim)
+ Last edit  : 27.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+--/ типы звуков для зон
+local tSoundTypes = {
+	floor_wooden = {
+		"ambient\\floor_creak1",
+		"ambient\\floor_creak2",
+		"ambient\\floor_creak3"
+	},
+	rats_panic = {
+		"ambient\\rats_panic_1",
+		"ambient\\rats_panic_2",
+		"ambient\\rats_panic_3"
+	},
+	random = {
+		"ambient\\random\\new_drone1",
+		"ambient\\random\\new_drone2",
+		"ambient\\random\\rnd_3dmbridge",
+		"ambient\\random\\rnd_ak47_1",
+		"ambient\\random\\rnd_ak47_2",
+		"ambient\\gunfire_1",
+		"ambient\\gunfire_2",
+		"ambient\\random\\rnd_crow",
+		"ambient\\random\\rnd_disgusting",
+		"ambient\\random\\rnd_distantmortar3",
+		"ambient\\random\\rnd_dog6",
+		"ambient\\random\\rnd_drone1",
+		"ambient\\random\\rnd_drone2",
+		"ambient\\random\\rnd_fallscream",
+		"ambient\\random\\rnd_horror3",
+		"ambient\\random\\rnd_horror4",
+		"ambient\\random\\rnd_m-16_3",
+		"ambient\\random\\rnd_m-16_4",
+		"ambient\\random\\rnd_m-249",
+		"ambient\\random\\rnd_moan",
+		"ambient\\random\\rnd_moan1",
+		"ambient\\random\\rnd_moan2",
+		"ambient\\random\\rnd_moan3",
+		"ambient\\random\\rnd_moan4",
+		"ambient\\random\\rnd_moan5",
+		"ambient\\random\\rnd_scr1",
+		"ambient\\random\\rnd_scr2",
+		"ambient\\random\\rnd_scr3",
+		"ambient\\random\\rnd_scr4",
+		"ambient\\random\\rnd_scr5",
+		"ambient\\random\\rnd_scr7",
+		"ambient\\random\\rnd_scr8",
+		"ambient\\random\\rnd_scr9",
+		"ambient\\random\\rnd_scr10",
+		"ambient\\random\\rnd_the_horror1",
+		"ambient\\random\\rnd_the_horror2",
+		"ambient\\random\\rnd_the_horror3",
+		"ambient\\random\\rnd_the_horror4",
+		"ambient\\random\\rnd_thunder",
+		"ambient\\random\\rnd_wolfhowl01",
+		"ambient\\random\\rnd_wolfhowl02",
+		"ambient\\random\\rt_coo1-m",
+		"ambient\\random\\rt_sickened1",
+		"ambient\\random\\rt_sickened2",
+		"ambient\\random\\rt_swamp_thing1"
+	}
+}
+
+local iPos_Path   = 0
+local iPos_Random = 1
+local iPos_Obj    = 2
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ включить в dest все элементы из src. Таблицы индексированы
+function table_include( dest, src )
+	if dest and src then
+		for i, v in pairs(src) do
+			table.insert( dest, v )
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "action_sound"
+--/ -----------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ---------------------------------------------
+function action_sound:__init( obj, st )
+	self.object = obj
+	self.st     = st
+	self.is_actor_inside = nil
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_sound:reset_scheme()
+--	log("_bp: sr_idle: action_sound:reset_scheme: self.object:name()='%s'", self.object:name()) --/#~#
+	self.st.idle_end = 0
+	self.st.signals  = {}
+	self.snd_obj     = nil
+	self.is_actor_inside = false
+	self.slide_active    = false
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_sound:update(delta)
+--	log("action_sound:update:") --/#~#
+	--/ check for update of sliding sound
+	if self.slide_active and self.st.sound_slide_once and not self.snd_obj:playing() then
+		self.slide_active = false
+	end
+	
+	if self.slide_active then
+		--/ play sound
+		if not self.snd_obj:playing() then
+			self.snd_obj:play_at_pos(self.object, self.current, self.st.delay)
+		else 
+			self.snd_obj:set_position(self.current)
+		end
+		
+		--/ update current position
+		local vPos = vector():set(self.current)
+		vPos:mad(self.dir, self.st.sound_slide_vel * delta * 0.001)
+		
+		if vPos:distance_to(self.current) > self.current:distance_to(self.target) then
+			self.cur_point = self:next_point()
+			self:set_positions()
+		else
+			self.current = vector():set(vPos)
+		end
+	end
+	
+	local oActor = db.actor
+	--if self.st.play_at_actor == true and self.snd_obj ~= nil and self.snd_obj:playing () == true then
+		--self.snd_obj:set_position (oActor:position ())
+	--end
+	--/ если мы ещё нигде, то не считать ни входа, ни выхода
+	if self.is_actor_inside ~= nil then
+		if self.object:inside( oActor:position() ) then
+			if not self.is_actor_inside then
+				self.is_actor_inside = true
+				self:on_enter( oActor )
+			end
+			if self.snd_obj ~= nil and self.snd_obj:playing() == false then
+				self.st.signals["sound_end"] = true
+			end
+		elseif self.is_actor_inside then
+			self.is_actor_inside = false
+		end
+	else
+		self.is_actor_inside = self.object:inside( oActor:position() )
+	end
+	xr_logic.try_switch_to_another_section( self.object, self.st, oActor )
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTION
+--/------------------------------------------------------------------
+function action_sound:on_enter(oNPC)
+	if self.st.idle_end < Get_PastSeconds() then
+		self.st.idle_end = Get_PastSeconds() + self.st.idle
+		if math.random(100) <= self.st.rnd then
+			local vPos
+			if self.st.pos_type == iPos_Obj then
+				vPos = oNPC:position()
+			elseif self.st.pos_type == iPos_Random then
+				local ang = math.pi / 180.0 * math.random(0,35900) * 0.01
+				vPos:add( vector():set( math.cos( ang ), 0, math.sin( ang ) ):mul( math.random(1500,5000) * 0.01 ) )
+--				log("on_enter:%f", oNPC:position():distance_to( vPos ) ) --/#~#
+			elseif self.st.pos_type == iPos_Path then
+				if not self.st.sound_slide then
+					vPos = self.st.path:point( math.random(0, self.st.path:count()-1) )
+				else
+					self.slide_active = true
+					self.cur_point = 0
+					self:set_positions()
+					vPos = self.st.path:point(self.cur_point)
+				end
+			end
+			local snd_name = self.st.sound_names[math.random(1,#self.st.sound_names)]
+--			log("on_enter:restrictor=%s pos_type=%d snd=%s", self.object:name(), self.st.pos_type, snd_name ) --/#~#
+			self.snd_obj = xr_sound.get_safe_sound_object(snd_name)
+			if self.st.play_at_actor == false then
+				self.snd_obj:play_at_pos( oNPC, vPos, self.st.delay )
+			else
+				self.snd_obj:play_at_pos( oNPC, vector():set(0,0,0), self.st.delay, sound_object.s2d )
+			end
+			self.st.signals["sound_end"] = false
+		end
+	end
+end
+
+function action_sound:next_point()
+	if self.cur_point+1 < self.st.path:count() then
+		return self.cur_point+1
+	else
+		return 0
+	end
+end
+
+function action_sound:set_positions()
+	if (self:next_point() == 0) then
+		self.slide_active = false
+		return
+	end
+	self.current = self.st.path:point(self.cur_point)
+	self.target  = self.st.path:point(self:next_point())
+	self.dir = vector():sub(self.target, self.current):normalize()
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function action_sound:deactivate ()
+	if self.snd_obj ~= nil and self.snd_obj:playing () == false and self.st.sound_reset then
+		self.snd_obj:stop ()
+		self.snd_obj = nil
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oObj, ini, sScheme, sSection, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]", oObj:name(), sScheme, sSection, "") --/ #~#
+	local oNewAction = this.action_sound(oObj, st)
+	--/ Зарегистрировать все actions, в которых должен быть вызван метод reset_scheme при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(oObj, st, oNewAction)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(oObj, ini, sScheme, sSection, sGulagName)
+	local st = xr_logic.assign_storage_and_bind( oObj, ini, sScheme, sSection )
+	st.logic = xr_logic.cfg_get_switch_conditions( ini, sSection, oObj )
+	
+	st.sound_names = {}
+	if ini:line_exist( sSection, "snd" ) then
+		table_include( st.sound_names, parse_names( ini:r_string( sSection, "snd" ) ) )
+	end
+	if ini:line_exist( sSection, "type" ) then
+		local tT = parse_names( ini:r_string( sSection, "type" ) )
+		for _,v in pairs(tT) do
+			table_include( st.sound_names, tSoundTypes[v] )
+		end
+	end
+	if not next(st.sound_names) then
+		abort("set_scheme:restrictor=[%s]:no sounds specified in section=[%s]", oObj:name(), sSection, "")
+	end
+	
+	st.delay       = utils.cfg_get_number( ini, sSection, "delay",       oObj, false, 0 )
+	st.idle        = utils.cfg_get_number( ini, sSection, "idle",        oObj, false, 0 ) --/ game_seconds
+	st.rnd         = utils.cfg_get_number( ini, sSection, "rnd",         oObj, false, 100 )
+	st.sound_reset = utils.cfg_get_bool  ( ini, sSection, "sound_reset", oObj, false, true ) --/#+#
+	
+	local sPath = utils.cfg_get_string( ini, sSection, "position", oObj, false, "", nil )
+	if sPath == "random" then
+		st.pos_type = iPos_Random
+	elseif sPath ~= nil then
+		st.pos_type = iPos_Path
+		st.path = get_patrol(sPath)
+	else
+		st.pos_type = iPos_Obj
+	end
+	
+	if ini:line_exist( sSection, "slide_velocity" ) then
+		st.sound_slide      = true
+		st.sound_slide_vel  = utils.cfg_get_number(ini, sSection, "slide_velocity",  oObj, false, 3)
+		st.sound_slide_once = utils.cfg_get_bool  (ini, sSection, "slide_sound_once",oObj, false)
+	else
+		st.sound_slide = false
+	end
+	
+	st.play_at_actor = utils.cfg_get_bool (ini, sSection, "play_at_actor", oObj, false)
+	if st.play_at_actor ~= nil and st.play_at_actor == true then
+		if st.pos_type ~= iPos_Obj then
+			abort ("Can't define play sound at actor and path !!!")
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

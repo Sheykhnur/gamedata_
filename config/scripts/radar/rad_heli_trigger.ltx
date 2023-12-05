@@ -1,0 +1,8 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {+radar_monolith_base_quest_start -heli_help_start -rad_heli_scene_trigger} sr_idle@wait %+rad_heli_scene_trigger%
+
+[sr_idle@wait]
+on_timer = 2000 | nil %+heli_help_start =release%

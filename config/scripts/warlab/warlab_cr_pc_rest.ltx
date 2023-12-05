@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-war_con_pc_end} sr_cutscene %+war_con_pc_start%
+
+[sr_cutscene]
+point = war_con_pc_point
+look = war_con_pc_look
+cam_effector = war_con_4
+pp_effector = sar_out
+on_signal = cameff_end | nil %+war_con_pc_end =release%

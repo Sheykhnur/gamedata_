@@ -1,0 +1,381 @@
+function spawn_teleportator()
+		alife():create("teleportator", db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
+end
+
+class "ui_tele"(CUIScriptWnd)
+function ui_tele:__init() super()
+    this.stop_hud()
+	self:InitControls()
+	self:InitCallBacks()
+	self:FillList()
+end
+
+function ui_tele:InitControls()
+	self:Init(0,0,1024,768)
+
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_savecoord.xml")
+	
+    xml:InitStatic("frame",	self)
+	xml:InitStatic("caption",		self)
+
+	local ctrl
+	xml:InitStatic("savename",		self)
+
+	ctrl = xml:InitEditBox("edit_name",	self)
+	self:Register(ctrl, "edit_coordname")
+	ctrl:CaptureFocus(true)
+	
+	ctrl = xml:Init3tButton("btn_savepoint",self)	
+	self:Register(ctrl, "button_savepoint")
+	
+	ctrl = xml:Init3tButton("btn_delpoint",	self)
+	self:Register(ctrl, "button_delpoint")
+	
+	ctrl = xml:Init3tButton("btn_delall",	self)
+	self:Register(ctrl, "button_delall")
+	
+	ctrl = xml:Init3tButton("btn_gotopoint",	self)	
+	self:Register(ctrl, "button_gotopoint")
+	
+	xml:InitFrame("list_frame",		self)
+	ctrl = xml:InitList("list", 	self)
+	ctrl:ShowSelectedItem(true)
+	self:Register(ctrl, "list_window")
+
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box,"message_box")
+	self.mbox_mode	= 0
+	
+	self:Register(xml:Init3tButton("btn_quit",self),	"btn_quit")
+end
+
+function ui_tele:InitCallBacks()
+	self:AddCallback("button_savepoint",ui_events.BUTTON_CLICKED, 			self.OnButton_save_clicked,			self)
+	self:AddCallback("button_delpoint",	ui_events.BUTTON_CLICKED, 			self.OnButton_delete_clicked,		self)
+	self:AddCallback("button_delall",	ui_events.BUTTON_CLICKED, 			self.OnButton_DelAll_clicked,		self)
+	self:AddCallback("button_gotopoint",ui_events.BUTTON_CLICKED, 			self.OnButton_teleport_clicked, 	self)
+	self:AddCallback("list_window", 	ui_events.LIST_ITEM_CLICKED, 		self.OnListItemClicked,				self)
+	self:AddCallback("list_window", 	ui_events.LIST_ITEM_DB_CLICKED, 	self.OnListDoubleClicked,			self)
+	self:AddCallback("message_box",		ui_events.MESSAGE_BOX_YES_CLICKED,	self.OnMsgYes,						self)
+	self:AddCallback("btn_quit",		ui_events.BUTTON_CLICKED,			self.on_quit,						self)
+end
+
+function ui_tele:OnListItemClicked()
+	local list_box = self:GetListWnd("list_window")
+	if list_box:GetSize() == 0 then return end
+
+	local edit_box = self:GetEditBox("edit_coordname")
+	local item_id = list_box:GetFocusedItem()
+	local item = list_box:GetItem(item_id)
+	
+	if item == nil then return end
+	
+	local item_text = item.fn:GetText()
+	edit_box:SetText(item_text)
+end
+
+function ui_tele:OnListDoubleClicked()
+	local list_box = self:GetListWnd("list_window")
+	if list_box:GetItem(list_box:GetFocusedItem()) ~= nil then 
+		self:OnListItemClicked()
+		self:OnButton_teleport_clicked()
+	else return
+	end
+end
+
+function ui_tele:FillList()
+	local coord = naxac.table_loading("coordinates")
+	if #coord > 0 then
+		for i=1,#coord do
+			local posname = coord[i].name
+			--log("posname = coord[%d].%s", i, coord[i].name)
+			local lname = coord[i].lvl
+			--log("lname = coord[%d].%s", i, coord[i].lvl)
+			if posname and lname then
+				self:AddItemToList(posname,lname)
+			end
+		end
+	end
+end
+
+function ui_tele:ReWriteList(val)
+	local list = self:GetListWnd("list_window")
+	local index = list:GetSize()
+	if index > 0 then
+		for i=1,index do
+			local itm = list:GetItem(i)
+			list:RemoveItem(itm)
+		end
+	end
+	if val then self:FillList() end
+end
+
+function ui_tele:on_quit()
+	if not Has_Item("teleportator") then
+		Spawn_ItemInInv("teleportator")
+	end
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function ui_tele:OnMsgYes()
+	if self.mbox_mode == 1 then
+		self:SaveCoordinate(self.coord_name)
+	
+	elseif self.mbox_mode == 2 then
+		self:delete_coordinate()
+		
+	elseif self.mbox_mode == 3 then
+		self:DeleteAll()
+	end	
+end
+
+function ui_tele:OnButton_save_clicked()
+	local message_box	= self.message_box
+	local main_frame	= self:GetFrameWindow("main_frame")	
+	
+	local edit_box	= self:GetEditBox("edit_coordname")
+	self.coord_name	= edit_box:GetText()
+	
+	if string.len(self.coord_name) == 0 then
+		self.mbox_mode = 0
+		self.message_box:Init("message_box_empty_coord_name")
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		return
+	end
+	if string.len(self.coord_name) > 40 then
+		self.coord_name = string.sub(self.coord_name,1,40)
+	end
+	local coord = naxac.table_loading("coordinates")
+	if #coord > 0 then
+		for i=1,#coord do
+			if coord[i].name == self.coord_name then
+				self.mbox_mode = 1
+				self.message_box:Init("message_box_savename_already_exist")
+				self:GetHolder():start_stop_menu(self.message_box, true)	
+				return
+			end
+		end
+	end
+	
+	self.mbox_mode = 0
+	self.message_box:Init("message_box_save_is_aptly")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+	self:SaveCoordinate(self.coord_name)
+end
+
+function ui_tele:OnButton_delete_clicked()
+	local list = self:GetListWnd("list_window")	
+	if list:GetSize() == 0 then return end
+
+	local index = list:GetSelectedItem()
+	
+	if index == -1 then return end
+	
+	local item = list:GetItem(index)
+	if item == nil then return end
+	
+	self.mbox_mode = 2
+	self.message_box:Init("message_box_delete_coordinate")		
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function ui_tele:OnButton_DelAll_clicked()
+	local list = self:GetListWnd("list_window")	
+	if list:GetSize() == 0 then return end
+	
+	self.mbox_mode = 3
+	self.message_box:Init("message_box_delete_all")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function ui_tele:OnButton_teleport_clicked()
+	local message_box	= self.message_box
+	local main_frame	= self:GetFrameWindow("main_frame")	
+	
+	local edit_box	= self:GetEditBox("edit_coordname")
+	self.coord_name	= edit_box:GetText()
+	
+	if string.len(self.coord_name) == 0 then
+		self.mbox_mode = 0
+		self.message_box:Init("message_box_point_is_not_chose")
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		return
+	end
+	
+	local coord = naxac.table_loading("coordinates")
+	if #coord >0 then
+		for i=1,#coord do
+			if coord[i].name == self.coord_name then
+				self:GoToSavedPosition(self.coord_name)
+				self:on_quit()
+				return
+			end
+		end
+	end
+	
+	self.mbox_mode = 0
+	self.message_box:Init("message_box_coordinate_is_absent")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+	return
+end
+
+function ui_tele:GoToSavedPosition(posname)
+	if posname then
+		local coord = naxac.table_loading("coordinates")
+		if #coord > 0 then
+			for i=1,#coord do
+				local t = coord[i]
+				if t.name == posname then
+					this.go_to(t)
+					break
+				end
+			end
+		end
+	end
+end
+
+function ui_tele:delete_coordinate()
+	local list = self:GetListWnd("list_window")
+	if list:GetSize() == 0 then return end
+	local index = list:GetSelectedItem ()
+	
+	if index == -1 then return end
+
+	local item = list:GetItem(index)
+	local posname = item.fn:GetText()
+	this.write_to_table(posname)
+	
+	list:RemoveItem(index)
+	self:OnListItemClicked()
+end
+
+function ui_tele:DeleteAll()
+	self:ReWriteList(false)
+	naxac.del_variable("coordinates")
+end
+
+function ui_tele:SaveCoordinate(posname)
+	this.write_to_table(posname,true)
+	self:ReWriteList(true)
+end
+
+function ui_tele:AddItemToList(posname,lname)
+	local lvl = game.translate_string(string.lower(lname)) or "Unknown level"
+	local _itm = give_text()
+	_itm.fn:SetText	(posname)
+	_itm.fage:SetText("["..lvl.."]")
+	local list_box = self:GetListWnd("list_window")
+	list_box:AddItem(_itm)
+end
+
+function ui_tele:OnKeyboard(dik, keyboard_action) --виртуальная функция для обработки событий от клавиатуры
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action) --без виртуального окна будет многократный ввод в EditBox
+														--поэтому необходимо перехватить ввод
+	local edit_box = self:GetEditBox("edit_coordname")
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:GetHolder():start_stop_menu(self,true)
+		elseif dik == DIK_keys.DIK_RETURN and edit_box:GetText() ~= nil then
+			self:OnButton_save_clicked()
+		end
+	end
+	
+end
+-- прочие функции
+function write_to_table(posname,val)
+	if posname then
+		local coord = naxac.table_loading("coordinates")
+		if #coord>0 then
+			for i=1,#coord do
+				if coord[i].name == posname then
+					table.remove(coord, i)
+					break
+				end
+			end
+		end
+		if val then
+			local tbl = {}
+			tbl.name = posname
+			tbl.posx = db.actor:position().x
+			tbl.posy = db.actor:position().y
+			tbl.posz = db.actor:position().z
+			tbl.diry = this.reception_angle()
+			tbl.lv = db.actor:level_vertex_id()
+			tbl.gv = db.actor:game_vertex_id()
+			tbl.lvl = level.name()
+			--log("level name is %s", tbl.lvl)
+			table.insert(coord, tbl)
+		end
+		naxac.table_saving("coordinates",coord)
+	end
+end
+
+function go_to(var)
+	if var then
+		if type(var) == "table" then
+			lvertx = var.lv
+			gvertx = var.gv
+			pos = vector():set(var.posx,var.posy,var.posz)
+			dir = vector():set(0.0,var.diry,0.0)
+			lev = var.lvl
+			--log("level name is %s", lev)
+		end
+		if lev == level.name() then
+			db.actor:set_actor_position(pos)
+		elseif lev ~= nil then
+			alife():change_actor_level(pos, lvertx, gvertx, dir)
+		else
+			log("Teleportator: Level name is not defined!")
+			return
+		end
+	end
+end
+
+-- возвращает угол поворота камеры относительно оси Y (не очень точно)
+function reception_angle()
+	local dir_x = device().cam_dir.x
+	local dir_z = device().cam_dir.z
+	local drct = 0
+	if dir_x<0 and dir_z>0 then drct = -1.57*dir_x
+	elseif dir_x<0 and dir_z<0 then drct = 1.57+(1.57*(1+dir_x))
+	elseif dir_x>0 and dir_z<0 then drct = 3.14+(1.57*dir_x)
+	elseif dir_x>0 and dir_z>0 then drct = 4.71+(1.57*(1-dir_x))
+	elseif dir_x==0 and dir_z>0 then drct = 0
+	elseif dir_x==0 and dir_z<0 then drct = 3.14
+	elseif dir_z==0 and dir_x>0 then drct = 4.71
+	elseif dir_z==0 and dir_x<0 then drct = 1.57 end
+	return drct
+end
+
+function stop_hud()
+	local self = level.main_input_receiver()
+	if self ~= nil then
+		self:GetHolder():start_stop_menu(self, true)
+	end
+end
+
+class "give_text" (CUIListItemEx)
+
+function give_text:__init() super()
+	self:SetWndRect		(0,0,550,280)
+	
+	local ca = 255
+	local cr = 211
+	local cg = 255
+	local cb = 222
+	
+	self.fn					= CUIStatic	()
+	self.fn:SetAutoDelete	(true)
+	self:AttachChild		(self.fn)
+	self.fn:SetWndRect		(0,0,230,22)
+	self.fn:SetFont			(GetFontLetterica18Russian())
+	self.fn:SetTextColor	(ca,cr,cg,cb)
+	
+	self.fage				= CUIStatic	()
+	self.fage:SetAutoDelete	(true)
+	self:AttachChild		(self.fage)
+	self.fage:SetWndRect	(314,0,110,22)
+	self.fage:SetFont		(GetFontLetterica16Russian())
+	self.fage:SetTextColor	(ca,cr,cg,cb)
+end

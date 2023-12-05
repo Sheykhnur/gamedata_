@@ -1,0 +1,88 @@
+--------Health and Stamina Screen Effects by MarteenDee------------
+--Script based on Denizsi Dynamic Hud Elements by Cihan Beюiktepe--
+------------------------------------------------------------------------------------------- 
+--вызвано bind_stalker.script
+--c1 и c0 - значения альфа / цвета от 0 до 255
+--hp1 и hp0 - значения obj в диапазоне от 0.0 до 1.0 или в любом диапазоне obj могут быть
+--xxx_var - любое уникальное динамическое значение для математического теста
+--xa xr xg xb - это оттенки текстуры и альфа-настройки - может быть любое значение от 0 до 255
+--или может быть рассчитана с помощью функции return_argb_csx
+--Функция -return_argb_csx может использоваться во всех локальных значениях не только для изменения непрозрачности
+--в зависимости от значения obj, но также для изменения интенсивности цвета канала
+--текстура вызывается из ui_custom_msgs.xml
+--------------------------------------------------------------------------------------------
+function return_argb_csx(c1,c0,hp1,hp0,obj)
+	dbh = obj
+	if dbh < hp0 then
+		return c0
+	elseif dbh <= hp1 and dbh >= hp0 then
+		hpx = 1 / (hp1 - hp0)
+		dbh = dbh - hp0
+		return math.floor((dbh * hpx) * (c1 - c0)) + c0
+	else
+		return c1
+	end
+end
+
+function health(obj,img_xml_ref)
+	if health_var == nil then
+		health_var = 0
+		local hud = get_hud()
+		hud:AddCustomStatic(img_xml_ref, true)
+	else
+		if health_var ~= obj then
+			if obj >= 0 then
+				local hud = get_hud()
+				hud = hud:GetCustomStatic(img_xml_ref):wnd()
+				local xa = return_argb_csx(0,200,0.7,0.0,obj)
+				local xr = 130
+				local xg = 115
+				local xb = 115
+				hud:SetColor(GetARGB(xa,xr,xg,xb))
+				health_var = obj
+			end
+		end
+	end
+end
+
+function bleeding(obj,img_xml_ref)
+	if bleeding_var == nil then
+		bleeding_var = 0
+		local hud = get_hud()
+		hud:AddCustomStatic(img_xml_ref, true)
+	else
+		if bleeding_var ~= obj then
+			if obj >= 0 then
+				local hud = get_hud()
+				hud = hud:GetCustomStatic(img_xml_ref):wnd()
+				local xa = return_argb_csx(0,255,0.6,0.0,obj)
+				local xr = 225
+				local xg = 90
+				local xb = 90
+				hud:SetColor(GetARGB(xa,xr,xg,xb))
+				bleeding_var = obj
+			end
+		end
+	end
+end
+
+function power(obj,img_xml_ref)
+	if speed_var == nil then
+		speed_var = 0
+		local hud = get_hud()
+		hud:AddCustomStatic(img_xml_ref, true)
+	else
+		if speed_var ~= obj then
+			if obj >= 0 then
+				local hud = get_hud()
+				hud = hud:GetCustomStatic(img_xml_ref):wnd()
+				local xa = return_argb_csx(0,200,0.5,0.1,obj)
+				local xr = 0
+				local xg = 0
+				local xb = 0
+				hud:SetColor(GetARGB(xa,xr,xg,xb))
+				speed_var = obj
+			end
+		end
+	end
+end

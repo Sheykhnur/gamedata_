@@ -1,0 +1,87 @@
+[combat_ignore@sar_kgb1]
+
+[logic]
+active = remark@sar_kgb1
+combat_ignore = combat_ignore@sar_kgb1
+
+[remark@sar_kgb1]
+anim = sar_kgb
+target = sar_scene_4_kgb1_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_1} remark@sar_kgb2
+
+[remark@sar_kgb2]
+anim = sar_kgb
+snd = sar_replics2 ;my friend
+target = sar_scene_4_talk_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@sar_kgb3
+
+[remark@sar_kgb3]
+anim = sar_kgb_sign
+combat_ignore_cond = always
+meet = no_meet
+target = sar_scene_4_kgb1_look, 0
+on_timer = 3000 | remark@sar_kgb3_synth %+sar_scene4_info_2%
+
+[remark@sar_kgb3_synth]
+anim = sar_kgb
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_12} remark@sar_kgb4
+
+[remark@sar_kgb4]
+anim = ward
+snd = sar_replics12
+combat_ignore_cond = always
+meet = no_meet
+target = sar_scene_4_talk_look, 0
+on_signal = sound_end | %+sar_scene4_info_13% remark@sar_kgb4_synth
+
+;;reactor bug
+
+[remark@sar_kgb4_synth]
+anim = sar_kgb
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_20} remark@sar_kgb5
+
+[remark@sar_kgb5]
+anim = caution
+snd = sar_replics20
+combat_ignore_cond = always
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+on_signal = sound_end | %=sar_reactor_eff% remark@sar_kgb5_synth
+
+[remark@sar_kgb5_synth]
+anim = caution
+combat_ignore_cond = always
+meet = no_meet
+anim_reset = false
+target = sar_scene_4_sci8_look, 0
+on_info = {+sar_scene4_info_25} remark@sar_kgb_finale
+
+[remark@sar_kgb_finale]
+anim = caution
+snd = sar_replics25
+combat_ignore_cond = always
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+on_signal = sound_end | remark@sar_kgb_finale_synth %+sar_scene4_info_26%
+
+[remark@sar_kgb_finale_synth]
+anim = search
+combat_ignore_cond = always
+meet = no_meet
+target = sar_scene4_random2, 0
+on_info = {+sar_scene4_info_29} remark@sar_kgb_finale_ispug
+
+[remark@sar_kgb_finale_ispug]
+anim = backoff2
+combat_ignore_cond = always
+meet = no_meet
+target = actor
+on_info = {+sar_scene4_info_30} %=release%

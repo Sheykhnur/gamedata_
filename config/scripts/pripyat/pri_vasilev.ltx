@@ -1,0 +1,25 @@
+[smart_terrains]
+none = true
+
+[combat_ignore@pri_vasilev]
+
+[logic]
+active = walker@pri_vasilev_walk
+combat_ignore = combat_ignore@pri_vasilev
+
+[walker@pri_vasilev_walk]
+path_walk = pri_vasilev_walk
+path_look = pri_vasilev_look
+def_state_standing = ward
+combat_ignore_cond = always
+meet = meet@pri_vasilev
+
+[meet@pri_vasilev]
+meet_state	= 10| hello| 5| nil
+meet_state_wpn	= 10| hello| 5| nil
+victim		= 10| actor
+victim_wpn	= 10| actor
+use		= true
+use_wpn		= false
+combat_ignore_cond = always
+meet_dialog = pri_vasilev_talk

@@ -1,0 +1,143 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_play_anim.script
+ Description: Cutscene trigger
+ Copyright  : 2011 © LA
+ Author     : GSC (base), Gr1ph00n (reworked)
+ Editors    : Gr1ph00n, Kolmogor, loxotron
+ Last edit  : 23.09.2012 (by gr1ph00n)
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local state_idle     = 0
+local state_starting = 1
+local state_playing  = 2
+local state_finished = 3
+
+local cutscene_finished = false
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "action_play_anim"
+--/ -----------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ---------------------------------------------
+function action_play_anim:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+	self.state  = state_idle
+	self.npc    = nil
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_play_anim:reset_scheme()
+	if self.log then log("ac:reset_scheme:Obj=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self.state = state_idle
+	self.st.signals = {}
+	self:check_conditions()
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_play_anim:update()
+	if self.state == state_starting then
+		self.state = state_playing
+		self:spawn_fake_actor()
+		--self:play_cutscene()
+	elseif self.state == state_playing then
+		if this.cutscene_finished then
+			self.state = state_finished
+			self:remove_npc()
+		end
+	else
+		self:check_conditions()
+	end
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function action_play_anim:check_conditions()
+	if self.state == state_idle then
+		if self.object:inside(db.actor:position()) then
+			self.state = state_starting
+		end
+	end
+end
+
+function action_play_anim:play_cutscene()
+	log("ac:play_cutscene: [%s]%s", self.object:name(), "") --#~#
+	level.add_pp_effector("blink.ppe", 235, false)
+	level.add_cam_effector2(self.st.cam_effector, 125, false, sModule..".effector_callback")
+	xr_effects.disable_ui(db.actor, nil)
+	la_utils.custom_ui_usage("hide", nil)
+	this.cutscene_finished = false
+end
+
+function action_play_anim:spawn_fake_actor()
+	log("ac:spawn_fake_actor: [%s]%s", self.object:name(), "") --#~#
+	local p = get_patrol(self.st.point)
+	if p and self.st.npc_section then
+		self.npc = alife():create(self.st.npc_section, p:point(0), p:level_vertex_id(0), p:game_vertex_id(0))
+		local wpn = db.actor:item_in_slot(2)
+		if wpn then
+			alife():create(wpn:section(), vector(), 0, 0, self.npc.id)
+		end
+		--la_converter.add_for_conversion(self.npc.id, "convert_to_actor_visual")
+	else
+		abort("%s:Wrong npc_spawn_point for %s :<%s>", sModule, self.object:name(), "Error!")
+	end
+end
+
+function action_play_anim:remove_npc()
+	log("ac:remove_npc: [%s] ID=[%s]%s", self.object:name(), self.npc and self.npc.id, "") --#~#
+	level.add_pp_effector("blink.ppe", 234, false)
+	xr_effects.enable_ui(db.actor, nil)
+	la_utils.custom_ui_usage("show", nil)
+	self.st.signals["cameff_end"] = true
+	local sobj = alife():object(self.npc.id)
+	if sobj then
+		alife():release(sobj, true)
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local oNewAction = this.action_play_anim(obj, st)
+	--/ регистрация 'action', для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+	--/ for debug!
+	if st.log then log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.cam_effector = "camera_effects\\" .. utils.cfg_get_string(ini, section, "cam_effector", obj, true, "") .. ".anm"
+	st.point        = utils.cfg_get_string(ini, section, "npc_spawn_point", obj, true, "") 
+	st.npc_section  = utils.cfg_get_string(ini, section, "npc_section",     obj, true, "") --/ defined in creatures\spawn_sections.ltx
+	if not (st.point and validate_patrol_path(st.point, obj, false)) then
+		log("set_scheme:Obj=[%s],section=[%s],point=[%s]<~not_validate:<%s>", obj:name(), section, st.point, "Warning!")
+	end
+	--/ for debug!
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s],spawn_point=[%s]%s", obj:name(), scheme, section, st.point, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ CALLBACK
+--/------------------------------------------------------------------
+function effector_callback()
+	log("effector_callback:")
+	this.cutscene_finished = true
+end
+--/------------------------------------------------------------------

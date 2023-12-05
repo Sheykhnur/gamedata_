@@ -1,0 +1,39 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_damned.script
+ Description: Tasks damned
+ Copyright  : 2011 © LA
+ Author     : vintar
+ Editors    : vintar(2011-11-29)
+ Last edit  : 22.06.18 (tomilovsenya) – PDA messages fix
+--]]-----------------------------------------------------------------------------------------------
+
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:name() == "dam_station_code_docs" then
+			give_info("dam_code_found")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "dam_code_found" then
+		news_manager.send_tip_hud(game.translate_string("dam_code_header"), game.translate_string("dam_code"), "codedoor")
+		return true --/>
+	end
+	if info_id == "dam_guide_teleported" then
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\dar\\dar_scary_3")
+		snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+		return true --/>
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------

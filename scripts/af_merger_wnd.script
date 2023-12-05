@@ -1,0 +1,997 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : af_merger_wnd.script
+ Description: ...
+ Copyright  : 2008 © LA-team
+ Author     : barin (31.05.2008)
+ Editors    : barin (18.09.2009)
+ Last edit  : 11.04.2014 [gr1ph00n]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local ltx_recipes = "lost_alpha\\af_merger\\af_trans.ltx"
+local use_recipe_descr_from_xml = false
+
+local AF_MERGER_A = ""
+local AF_MERGER_T = nil
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(script_name()..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/-------------------------------------------------------------------
+--/ Process (functions)
+--/-------------------------------------------------------------------
+function PreSets(e)
+	event("update"):register(update)
+	--event("update_1sec"):register(update)
+	event("actor_save"):register(save) --/#?# replace callback!
+	this.load() --/#!?#
+end
+
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function save(e)
+	if AF_MERGER_A ~= "" then
+		if not AF_MERGER_T then
+			AF_MERGER_T = game_timer.GameTimer()
+		end
+		local tbl = {
+			af = AF_MERGER_A,
+			tm = Get_RestSeconds(AF_MERGER_T.timer) --/ remaining time (game-seconds)
+		}
+		SetVar("sav_af_merger", tbl)
+		log("merger_save: artefact=[%s], time=[%s]", AF_MERGER_A, Get_StrTime(AF_MERGER_T.timer)) --/#~#
+	end
+end
+
+function load()
+	local tbl = GetVar("sav_af_merger", nil)
+	if tbl then
+		if tbl.af then
+			AF_MERGER_A = tbl.af
+			if not AF_MERGER_T then
+				AF_MERGER_T = game_timer.GameTimer()
+			end
+			Set_RestSeconds(tbl.tm,AF_MERGER_T.timer) --/#?#
+			log("merger_load: artefact=[%s], time=[%s]", AF_MERGER_A, Get_StrTime(AF_MERGER_T.timer)) --/#~#
+		end
+		DelVar("sav_af_merger") --/ clear
+	end
+end
+
+function get_index(tbl, s)
+	for k, v in pairs(tbl) do
+		if v.section == s then
+			return k
+		end
+	end
+	return -1
+end
+
+function find_by_section(tbl, s)
+	for k, v in pairs(tbl) do
+		if v.af_info and v.af_info.section == s then
+			return k
+		end
+	end
+	return -1
+end
+
+function add_item(tbl, sec, id)
+	local idx = get_index(tbl, sec)
+	if idx ~= -1 then
+		tbl[idx].quantity = tbl[idx].quantity + 1
+	else
+		idx = #tbl + 1
+		tbl[idx] = {section = sec, quantity = 1, ids = {}}
+	end
+	table.insert(tbl[idx].ids, id)
+end
+
+function r_ingredients(ltx, section, field)
+	local ret_tbl = parser.r_string_number_list(ltx, section, field, "")
+	local counter = la_utils.count_container_items(ret_tbl)
+	
+	if counter > 3 then
+		abort("[%s.script] recipe '%s' -> more then 3 ingredients found", script_name(), section)
+		abort("only max 3 (different) ingredients per recipe allowed!")
+		for k, v in pairs(ret_tbl) do
+			abort("%s removed!", k)
+			ret_tbl[k] = nil
+			counter = counter - 1
+			if counter == 3 then
+				break
+			end
+		end
+	elseif counter == 0 then
+		abort("[%s.script] recipe '%s' does not contain any ingredients!", script_name(), section)
+	end
+	
+	return ret_tbl
+end
+
+function update(e)
+	if AF_MERGER_A ~= "" then
+		if AF_MERGER_T:expired() then
+			if AF_MERGER_A ~= "recharging" then
+				local a_f = Get_Cfg_String(ltx_recipes, AF_MERGER_A, "af_failed", "af_green_parasite")
+				local s   = Get_Cfg_Num32 (ltx_recipes, AF_MERGER_A, "success", 0)
+				local f   = Get_Cfg_Num32 (ltx_recipes, AF_MERGER_A, "failed", 0)
+				local rnd = Random.I(100)
+				local text = ""
+				
+				if rnd > s then
+					if rnd > s + f then
+						text = game.translate_string("ui_af_merger_worn_out")
+						a_f = nil
+					else
+						text = game.translate_string("ui_af_merger_failed")
+					end
+				else
+					text = game.translate_string("ui_af_merger_succeed")
+					a_f = AF_MERGER_A
+				end
+				
+				local header = game.translate_string("ui_af_merger_caption")
+				news_manager.send_tip_hud(header, text, "merger")
+				
+				if a_f then
+					la_utils.spawn_items(db.actor, a_f, 1, true)
+				end
+				
+				--[[
+				if rnd >= s then
+					la_utils.spawn_items(db.actor, AF_MERGER_A, 1, true)
+					text = game.translate_string("ui_af_merger_succeed")
+				elseif rnd >= f and rnd < s then
+					la_utils.spawn_items(db.actor, a_f, 1, true)
+					text = game.translate_string("ui_af_merger_failed")
+				else
+					text = game.translate_string("ui_af_merger_worn_out")
+				end
+				
+				local header = game.translate_string("ui_af_merger_caption")
+				news_manager.send_tip_hud(header, text, "merger")
+				--]]
+				
+				AF_MERGER_A = "recharging"
+				AF_MERGER_T:reset(1, 0, 0, 0)
+			else
+				AF_MERGER_A = ""
+				local header = game.translate_string("ui_af_merger_caption")
+				local text = game.translate_string("ui_af_merger_recharged")
+				news_manager.send_tip_hud(header, text, "merger")
+			end
+		else
+			AF_MERGER_T:update()
+		end
+	end
+end
+
+-- ****************************************************************** --
+
+local restore_speed_coeffs = {
+	health_restore_speed = 6600, -- health_coeff
+	radiation_restore_speed = 1000, -- radiation_coeff
+	satiety_restore_speed = 100000, -- satiety_coeff
+	power_restore_speed = 2500, -- endurance_coeff
+	bleeding_restore_speed = 1000, -- bleeding_coeff
+	psy_health_restore_speed = 1000
+}
+
+local af_stat_text = {
+	health_restore_speed    = "ui_inv_health",
+	radiation_restore_speed = "ui_inv_radiation",
+	satiety_restore_speed   = "ui_inv_satiety",
+	power_restore_speed     = "ui_inv_power",
+	bleeding_restore_speed  = "ui_inv_bleeding",
+	psy_health_restore_speed  = "ui_inv_psy_health_restore_speed",
+	burn_immunity           = "ui_inv_outfit_burn_protection",
+	strike_immunity         = "ui_inv_outfit_strike_protection",
+	shock_immunity          = "ui_inv_outfit_shock_protection",
+	wound_immunity          = "ui_inv_outfit_wound_protection",
+	radiation_immunity      = "ui_inv_outfit_radiation_protection",
+	telepatic_immunity      = "ui_inv_outfit_telepatic_protection",
+	chemical_burn_immunity  = "ui_inv_outfit_chemical_burn_protection",
+	explosion_immunity      = "ui_inv_outfit_explosion_protection",
+	fire_wound_immunity     = "ui_inv_outfit_fire_wound_protection",
+	additional_inventory_weight      = "ui_inv_outfit_additional_weight"
+}
+
+local af_stat_order = {
+	[ 1] = "health_restore_speed",
+	[ 2] = "radiation_restore_speed",
+	[ 3] = "satiety_restore_speed",
+	[ 4] = "power_restore_speed",
+	[ 5] = "bleeding_restore_speed",
+	[ 6] = "burn_immunity",
+	[ 7] = "strike_immunity",
+	[ 8] = "shock_immunity",
+	[ 9] = "wound_immunity",
+	[10] = "radiation_immunity",
+	[11] = "telepatic_immunity",
+	[12] = "chemical_burn_immunity",
+	[13] = "explosion_immunity",
+	[14] = "fire_wound_immunity",
+	[15] = "psy_health_restore_speed",
+	[16] = "additional_inventory_weight"
+}
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "afInfo"
+--/ -----------------------------------------------------------------------------------------------
+function afInfo:__init(section, quantity, ids)
+	self.section = section
+	self.quantity = quantity
+	self.ids = ids
+	self.name = game.translate_string(Get_Cfg_String(system_ini(), section, "inv_name"))
+	self.q_name = string.format("%s (%dx)", self.name, self.quantity)
+	self.description = Get_Cfg_String(system_ini(), section, "description")
+	self.cost = Get_Cfg_String(system_ini(), section, "cost") .. " RU"
+	if not all_items.is_mutant_body_part(section) then
+		self.absorb = Get_Cfg_String(system_ini(), section, "hit_absorbation_sect")
+		self:SetProperties()
+	end
+end
+
+function afInfo:__finalize()
+end
+
+function afInfo:remove(q)
+	self.quantity = self.quantity - q
+	if self.quantity <= 0 then
+		self.quantity = 0
+	end
+	
+	local counter = 0
+	
+	for index, id in pairs(self.ids) do
+		alife():release(alife():object(id), true)
+		self.ids[index] = nil
+		counter = counter + 1
+		if counter == q then
+			break
+		end
+	end
+	
+	if self.quantity == 0 then
+		self.ids = {}
+	else
+		local t = {}
+		for i = 1, #self.ids do
+			if self.ids[i] then
+				table.insert(t, self.ids[i])
+			end
+		end
+		self.ids = t
+	end
+	
+	self.q_name = string.format("%s (%dx)", self.name, self.quantity)
+end
+
+function afInfo:CalculateImmunity(field)
+	local num = Get_Cfg_Number(system_ini(), self.absorb, field, 1.0)
+	
+	if num ~= 1.0 then
+		num = num * 100
+		num = 100 - num
+		return num
+	end
+	
+	return 1.0
+end
+
+function afInfo:CalcRestSpeed(field)
+	local integral, fraction, sign = nil, nil, nil
+	local num = Get_Cfg_Number(system_ini(), self.section, field, 0.0)
+	
+	if num ~= 0.0 then
+		if num < 0 then
+			sign = -1
+		else
+			sign = 1
+		end
+		num = math.abs(num * restore_speed_coeffs[field])
+		
+		integral, fraction = math.modf(num)
+		if fraction > 0.5 then
+			num = math.ceil(num) -- num = integral + 1
+		else
+			num = math.floor(num) -- num = integral
+		end
+		num = num * sign
+		
+		return num
+	end
+	
+	return 0.0
+end
+
+function afInfo:SetProperties()
+	self.properties = {
+		health_restore_speed    = {value = self:CalcRestSpeed("health_restore_speed"),    positive = true},
+		radiation_restore_speed = {value = self:CalcRestSpeed("radiation_restore_speed"), positive = false},
+		satiety_restore_speed   = {value = self:CalcRestSpeed("satiety_restore_speed"),   positive = true},
+		power_restore_speed     = {value = self:CalcRestSpeed("power_restore_speed"),     positive = true},
+		bleeding_restore_speed  = {value = self:CalcRestSpeed("bleeding_restore_speed"),  positive = true},
+		psy_health_restore_speed  = {value = self:CalcRestSpeed("psy_health_restore_speed"),  positive = true},
+		burn_immunity          = {value = self:CalculateImmunity("burn_immunity"),          positive = true},
+		strike_immunity        = {value = self:CalculateImmunity("strike_immunity"),        positive = true},
+		shock_immunity         = {value = self:CalculateImmunity("shock_immunity"),         positive = true},
+		wound_immunity         = {value = self:CalculateImmunity("wound_immunity"),         positive = true},
+		radiation_immunity     = {value = self:CalculateImmunity("radiation_immunity"),     positive = true},
+		telepatic_immunity     = {value = self:CalculateImmunity("telepatic_immunity"),     positive = true},
+		chemical_burn_immunity = {value = self:CalculateImmunity("chemical_burn_immunity"), positive = true},
+		explosion_immunity     = {value = self:CalculateImmunity("explosion_immunity"),     positive = true},
+		fire_wound_immunity    = {value = self:CalculateImmunity("fire_wound_immunity"),    positive = true},
+		additional_inventory_weight  = {value = Get_Cfg_Number(system_ini(), self.section, "additional_inventory_weight", 0.0),  positive = true}
+	}
+	
+	local colour = nil
+	local val = nil
+	
+	for k, v in pairs(self.properties) do
+		if string.find(k, "_restore_speed") and v.value == 0.0 then
+			self.properties[k] = nil
+		elseif string.find(k, "_weight") and v.value == 0.0 then
+			self.properties[k] = nil
+		elseif string.find(k, "_immunity") and v.value == 1.0 then
+			self.properties[k] = nil
+		else
+			if v.positive then
+				if v.value < 0 then
+					colour = "red"
+				else
+					colour = "green"
+				end
+			else
+				if v.value < 0 then
+					colour = "green"
+				else
+					colour = "red"
+				end
+			end
+			
+			if v.value > 0 then
+				val = string.format("+%d", math.abs(v.value))
+			else
+				val = string.format("-%d", math.abs(v.value))
+			end
+			self.properties[k] = {value = val, colour = colour}
+		end
+	end
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "afRecipe" (CUIListItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function afRecipe:__init(data) super()
+	self.name       = game.translate_string(data.name)
+	self.recipe     = game.translate_string(data.recipe)
+	self.components = data.components
+	self.trans_time = data.trans_time
+	self.success    = data.success
+	self.failed     = data.failed
+	self.af_failed  = data.af_failed
+	self.af_succeed = data.af_succeed
+	
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetText(self.name)
+	self.text:SetFont(pcTextViewer.get_font("letterica16"))
+	self.text:SetTextColor(pcTextViewer.get_colour("yellow"))
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "IconText" (CUIListItemEx)
+--/ -----------------------------------------------------------------------------------------------
+local af_inv_icon = {
+	health_restore_speed    = "ui_af_prop_health_restore",
+	radiation_restore_speed = "ui_af_prop_radio_restore",
+	satiety_restore_speed   = "ui_af_prop_satiety_restore",
+	power_restore_speed     = "ui_af_prop_power_restore",
+	bleeding_restore_speed  = "ui_af_prop_bleeding_restore",
+	psy_health_restore_speed  = "ui_af_prop_psy_health_restore",
+	burn_immunity           = "ui_af_prop_thermo",
+	strike_immunity         = "ui_af_prop_damage",
+	shock_immunity          = "ui_af_prop_electro",
+	wound_immunity          = "ui_af_prop_wound",
+	radiation_immunity      = "ui_af_prop_radio",
+	telepatic_immunity      = "ui_af_prop_tele",
+	chemical_burn_immunity  = "ui_af_prop_chem",
+	explosion_immunity      = "ui_af_prop_explo",
+	fire_wound_immunity     = "ui_af_prop_bullet",
+	additional_inventory_weight      = "ui_af_prop_additional_weight"
+}
+
+function IconText:__init(str, value, colour) super()
+	self.icon = CUIStatic()
+	self.icon:SetAutoDelete(true)
+	self:AttachChild(self.icon)
+	self.icon:SetWndRect(0, 0, 19, 19)
+	self.icon:InitTexture(af_inv_icon[str])
+	self.icon:SetColor(GetARGB(pcTextViewer.get_colour(colour)))
+
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetWndRect(21, 2, 132, 19)
+	self.text:SetTextST(af_stat_text[str])
+	self.text:SetFont(pcTextViewer.get_font("letterica16"))
+	self.text:SetTextColor(pcTextViewer.get_colour("white"))
+	
+	self.value = CUIStatic()
+	self.value:SetAutoDelete(true)
+	self:AttachChild(self.value)
+	self.value:SetWndRect(160, 2, 30, 19)
+	self.value:SetText(value)
+	self.value:SetFont(pcTextViewer.get_font("letterica16"))
+	self.value:SetTextColor(pcTextViewer.get_colour(colour))
+	self.value:SetTextAlign(CGameFont.alLeft)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+function DispatchClickEvent(wnd, btn_name)
+	wnd:OnButtonClicked(btn_name)
+end
+
+local merger_status = token_list()
+merger_status:add("idle", 0)
+merger_status:add("merging", 1)
+merger_status:add("recharging", 2)
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiAfMerger" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiAfMerger:__init() super()
+	la_utils.custom_ui_usage("show", script_name())
+	
+	self.curr_recipe = -1
+	self.status = merger_status:id("idle")
+	
+	self:InitControls()
+	self:InitAfIcons()
+	self:InitCallBacks()
+	self:AddRecipes()
+	self:InitMerger()
+end
+
+function uiAfMerger:__finalize()
+end
+
+function uiAfMerger:Update()
+	CUIScriptWnd.Update(self)
+	
+	if self.status ~= merger_status:id("idle") then
+		if AF_MERGER_A ~= "" then
+			self:SetPbarTick()
+		else
+			self.status = merger_status:id("idle")
+			self:GetProgressBar("pbar_merging"):SetProgressPos(0)
+			--self:GetStatic("stc_status"):SetTextST)"ui_af_merger_idle")
+			self:GetStatic("stc_pbar_progress"):SetTextST("ui_af_merger_idle")
+		end
+	end
+end
+
+function uiAfMerger:SetPbarTick()
+	local trans_time = 1
+	local r = self:GetRecipe(AF_MERGER_A)
+	if r ~= -1 then
+		trans_time = r.trans_time
+	end
+	
+	local curr_t = game.get_game_time()
+	local elapsed = math.modf(AF_MERGER_T:diffSec(curr_t) * 100 / 3600 * trans_time)
+	self:GetProgressBar("pbar_merging"):SetProgressPos(math.abs(100 - elapsed))
+	
+	if AF_MERGER_A == "recharging" then
+		curr_t = string.format("%s %s", game.translate_string("ui_af_merger_recharging"), AF_MERGER_T:diffString())
+		self:InitMergerIcons(false)
+	else
+		curr_t = string.format("%s %s", game.translate_string("ui_af_merger_time_left"), AF_MERGER_T:diffString())
+	end
+	self:GetStatic("stc_pbar_progress"):SetText(curr_t)
+end
+
+function uiAfMerger:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	local dlg = nil
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_af_merger.xml")
+	
+	xml:InitStatic("back", self)
+	xml:InitStatic("wnds", self)
+	xml:InitStatic("stc:ingredients", self)
+	xml:InitStatic("stc:recipes", self)
+	xml:InitStatic("stc:description", self)
+	xml:InitStatic("stc:stats", self)
+	--self:Register(xml:InitStatic("stc:status", self), "stc_status")
+	self:Register(xml:InitStatic("stc:pbar_progress", self), "stc_pbar_progress")
+	self:Register(xml:InitStatic("stc:name", self), "stc_name")
+	self:Register(xml:InitStatic("stc:cost", self), "stc_cost")
+	
+	self:Register(xml:InitList("list_view:recipes", self), "list_recipes")
+	
+	dlg = xml:InitList("list_view:description", self)
+	dlg:ShowSelectedItem(false)
+	self:Register(dlg, "list_description")
+	
+	dlg = xml:InitList("list_view:stats", self)
+	dlg:ShowSelectedItem(false)
+	self:Register(dlg, "list_stats")
+	
+	self:Register(xml:InitProgressBar("pbar_merging", self), "pbar_merging")
+	self:Register(xml:Init3tButton("btn_use", self), "btn_use")
+	self:Register(xml:Init3tButton("btn_merge", self), "btn_merge")
+	self:Register(xml:Init3tButton("btn_quit", self), "btn_quit")
+end
+
+function uiAfMerger:InitAfIcons()
+	local item, sec, idx = nil, nil, nil
+	local artefacts, mb_parts = {}, {}
+	
+	for index = 0, db.actor:object_count() - 1 do
+		item = db.actor:object(index)
+		sec = item:section()
+		if not all_items.is_quest_item(sec) and not all_items.is_unique_item(sec) then
+			if all_items.is_artifact(sec) then
+				add_item(artefacts, sec, item:id())
+			elseif all_items.is_mutant_body_part(sec) then
+				add_item(mb_parts, sec, item:id())
+			end
+		end
+	end
+	
+	local row, col = 0, 0
+	self.btn_num = #artefacts + #mb_parts
+	self.af_icons = {}
+	
+	for k, v in pairs(artefacts) do
+		self.af_icons["af_icon" .. k] =
+		{
+			icon_name = "af_icon" .. k,
+			af_info = afInfo(v.section, v.quantity, v.ids)
+		}
+		
+		item = CUIButton()
+		
+		self:AttachChild(item)
+		
+		col = col + 1
+		
+		if col % 11 == 0 then
+			row = row + 1
+			col = 0
+		end
+	end
+	
+	for k, v in pairs(mb_parts) do
+		idx = k + #artefacts
+		self.af_icons["af_icon" .. idx] =
+		{
+			icon_name = "af_icon" .. idx,
+			af_info = afInfo(v.section, v.quantity, v.ids)
+		}
+		
+		item = CUIButton()
+		
+		self:AttachChild(item)
+	end
+	
+	for index = 0, 3 do
+		self.af_icons["merger_icon" .. index] =
+		{
+			icon_name = "merger_icon" .. index,
+			icon_af = nil,
+			section = "",
+			quantity = 0
+		}
+		
+		item = CUIButton()
+		item:SetWindowName("merger_icon" .. index)
+		item:SetAutoDelete(true)
+		if index == 3 then
+			item:Init("ui_icons_equipment", 822, 205, 40, 40)
+		else
+			item:Init("ui_icons_equipment", 734 + index * 88, 117, 40, 40)
+		end
+		self:InitItemIcon(item, "af_vyvert")
+		item:SetStretchTexture(true)
+		item:Show(false)
+		self:AttachChild(item)
+	end
+	
+	for k, v in pairs(self.af_icons) do
+		self.af_icons[k].callback = function() DispatchClickEvent(self, k) end
+	end
+end
+
+function uiAfMerger:GetRecipe(s)
+	local r = self:GetListWnd("list_recipes")
+	for index = 0, r:GetSize() - 1 do
+		if r:GetItem(index).af_succeed == s then
+			return r:GetItem(index)
+		end
+	end
+	
+	return -1
+end
+
+function uiAfMerger:InitMerger()
+	self:GetButton("btn_use"):Show(false)
+	self:GetButton("btn_merge"):Enable(false)
+	
+	if AF_MERGER_A ~= "" then
+		if AF_MERGER_A ~= "recharging" then
+			self.status = merger_status:id("merging")
+			--self:GetStatic("stc_status"):SetText("status: working")
+			local btn = self:GetButton("merger_icon3")
+			self:InitItemIcon(btn, AF_MERGER_A, true)
+			btn:Show(true)
+			self.af_icons["merger_icon3"].section = AF_MERGER_A
+			--self.af_icons["merger_icon3"].quantity = 1
+			self.af_icons["merger_icon3"].quantity = 0
+			local r = self:GetRecipe(AF_MERGER_A)
+			local icon = 0
+			for k, v in pairs(r.components) do
+				local btn = self:GetButton("merger_icon" .. icon)
+				self:InitItemIcon(btn, k, true)
+				btn:Show(true)
+				self.af_icons["merger_icon" .. icon].section = k
+				self.af_icons["merger_icon" .. icon].quantity = v
+				icon = icon + 1
+			end
+		else
+			self.status = merger_status:id("recharging")
+			--self:GetStatic("stc_status"):SetText("status: working")
+		end
+	else
+		self.status = merger_status:id("idle")
+		--self:GetStatic("stc_status"):SetTextST("ui_af_merger_idle")
+		self:GetStatic("stc_pbar_progress"):SetTextST("ui_af_merger_idle")
+	end
+end
+
+function uiAfMerger:InitMergerIcons(init)
+	for index = 0, 3 do
+		self:GetButton("merger_icon" .. index):Show(init)
+	end
+end
+
+function uiAfMerger:AddRecipes()
+	local ltx = ini_file(ltx_recipes)
+	if not ltx then
+		abort("[%s.script] file '%s' does not exist!", script_name(), ltx_recipes)
+		return
+	elseif not ltx:section_exist("recipes") then
+		abort("[%s.script] could not find section 'recipes'", script_name())
+		return
+	end
+	
+	local rec_name, value = "", ""
+	local lines = ltx:line_count("recipes")
+	local tmp = nil
+	
+	for current_line = 0, lines - 1 do
+		result, rec_name, value = ltx:r_line("recipes", current_line, "", "")
+		if ltx:section_exist(rec_name) then
+			if has_alife_info(Get_Cfg_String(ltx, rec_name, "enabled")) then
+				tmp = {
+					name       = Get_Cfg_String(ltx, rec_name, "name", nil),
+					recipe     = Get_Cfg_String(ltx, rec_name, "recipe", nil),
+					components = r_ingredients (ltx, rec_name, "ingredients"),
+					trans_time = Get_Cfg_Num32 (ltx, rec_name, "trans_time", 1),
+					success    = Get_Cfg_Num32 (ltx, rec_name, "success", 0),
+					failed     = Get_Cfg_Num32 (ltx, rec_name, "failed", 0),
+					af_failed  = Get_Cfg_String(ltx, rec_name, "af_failed", "af_green_parasite"),
+					af_succeed = rec_name
+				}
+				self:GetListWnd("list_recipes"):AddItem(afRecipe(tmp))
+			end
+		else
+			abort("[%s.script] could not find section '%s'", script_name(), rec_name)
+		end
+	end
+end
+
+function uiAfMerger:InitCallBacks()
+	self:AddCallback("list_recipes", ui_events.LIST_ITEM_CLICKED, self.OnRecipesClicked, self)
+	self:AddCallback("btn_use",      ui_events.BUTTON_CLICKED,    self.OnUseRecipe, self)
+	self:AddCallback("btn_merge",    ui_events.BUTTON_CLICKED,    self.OnMerge, self)
+	self:AddCallback("btn_quit",     ui_events.BUTTON_CLICKED,    self.OnQuit, self)
+	
+	local btn_name = nil
+	for index = 1, self.btn_num do
+		btn_name = "af_icon" .. index
+		self:AddCallback(btn_name, ui_events.BUTTON_CLICKED, self.af_icons[btn_name].callback, self)
+	end
+	for index = 0, 3 do
+		btn_name = "merger_icon" .. index
+		self:AddCallback(btn_name, ui_events.BUTTON_CLICKED, self.af_icons[btn_name].callback, self)
+	end
+end
+
+function uiAfMerger:has_components(tbl)
+	local comps, found = 0, 0
+	for k, v in pairs(tbl) do
+		comps = comps + 1
+		for kk, vv in pairs(self.af_icons) do
+			if vv.af_info ~= nil then
+				if vv.af_info.section == k and vv.af_info.quantity >= v then
+					found = found + 1
+				end
+			end
+		end
+	end
+	
+	return comps == found
+end
+
+function uiAfMerger:OnRecipesClicked()
+	self:GetButton("btn_merge"):Enable(false)
+	if self.status ~= merger_status:id("merging") then
+		self:InitMergerIcons(false)
+	end
+	
+	local dlg = self:GetListWnd("list_recipes")
+	
+	if dlg:GetSize() ~= 0 then
+		local sel_item = dlg:GetSelectedItem()
+		local desc = self:GetListWnd("list_description")
+		if sel_item ~= -1 then
+			self.curr_recipe = sel_item
+			sel_item = dlg:GetItem(sel_item)
+			self:GetListWnd("list_stats"):RemoveAll()
+			self:GetStatic("stc_name"):SetText(sel_item.name)
+			self:GetStatic("stc_cost"):Show(false)
+			self:GetButton("btn_use"):Show(true)
+			self:GetButton("btn_use"):Enable(self:has_components(sel_item.components) and
+				self.status == merger_status:id("idle"))
+			desc:RemoveAll()
+			
+			if use_recipe_descr_from_xml then
+				pcTextViewer.AddText(desc, 60, sel_item.recipe, false, "letterica16", "yellow")
+			else
+				self:display_recipe_text(desc, sel_item)
+			end
+		end
+		dlg:ShowSelectedItem(true)
+	end
+end
+
+function uiAfMerger:display_recipe_text(list, recipe)
+	local descr = Get_Cfg_String(system_ini(), recipe.af_succeed, "description")
+	descr = game.translate_string(descr)
+	
+	local comp = game.translate_string("ui_af_merger_recipe_comp")
+	local temp = nil
+	
+	for k, v in pairs(recipe.components) do
+		temp = Get_Cfg_String(system_ini(), k, "inv_name")
+		temp = game.translate_string(temp)
+		comp = string.format("%s\n- %dx %s", comp, v, temp)
+		temp = game.translate_string("ui_af_merger_recipe_youh")
+		comp = string.format("%s (%s %d)", comp, temp, la_utils.get_item_count(k))
+	end
+	
+	temp = game.translate_string("ui_af_merger_recipe_hours")
+	if recipe.trans_time == 1 then
+		temp = game.translate_string("ui_af_merger_recipe_hour")
+	end
+	local trans_t = game.translate_string("ui_af_merger_recipe_time")
+	trans_t = string.format("%s %d %s", trans_t, recipe.trans_time, temp)
+	
+	local prob = game.translate_string("ui_af_merger_recipe_prob")
+	prob = string.format("%s\n- %s %d%%", prob, game.translate_string("ui_af_merger_recipe_succ"), recipe.success)
+	prob = string.format("%s\n- %s %d%%", prob, game.translate_string("ui_af_merger_recipe_fail"), recipe.failed)
+	temp = 100 - (recipe.success + recipe.failed)
+	prob = string.format("%s\n- %s %d%%", prob, game.translate_string("ui_af_merger_recipe_worn"), temp)
+	
+	local str = string.format("%s\n\n%s\n\n%s\n\n%s", descr, trans_t, comp, prob)
+	
+	pcTextViewer.AddText(list, 60, str, false, "letterica16", "yellow")
+end
+
+function uiAfMerger:OnButtonClicked(btn_name)
+	local af = nil
+	
+	if self.curr_recipe then
+		self:GetListWnd("list_recipes"):ShowSelectedItem(false)
+		self.curr_recipe = nil
+	end
+	
+	if string.find(btn_name, "merger_icon") then
+		--if self.af_icons[btn_name].icon_af then
+			--self:OnButtonClicked(self.af_icons[btn_name].icon_af)
+			--return
+		--else
+			af = afInfo(self.af_icons[btn_name].section, self.af_icons[btn_name].quantity, nil)
+		--end
+	else
+		af = self.af_icons[btn_name].af_info
+	end
+	
+	local desc = self:GetListWnd("list_description")
+	local stats = self:GetListWnd("list_stats")
+	
+	desc:RemoveAll()
+	stats:RemoveAll()
+	
+	pcTextViewer.AddText(desc, 60, af.description, true, "letterica16", "yellow")
+	self:GetStatic("stc_name"):SetText(af.q_name)
+	self:GetStatic("stc_cost"):SetText(af.cost)
+	self:GetButton("btn_use"):Show(false)
+	self:GetButton("btn_merge"):Enable(false)
+	self:GetStatic("stc_cost"):Show(true)
+	
+	if not af.properties then
+		return
+	end
+	
+	for k, v in ipairs(af_stat_order) do
+		if af.properties[v] then
+			stats:AddItem(IconText(v, af.properties[v].value, af.properties[v].colour))
+		end
+	end
+end
+
+function uiAfMerger:OnUseRecipe()
+	if self.curr_recipe ~= -1 then
+		self:GetButton("btn_use"):Enable(false)
+		self:GetButton("btn_merge"):Enable(true)
+		local c = self:GetListWnd("list_recipes"):GetItem(self.curr_recipe).components
+		local a = self:GetListWnd("list_recipes"):GetItem(self.curr_recipe).af_succeed
+		local btn = self:GetButton("merger_icon3")
+		self:InitItemIcon(btn, a, true)
+		btn:Show(true)
+		self.af_icons["merger_icon3"].section = a
+		--self.af_icons["merger_icon3"].quantity = 1
+		self.af_icons["merger_icon3"].quantity = 0
+		local icon, idx = 0, 0
+		
+		for k, v in pairs(c) do
+			idx = find_by_section(self.af_icons, k)
+			if idx ~= -1 then
+				local sect = self.af_icons[idx].af_info.section
+				local btn = self:GetButton("merger_icon" .. icon)
+				self:InitItemIcon(btn, sect, true)
+				self:GetButton("merger_icon" .. icon):Show(true)
+				self.af_icons["merger_icon" .. icon].section = sect
+				self.af_icons["merger_icon" .. icon].quantity = v
+				self.af_icons["merger_icon" .. icon].icon_af = idx
+				icon = icon + 1
+			end
+		end
+	end
+end
+
+function uiAfMerger:OnMerge()
+	self:GetButton("btn_merge"):Enable(false)
+	
+	local recipe = self:GetListWnd("list_recipes"):GetItem(self.curr_recipe)
+	local idx, q = nil, nil
+	
+	if not AF_MERGER_T then
+		AF_MERGER_T = game_timer.GameTimer()
+	end
+	
+	AF_MERGER_A = recipe.af_succeed
+	AF_MERGER_T:reset(recipe.trans_time, 0, 0, 0)
+	self.status = merger_status:id("merging")
+	--self:GetStatic("stc_status"):SetText("status: working")
+	
+	for index = 0, 2 do
+		if self:GetButton(self.af_icons["merger_icon" .. index].icon_name):IsShown() then
+			idx = self.af_icons["merger_icon" .. index].icon_af
+			q = self.af_icons["merger_icon" .. index].quantity
+			self.af_icons[idx].af_info:remove(q)
+
+		end
+	end
+	--[[
+	if self.curr_recipe ~= -1 and not use_recipe_descr_from_xml then
+		local desc = self:GetListWnd("list_description")
+		desc:RemoveAll()
+		self:display_recipe_text(desc, recipe)
+	end
+	--]]
+end
+
+function uiAfMerger:OnQuit()
+	la_utils.custom_ui_usage("hide", script_name())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiAfMerger:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnQuit()
+		end
+	end
+	
+	return true
+end
+
+local GRID_SIZE = 50
+function get_item_icon_rect(section)
+	local ltx = system_ini()
+	local x,y,w,h =
+		ltx:r_u32(section, "inv_grid_x"),
+		ltx:r_u32(section, "inv_grid_y"),
+		ltx:r_u32(section, "inv_grid_width"),
+		ltx:r_u32(section, "inv_grid_height")
+	return Frect():set(x * GRID_SIZE, y * GRID_SIZE, (x+w) * GRID_SIZE, (y+h) * GRID_SIZE)
+end
+
+function uiAfMerger:InitItemIcon(static, section, doInit)
+	if doInit then
+		static:InitTexture("ui_icons_equipment")
+	end
+	static:SetTextureRect(get_item_icon_rect(section))
+end
+
+-- ******************************************************************************************* --
+
+function display_merger()
+	level.start_stop_menu(uiAfMerger(), true)
+	la_utils.spawn_items(db.actor, "af_merger", 1, false)
+end
+
+function test_all()
+	if not has_alife_info("recipe_info_give_all") then
+		local ltx = ini_file(ltx_recipes)
+		if ltx then
+			db.actor:give_info_portion("recipe_info_give_all")
+			
+			if not db.actor:object("af_merger") then
+				la_utils.spawn_items(db.actor, "af_merger", 1, true)
+			end
+			
+			local rec_name, result, value = "", "", ""
+			local lines = ltx:line_count("recipes")
+			
+			for current_line = 0, lines - 1 do
+				result, rec_name, value = ltx:r_line("recipes", current_line, "", "")
+				if ltx:section_exist(rec_name) then
+					for k, v in pairs(r_ingredients(ltx, rec_name, "ingredients")) do
+						la_utils.spawn_items(db.actor, k, v, false)
+					end
+				end
+			end
+		end
+	end
+end
+
+function test(recipe)
+	local ltx = ini_file(ltx_recipes)
+	if ltx and ltx:section_exist(recipe) then
+		local info = Get_Cfg_String(ltx, recipe, "enabled")
+		if not has_alife_info(info) then
+			if not db.actor:object("af_merger") then
+				la_utils.spawn_items(db.actor, "af_merger", 1, true)
+			end
+			db.actor:give_info_portion(info)
+			for k, v in pairs(r_ingredients(ltx, recipe, "ingredients")) do
+				la_utils.spawn_items(db.actor, k, v, false)
+			end
+		end
+	end
+end

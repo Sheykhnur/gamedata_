@@ -1,0 +1,54 @@
+[death@sar_sucker]
+on_info = %+sar_sucked_dead%
+
+[logic]
+active = mob_remark@surprise
+on_death = death@sar_sucker
+
+[mob_remark@surprise]
+state = vis
+anim = surprise_0
+invulnerable = true
+braindead = true
+target = sar_sucker_look, 0
+panic = 0
+;on_game_timer = 11000 | mob_home@scene_bloodsucker
+on_info = {+sar_scene_end} mob_home@scene_bloodsucker
+
+[mob_home@scene_bloodsucker]
+path_home = sar_sucker_walk
+braindead = false
+
+;;;;;;;;;debug;;;;;;;;;
+
+[mob_walker@surprise]
+path_walk = sar_sucker_walk
+path_look = sar_sucker_look
+;braindead = true
+always_aggressive = false
+actor_friendly = true
+npc_friendly = true
+friendly = true
+on_info = {+sar_scene_start} mob_remark@surprise
+
+[mob_remark@wait]
+state = vis
+anim = $editor
+braindead = true
+on_info = {+sar_scene_start} mob_remark@surprise
+
+;actor_friendly = true
+;npc_friendly = true
+;friendly = true
+;target = sar_sucker_look, 0
+
+[mob_walker@test]
+no_reset = true
+state = vis
+path_walk = sar_sucker_walk
+;always_aggressive = false
+;actor_friendly = true
+;npc_friendly = true
+friendly = true
+;on_info = {+sar_scene_start} mob_remark@surprise
+

@@ -1,0 +1,104 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : ui_main_dik_keys.script (only with ui_main_menu.script)
+ Description: Extender hot-keys
+ Copyright  : 2012 © LA-team
+ Author     : ...
+ Editors    : 
+ Last edit  : 29.05.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+--[[
+local key2map = {
+	 [DIK_keys.DIK_#] 	 = "la01_escape"        ,
+	 [DIK_keys.DIK_G] 	 = "la02_garbage"       ,
+	 [DIK_keys.DIK_A] 	 = "la03_agroprom"      ,
+	 [DIK_keys.DIK_D] 	 = "la04_darkdolina"    ,
+	 [DIK_keys.DIK_I] 	 = "la04u_darklab"      ,
+	 [DIK_keys.DIK_B] 	 = "la05_bar_rostok"    ,
+	 [DIK_keys.DIK_Y]    = "la06_yantar"        ,
+	 [DIK_keys.DIK_NUM2] = "la06_yantar[part2]" ,
+	 [DIK_keys.DIK_M]    = "la07_military"      ,
+	 [DIK_keys.DIK_NUM8] = "la08_deadcity"      ,
+	 [DIK_keys.DIK_W] 	 = "la09_swamp"         ,
+	 [DIK_keys.DIK_Z] 	 = "la10_radar"         ,
+	 [DIK_keys.DIK_N] 	 = "la10u_bunker"       ,
+	 [DIK_keys.DIK_P] 	 = "la11_pripyat"       ,
+	 [DIK_keys.DIK_#] 	 = "la12_stancia"       ,
+	 [DIK_keys.DIK_X] 	 = "la12u_sarcofag"     ,
+	 [DIK_keys.DIK_E] 	 = "la13_generators"    ,
+	 [DIK_keys.DIK_L]  	 = "la13u_warlab"       ,
+	 [DIK_keys.DIK_R] 	 = "la14_rostok_factory",
+	 [DIK_keys.DIK_NUM6] = "la14_rostok_factory[part2]" ,
+	 [DIK_keys.DIK_S] 	 = "la14u_secret_lab"   ,
+	 [DIK_keys.DIK_NUM7] = "la15_darkscape"     ,
+	 [DIK_keys.DIK_T] 	 = "la16_lost_factory"  ,
+	 [DIK_keys.DIK_C] 	 = "la16u_labx16"       ,
+	 [DIK_keys.DIK_O] 	 = "la17_outskirts"     ,
+	 [DIK_keys.DIK_K] 	 = "la17_outskirts[part2]"  ,
+	 [DIK_keys.DIK_NUM5] = "la17u_labx7"        ,
+	 [DIK_keys.DIK_NUM1] = "la18_damned"        ,
+	 [DIK_keys.DIK_H] 	 = "la19_country"       ,
+	 [DIK_keys.DIK_J] 	 = "la13u_oso"          ,
+	 [DIK_keys.DIK_#] 	 = "la20_forgotten"		,
+	 [DIK_keys.DIK_NUM3] = "la21_generators_2"        ,
+	 
+}
+--]]
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/------------------------------------------------------------------
+--/ PROCESs
+--/ -----------------------------------------------------------------
+function actor_default_inventory()
+		if has_info("esc_trader_met") or db.actor:object("sleeping_bag") then return end --/>
+		Spawn_ItemsInInv("wpn_pm")
+		Spawn_AmmoInInv("ammo_9x18_fmj",5) --/< count box
+		Spawn_ItemsInInv("wpn_knife")
+		Spawn_ItemsInInv("wpn_binoc")
+		Spawn_ItemsInInv("medkit",2)
+		Spawn_ItemsInInv("bandage",3)
+		Spawn_ItemsInInv("item_battery",3)
+		Spawn_ItemsInInv("sleeping_bag")
+		Spawn_ItemsInInv("af_gravi")
+		Spawn_ItemsInInv("olives_conserva")
+		Spawn_ItemsInInv("tushenka_conserva")
+		Spawn_ItemsInInv("mineral_water",3)
+end
+
+function lets_clear_killers()
+	xr_gulag.kill_gulag_entities("cit_partei_lager")
+	xr_gulag.kill_gulag_entities("cit_gym_lager")
+	xr_gulag.kill_gulag_entities("cit_patrolers")
+	xr_gulag.kill_gulag_entities("cit_mercs_base")
+end
+
+function jump_to_level(level_name)
+	if level_name then
+		get_console():execute("main_menu off")
+		start_quick_timer(0.5, this.jump_timer, {map=level_name})
+	end
+end
+
+function jump_timer(t)
+	local console = get_console()
+	if t.map and console then
+		console:execute("jump_to_level " .. t.map)
+		log("jump_to_level: => "..t.map)
+		console:execute("flush")
+	end
+end
+
+function dik_keys(dik)
+	local console = get_console()
+	--/ ---------------------------------
+	if dik == DIK_keys.DIK_F then
+	--/ ---------------------------------
+		console:execute("main_menu off")
+	end	
+end
+--/ -----------------------------------------------------------------------------------------------

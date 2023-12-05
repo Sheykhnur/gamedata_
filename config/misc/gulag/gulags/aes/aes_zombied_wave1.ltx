@@ -1,0 +1,104 @@
+
+;********************* state 0 *******************************
+
+[logic@aes_zombied_wave1_off1]
+active = walker@aes_zombied_wave1_off1
+
+[walker@aes_zombied_wave1_off1]
+path_walk = home1
+
+[logic@aes_zombied_wave1_off2]
+active = walker@aes_zombied_wave1_off2
+
+[walker@aes_zombied_wave1_off2]
+path_walk = home2
+
+[logic@aes_zombied_wave1_off3]
+active = walker@aes_zombied_wave1_off3
+
+[walker@aes_zombied_wave1_off3]
+path_walk = home3
+
+[logic@aes_zombied_wave1_off4]
+active = walker@aes_zombied_wave1_off4
+
+[walker@aes_zombied_wave1_off4]
+path_walk = home4
+
+[logic@aes_zombied_wave1_off5]
+active = walker@aes_zombied_wave1_off5
+
+[walker@aes_zombied_wave1_off5]
+path_walk = home5
+
+[logic@aes_zombied_wave1_off6]
+active = walker@aes_zombied_wave1_off6
+
+[walker@aes_zombied_wave1_off6]
+path_walk = home6
+
+;********************* state 1 *******************************
+
+[death@zombied_wave]
+on_info = {=gulag_population_le(aes_zombied_wave1:1) =gulag_population_le(aes_mutants_wave_smart:1)} %+aes_wave_over%
+on_info2 = {=gulag_population_le(aes_zombied_wave1:1) =gulag_casualities_ge(aes_mutants_wave_smart:22)} %+aes_wave_over%
+
+[logic@aes_zombied_wave1_walk1]
+active = walker@aes_zombied_wave1_walk1
+on_death = death@zombied_wave
+
+[walker@aes_zombied_wave1_walk1]
+path_walk = walk1
+;def_state_moving1 = assault
+;def_state_moving2 = assault
+;def_state_moving3 = assault
+
+[logic@aes_zombied_wave1_walk2]
+active = walker@aes_zombied_wave1_walk2
+on_death = death@zombied_wave
+
+[walker@aes_zombied_wave1_walk2]
+path_walk = walk2
+;def_state_moving1 = assault
+;def_state_moving2 = assault
+;def_state_moving3 = assault
+
+[logic@aes_zombied_wave1_walk3]
+active = walker@aes_zombied_wave1_walk3
+on_death = death@zombied_wave
+
+[walker@aes_zombied_wave1_walk3]
+path_walk = walk3
+;def_state_moving1 = assault
+;def_state_moving2 = assault
+;def_state_moving3 = assault
+
+[logic@aes_zombied_wave1_walk4]
+active = walker@aes_zombied_wave1_walk4
+on_death = death@zombied_wave
+
+[walker@aes_zombied_wave1_walk4]
+path_walk = walk4
+;def_state_moving1 = assault
+;def_state_moving2 = assault
+;def_state_moving3 = assault
+
+[logic@aes_zombied_wave1_walk5]
+active = walker@aes_zombied_wave1_walk5
+on_death = death@zombied_wave
+
+[walker@aes_zombied_wave1_walk5]
+path_walk = walk5
+;def_state_moving1 = assault
+;def_state_moving2 = assault
+;def_state_moving3 = assault
+
+[logic@aes_zombied_wave1_walk6]
+active = walker@aes_zombied_wave1_walk6
+on_death = death@zombied_wave
+
+[walker@aes_zombied_wave1_walk6]
+path_walk = walk6
+;def_state_moving1 = assault
+;def_state_moving2 = assault
+;def_state_moving3 = assault

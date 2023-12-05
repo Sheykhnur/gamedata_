@@ -1,0 +1,184 @@
+;*************************state 0*******************************
+[hit@out_killer]
+on_info = %+out_merc_ambush_start%
+
+[combat_ignore@out_merc_ambush_leader]
+
+[logic@out_killer_ambush_walker_off1]
+active = walker@out_killer_ambush_walker_off1
+
+[walker@out_killer_ambush_walker_off1]
+path_walk = walk1
+
+[logic@out_killer_ambush_walker_off2]
+active = walker@out_killer_ambush_walker_off2
+
+[walker@out_killer_ambush_walker_off2]
+path_walk = walk2
+
+[logic@out_killer_ambush_walker_off3]
+active = walker@out_killer_ambush_walker_off3
+
+[walker@out_killer_ambush_walker_off3]
+path_walk = walk3
+
+[logic@out_killer_ambush_walker_off4]
+active = walker@out_killer_ambush_walker_off4
+
+[walker@out_killer_ambush_walker_off4]
+path_walk = walk4
+
+[logic@out_killer_ambush_walker_off5]
+active = walker@out_killer_ambush_walker_off5
+
+[walker@out_killer_ambush_walker_off5]
+path_walk = walk5
+
+[logic@out_killer_ambush_walker_off6]
+active = walker@out_killer_ambush_walker_off6
+
+[walker@out_killer_ambush_walker_off6]
+path_walk = walk6
+
+[logic@out_killer_ambush_leader_set]
+active = walker@out_killer_ambush_leader_set
+on_hit = hit@out_killer
+combat_ignore = combat_ignore@out_merc_ambush_leader
+
+[walker@out_killer_ambush_leader_set]
+path_walk = leader_wait
+path_look = leader_wait_look
+combat_ignore_cond = {-out_merc_ambush_start}
+on_info = {+out_actor_left} walker@out_killer_ambush_leader_set_walk
+
+[walker@out_killer_ambush_leader_set_walk]
+path_walk = leader
+path_look = leader_look
+combat_ignore_cond = {-out_merc_ambush_start}
+meet = meet@out_killer_ambush_leader_set
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+out_actor_gave_flash_merc} %=release_not_seen%
+
+[meet@out_killer_ambush_leader_set]
+use = self
+use_wpn = self
+abuse = false
+precond = visibility
+allow_break = false
+trade_enable = false
+meet_talk_enabled = true
+meet_dialog = out_merc_talk
+meet_state = 30|hello|3|ward
+meet_state_wpn = 30|hello_wpn|3|ward
+victim = 30|actor
+victim_wpn = 30|actor
+use_medkit = true
+
+;*************************state 1*******************************
+[death@out_mercs]
+on_info = {=is_gulag_population_inactive(out_killer_ambush)} %+out_merc_dead%
+
+[logic@out_killer_ambush_walker1]
+active = walker@out_killer_ambush_walker1
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker1]
+path_walk = walk1
+
+[logic@out_killer_ambush_walker2]
+active = walker@out_killer_ambush_walker2
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker2]
+path_walk = walk2
+
+[logic@out_killer_ambush_walker3]
+active = walker@out_killer_ambush_walker3
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker3]
+path_walk = walk3
+
+[logic@out_killer_ambush_walker4]
+active = walker@out_killer_ambush_walker4
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker4]
+path_walk = walk4
+
+[logic@out_killer_ambush_walker5]
+active = walker@out_killer_ambush_walker5
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker5]
+path_walk = walk5
+
+[logic@out_killer_ambush_walker6]
+active = walker@out_killer_ambush_walker6
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker6]
+path_walk = walk6
+
+[logic@out_killer_ambush_leader]
+active = walker@out_killer_ambush_leader
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_leader]
+path_walk = leader
+path_look = leader_look
+
+;*************************state 2*******************************
+
+[logic@out_killer_ambush_walker_offline1]
+active = walker@out_killer_ambush_walker_offline1
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker_offline1]
+path_walk = walk1
+
+[logic@out_killer_ambush_walker_offline2]
+active = walker@out_killer_ambush_walker_offline2
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker_offline2]
+path_walk = walk2
+
+[logic@out_killer_ambush_walker_offline3]
+active = walker@out_killer_ambush_walker_offline3
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker_offline3]
+path_walk = walk3
+
+[logic@out_killer_ambush_walker_offline4]
+active = walker@out_killer_ambush_walker_offline4
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker_offline4]
+path_walk = walk4
+
+[logic@out_killer_ambush_walker_offline5]
+active = walker@out_killer_ambush_walker_offline5
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker_offline5]
+path_walk = walk5
+
+[logic@out_killer_ambush_walker_offline6]
+active = walker@out_killer_ambush_walker_offline6
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_walker_offline6]
+path_walk = walk6
+
+[logic@out_killer_ambush_leader_offline]
+active = walker@out_killer_ambush_leader_offline
+on_death = death@out_mercs
+
+[walker@out_killer_ambush_leader_offline]
+path_walk = leader
+path_look = leader_look
+

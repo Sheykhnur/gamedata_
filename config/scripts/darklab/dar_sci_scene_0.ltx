@@ -1,0 +1,48 @@
+[combat_ignore@dar_start]
+
+[smart_terrains]
+none = true
+
+[danger@dar_start]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_start]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = remark@darklab_sci_dar_level
+combat_ignore = combat_ignore@dar_start
+threshold = threshold@dar_start
+
+[remark@darklab_sci_dar_level]
+anim = sci_sit_relaxed
+on_info =  {+dar_player_scene_0} remark@darklab_sci_dar_start
+combat_ignore_cond = always
+danger = danger@dar_start
+threshold = threshold@dar_start
+target = dar_sci_relaxed, 0
+meet = no_meet
+
+[remark@darklab_sci_dar_start]
+anim = sci_sit_relaxed
+snd = dar_whisp1
+on_info = {+dar_player_scene_0_end} %=release%
+combat_ignore_cond = always
+danger = danger@dar_start
+threshold = threshold@dar_start
+on_signal = sound_end | remark@darklab_sci_dar_start2
+target = dar_sci_relaxed, 0
+meet = no_meet
+
+[remark@darklab_sci_dar_start2]
+anim = sci_sit_relaxed
+snd = dar_whisp2
+on_info = {+dar_player_scene_0_end} %=release%
+combat_ignore_cond = always
+danger = danger@dar_start
+threshold = threshold@dar_start
+target = dar_sci_relaxed, 0
+on_signal = sound_end | remark@darklab_sci_dar_start
+meet = no_meet

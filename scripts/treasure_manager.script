@@ -1,0 +1,329 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : treasure_manager.script
+ Description: treasure functions
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : gr1ph00n(10.02.2013)
+ Last edit  : 19.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local treasure_mgr = nil
+local def_community = "stalker, bandit, dolg, freedom"
+
+local _DEBUG_ = true
+--/ -------------------------
+local bInit   = false --/ flag of module initialization
+--/ -------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize
+--/ -----------------------------------------------------------------
+function init()
+	this.clear_treasure_manager()
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	event("npc_used"):register(OnUsed_NPC)
+	event("item_take_from_box"):register(OnTake_FromBox)
+	event("actor_save"):register(OnSave)
+	this.get_treasure_manager()
+	this.OnLoad()
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "TreasuresManager"
+--/ -----------------------------------------------------------------------------------------------
+function TreasuresManager:__init()
+--	log("init:[>]") --/#~#
+	--/ On constructor reading LTX and creating caches drafts.
+	local ini = ini_file("misc\\treasure_manager.ltx")
+	
+	if not ini:section_exist("list") then
+		abort("There is no section [list] in treasure_manager.ltx")
+	end
+	
+	self.treasure_info = {}
+	
+	local n = ini:line_count("list")
+	local result, id, value
+	
+	for i = 0, n - 1 do
+		result, id, value = ini:r_line("list", i, "", "")
+		local tTreasure = {}
+		tTreasure.name        = Get_Cfg_String(ini, id, "name")
+		tTreasure.description = Get_Cfg_String(ini, id, "description")
+		tTreasure.sid         = Get_Cfg_Num32 (ini, id, "target") --/< story_id
+		tTreasure.items       = parse_spawns( Get_Cfg_String(ini, id, "items","") )
+		
+		local community = parse_names(Get_Cfg_String(ini, id, "community", def_community))
+		tTreasure.community = {}
+		for _,v in pairs(community) do
+			tTreasure.community[v] = true
+		end
+		
+		tTreasure.condlist = xr_logic.parse_condlist(db.actor, "treasure_manager", "condlist", Get_Cfg_String(ini, id, "condlist", ""))
+		
+		self.treasure_info[id] = tTreasure
+		--/ Mark cache as new
+		tTreasure.active = false --/ not active (not filled)
+		tTreasure.done   = false --/ not given
+		
+		if _DEBUG_ then
+			if not tTreasure.name then
+				abort("[%s] 'name' not specified!", id)
+			elseif not tTreasure.description then
+				abort("[%s] 'description' not specified!", id)
+			elseif not tTreasure.sid then
+				abort("[%s] 'target' not specified!", id)
+			elseif #tTreasure.items == 0 then
+				abort("[%s] 'items' not specified!", id)
+			end
+		end
+	end
+	--/ Additional-help table to facilitate search(make search simpler)
+	self.treasure_by_sid = {}
+	for k,v in pairs(self.treasure_info) do
+		self.treasure_by_sid[v.sid] = k
+	end
+end
+
+function TreasuresManager:use(npc)
+	local avail, tr_sum, tr_prob = {}, 0, 0
+	local percent = pdaSkills and pdaSkills.get_survivor_stash_skill() or 10
+
+	for tr_idx,v in pairs(self.treasure_info) do
+		if v.done == false then
+			local tr_prob = tonumber( xr_logic.pick_section_from_condlist(db.actor, npc, v.condlist) )
+			if not tr_prob or tr_prob == "" then
+				tr_prob = 0
+			end
+			
+			if tr_prob > 0 and v.active == false and v.community[npc:character_community()] == true then
+				if tr_prob == 100 then
+					self:give_treasure(tr_idx)
+					break
+				else
+					table.insert(avail, {idx = tr_idx, prob = tr_prob})
+					tr_sum = tr_sum + tr_prob
+					--log("tr_sum = [%s]",tostring(tr_sum))
+				end
+			end
+		end
+	end
+
+	if tr_sum > 0 and Random.I(100) <= percent then
+		local rnd = utils.RandomIDX(tr_sum)
+		local curProb = 0
+		--log("Available: %d, tr_sum: %s, rnd = %s", #avail, tr_sum, rnd)
+		for _,v in pairs(avail) do
+			curProb = curProb + v.prob
+			--log("%s: cur = [%s], tr_prob = [%s]", v.idx, curProb, v.prob)
+			if curProb >= rnd then
+				self:give_treasure(v.idx, npc)
+				break
+			end
+		end
+	end
+end
+
+function TreasuresManager:treasures_available(npc)
+	local check = false
+	for tr_idx,v in pairs(self.treasure_info) do
+		if v.done == false then
+			local tr_prob = tonumber( xr_logic.pick_section_from_condlist(db.actor, npc, v.condlist) )
+			if not tr_prob or tr_prob == "" then
+				tr_prob = 0
+			end
+			
+			if tr_prob > 0 and v.active == false then
+				check = true
+			end
+		end
+	end
+	return check
+end
+
+function TreasuresManager:give_treasure_random(npc)
+	for tr_idx,v in pairs(self.treasure_info) do
+		if v.done == false then
+			local tr_prob = tonumber( xr_logic.pick_section_from_condlist(db.actor, npc, v.condlist) )
+			if not tr_prob or tr_prob == "" then
+				tr_prob = 0
+			end
+			
+			if tr_prob > 0 and v.active == false then
+				self:give_treasure(tr_idx)
+				break
+			end
+		end
+	end
+end
+
+function TreasuresManager:give_treasure(sTrsId, npc)
+	local tTrs = sTrsId and self.treasure_info[sTrsId]
+	if not tTrs then
+		abort("%s:give_treasure: NPC=[%s], treasure=[%s] ~ wrong!", sModule, npc and npc:name(), sTrsId, "")
+		return --/>
+	elseif tTrs.done then
+		return --/>
+	end
+	local se_box = tTrs.sid and alife():story_object(tTrs.sid)
+	if not se_box then
+		if db.sMapNow ~= "ai_test" then
+			abort("%s:give_treasure: NPC=[%s], treasure=[%s],sid=[%s] ~ box doesnt exist!", sModule, npc and npc:name(), sTrsId, tTrs.sid, "")
+		end
+		return --/>
+	end
+		--/ generating items to box
+	for _,v in pairs(tTrs.items) do
+			Spawn_ItemsInInv(v.section, v.count, se_box)
+	end
+	self.treasure_info[sTrsId].active = true
+	self.treasure_info[sTrsId].done   = true
+	
+	--/#+# sending cache to offline and back
+	if level.object_by_id(se_box.id) then
+		db.do_switchings(se_box.id) --/ setting to queue (flag) on transfering to offline
+	end
+	switch_online(se_box.id) --/ temp maybe fix for vanishing stashes
+	local text = "%c[255,238,155,23]"..game.translate_string(tTrs.name).."\\n%c[default]"..game.translate_string(tTrs.description)
+	level.map_add_object_spot_ser(se_box.id, "treasure", text)
+	news_manager.send_treasure(tTrs.name, se_box.id)
+end
+
+--/ Deleting mark from cache (cache used)
+function TreasuresManager:treasure_empty(box)
+	if box:is_inv_box_empty() ~= true then
+		for i = 1, level.map_has_object_spot(box:id(), "treasure") do
+			Del_MapSpot(box:id(), "treasure")
+			level.map_add_object_spot_ser(box:id(), "treasure_looked", "tr_man_stash_nm")
+		end
+		return 
+	end
+	local sTrsId = self.treasure_by_sid[box:story_id()]
+	if sTrsId and self.treasure_info[sTrsId] then
+		self.treasure_info[sTrsId].active = false
+		Del_MapSpot(box:id(), "treasure")
+		Del_MapSpot(box:id(), "treasure_looked")
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Process: controlling manager from external modules
+--/ -----------------------------------------------------------------------------------------------
+function get_treasure_manager()
+	if not treasure_mgr then
+		treasure_mgr = TreasuresManager()
+	end
+	return treasure_mgr --/>
+end
+
+function clear_treasure_manager()
+	treasure_mgr = nil
+end
+
+function OnTake_FromBox(e) --/#+#
+	treasure_mgr:treasure_empty(e.box)
+end
+
+function OnUsed_NPC(e)
+	if not e.obj.alive or not e.obj:alive() then --/ dead?
+		local se_obj = alife():object(e.obj_id)
+		if se_obj and not se_obj.treasure_processed then
+			se_obj.treasure_processed = true
+			get_treasure_manager():use(e.obj)
+		end
+	end
+end
+
+function use(...)
+	treasure_mgr:use(...)
+end
+
+function give_treasure(...)
+	treasure_mgr:give_treasure(...)
+end
+function give_treasure_random(...)
+	treasure_mgr:give_treasure_random(...)
+end
+
+
+function treasures_available(...)
+	treasure_mgr:treasures_available(...)
+end
+
+--/ ----------------------------------------------
+function OnSave(e)
+	local tbl,flgs = {},0
+	for k,v in pairs(treasure_mgr.treasure_info) do
+		flgs = 0
+		if v.active then flgs = bit_or(flgs,1) end --/ setting conditional bit 'ready to give'
+		if v.done   then flgs = bit_or(flgs,2) end --/ setting conditional bit 'filled'
+		if flgs ~= 0 then
+			tbl[v.sid] = flgs --/ tbl[story_id] = 1|2|3 -common flag byte
+		end
+	end
+	SetVar("sav_"..sModule,tbl)
+	log("save: #treasure=[%s],size=[%s]", table.size(tbl), GetSizeVar("sav_"..sModule), "") --/#~#
+end
+
+function OnLoad()
+	if HasVar("sav_"..sModule) then
+		local tbl,idx = GetVar("sav_"..sModule,{}), ""
+		--log("OnLoad:#treasures=[%s],size=[%s]", table.size(tbl), GetSizeVar("sav_"..sModule), "") --/#~#
+		DelVar("sav_"..sModule) --/ clear
+		for sid,flgs in pairs(tbl) do --/ cache story_id & common flag byte
+			idx = treasure_mgr.treasure_by_sid[sid] --/ determine idx-cache by his story_id
+			if treasure_mgr.treasure_info[idx] then
+				treasure_mgr.treasure_info[idx].active = bit_and(flgs,1) ~= 0 --/ restoring condition 'ready to give'
+				treasure_mgr.treasure_info[idx].done   = bit_and(flgs,2) ~= 0 --/ restoring condition 'filled'
+			end
+--			log("Box:StoryId=[%s]~>TrsId=[%s],active=[%s],done=[%s]%s", sid, idx, treasure_mgr.treasure_info[idx].active, treasure_mgr.treasure_info[idx].done, "") --/#~#
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------------------------------------
+function parse_spawns(sItems)
+	local tRet = {}
+	if sItems then
+		--/ if default's more, then values in ini, then fill missing with last value from ini
+		local tItems = string.split(sItems, ",")
+		local iCnt,iSize,tT = 1,#tItems
+		while iCnt <= iSize do
+			tT = { section = tItems[iCnt] }
+			if tItems[iCnt+1] then --/ check: not last record
+				local iVal = tonumber(tItems[iCnt+1])
+				--/ check: 2nd element setted value and not next section of spawn
+				if iVal then
+					tT.count = iVal --/ fill value
+					iCnt = iCnt +2
+				else
+					tT.count = 1 --/ value missing: fill default 1
+					iCnt = iCnt +1
+				end
+			else
+				tT.count = 1 --/ last record: fill default 1
+				iCnt = iCnt +1
+			end
+			table.insert(tRet, tT)
+		end
+		end
+	return tRet --/>
+end
+--/ -----------------------------------------------------------------------------------------------

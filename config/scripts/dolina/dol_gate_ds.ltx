@@ -1,0 +1,21 @@
+;GATE TO DARKSCAPE
+[logic]
+active = {+dol_reach_dscape_start} ph_gate@open, {-dol_reach_dscape_start} ph_gate@locked, {+dar_barman_has_all_x18_docs} ph_gate@open
+
+[ph_gate@locked]
+state = closed
+locking = hard
+on_info = {+dol_reach_dscape_start} ph_gate@open
+breakable = false
+
+[ph_gate@closed]
+state = closed
+locking = none
+on_use = ph_gate@open
+breakable = true
+
+[ph_gate@open]
+state = open
+locking = none
+on_use = ph_gate@closed
+breakable = true

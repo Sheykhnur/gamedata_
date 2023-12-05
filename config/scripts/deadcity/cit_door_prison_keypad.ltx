@@ -1,0 +1,21 @@
+[logic]
+active = {!actor_has_item(cit_doctors_key)} ph_button@locked, {=actor_has_item(cit_doctors_key)} ph_button@unlocked
+
+[ph_button@locked]
+anim_blend = false
+anim = button_false
+on_press = {!actor_has_item(cit_doctors_key) -cit_find_doctor_key} %+cit_find_doctor_key%
+tooltip = tip_box_locked
+on_info = {=actor_has_item(cit_doctors_key)} ph_button@unlocked
+
+[ph_button@unlocked]
+anim_blend = false
+anim = button_false
+on_press = ph_button@open %+cit_jail_door_open =lost_item(cit_doctors_key)%
+tooltip = press_to_unlock
+
+[ph_button@open]
+anim_blend = false
+anim = button_true
+on_press = ph_button@unlocked %-cit_jail_door_open%
+tooltip = press_to_lock

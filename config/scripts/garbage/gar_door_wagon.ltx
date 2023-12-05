@@ -1,0 +1,25 @@
+;DOOR TO WOLF'S WAGON
+[logic]
+active = {-gar_wagon_door_opened} ph_door@locked, {+gar_wagon_door_opened} ph_door@closed
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = metal_small_locked
+on_info = {=actor_has_item(esc_vagon_key)} ph_door@closed
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open %+gar_wagon_door_opened%
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed

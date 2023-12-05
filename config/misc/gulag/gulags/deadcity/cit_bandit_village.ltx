@@ -1,0 +1,78 @@
+;*************************************************** state 0 ************************************************************
+;[spawner]
+;cond = {+dol_find_cit_bandit_leader}
+
+[death@cit_bandit_leader]
+on_info = %+cit_bandit_leader_dead%
+
+[logic@cit_bandit_village_leader_off]
+active = kamper@cit_bandit_village_leader_off
+
+[kamper@cit_bandit_village_leader_off]
+path_walk = kamp4_walk
+path_look = kamp4_look
+kamp_name = kamp1
+
+;**************************************************** state 0,1 *************************************************************
+
+[logic@cit_bandit_village_kamper1]
+active = kamper@cit_bandit_village_kamper1
+
+[kamper@cit_bandit_village_kamper1]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+
+[logic@cit_bandit_village_kamper2]
+active = kamper@cit_bandit_village_kamper2
+
+[kamper@cit_bandit_village_kamper2]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp1
+
+[logic@cit_bandit_village_kamper3]
+active = kamper@cit_bandit_village_kamper3
+
+[kamper@cit_bandit_village_kamper3]
+path_walk = kamp3_walk
+path_look = kamp3_look
+kamp_name = kamp1
+
+[logic@cit_bandit_village_walker1]
+active = walker@cit_bandit_village_walker1
+
+[walker@cit_bandit_village_walker1]
+path_walk = walker1_walk
+
+[logic@cit_bandit_village_walker2]
+active = walker@cit_bandit_village_walker2
+
+[walker@cit_bandit_village_walker2]
+path_walk = walker2_walk
+
+[logic@cit_bandit_village_walker3]
+active = walker@cit_bandit_village_walker3
+
+[walker@cit_bandit_village_walker3]
+path_walk = walker3_walk
+
+[logic@cit_bandit_village_walker4]
+active = walker@cit_bandit_village_walker4
+
+[walker@cit_bandit_village_walker4]
+path_walk = walker4_walk
+
+;*************************************************** state 1 ********************************************************************
+
+[logic@cit_bandit_village_leader]
+active = kamper@cit_bandit_village_leader
+on_death = death@cit_bandit_leader
+
+[kamper@cit_bandit_village_leader]
+path_walk = kamp4_walk
+path_look = kamp4_look
+kamp_name = kamp1
+
+
+

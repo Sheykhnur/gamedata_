@@ -1,0 +1,18 @@
+[logic]
+active = ph_car@zone
+
+[ph_car@zone]
+path_walk = aes_mono_zone_btr
+on_info = {+aes_actor_in_btr_zone} ph_car@firing
+on_death_info = aes_btr_death
+
+[ph_car@firing]
+path_walk = aes_mono_zone_btr
+target = actor
+fire_range = 85
+fire_repeat = 100
+auto_fire = true
+track_target = true
+headlights = off
+on_info = {-aes_actor_in_btr_zone} ph_car@zone
+on_death_info = aes_btr_death

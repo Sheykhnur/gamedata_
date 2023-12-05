@@ -1,0 +1,429 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_framework.script
+ Description: Framework, manager events and callbacks
+ Copyright  : 2012-2013 © LA-team
+ Author     : ...
+ Last edit  : 15.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+if editor() then
+	return
+end
+
+--/ Framework (eng. framework Ч skeleton, structure) Ч structure of software system; software,
+--/ which make easier development and uniting several components of big software product.
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tbl_Events  = {update_1sec={}} --/ table of 'events' (from primary callbacks)
+local tbl_Process = {} --/ table of 'active events' - triggered events debug
+local fs          = getFS()
+local oPTimer     = nil --/ object 'profile timer' (to calculate time of game launch)
+--/ -------------------------
+local sModule = script_name() --/ string name of this file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+local function eRegustrar(flag_reg, evt_name, action, sub_props) --/< flag_reg: true-add|false-del|nil-chk
+--	log("eRegustrar:=[%s],flag=[%s]:(%s)", evt_name, flag_reg, ">") --/#~#
+	local tbl_evt_subs = evt_name and tbl_Events[evt_name]
+	if tbl_evt_subs then --/ event registered
+		local func,method,obj_class = nil, Get_CheckedFunc(action)
+		if obj_class then
+			func = function(...) method(obj_class,...) end
+		else
+			func = method
+		end
+		if func then --/ callback-function exist:
+			if flag_reg ~= nil then --/ mode (un)registration
+				local i = 1
+				while tbl_evt_subs[i] ~= nil do
+					if rawequal(func, tbl_evt_subs[i].func) then
+						table.remove(tbl_evt_subs, i) --/ unregistration (or excluding of duplication)
+					else
+						i = i +1
+					end
+				end
+				if flag_reg == true then --/ re-registration
+					table.insert( tbl_evt_subs, { func = func, props = sub_props} )
+--					log("eRegustrar:=["..evt_name.."],#Cb=["..tostring(#tbl_evt_subs).."]:[+]") --/#~#
+				end
+				return flag_reg --/>
+			else --/ mode of check of having signed callback
+				for _,v in ipairs(tbl_evt_subs) do
+					if rawequal(func, v.func) and (sub_props == nil or (type(sub_props) == type(v.props) and rawequal(sub_props, v.props))) then
+						return true --/> callback registered
+					end
+				end
+			end
+		elseif flag_reg == true then --/ during registration function should be setted!
+			abort("%s:eRegustrar:=[%s],func=[%s]<~is unknown:<%s>", sModule, evt_name, action, "Error!")
+		end
+	end
+	return false --/> event or callback in it NOT registered
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "ScriptEvent" --/ class of 'scripted events'
+--/ -----------------------------------------------------------------------------------------------
+function ScriptEvent:__init(name)
+	if name and name ~= "" then
+		if not tbl_Events[name] then  --debug_print("ScriptEvent:init:=["..name.."] ~> added:[+]") --/#~#
+			tbl_Events[name] = {}
+		end
+		self._name = name
+	else --debug_print(sModule..":ScriptEvent:name can not be empty:<Warning!>")
+	end
+end
+--/ get event name
+function ScriptEvent:name()
+	return self._name --/>
+end
+--/ triggers event
+--/ call: event(name):trigger(table_props)
+function ScriptEvent:trigger(evt_props)
+	if evt_props and type(evt_props) == 'table' then
+		for k,v in pairs(evt_props) do
+			self[k] = v
+		end
+	elseif evt_props ~= nil then
+		log("ScriptEvent:trigger: %s props=[%s]~not_table!:<%s>", tostring(e), type(evt_props), "Warning!")
+	end
+	local tbl_evt_subs = tbl_Events[self._name] --/ table of subtables of subscribers parameters on event
+	local idx,tbl_sub = next(tbl_evt_subs or {}) --/ from the first position of the table subscriber's
+	if idx then
+		table.insert(tbl_Process, self) --/ add the last entry in the table for hang debug (set for note)
+		while idx and self._break ~= true do --/ cycle of processing event
+			--/>------------------->
+			tbl_sub.func(self, tbl_sub.props) --/ call of function (with arguments of subscriber)
+			--/<-------------------<
+			if self._remove == true then --log("eTrigger:(%s/%s) %s props=(%s)=>remove:[%s]", idx, #tbl_evt_subs, tostring(e), tbl_sub.props or "", "x") --/#~#
+				self._remove = nil
+				table.remove(tbl_evt_subs,idx) --/ remove collected callbacks from stack (unsubscribe)
+				idx = (idx > 1 and idx -1) or nil --/ index shift back
+			end
+			idx,tbl_sub = next(tbl_evt_subs,idx) --/ from the next position of the table
+		end
+		table.remove(tbl_Process) --/ from the last position of the table for hang debug
+		if self._once == true then --log("eTrigger: %s #[%s]=>clear:[%s]", tostring(e), #tbl_evt_subs, "X") --/#~#
+			tbl_Events[self._name] = nil
+		end
+	--else log("eTrigger: %s cb=(%s)~not_exist:<%s>", tostring(e), type(tbl_evt_subs), "?") --/#~#
+	end
+	return self --/>
+end
+--/ register event callback function
+--/ call: event(name):register(func [,props])
+function ScriptEvent:register(...)
+	eRegustrar(true,self._name,...)
+	return self --/>
+end
+--/ stock-taking (available) event callback function
+--/ call: event(name):registered(func [,props])
+function ScriptEvent:registered(...)
+	if eRegustrar(nil,self._name,...) then
+		return self --/>
+	end
+	return nil --/>
+end
+--/ unregister event (for extended calls)
+--/ call: event(name):unregister(func [,props])
+function ScriptEvent:unregister(...)
+	eRegustrar(false,self._name,...)
+	return self --/>
+end
+--/ (re)set flag
+function ScriptEvent:once(is_once)
+	self._once = is_once == true
+	return self --/>
+end
+--/ stops callback queue execution
+function ScriptEvent:stop()
+	self._break = true
+	return self --/>
+end
+--/ remove current callback after execution
+function ScriptEvent:remove()
+	self._remove = true
+	return self --/>
+end
+--/ debug fingerprint
+function ScriptEvent:note(val)
+	self._note = val
+	return self --/>
+end
+--/#?# added driven-event info
+function ScriptEvent:driven(val)
+	self._driven = val
+	return self --/>
+end
+--/#?# added parent-event info
+function ScriptEvent:parent(val)
+	self._parent = val
+	return self --/>
+end
+--/#?# clear callbacks
+function ScriptEvent:clear(name)
+	if name and tbl_Events[name] then log("ScriptEvent:clear:=[%s]:#(%s):[%s]", name, #tbl_Events[name], "x") --/#~#
+		tbl_Events[name] = nil
+	end
+end
+
+function ScriptEvent:__tostring()
+	return string.format("Event='%s'%s%s%s", tostring(self._name), (self._note and " note["..tostring(self._note).."]") or "",
+	       (self._driven and " driven["..tostring(self._driven).."]") or "", (self._parent and " parent["..tostring(self._parent).."]") or "") --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Initialize
+--/ -----------------------------------------------------------------------------------------------
+--/ Check of having script with name 'module' and call 'module'.init()
+--/ (auxiliary function of check/initializing  separate module)
+local function Initialize_Module(fname)
+	local module = nil
+	if fs:exist("$game_scripts$",tostring(fname)..".script") then
+		prefetch(fname) --/ connecting module (script-file)
+		module = _G[fname]
+	end
+	if module then
+		ASSERT(type(module) == 'table', "Initialize_Module:='"..tostring(fname).."'~wrong, must be a table")
+		if type(module.init) == 'function' then
+			module.init()
+			return true --/>
+		end
+	elseif fname and db.tCheckedModules then
+		if db.tCheckedModules[fname] ~= nil then
+			db[fname] = false
+			db.bErrModule = true --/ flag for event about error (in codes of module)
+			db.iErrIdx = 0 --/ index of error (in codes of modules/files)
+		else
+			db[fname] = nil
+		end
+	end
+end
+--/ Check of separate  section of mudle (getting list of modules sections)
+--/ (auxiliary function of initializing module section)
+local function Initialize_Section(ini,sSection)
+	if ini and ini:section_exist(sSection) and sSection ~= sModule then
+		local iCnt = ini:line_count(sSection)
+		--debug_print("* Modules initialization section=["..sSection.."]("..iCnt.."):")
+		local ptimer = nil
+		for i=0, iCnt-1 do
+			ptimer = Start_PT()
+			local fname,enabled = '',''
+			local result,idx,value = ini:r_line(sSection, i, "", "")
+			if idx and type(tonumber(idx)) == 'number' and value and value:match('^%s*(%S*)') ~= "" then
+				fname,enabled = value:match('%s*(.+)%s*,%s*(.*)%s*')
+			else abort("%s:Initialize_Section:Read_section=[%s],line=[%s]:<Error!>", sModule, sSection, tostring(i+1) )
+			end
+			local msg = string.format("* Module(%02d/%02d)= %-18s", i+1, idx, fname):gsub('%s','\160')
+			if enabled and enabled == 'true' then
+				if fs:exist("$game_scripts$", fname..".script") then
+					local initialized = Initialize_Module(fname)
+					if not db[fname] then
+						if db[fname] == false then
+							--debug_print(msg.."<~WARNING!_ERROR_IN_SCRIPT_!:<x?x>")
+						else --debug_print(msg.."<~WARNING!_SCRIPT_NOT_EXIST_!:<x-x>")
+						end
+					elseif db.is_dbg1 then
+						if initialized then
+							--debug_print(msg..string.format("<~initialized:[%.3f]ms", Stop_PT(ptimer)*0.001))
+						else
+							--debug_print(msg..string.format("<~tested:[%.3f]ms", Stop_PT(ptimer)*0.001))
+						end
+					end
+				else --debug_print(msg.."<~INFO!_SCRIPT_NOT_FOUND:<xxx>")
+				end
+			else --debug_print(msg.."<~disabled:<-x->")
+				db[fname] = false
+			end
+		end
+	else --log("Initialize_Section=[%s]:<Error!>", sSection)
+	end
+end
+--/ Function calls 1st (at game start)
+--/ (modules registering their callbacks)
+local function Register_Modules()
+	--debug_print( string.rep("~",55) ) --/#~#
+	local ltx = ini_file("lost_alpha\\"..sModule..".ltx")
+	Initialize_Section(ltx,"basic_modules")
+	Initialize_Section(ltx,"game_modules")
+	Initialize_Section(ltx,"main_modules")
+	if (la_ai_mgr) then --/ All_AI_Pack
+		Initialize_Section(ltx,"ai_modules")
+		la_ai_mgr.Load_Schemes()
+	end
+	Initialize_Section(ltx,"user_modules")
+	--Initialize_Module("name_Module") --/ registration of separate module (reserve)
+	--debug_print( string.rep("~",55) ) --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ CallBacks Section
+--/ -----------------------------------------------------------------------------------------------
+--/ Start-Function: first call!
+function OnStart_Game() --/ from prefetch by '_g.start_game_callback'
+	if db.iGSVer < 0 then db.iGSVer,db.sTxtVerGS = la_helper.Get_GSVersion() end
+	--_G.log( "Game_Start: Engine v%s(%d) , Game: %s%s", db.sTxtVerGS, db.iGSVer, la_helper.Get_VerMod("s"), la_helper.Get_DbgMode(true), "") --/#~#
+	_G.log( "Game_Start: Engine ver. %s, Game: %s(%s)", la_helper.Get_DbgMode(true), la_helper.Get_VerMod("s"), db.iBuildMod, "") --/#~#
+	math.randomseed(device():time_global())
+	Register_Modules() --/ initializing of mod modules
+	get_console():execute("flush")
+end
+--/------------------------------------------------------------------
+--/ loaded array storehouse and/or loaded objects of spawn
+function OnDataLoaded(e)
+	--debug_print( string.rep("~",96) ) --/#~#
+	la_helper.maps_init()
+	la_slave.Game_Init()
+	--debug_print( string.rep("~",96) ) --/#~#
+	get_console():execute("flush")
+end
+--/------------------------------------------------------------------
+--/ creating client object 'actor' (oActor)
+function OnActorBind(e) --/ from 'actor_binder'
+	--/ setting guard 'watchdog' callback (check of 'freezed' calls)
+	local _precondition = function() --/ check: do we have incomplete event?
+		return tbl_Process[1] ~= nil --/>
+	end
+	local _action = function() --/ for reports of 'hung' events
+		--debug_print( "Event`s Error! "..string.rep("~",64) ) --/#~#
+		for idx,evt in pairs(tbl_Process) do
+			--debug_print("Error! Broken event:("..tostring(idx)..") "..tostring(evt))
+		end
+--		abort(sModule..": Broken events: ["..tostring(#tbl_Process).."]")
+	end
+	level.add_call(_precondition, _action)
+end
+--/------------------------------------------------------------------
+--/ appearing in online of client object 'actor' (oActor)
+--/ setting/loading environment variables
+function OnActor_Spawn(e)
+	get_console():execute("flush")
+	--debug_print( string.rep("~",96) ) --/#~#
+	--debug_print( "PreSets: Run: ".. Get_MemUsage(true) ) --/#~#
+	oPTimer = Start_PT()
+	e:driven("presets"):note("m:presets:>") --/#~# for debug
+	event("presets"):once(true):trigger({e.actor})
+end
+--/ finishing loading of actor
+function OnActor_Spawned(e)
+	db.bGameLoaded = true --/ flag of game start
+	--debug_print( string.format("PreSets: Done: %s : TimeFactor=[%d] : PTime=[%.3f]s", Get_MemUsage(true), level.get_time_factor(), Stop_PT(oPTimer)*0.1^6) ) --/#~#
+	--debug_print( string.rep("~",96) ) --/#~#
+	get_console():execute("flush")
+end
+--/------------------------------------------------------------------
+--/ callback on Actor update
+function OnActor_Update(e) --/ event 'actor_update'
+	this.distribution_of_events(e)
+end
+--/------------------------------------------------------------------
+function OnLoad_Game(e)
+	db.bGameLoaded = nil --/ flag: game stop
+end
+--/------------------------------------------------------------------
+function OnDisconnect(e) --/ exit from game (from main_menu)
+	db.bGameLoaded = nil --/ flag: game stopped
+	--debug_print( string.rep("~",64) ) --/#~#
+	--debug_print( "Disconnect:["..tostring(e.act).."]:".. Get_MemUsage(true) ) --/#~#
+	--debug_print( string.rep("~",64) ) --/#~#
+end
+--/------------------------------------------------------------------
+function OnQuit(e) --/ exit to OS (from main_menu)
+	db.bGameLoaded = nil --/ flag: game stop
+	--debug_print( string.rep("~",96) ) --/#~#
+	--debug_print( "Game_Quit:[".. Get_StrTime() .."]:".. Get_MemUsage(true) ) --/#~#
+	--debug_print( string.rep("~",96) ) --/#~#
+end
+--/------------------------------------------------------------------
+function OnActorDestroy(e)
+	--debug_print( string.rep("~",96) ) --/#~#
+	--debug_print( "Actor_Destroy:[".. Get_StrTime() .."]:".. Get_MemUsage(true) ) --/#~#
+	--collectgarbage() --/ launching garbage collector
+	--debug_print( string.rep("~",96) ) --/#~#
+end
+--/------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Distributor event by time (1 second real-time)
+--/ -----------------------------------------------------------------------------------------------
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local time_1s,period_1s = 0,1000 --/ common timer (time before next cycle) and period of callback functions updates 
+local iSubscribers,iCurSub = 0,0 --/ number of callback functions in 'distributor_event' and ordinal(serial) index
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+--/ distributed(paralleled) handler of event 'update': call of every registered callback - once per 1 sec
+--/ number of callbacks (subscribers) shouldn't be more then ~30
+function distribution_of_events(e) --/< 'e' - event from 'update' actor
+--	log("distribution_of_events:[%s]", Get_StrTime() ) --/#~#
+	if time_1s < e.time then --/ reconciliation with current time (e.time == device():time_global())
+		--/ cycle check:
+		if iCurSub < iSubscribers then --/ cycle not completed:
+			iCurSub = iCurSub +1 --/ updating current index
+		else --/ cycle finished: reinstalling(reseting)
+			iSubscribers,iCurSub = #tbl_Events.update_1sec, 1 --/ number of calling function and start index
+			if iSubscribers > 1 then --/ if subscribers more then 1 - distribute by second
+				period_1s = 1000/iSubscribers --/ 'distributed' period (1sec/N)
+			else
+				period_1s = 1000 --/ common period of timer cycle (1sec)
+			end --log("distribution_of_events:Cnt=[%s],Prd=[%s],delta=[%s]%s", iSubscribers, ShortStr(period_1s), e.delta, "") --/#~#
+		end
+		time_1s = e.time + period_1s --/ 'ticking' timer
+		--/ working off another callback:
+		if iSubscribers > 0 then --/ have registered subscribers (callbacks)
+			local tbl_subs = table.remove(tbl_Events.update_1sec,1) --/ excluding 1st callback
+			table.insert(tbl_Events.update_1sec,tbl_subs) --/ returning to end of list
+			--/ set closures-callback for 'e' (event 'update')
+			local proxy_func = function(e) --log("callback_1s:idx=[%s]%s", iCurSub, iSubscribers, ">") --/#~#
+				tbl_subs.func(e, tbl_subs.props) --/ execute callback function from 'distributor_event'
+				if e._remove then --/ if flag of unsubscribe was setted from 'distributor_event':
+					event("update_1sec"):unregister(tbl_subs.func) --/ remove collected callbacks from stack 'distributor_event' (отписка)
+				end
+				e:remove() --/ unregister and remove proxy_func from stack 'update'
+			end
+			e:register(proxy_func) --/ register proxy_func to stack 'update' (e)
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Framework initialization (by materials of STALKER:CS|CoP - xr_s.script)
+--/ -----------------------------------------------------------------------------------------------
+local framework_initialized = false --/ flag of initialization of the module
+
+if not framework_initialized then
+	framework_initialized = true
+	--/ initialize & translate class to global scope
+	_G.event = this.ScriptEvent
+	--/ primary registrations on main events
+	local tPrimaryCallbacks = {
+		{evt = "new_game"       , func = OnDataLoaded   },
+		{evt = "load_storehouse", func = OnDataLoaded   }, --/ only LA
+		{evt = "actor_bind"     , func = OnActorBind    },
+		{evt = "actor_spawn"    , func = OnActor_Spawn  },
+		{evt = "actor_spawned"  , func = OnActor_Spawned},
+		{evt = "actor_update"   , func = OnActor_Update },
+		{evt = "actor_destroy"  , func = OnActorDestroy },
+		{evt = "game_load"      , func = OnLoad_Game    },
+		{evt = "disconnect"     , func = OnDisconnect   },
+		{evt = "quit"           , func = OnQuit         }
+	}
+	for _,v in ipairs(tPrimaryCallbacks) do
+		event(v.evt):register(v.func)
+	end
+	--/ connecting module of common help-functions
+	la_helper.db_init() --/#!# first initialize common helpers
+	--if la_fixed and la_fixed.init then la_fixed.init() end --/#?# for debugging and local revisions
+	--debug_print( string.rep("~",55) ) --/#~#
+	--debug_print( string.format("Initializing: %s VidMode=[%dx%d]", os.date(), device().width, device().height)) --/#~#
+	--debug_print( string.format("ScriptBuild %d  %s  %s", db.iBuildMod, la_helper.Get_DbgMode(true), Get_MemUsage(true))) --/#~#
+	--debug_print( string.rep("~",55) ) --/#~#
+end
+--/------------------------------------------------------------------------------------------------

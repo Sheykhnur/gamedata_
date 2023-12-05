@@ -1,0 +1,32 @@
+[death@giant]
+on_info = %+dar_giant_dead%
+
+[logic@darklab_giant_home1]
+active = mob_home@darklab_giant_home1
+on_death = death@giant
+
+[mob_home@darklab_giant_home1]
+path_home = home1
+home_min_radius = 4
+home_max_radius = 6
+on_death = death@giant
+
+[logic@darklab_giant_home2]
+active = mob_home@darklab_giant_home2
+on_death = death@giant
+
+[mob_home@darklab_giant_home2]
+path_home = home2
+always_agressive = true
+home_min_radius = 4
+home_max_radius = 9
+on_death = death@giant
+on_actor_dist_le_nvis = 35 | mob_home@darklab_giant_home3 %=play_snd(monsters\giant\giant_underground_0)%
+
+[mob_home@darklab_giant_home3]
+path_home = home2
+always_agressive = true
+home_min_radius = 4
+home_max_radius = 9
+on_death = death@giant
+

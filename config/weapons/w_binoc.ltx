@@ -1,0 +1,253 @@
+[wpn_binoc]:identity_immunities,default_weapon_params
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\binocular\binocular"
+animation_slot                          = 13
+auto_attach                             = false
+cform                                   = skeleton
+class                                   = WP_BINOC
+discovery_dependency                    = 
+ef_main_weapon_type                     = 5
+ef_weapon_type                          = 0
+GroupControlSection                     = spawn_group
+hand_dependence                         = 1
+scheduled                               = off
+show_ammo                               = false
+single_handed                           = 0
+slot                                    = 4
+
+; Inventory icon
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 16
+inv_grid_y         = 9
+
+; Text
+inv_name                                = binocular_reg_name
+inv_name_short                          = binocular_reg_nm
+description                             = binocular_reg_descr
+
+; Visual
+attach_angle_offset                     = 3.080506, -1.493053, -1.202040
+attach_bone_name                        = bip01_r_hand
+attach_position_offset                  = 0.080000, 0.021273, 0.100000
+hud                                     = wpn_binoc_hud
+position                                = -0.08, -0.05, 0.05
+orientation                             = 0, -90, 70
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_bino_new
+visual                                  = dynamics\devices\dev_binoculars\dev_binoculars.ogf
+
+scope_nightvision           			= scope_no_postprocess
+
+; Effects
+fire_point                              = 0.0, 0.133, 0.161
+flame_particles                         = weapons\generic_weapon05
+smoke_particles                         = weapons\generic_shoot_00
+shell_point                             = 0.0, 0.133, 0.047
+shell_particles                         = weapons\generic_shells
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 3.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+
+; Sounds
+snd_close                               = weapons\generic_close
+snd_draw                                = weapons\generic_draw
+snd_empty                               = weapons\pistol_empty
+snd_gyro                                = weapons\binoculars_gyro
+snd_holster                             = weapons\generic_holster
+snd_reload                              = weapons\pm_reload, 0.8
+snd_shoot                               = weapons\walther_p99_shoot
+snd_zoomin                              = weapons\binoculars_zoomin
+snd_zoomout                             = weapons\binoculars_zoomout
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_Binoculars
+upgr_icon_x                             = 2
+upgr_icon_y                             = 0
+upgr_icon_width                         = 173
+upgr_icon_height                        = 135
+
+; Cost & Weight
+cost                                    = 1500
+inv_weight                              = 1.5
+ph_mass                                 = 1
+
+; Ammo
+ammo_limit                              = 0
+ammo_class                              = ammo_9x18_pbp
+ammo_elapsed                            = 0
+ammo_mag_size                           = 0
+
+; Features
+scope_status                            = 1
+scope_zoom_factor                       = 15
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 1
+hit_impulse                             = 1
+hit_type                                = fire_wound
+
+; Ballistics
+bullet_speed                            = 1
+fire_distance                           = 1
+fire_dispersion_base                    = 0.1
+fire_dispersion_condition_factor        = 5
+
+; Performance
+rpm                                     = 1
+rpm_empty_click                         = 1
+
+; Reliability
+misfire_probability                     = 0.0001
+misfire_start_condition                 = 0.6
+misfire_end_condition                   = 0.1
+misfire_start_prob                      = 0.001
+misfire_end_prob                        = 0.02
+condition_shot_dec                      = 0.00001
+condition_queue_shot_dec                = 0.00002
+
+; Handling
+PDM_disp_base                           = 1.0
+PDM_disp_vel_factor                     = 1.0
+PDM_disp_accel_factor                   = 1.0
+
+; Recoil
+cam_relax_speed                         = 1.5
+cam_dispersion                          = 1.5
+cam_max_angle                           = 7
+cam_max_angle_horz                      = 10.0
+cam_step_angle_horz                     = 1.5
+
+; Aiming
+zoom_enabled                            = true
+reload_dof                              = 0.0, 0.5, 5, 1.7
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_binoc
+upgrades                                = up_gr_firstab_binoc, up_gr_seconab_binoc, up_gr_thirdab_binoc
+installed_upgrades                      = 
+
+; AI Params
+min_radius                              = 100
+max_radius                              = 150
+
+
+[wpn_binoc_hud]:hud_base
+aim_hud_offset_pos                      = 0.0,0.022,0
+aim_hud_offset_pos_16x9                 = 0.0,0.022,0
+aim_hud_offset_rot                      = 0.0,0.0,0.0
+aim_hud_offset_rot_16x9                 = 0.0,0.0,0.0
+anim_bore                               = binoculars_idle_bore_la
+anim_hide                               = binoculars_holster_la,2.0
+anim_idle                               = binoculars_idle_la
+anim_idle_aim                           = binoculars_idle_la
+anim_idle_moving_crouch				    = binoculars_idle_crouch
+anim_idle_moving                        = binoculars_idle_moving_la
+anim_idle_sprint                        = binoculars_idle_sprint_la
+anim_show                               = binoculars_draw_la
+attach_place_idx                        = 0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_position                          = -0.007000,-0.180999,0.325498
+hands_orientation                       = 4.910005,-9.150012,-0.190000
+hands_position_16x9                     = -0.007000,-0.180999,0.325498
+hands_orientation_16x9                  = 4.910005,-9.150012,-0.190000
+item_orientation                        = 1.239378,-0.134046,-2.052052
+item_position                           = 0.000746,-0.000321,0.003479
+item_visual                             = dynamics\devices\dev_binoculars\dev_binoculars_hud
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+[wpn_electronic_binoc_hud]:wpn_binoc_hud
+item_visual                             = dynamics\devices\dev_binoculars\dev_eltronic_binoculars_hud
+
+anim_bore                               = binoculars_idle_bore
+anim_hide                               = binoculars_holster,,2.0
+anim_idle                               = binoculars_idle
+anim_idle_aim                           = binoculars_idle
+anim_idle_moving_crouch				    = binoculars_idle_crouch
+anim_idle_moving                        = binoculars_idle_moving
+anim_idle_sprint                        = binoculars_idle_sprint
+anim_show                               = binoculars_draw
+
+
+[wpn_binoc_m1]:wpn_binoc
+$spawn                                  = "weapons\binocular\binocular_m1"
+
+unique_item								= true
+
+; Text
+inv_name                                = binocular_modif_name
+description                             = binocular_modif_descr
+
+; Visual
+hud                                     = wpn_binoc_m1_hud
+scope_texture                           = wpn_crosshair_bino_army
+visual                                  = dynamics\devices\dev_binoculars\dev_binoculars_m1.ogf
+
+; Cost & Weight
+cost                                    = 2500
+inv_weight                              = 1.7
+
+; Features
+scope_zoom_factor                       = 10
+
+
+[wpn_binoc_m1_hud]:wpn_binoc_hud
+item_visual                             = dynamics\devices\dev_binoculars\dev_binoculars_m1_hud
+
+anim_bore                               = binoculars_idle_bore_la
+anim_hide                               = binoculars_holster_la,,2.0
+anim_idle                               = binoculars_idle_la
+anim_idle_aim                           = binoculars_idle_la
+anim_idle_moving_crouch				    = binoculars_idle_crouch
+anim_idle_moving                        = binoculars_idle_moving_la
+anim_idle_sprint                        = binoculars_idle_sprint_la
+anim_show                               = binoculars_draw_la
+
+
+[wpn_electron_binoc]:wpn_binoc
+$spawn                                  = "weapons\binocular\binocular_electronic"
+
+; Inventory icon
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 18
+inv_grid_y         = 9
+
+; Text
+inv_name                                = binocular_electron_name
+inv_name_short                          = binocular_electron_nm
+description                             = binocular_electron_descr
+
+; Visual
+hud                                     = wpn_electronic_binoc_hud
+scope_texture                           = wpn_crosshair_bino_vitacon
+visual                                  = dynamics\devices\dev_binoculars\dev_eltronic_binoculars.ogf
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_electron_bino
+upgr_icon_x                             = 165
+upgr_icon_y                             = 133
+upgr_icon_width                         = 178
+upgr_icon_height                        = 138
+
+; Cost & Weight
+cost                                    = 6000
+inv_weight                              = 0.4
+
+; Features
+scope_zoom_factor                       = 10
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_el_binoc
+upgrades                                = up_gr_firstab_el_binoc, up_gr_seconab_el_binoc, up_gr_thirdab_el_binoc
+installed_upgrades                      = 

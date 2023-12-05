@@ -1,0 +1,104 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File           : la_actor_thirst.script
+ Description    : Manager "Thirst" (thirst)
+ Copyright      : 2009 © LA-team
+ Author         : barin
+ Editors        : vintar, SkyLoader
+ Last edit      : 21.06.18 (tomilovsenya) - PDA messages fix
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ --------------------------
+local tPhases = { --/ 0:"idle", 1:"green", 2:"yellow", 3:"red", -1:"death"
+	[ 0] = { state = 16, tip = nil},
+	[ 1] = { state = 19, tip = nil},
+	[ 2] = { state = 18, tip = {game.translate_string("hmm"), game.translate_string("thirsty_really"), "actor"}},
+	[ 3] = { state = 17, tip = {game.translate_string("ohh"), game.translate_string("thirsty_very"), "actor"}},
+	[-1] = { state = 16, tip = {game.translate_string("ohh"), game.translate_string("thirsty_death"), "actor"}}
+}
+--/ --------------------------
+local iPhase  = 0 --/ current phase
+local tSounds = {"actor\\cop_drink","actor\\cop_vodka1", "actor\\cop_vodka2", "actor\\cop_vodka3", "actor\\la_can"}
+local tItems  = {} --/ drinks
+local oEffect = nil
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/------------------------------------------------------------------
+--/ Initialization and preset module
+--/------------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ --------------------------
+function PreSets(e)
+	event("item_use"):register(OnItem_Used)
+	event("update_1sec"):register(OnUpdate)
+	event("actor_death"):register(OnDeath)
+	tItems = Get_IniSection(db.lost_alpha_cfg, "drinks", "true")
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function OnItem_Used(e)
+end
+
+function OnDeath(e)
+	if oEffect and oEffect.playing then
+		oEffect:stop()
+	end
+	iPhase = -1
+end
+
+function OnDeath(e)
+	if oEffect and oEffect.playing then
+		oEffect:stop()
+	end
+	iPhase = -1
+end
+
+function OnUpdate(e)
+	if iPhase == -1 then
+		e:remove() --/ disabling callback!
+		return
+	end
+
+	if db.actor:get_icon_state(tPhases[iPhase].state) then return end
+
+	iPhase = 0
+	for i = 1, 3 do
+		if db.actor:get_icon_state(tPhases[i].state) then
+			iPhase = i
+			break
+		end
+	end
+
+	if not oEffect then
+		oEffect = pp_eff.file_pp("yantar_underground_psi.ppe")
+	elseif oEffect.playing then
+		oEffect:stop()
+	end
+
+	if iPhase > 2 then --/ "red"
+		if oEffect and not oEffect.playing then
+			oEffect:start()
+			oEffect:set_factor(5.0)
+		end
+	end
+
+	if tPhases[iPhase].tip then
+		news_manager.send_tip_hud( unpack(tPhases[iPhase].tip) )
+	end
+end
+--/ ------------------------------------------------------------------
+--/ For external modules
+--/ ------------------------------------------------------------------
+function is_thirsty()
+	return iPhase > 0 --/> if not "idle"
+end
+function is_very_thirsty()
+	 return iPhase > 2 or db.actor.thirst <= 0.2 --/> if "red
+end
+--/ -----------------------------------------------------------------------------------------------

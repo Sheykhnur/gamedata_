@@ -1,0 +1,238 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_country.script
+ Description: Tasks country
+ Copyright  : 2011 © LA-team
+ Author     : vintar
+ Editors    : lox(16.03.2013)
+ Last edit  : 22.06.18 (tomilovsenya) – PDA messages fix
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if not has_info("lab_good_psy_helmet_have") and sEvent == "item_take" then
+		if obj:section() == "good_psy_helmet" then
+			give_info("lab_good_psy_helmet_have")
+			start_real_timer(15, "tasks_country.lab_helmet_save")
+		end
+	end
+	if db.sMapNow == "la19_country" and not has_info("country_level_arrived") then
+		start_real_timer(15, "tasks_country.arriving_save")
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "lab_good_psy_helmet_have" then
+		start_real_timer(3, nil, {info_id = "country_find_emitters_start"}) --/ 3 real-sec
+		return true
+	end
+	if not info_id:match('^country_') then
+		return false --/>
+	end
+	if info_id == "country_eco_reply" then
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\con\\con_actor_scene_2")
+		snd:play(db.actor, 1, sound_object.s2d)
+		start_real_timer(5, nil, {info_id = "country_eco_replied"}) --/ 5 real-sec
+		return true
+	end
+	if info_id == "country_mark_entrance" then
+		level_tasks.add_location(8706, "green_location", "country_underground_entrance")
+		return true
+	end
+	if info_id == "country_find_lost_hermit" then
+		level_tasks.add_location(8704, "green_location", "country_hermit_name")
+		news_manager.send_tip_hud(game.translate_string("hermit_message_header"), game.translate_string("country_find_lost_hermit"), "hermit")
+		return true
+	end
+	if info_id == "country_found_real_entrance" then
+		start_real_timer(2.5, nil, {info_id = "country_found_real_entrance_delay"}) --/ 2.5 real-sec
+		return true
+	end
+	if info_id == "country_find_entrance_start" then
+		start_real_timer(2.5, nil, {info_id = "country_find_entrance_start_delay"}) --/ 2.5 real-sec
+		return true
+	end
+	if info_id == "country_blowout_start" then
+		this.start_country_blowout()
+		return true
+	end
+	if info_id == "country_military_leader_5947_talked" then
+		dialog_country.give_47()
+		return true
+	end
+	if info_id == "country_major_third_mutant_quest_inside" then
+		start_real_timer(20, nil, {info_id = "country_major_third_mutant_quest_start"}) --/ 2.5 real-sec
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function arriving_save()
+	if not has_info("country_level_arrived") then
+		give_info("country_level_arrived")
+		xr_effects.scenario_autosave(actor, nil, {"country_level_arrived"})
+	end
+end
+
+function lab_helmet_save()
+	xr_effects.scenario_autosave(actor, nil, {"lab_good_psy_helmet_have"})
+end
+
+function has_met_hermit()
+	return has_info("country_hermit_told_entrance") or has_info("country_hermit_show_path")
+end
+
+function start_country_blowout() --/ PreBlow
+	level_weathers.get_weather_manager():Active(false)
+	start_real_timer(2, "tasks_country.starting_blow")
+end
+
+function starting_blow()
+	level.set_weather_fx("presurge_ms") --/ "preblow_we"|"surge_we"
+	level.add_cam_effector("camera_effects\\shell_shock.anm", 2126, false, "")
+	local snd = xr_sound.get_safe_sound_object("anomaly\\blowout_begin")
+	snd:play(db.actor, 0, sound_object.s2d)
+	start_real_timer(4, "tasks_country.set_weather_and_earthquake") --/ 4 real-sec
+	start_real_timer(21, "tasks_country.country_blowout_effects") --/ 21 real-sec
+	start_real_timer(51, "tasks_country.blackout") --/ 51 real-sec
+	start_real_timer(57, "xr_effects.move_active_to_ruck") --/ 57 real-sec
+	start_real_timer(59, sModule..".jump_to_lost") --/ 59 real-sec
+end
+
+function set_weather_and_earthquake(t) --/ Surge
+--	news_manager.send_tip_hud("#PreSet", "time=+4") --/#~# for debug
+	--level.set_weather("vihar", false)
+	level.add_cam_effector("camera_effects\\earthquake.anm", 2107, false, "")
+	local snd = xr_sound.get_safe_sound_object("ambient\\earthquake") --/"surge"
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+
+function country_blowout_effects(t)
+--	news_manager.send_tip_hud("#EffectsRun", "time=+21=(4+17)") --/#~# for debug
+	level.add_cam_effector("camera_effects\\earthquake.anm", 2107, false, "")
+	local snd = xr_sound.get_safe_sound_object("ambient\\earthquake")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 2.0)
+	start_real_timer(15, "tasks_country.country_blowout_effects_final") --/ 15 real-sec
+end
+
+function country_blowout_effects_final(t)
+--	news_manager.send_tip_hud("#EffectsEnd", "time=+36=(4+17+15)") --/#~# for debug
+	level.add_pp_effector("vibros_p.ppe", 1974, false)
+	level.set_weather_fx("surge_ms")
+	start_real_timer(5, "tasks_country.country_blowout_effects_final_snd") --/ 5 real-sec
+end
+
+function country_blowout_effects_final_snd(t)
+--	news_manager.send_tip_hud("#EffectsFinal", "time=+41=(4+17+15+5)") --/#~# for debug
+	local snd = xr_sound.get_safe_sound_object("anomaly\\blowout1")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+
+function blackout(t)
+--	news_manager.send_tip_hud("#Blackout", "time=+51=(4+17+15+5+10)") --/#~# for debug
+	level.add_cam_effector("camera_effects\\dis_consciousness.anm", 2124, false, "")
+	level.add_pp_effector("deadcity_fade.ppe", 1984, false)
+	local snd = xr_sound.get_safe_sound_object("actor\\pain5")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	start_real_timer(3.5, "tasks_country.disable_ui") --/ 4 real-sec
+end
+
+function disable_ui(t)
+--	news_manager.send_tip_hud("#Disable", "time=+51+4") --/#~# for debug
+	level.remove_pp_effector(1974)
+	level.remove_cam_effector(2124)
+	xr_effects.disable_ui_elements(nil,nil,{"all"})
+	xr_effects.ai_ignore_on()
+	db.actor:activate_slot(-1)
+	local snd = xr_sound.get_safe_sound_object("heart\\3")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+
+function jump_to_lost(t) --/ tele_actor
+--	news_manager.send_tip_hud("#Jamp", "time=+59") --/#~# for debug
+	db.actor:detach_vehicle()
+	local p1 = get_patrol("lost_actor_wake_walk")
+	local p2 = get_patrol("lost_actor_wake_look")
+	local dir = p2:point(0):sub(p1:point(0))
+	level.ai_ignore_actor(false)
+	level_weathers.get_weather_manager():Active(true)
+	if db.actor and db.actor.health > 0.0 then
+		db.actor.health = 1.0
+		--db.actor.bleeding = 0.0
+	xr_effects.set_safe_zone(nil, nil, {"in"})
+	alife():change_actor_level(p1:point(0), p1:level_vertex_id(0), p1:game_vertex_id(0), dir)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+function sar_stash_code_check()
+	if has_info("bar_informer_info_e_2b") then
+		if not has_info("cordon_military_hostile") then
+			if not has_info("country_hermit_5947_talked") then
+				give_info("country_code_task_dunno")
+			end
+			give_info("country_military_leader_5947_talked")
+		else
+			give_info("country_code_task_enemy")
+		end
+	end
+end
+			
+			
+
+function atack_tip1()
+news_manager.send_tip_hud(game.translate_string("major_message_header"), game.translate_string("country_major_job_mutants"), "grib")
+end
+
+function atack_tip2()
+news_manager.send_tip_hud(game.translate_string("major_message_header"), game.translate_string("country_major_job_wave"), "grib")
+	local snd = xr_sound.get_safe_sound_object("ambient\\siren2")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+
+function second_wave()
+start_real_timer(30, "tasks_country.atack_info_por_sec")
+end
+
+function third_wave()
+start_real_timer(30, "tasks_country.atack_info_por_third")
+end
+
+function atack_info_por_sec() 
+db.actor:give_info_portion("country_second_wave_start")
+end
+
+function atack_info_por_third() 
+db.actor:give_info_portion("country_third_wave_start")
+end
+
+function first_wave_done() 
+if db.actor:has_info("atack_snork_dead3") 
+and db.actor:has_info("atack_karlik_dead3") 
+and db.actor:has_info("atack_plot_dead3") then 
+return true
+end
+return false
+end
+
+function second_wave_done() 
+if db.actor:has_info("atack_boar2_dead2") 
+and db.actor:has_info("atack_psydog_dead") then 
+return true
+end
+return false
+end
+
+function has_good_helmet(actor, npc) 
+    return db.actor:object("good_psy_helmet") ~= nil
+end

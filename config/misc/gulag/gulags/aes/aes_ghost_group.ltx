@@ -1,0 +1,137 @@
+;*********************************** state 0 ************************************************
+
+[logic@aes_ghost_group_off_kamper1]
+active = kamper@aes_ghost_group_off_kamper1
+
+[kamper@aes_ghost_group_off_kamper1]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+
+[logic@aes_ghost_group_off_kamper2]
+active = kamper@aes_ghost_group_off_kamper2
+
+[kamper@aes_ghost_group_off_kamper2]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp1
+
+[logic@aes_ghost_group_off_kamper3]
+active = kamper@aes_ghost_group_off_kamper3
+
+[kamper@aes_ghost_group_off_kamper3]
+path_walk = kamp3_walk
+path_look = kamp3_look
+kamp_name = kamp1
+
+[logic@aes_ghost_group_off_patrol1]
+active = walker@aes_ghost_group_off_patrol1
+
+[walker@aes_ghost_group_off_patrol1]
+path_walk = patrol1_walk
+path_look = patrol1_look
+
+[logic@aes_ghost_group_off_patrol2]
+active = walker@aes_ghost_group_off_patrol2
+
+[walker@aes_ghost_group_off_patrol2]
+path_walk = patrol2_walk
+path_look = patrol2_look
+
+[logic@aes_ghost_group_off_sleeper1]
+active = sleeper1@aes_ghost_group_off_sleeper1
+
+[sleeper1@aes_ghost_group_off_sleeper1]
+path_main = sleep1
+wakeable = false
+
+[logic@aes_ghost_group_off_guard1]
+active = walker@aes_ghost_group_off_guard1
+
+[walker@aes_ghost_group_off_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+
+
+;******************************************* state 1 *********************************************************
+
+[threshold@aes_ghost_group]
+ignore_monster = 5
+
+[danger@aes_dolg_group]
+ignore_distance = 20
+
+[combat_ignore@aes_dolg_group]
+
+[logic@aes_ghost_group_kamper1]
+active = kamper@aes_ghost_group_kamper1
+threshold = threshold@aes_ghost_group
+
+[kamper@aes_ghost_group_kamper1]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+danger = danger@aes_dolg_group
+threshold = threshold@aes_ghost_group
+
+[logic@aes_ghost_group_kamper2]
+active = kamper@aes_ghost_group_kamper2
+threshold = threshold@aes_ghost_group
+
+[kamper@aes_ghost_group_kamper2]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp1
+danger = danger@aes_dolg_group
+threshold = threshold@aes_ghost_group
+
+[logic@aes_ghost_group_kamper3]
+active = kamper@aes_ghost_group_kamper3
+threshold = threshold@aes_ghost_group
+
+[kamper@aes_ghost_group_kamper3]
+path_walk = kamp3_walk
+path_look = kamp3_look
+kamp_name = kamp1
+danger = danger@aes_dolg_group
+threshold = threshold@aes_ghost_group
+
+[logic@aes_ghost_group_sleeper1]
+active = sleeper@aes_ghost_group_sleeper1
+threshold = threshold@aes_ghost_group
+
+[sleeper@aes_ghost_group_sleeper1]
+path_main = sleep1
+wakeable = false
+danger = danger@aes_dolg_group
+threshold = threshold@aes_ghost_group
+
+[logic@aes_ghost_group_patrol1]
+active = walker@aes_ghost_group_patrol1
+threshold = threshold@aes_ghost_group
+
+[walker@aes_ghost_group_patrol1]
+path_walk = patrol1_walk
+danger = danger@aes_dolg_group
+threshold = threshold@aes_ghost_group
+
+[logic@aes_ghost_group_patrol2]
+active = walker@aes_ghost_group_patrol2
+threshold = threshold@aes_ghost_group
+
+[walker@aes_ghost_group_patrol2]
+path_walk = patrol2_walk
+danger = danger@aes_dolg_group
+threshold = threshold@aes_ghost_group
+
+[logic@aes_ghost_group_guard1]
+active = walker@aes_ghost_group_guard1
+threshold = threshold@aes_ghost_group
+
+[walker@aes_ghost_group_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+danger = danger@aes_dolg_group
+threshold = threshold@aes_ghost_group
+
+

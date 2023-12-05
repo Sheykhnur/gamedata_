@@ -1,0 +1,19 @@
+[logic]
+active = sr_particle@sc5zone
+
+[sr_particle@sc5zone]
+name = ghoul\fx-06-blue-glow
+path = dar_sci6_particle_zone
+mode = 2
+looped = true
+on_actor_inside = %+dar_sci_cutscene5% sr_cutscene
+on_info = {=gulag_darklab.is_cutscene_played} sr_idle@1
+
+[sr_cutscene]
+point = darcut3_point
+look = darcut3_look
+cam_effector = dar_cam3_eff
+on_signal = cameff_end | nil %+dar_cutscene5_end =enable_ui =release%
+
+[sr_idle@1]
+on_info = {!gulag_darklab.is_cutscene_played} sr_particle@sc5zone

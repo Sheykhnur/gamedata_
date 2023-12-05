@@ -1,0 +1,277 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_rostok_factory.script
+ Description: Gulags rostok_factory
+ Copyright  : 2004 © LA-team
+ Author     : vintar
+ Editors    : vintar, loxotron(23.02.2013)
+ Last edit  : 30.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	rosf_duty_hq                   = {comm = {"dolg"}},
+	rosf_duty_construction_terrain = {comm = {"dolg"}},
+	rosf_duty_village              = {comm = {"dolg"}},
+	rosf_factory_bandit_terrain    = {comm = {"bandit", "stalker"}},
+	rosf_eco_tunnel                = {comm = {"ecolog"}},
+	rosf_loner_group1              = {comm = {"bandit", "stalker", "dolg"}},
+	--/ for monsters ------------------------------
+	rosf_sucker_scene_terrain             = {comm = {"bloodsucker"}},
+	rosf_bloodsucker_construction_terrain = {comm = {"bloodsucker"}},
+	rosf_duty_bloodsucker_terrain         = {comm = {"bloodsucker"}},
+	rosf_factory_dog_terrain1             = {comm = {"pseudodog", "dog"}},
+	rosf_factory_dog_terrain2             = {comm = {"pseudodog", "dog"}},
+	rosf_factory_boar_terrain1            = {comm = {"pseudodog", "dog"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+local is_online = "{=actor_on_level(la14_rostok_factory)}"
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ ---------------------------------------------
+--/ rosf duty hq
+--/ ---------------------------------------------
+gulags.rosf_duty_hq.kamper_pred  = function(info) return info.name == "rosf_duty_hq_kamper1" end
+gulags.rosf_duty_hq.sleeper_pred = function(info) return info.name == "rosf_duty_hq_sleeper1" end
+gulags.rosf_duty_hq.fixer_pred   = function(info) return info.name == "rosf_duty_hq_fixer" end
+
+gulags.rosf_duty_hq.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off_kamper1",  0, 5, {0}, squad, groups[1], "", "", false, type, gulags.rosf_duty_hq.kamper_pred))
+	table.insert(sj, gulag_tasks.getJob("off_sleeper1", 0, 5, {0}, squad, groups[1], "", "", false, type, gulags.rosf_duty_hq.sleeper_pred))
+	table.insert(sj, gulag_tasks.getJob("off_fixer",    0, 5, {0}, squad, groups[1], "", "", false, type, gulags.rosf_duty_hq.fixer_pred))
+	table.insert(sj, gulag_tasks.getJob("kamper1",      0, 5, {1}, squad, groups[1], "", "",   nil, type, gulags.rosf_duty_hq.kamper_pred))
+	table.insert(sj, gulag_tasks.getJob("sleeper1",     0, 5, {1}, squad, groups[1], "", "",   nil, type, gulags.rosf_duty_hq.sleeper_pred))
+	table.insert(sj, gulag_tasks.getJob("fixer",        0, 5, {1}, squad, groups[1], "", "",   nil, type, gulags.rosf_duty_hq.fixer_pred))
+end
+
+gulags.rosf_duty_hq.state = function(gulag)
+	if has_info("rosf_petrenko_meet_done") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rosf bloodsucker scene terrain
+--/ ---------------------------------------------
+gulags.rosf_sucker_scene_terrain.bs2_pred = function(info) return info.name == "rosf_duty_bloodsucker2" end
+
+gulags.rosf_sucker_scene_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("mob_walker_wait2", 0, 5, {0}, squad, groups[1], "", "", false, type, gulags.rosf_sucker_scene_terrain.bs2_pred))
+	table.insert(sj, gulag_tasks.getJob("mob_walker2",      0, 5, {1}, squad, groups[1], "", "", is_online, type, gulags.rosf_sucker_scene_terrain.bs2_pred))
+	table.insert(sj, gulag_tasks.getJob("mob_home2",        0, 5, {2}, squad, groups[1], "", "", nil, type, gulags.rosf_sucker_scene_terrain.bs2_pred))
+end
+
+gulags.rosf_sucker_scene_terrain.state = function(gulag)
+	if not db.actor then return gulag.state end
+	if has_info("rosf_spawn_suckers") then
+		for k,v in pairs(gulag.Object) do
+			if v ~= true and v:best_enemy() and v:best_enemy():id() == idActor then
+				return 1
+			end
+		end
+		return 2
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rosf_bloodsucker_construction_terrain
+--/ ---------------------------------------------
+gulags.rosf_bloodsucker_construction_terrain.bs3_pred = function(info) return info.name == "rosf_duty_bloodsucker3" end
+gulags.rosf_bloodsucker_construction_terrain.bs4_pred = function(info) return info.name == "rosf_duty_bloodsucker4" end
+
+gulags.rosf_bloodsucker_construction_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("sucker1", 0, 5, {0}, squad, groups[1], "", "rosf_blood3_outrestrictor", false, type, gulags.rosf_bloodsucker_construction_terrain.bs3_pred))
+	table.insert(sj, gulag_tasks.getJob("mob1",    0, 5, {1}, squad, groups[1], "", "rosf_blood3_outrestrictor",   nil, type, gulags.rosf_bloodsucker_construction_terrain.bs3_pred))
+	table.insert(sj, gulag_tasks.getJob("sucker2", 0, 5, {0}, squad, groups[1], "", "rosf_blood4_outrestrictor", false, type, gulags.rosf_bloodsucker_construction_terrain.bs4_pred))
+	table.insert(sj, gulag_tasks.getJob("mob2",    0, 5, {1}, squad, groups[1], "", "rosf_blood4_outrestrictor",   nil, type, gulags.rosf_bloodsucker_construction_terrain.bs4_pred))
+end
+
+gulags.rosf_bloodsucker_construction_terrain.state = function(gulag)
+	if has_info("rosf_bloodsucker_duty_task") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rosf duty bloodsucker terrain
+--/ ---------------------------------------------
+gulags.rosf_duty_bloodsucker_terrain.bs1_pred = function(info) return info.name == "rosf_duty_bloodsucker1" end
+
+gulags.rosf_duty_bloodsucker_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("sucker", 0, 5, {0}, squad, groups[1], "", "rosf_blood1_outrestrictor", false, type, gulags.rosf_duty_bloodsucker_terrain.bs1_pred))
+	table.insert(sj, gulag_tasks.getJob("mob",    0, 5, {1}, squad, groups[1], "", "rosf_blood1_outrestrictor",   nil, type, gulags.rosf_duty_bloodsucker_terrain.bs1_pred))
+end
+
+gulags.rosf_duty_bloodsucker_terrain.state = function(gulag)
+	if has_info("rosf_bloodsucker_duty_task") and has_info("rosf_pda2_have") then
+		return 1
+	end
+	return 0
+end	
+
+--/ ---------------------------------------------
+--/ rosf duty construction terrain
+--/ ---------------------------------------------
+gulags.rosf_duty_construction_terrain.leader_pred  = function(info) return info.name == "rosf_duty_leader" end
+gulags.rosf_duty_construction_terrain.sniper1_pred = function(info) return info.name == "rosf_duty_construction_sniper1" end
+gulags.rosf_duty_construction_terrain.sniper2_pred = function(info) return info.name == "rosf_duty_construction_sniper2" end
+gulags.rosf_duty_construction_terrain.sniper3_pred = function(info) return info.name == "rosf_duty_construction_sniper3" end
+
+gulags.rosf_duty_construction_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off_sniper1", 0, 6, {0}, squad, groups[1], "", "", false, type, gulags.rosf_duty_construction_terrain.sniper1_pred))
+	table.insert(sj, gulag_tasks.getJob("off_sniper2", 0, 6, {0}, squad, groups[1], "", "", false, type, gulags.rosf_duty_construction_terrain.sniper2_pred))
+	table.insert(sj, gulag_tasks.getJob("off_sniper3", 0, 6, {0}, squad, groups[1], "", "", false, type, gulags.rosf_duty_construction_terrain.sniper3_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper1",     0, 6, {1}, squad, groups[1], "", "", is_online, type, gulags.rosf_duty_construction_terrain.sniper1_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper2",     0, 6, {1}, squad, groups[1], "", "", is_online, type, gulags.rosf_duty_construction_terrain.sniper2_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper3",     0, 6, {1}, squad, groups[1], "", "", is_online, type, gulags.rosf_duty_construction_terrain.sniper3_pred))
+	table.insert(sj, gulag_tasks.getJob("off_kamper_leader", 0, 9, {0}, squad, groups[1], "", "", false, type, gulags.rosf_duty_construction_terrain.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("kamper_leader",     0, 9, {1}, squad, groups[1], "", "",   nil, type, gulags.rosf_duty_construction_terrain.leader_pred))
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("off_kamper" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("off_sleeper" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+	
+gulags.rosf_duty_construction_terrain.state = function(gulag)
+	if has_info("rosf_petrenko_meet_done") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rosf duty village
+--/ ---------------------------------------------
+gulags.rosf_duty_village.leader_pred       = function(info) return info.name == "rosf_duty_leader" end
+gulags.rosf_duty_village.guard1_pred       = function(info) return info.name == "rosf_duty_village_guard1" end
+gulags.rosf_duty_village.patrol1_pred      = function(info) return info.name == "rosf_duty_village_patrol1" end
+gulags.rosf_duty_village.sleep_walker_pred = function(info) return info.name == "rosf_duty_village_sleep_walker" end
+
+gulags.rosf_duty_village.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader",             0, 8, {0, 1}, squad, groups[1], "", "rosf_duty_village_outrestrictor", nil, type, gulags.rosf_duty_village.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("guard1",             0, 7, {0, 1}, squad, groups[1], "", "rosf_duty_village_outrestrictor", nil, type, gulags.rosf_duty_village.guard1_pred))
+	table.insert(sj, gulag_tasks.getJob("patrol1",            0, 6, {0, 1}, squad, groups[1], "", "rosf_duty_village_outrestrictor", nil, type, gulags.rosf_duty_village.patrol1_pred))
+	table.insert(sj, gulag_tasks.getJob("sleep_walker_walk",  0, 5,    {0}, squad, groups[1], "", "rosf_duty_village_outrestrictor", nil, type, gulags.rosf_duty_village.sleep_walker_pred))
+	table.insert(sj, gulag_tasks.getJob("sleep_walker_sleep", 0, 5,    {1}, squad, groups[1], "", "rosf_duty_village_outrestrictor", nil, type, gulags.rosf_duty_village.sleep_walker_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i, 0, 4, {0, 1}, squad, groups[1], "", "rosf_duty_village_outrestrictor", nil, type, on_level_pred))
+	end
+end
+
+gulags.rosf_duty_village.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+--/ rosf factory bandit terrain
+--/ ---------------------------------------------
+gulags.rosf_factory_bandit_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i,  0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.rosf_factory_bandit_terrain.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rosf factory dog terrain1
+--/ ---------------------------------------------
+gulags.rosf_factory_dog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i,    0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.rosf_factory_dog_terrain1.state = function(gulag)
+	return 0
+end
+--/ ---------------------------------------------
+--/ rosf factory dog terrain2
+--/ ---------------------------------------------
+gulags.rosf_factory_dog_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 4, 6 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i,    0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.rosf_factory_dog_terrain2.state = function(gulag)
+	return 0
+end
+--/ ---------------------------------------------
+--/ rosf factory boar terrain1
+--/ ---------------------------------------------
+gulags.rosf_factory_boar_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("boaroff" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("boar" .. i,    0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.rosf_factory_boar_terrain1.state = function(gulag)
+	if has_info("rosf_petrenko_meet") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rosf eco tunnel
+--/ ---------------------------------------------
+gulags.rosf_eco_tunnel.eco1_pred = function(info) return info.name == "rosf_tunnel_eco1" end
+gulags.rosf_eco_tunnel.eco2_pred = function(info) return info.name == "rosf_tunnel_eco2" end
+
+gulags.rosf_eco_tunnel.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("walker1", 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.rosf_eco_tunnel.eco1_pred))
+	table.insert(sj, gulag_tasks.getJob("walker2", 0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.rosf_eco_tunnel.eco2_pred))
+end
+
+--/ ---------------------------------------------
+--/ rosf loner group1
+--/ ---------------------------------------------
+gulags.rosf_loner_group1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i,  0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("sleeper3", 0, 5, {0,1}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+gulags.rosf_loner_group1.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 0
+	end
+	return 1
+end
+--/ ------------------------------------------------------------------------------------------------

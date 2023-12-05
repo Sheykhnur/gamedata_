@@ -1,0 +1,410 @@
+
+[danger@esc_village_lager]
+;ignore_distance = 0
+
+[threshold@esc_village_lager]
+;max_ignore_distance = 5
+
+[threshold@esc_village_wolf]
+ignore_monster = 1
+
+[danger@esc_village_lager_proverb]
+ignore_distance       = 50
+ignore_distance_sound   = 50
+ignore_distance_corpse  = 20
+danger_inertion_time_corpse = 5000
+danger_inertion_time_sound = 5000
+
+[death@esc_village_lager_wolf]
+on_info = %+esc_wolf_dead%
+
+[hit@esc_village_lager_wolf]
+on_info = {=hit_by_actor} %+esc_wolf_hitted =disable_invulnerability =actor_enemy%
+
+[logic@esc_village_lager_wolf]
+active = walker@esc_village_lager_wolf
+threshold = threshold@esc_village_wolf
+on_hit = hit@esc_village_lager_wolf
+on_death = death@esc_village_lager_wolf
+
+[walker@esc_village_lager_wolf]
+path_walk = wolf_way
+path_look = shared_look
+on_info = {+esc_talked_with_wolf -esc_wolf_radio_done -esc_assault_go2} remark@esc_village_lager_wolf1 %=spawn_scripted_radio%
+on_info2 = {+esc_talked_with_wolf -esc_wolf_radio_done +esc_assault_go2} walker@esc_village_lager_wolf_wait
+on_info3 = {+esc_actor_wolf_reward} walker@esc_village_lager_wolf_wait
+on_info4 = {-esc_actor_wolf_reward +esc_rescue_fox_start} walker@esc_village_lager_wolf_waiting %+esc_wolf_changing_smart +esc_talked_with_wolf%
+meet = meet@esc_village_lager_wolf
+danger = danger@esc_village_lager
+invulnerable = {-esc_wolf_hitted} true
+threshold = threshold@esc_village_wolf
+
+[remark@esc_village_lager_wolf1]
+anim = guard_rac
+snd = esc_wolf_radio
+target = actor
+on_signal = sound_end | remark@esc_village_lager_wolf2 %=play_snd_from_radio(characters_voice\scenario\escape\wolf_to_rangers_1)%
+meet = no_meet
+danger = danger@esc_village_lager
+invulnerable = {-esc_wolf_hitted} true
+threshold = threshold@esc_village_wolf
+
+[remark@esc_village_lager_wolf2]
+anim = guard_rac
+target = actor
+on_timer = 5000 | walker@esc_village_lager_wolf %+esc_wolf_radio_done%
+on_info = {+esc_wolf_radio_done} walker@esc_village_lager_wolf
+meet = no_meet
+danger = danger@esc_village_lager
+invulnerable = {-esc_wolf_hitted} true
+threshold = threshold@esc_village_wolf
+
+[walker@esc_village_lager_wolf_wait]
+path_walk = wolf_way
+path_look = shared_look
+on_info = {+esc_actor_wolf_reward} walker@esc_village_lager_wolf_waiting
+on_info2 = {-esc_actor_wolf_reward +esc_rescue_fox_start} walker@esc_village_lager_wolf_waiting
+meet = meet@esc_village_lager_wolf
+danger = danger@esc_village_lager
+invulnerable = {-esc_wolf_hitted} true
+threshold = threshold@esc_village_wolf
+
+[walker@esc_village_lager_wolf_waiting]
+path_walk = wolf_way
+path_look = shared_look
+;on_actor_dist_ge_nvis = 20 | walker@esc_village_lager_walk_to_factory
+meet = meet@esc_village_lager_wolf
+danger = danger@esc_village_lager
+invulnerable = {-esc_wolf_hitted} true
+threshold = threshold@esc_village_wolf
+
+[walker@esc_village_lager_walk_to_factory]
+path_walk = wolf_to_factory
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_signal = reached | %+esc_wolf_changing_smart%
+meet = meet@esc_village_lager_wolf
+danger = danger@esc_village_lager
+threshold = threshold@esc_village_wolf
+invulnerable = {-esc_wolf_hitted} true
+
+[meet@esc_village_lager_wolf]
+meet_state		= 15|guard@wait
+meet_state_wpn	= 15|backoff@threat_weap
+victim		= 15|actor
+victim_wpn		= 15|actor
+use			= true
+use_wpn		= false
+syndata		= backoff@threat_weap
+
+[logic@esc_village_lager_wolf_off]
+active = walker@esc_village_lager_wolf_off
+
+[walker@esc_village_lager_wolf_off]
+path_walk = wolf_way
+path_look = shared_look
+
+[logic@esc_village_lager_fixer_guard]
+active = walker@esc_village_lager_fixer_guard
+
+[walker@esc_village_lager_fixer_guard]
+path_walk = guard_way
+path_look = shared_look
+danger = danger@esc_village_lager
+on_info = {+esc_wolf_hitted =see_actor} %=actor_enemy%
+
+[logic@esc_village_lager_sleep_guard]
+active = sleeper@esc_village_lager_sleep_guard
+
+[sleeper@esc_village_lager_sleep_guard]
+path_main = guard_way
+wakeable = true
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_novice1]
+active = walker@esc_village_lager_novice1a
+
+[walker@esc_village_lager_novice1a]
+path_walk = path1a
+on_signal = reached | walker@esc_village_lager_novice1b
+danger = danger@esc_village_lager
+
+[walker@esc_village_lager_novice1b]
+path_walk = path1b
+on_signal = reached | walker@esc_village_lager_novice1a
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_novice2]
+active = walker@esc_village_lager_novice2b
+
+[walker@esc_village_lager_novice2a]
+path_walk = path1a
+on_signal = reached | walker@esc_village_lager_novice2b
+danger = danger@esc_village_lager
+
+[walker@esc_village_lager_novice2b]
+path_walk = path1b
+on_signal = reached | walker@esc_village_lager_novice2a
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_novice3]
+active = kamper@esc_village_lager_novice3a
+
+[kamper@esc_village_lager_novice3a]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_novice4]
+active = kamper@esc_village_lager_novice4a
+
+[kamper@esc_village_lager_novice4a]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp2
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_novice_add1]
+active = kamper@esc_village_lager_novice5
+
+[kamper@esc_village_lager_novice5]
+path_walk = kamp3_walk
+path_look = kamp2_look
+kamp_name = kamp2
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_novice_add2]
+active = kamper@esc_village_lager_novice6
+
+[kamper@esc_village_lager_novice6]
+path_walk = kamp4_walk
+path_look = kamp1_look
+kamp_name = kamp1
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_novice_add3]
+active = walker@esc_village_lager_novice7
+
+[walker@esc_village_lager_novice7]
+path_walk = path7
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_sleeper1]
+active = sleeper@esc_village_lager_sleeper1
+
+[sleeper@esc_village_lager_sleeper1]
+path_main = sleep1
+wakeable = false
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_sleeper2]
+active = sleeper@esc_village_lager_sleeper2
+
+[sleeper@esc_village_lager_sleeper2]
+path_main = sleep2
+wakeable = false
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_sleeper3]
+active = sleeper@esc_village_lager_sleeper3
+
+[sleeper@esc_village_lager_sleeper3]
+path_main = sleep3
+wakeable = false
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_sleeper4]
+active = sleeper@esc_village_lager_sleeper4
+
+[sleeper@esc_village_lager_sleeper4]
+path_main = sleep4
+wakeable = false
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_sleeper_add1]
+active = sleeper@esc_village_lager_sleeper5
+
+[sleeper@esc_village_lager_sleeper5]
+path_main = sleep5
+wakeable = false
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_sleeper_add2]
+active = sleeper@esc_village_lager_sleeper6
+
+[sleeper@esc_village_lager_sleeper6]
+path_main = sleep6
+wakeable = false
+danger = danger@esc_village_lager
+
+[logic@esc_village_lager_sleeper_add3]
+active = sleeper@esc_village_lager_sleeper5
+
+[sleeper@esc_village_lager_sleeper7]
+path_main = sleep7
+wakeable = true
+danger = danger@esc_village_lager
+
+[danger@esc_village_lager_fox]
+ignore_distance = 0
+
+[combat_ignore@esc_village_lager_fox]
+
+[logic@esc_village_lager_fox]
+active = remark@esc_village_lager_fox
+combat_ignore = combat_ignore@esc_village_lager_fox
+
+[remark@esc_village_lager_fox]
+path_walk = fixer_walk
+;def_state_moving1 = assault
+;def_state_moving2 = assault
+;def_state_moving3 = assault
+combat_ignore_cond = {!hit_by_actor}
+meet = meet@esc_village_lager_fox
+target = actor
+danger = danger@esc_village_lager_fox
+;on_info = {+esc_fixer_teleported} %+esc_fixer_working%
+
+[meet@esc_village_lager_fox]
+victim = 30| nil| 20| actor
+use			= true
+use_wpn		= false
+
+[logic@esc_village_lager_off_fox]
+active = remark@esc_village_lager_off_fox
+combat_ignore = combat_ignore@esc_village_lager_fox
+
+[remark@esc_village_lager_off_fox]
+path_walk = fixer_walk
+combat_ignore_cond = always
+danger = danger@esc_village_lager_fox
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[threshold@proverb]
+max_ignore_distance = 2
+ignore_monster = 0
+
+[threshold@proverb_action]
+max_ignore_distance = 15
+ignore_monster = 0
+
+[death@esc_village_lager_proverb]
+on_info = %+esc_proverb_dead%
+
+[combat_ignore@esc_village_lager_proverb]
+
+[logic@esc_village_lager_proverb]
+active = {+esc_proverb_task_done} walker@esc_village_lager_proverb_rest, {+esc_proverb_1_task -esc_proverb_task_done} walker@esc_village_lager_proverb2, {-esc_proverb_1_task} walker@esc_village_lager_proverb1
+on_death = death@esc_village_lager_proverb
+invulnerable = {!hit_by_actor} true
+combat_ignore = combat_ignore@esc_village_lager_proverb
+
+[meet@proverb0]
+abuse 			= false
+use 			= {-esc_proverb_start_0} self, {+esc_proverb_start_0} true
+use_wpn 		= {-esc_proverb_start_0} self, {+esc_proverb_start_0} true
+victim 			= 3|actor
+victim_wpn		= 3|actor
+meet_state		= 2|hello@hail|1|wait@wait
+meet_state_wpn	= 2|hello@hail|1|wait@wait
+allow_break		= false
+trade_enable	= false
+
+[meet@proverb1]
+abuse 			= false
+use 			= {+escape_trader_tutorial_done -esc_proverb_1_task} self, {-escape_trader_tutorial_done} true
+use_wpn 		= {+escape_trader_tutorial_done -esc_proverb_1_task} self, {-escape_trader_tutorial_done} true
+victim 			= 3|actor
+victim_wpn		= 3|actor
+meet_state		= 2|hello@hail|1|wait@wait
+meet_state_wpn	= 2|hello@hail|1|wait@wait
+allow_break		= false
+trade_enable	= false
+
+[meet@proverb2]
+abuse 			= false
+use 			= true
+use_wpn 		= true
+victim 			= 3|actor
+victim_wpn		= 3|actor
+meet_state		= 2|hello@hail|1|wait@wait
+meet_state_wpn	= 2|hello@hail|1|wait@wait
+allow_break		= false
+trade_enable	= false
+
+[walker@esc_village_lager_proverb1]
+path_walk = proverb_walk1
+path_look = proverb_look1
+meet = meet@proverb0
+on_info = {+esc_proverb_start_talk} walker@esc_village_lager_proverb1_0
+invulnerable = {!hit_by_actor} true
+threshold = threshold@proverb
+
+[walker@esc_village_lager_proverb1_0]
+path_walk = proverb_walk1_0
+path_look = proverb_look1_0
+def_state_standing = wait
+on_info = {+esc_proverb_0_task_0} walker@esc_village_lager_proverb1_1 %-esc_proverb_start_0%
+invulnerable = {!hit_by_actor} true
+threshold = threshold@proverb
+
+[walker@esc_village_lager_proverb1_1]
+path_walk = proverb_walk1
+path_look = proverb_look1
+on_info = {+esc_proverb_1_task} walker@esc_village_lager_proverb2
+meet = meet@proverb1
+invulnerable = {!hit_by_actor} true
+threshold = threshold@proverb
+
+[walker@esc_village_lager_proverb2]
+path_walk = proverb_walk2
+meet = no_meet
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+combat_ignore_cond = {=fighting_dist_ge(15)}
+on_signal = point1|	%+esc_proverb_point_1%
+on_info = {+esc_flashes_dead} walker@esc_village_lager_proverb2_0
+invulnerable = {!hit_by_actor} true
+threshold = threshold@proverb_action
+
+[walker@esc_village_lager_proverb2_0]
+path_walk = proverb_walk2_0
+path_look = proverb_look2_0
+meet = meet@proverb2
+combat_ignore_cond = always
+on_info = {+esc_proverb_2_task} walker@esc_village_lager_proverb2_2
+invulnerable = {!hit_by_actor} true
+threshold = threshold@proverb_action
+
+[walker@esc_village_lager_proverb2_2]
+path_walk = proverb_walk2_2
+meet = no_meet
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+combat_ignore_cond = {=fighting_dist_ge(15)}
+on_signal = point2|	%+esc_proverb_point_2%
+on_info = {+esc_boars_dead} walker@esc_village_lager_proverb2_3
+invulnerable = {!hit_by_actor} true
+;danger = danger@esc_village_lager_proverb
+threshold = threshold@proverb_action
+
+[walker@esc_village_lager_proverb2_3]
+path_walk = proverb_walk2_3
+path_look = proverb_look2_3
+meet = meet@proverb2
+combat_ignore_cond = always
+on_info = {+esc_proverb_task_done} walker@esc_village_lager_proverb_rest
+invulnerable = {!hit_by_actor} true
+threshold = threshold@proverb_action
+
+[walker@esc_village_lager_proverb_rest]
+path_walk = proverb_walk1_0
+path_look = proverb_look1_0
+meet = meet@proverb2
+invulnerable = {!hit_by_actor} true
+threshold = threshold@proverb_action

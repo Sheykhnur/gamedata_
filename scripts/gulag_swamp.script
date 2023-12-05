@@ -1,0 +1,278 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_swamp.script
+ Description: Gulags Swamp
+ Copyright  : 2004 © LA-team
+ Author     : vintar
+ Editors    : vintar(22.07.2012), loxotron(23.02.2013)
+ Last edit  : 26.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	swamp_doc_terrain     = {comm = {"stalker", "ecolog", "trader", "clear_sky"}},
+	swamp_bandit_terrain1 = {comm = {"bandit", "stalker"}},
+	swamp_bandit_terrain2 = {comm = {"bandit"}},
+	swamp_bandit_terrain3 = {comm = {"bandit"}},
+	--/ for monsters ------------------------------
+	swamp_swampbeast_terrain1   = {comm = {"swampbeast"}},
+	swamp_swampbeast_terrain2   = {comm = {"swampbeast"}},
+	swamp_swampbeast_terrain3   = {comm = {"swampbeast"}},
+	swamp_swampbeast_terrain4   = {comm = {"swampbeast"}},
+	swamp_swampbeast_terrain5   = {comm = {"swampbeast"}},
+	swamp_swampbeast_terrain6   = {comm = {"swampbeast"}},
+	swamp_swampbeast_terrain7   = {comm = {"swampbeast"}},
+	swamp_bloodsucker_terrain1  = {comm = {"bloodsucker"}},
+	swamp_bloodsucker_terrain2  = {comm = {"bloodsucker"}},
+	swamp_boar_terrain1         = {comm = {"boar"}},
+	swamp_boar_terrain2         = {comm = {"boar"}},
+	swamp_boar_terrain3         = {comm = {"boar"}},
+	swamp_flesh_terrain1        = {comm = {"flesh"}},
+	swamp_poltergeist_terrain1  = {comm = {"poltergeist"}},	--/flame
+	swamp_doc_dog_terrain  		= {comm = {"pseudodog"}},
+}
+--/ ----------------------------------------------
+local mob_in_rest = "swamp_doc_no_mutants_restrictor"
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local is_online = "{=xr_gulag.actor_on_gulag_level()}"
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/ -----------------------------------------------------------------------------------------------
+--/ Gulags
+--/ -----------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ swamp_doc_terrain
+--/ ---------------------------------------------
+gulags.swamp_doc_terrain.doc_pred = function(info) return info.name == "swamp_doctor" end
+
+gulags.swamp_doc_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("doc_off", 0, 8, {0}, squad, groups[1], "", "", false, type, gulags.swamp_doc_terrain.doc_pred))
+	table.insert(sj, gulag_tasks.getJob("doc",     0, 8, {1}, squad, groups[1], "", "",   nil, type, gulags.swamp_doc_terrain.doc_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i, 0, 5, {0,1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 5, {0,1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.swamp_doc_terrain.state = function(gulag)
+	if has_info("yan_meet_doc_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ swamp_doc_dog_terrain
+--/ ---------------------------------------------
+gulags.swamp_doc_dog_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("doggie",     0, 5, {0}, squad, groups[1], "", "swamp_doc_dog_terrain_out_restr",    false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("doggie",     0, 5, {1}, squad, groups[1], "", "swamp_doc_dog_terrain_out_restr",    nil, type, on_level_pred))
+end
+
+gulags.swamp_doc_dog_terrain.state = function(gulag)
+	if has_info("yan_meet_doc_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ swamp_bandit_terrain1
+--/ ---------------------------------------------
+gulags.swamp_bandit_terrain1.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("sniper", 0, 5, {1}, squad, groups[1], "", "", is_online, type, on_level_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i, 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.swamp_bandit_terrain1.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ swamp_swampbeast_terrain1
+--/ ---------------------------------------------
+gulags.swamp_swampbeast_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "swamp_beast_restrictor1", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_swampbeast_terrain2
+--/ ---------------------------------------------
+gulags.swamp_swampbeast_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "swamp_beast_restrictor2", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_swampbeast_terrain3
+--/ ---------------------------------------------
+gulags.swamp_swampbeast_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "swamp_beast_restrictor3", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_swampbeast_terrain4
+--/ ---------------------------------------------
+gulags.swamp_swampbeast_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "swamp_beast_restrictor4", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_swampbeast_terrain5
+--/ ---------------------------------------------
+gulags.swamp_swampbeast_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "swamp_beast_restrictor5", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_swampbeast_terrain6
+--/ ---------------------------------------------
+gulags.swamp_swampbeast_terrain6.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "swamp_beast_restrictor6", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_swampbeast_terrain7
+--/ ---------------------------------------------
+gulags.swamp_swampbeast_terrain7.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "swamp_beast_restrictor7", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_bloodsucker_terrain1
+--/ ---------------------------------------------
+gulags.swamp_bloodsucker_terrain1.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("sucker1", 0, 5, {0}, squad, groups[1], "swamp_bandit1_restrictor,swamp_doc_no_mutants_restrictor", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ swamp_bloodsucker_terrain2
+--/ ---------------------------------------------
+gulags.swamp_bloodsucker_terrain2.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("sucker1", 0, 5, {0}, squad, groups[1], "" , "swamp_bs2_outrestrictor", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("sucker2", 0, 5, {0}, squad, groups[1], "" , "swamp_bs2_outrestrictor", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ swamp_boar_terrain1
+--/ ---------------------------------------------
+gulags.swamp_boar_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], mob_in_rest, "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_boar_terrain2
+--/ ---------------------------------------------
+gulags.swamp_boar_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], mob_in_rest, "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_boar_terrain3
+--/ ---------------------------------------------
+gulags.swamp_boar_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], mob_in_rest, "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_flesh_terrain1
+--/ ---------------------------------------------
+gulags.swamp_flesh_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("flesh" .. i, 0, 5, {0}, squad, groups[1], mob_in_rest, "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_poltergeist_terrain1
+--/ ---------------------------------------------
+gulags.swamp_poltergeist_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("poltergeist" .. i, 0, 5, {0}, squad, groups[1], mob_in_rest, "",nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ swamp_bandit_terrain2 (3 npc)
+--/ ---------------------------------------------
+gulags.swamp_bandit_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i, 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.swamp_bandit_terrain2.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ swamp_bandit_terrain3 (5 npc)
+--/ ---------------------------------------------
+gulags.swamp_bandit_terrain3.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("walker1", 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("walker2", 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("kamp" .. i, 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.swamp_bandit_terrain3.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+--/ ------------------------------------------------------------------------------------------------

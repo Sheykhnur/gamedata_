@@ -1,0 +1,153 @@
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; AMUNITION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_base]:identity_immunities
+allow_ricochet              = true
+belt                        = true
+buck_shot                   = 1
+explosive                   = false
+k_ap                        = 0
+k_speed                     = 0.75 ; [NEW FOR LA DC] bullet starting speed multiplier
+tracer                      = on
+tracer_color_ID             = 0
+
+script_loot_class           = ammo
+
+
+[ammo_dummy]:identity_immunities ;--/#+#
+GroupControlSection         = spawn_group
+discovery_dependency        =
+$prefetch                   = 64
+class                       = AMMO
+cform                       = skeleton
+description                 =
+inv_name                    = ""
+inv_name_short              =
+inv_grid_width              = 1
+inv_grid_height             = 1
+inv_grid_x                  = 0
+inv_grid_y                  = 0
+
+inv_weight                  = 0 ;--/ вес
+cost                        = 0 ;--/ стоимость
+box_size                    = 1 ;--/ кол-во в пачке
+
+k_dist                      = 1 ;--/коэффициент дальности
+k_disp                      = 1 ;--/коэффициент кучности
+k_hit                       = 1 ;--/коэффициент убойности
+k_impulse                   = 1 ;--/коэффициент "толчка" при попадании
+k_pierce                    = 1 ;--/ коэффициент порчи брони при попадании
+impair                      = 1 ;--/ коэффициент износа ствола от пули
+buck_shot                   = 1 ;--/ кол-во составляющих в патроне (напр: пуля - 1, картечь - 4)
+wm_size                     = 0.0001  ;--/ визуальный размер дырки на объекте от пули
+
+tracer                      = off ;on ;--/ является ли патрон трассирующим (on/off)
+explosive                   = off ;on ;--/ отигрывать ли партиклы в точке попадания (on/off)
+k_air_resistance            = 1.5
+
+
+[ammo_binoc_dummy]:ammo_dummy ;--/#+# заглушка для бинокля (stub for wpn_binoc)
+description                 = binocular
+inv_name                    = binocular
+inv_name_short              = binocular
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 16
+inv_grid_y                  = 8
+box_size                    = 0
+k_hit                       = 0
+buck_shot                   = 0
+
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_9x18_pbp.ogf
+wm_size                     = 0.05
+
+; Economy
+cost                        = 140
+inv_weight                  = .24
+box_size                    = 30
+
+; Impact
+k_hit                       = 0.5
+k_ap                        = 0.4
+k_pierce                    = 0.4
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 1.6
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.75
+
+[heli_ammo]:ammo_base
+$prefetch                   = 64
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_12x76_zhekan.ogf
+explosive                   = on
+wm_size                     = 0.15
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 33
+inv_grid_y                  = 24
+
+; Text
+inv_name                    = ammo_heli
+inv_name_short              = ammo_heli
+
+; Economy
+cost                        = 100
+inv_weight                  = .50
+box_size                    = 10
+
+; Impact
+k_hit						= 2.5
+k_ap						= 0.8
+k_pierce					= 0.8
+k_impulse					= 2.5
+allow_ricochet              = false
+impair                      = 1
+
+; Ballistics
+k_air_resistance		    = 1.3
+k_disp                      = 1
+k_dist                      = 1
+k_speed 					= 1
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Actual ammo sections
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#include "a_.44.ltx"
+#include "a_.45.ltx"
+#include "a_.50ae.ltx"
+#include "a_.500.ltx"
+#include "a_5.45x39.ltx"
+#include "a_5.56x45.ltx"
+#include "a_7.62x25.ltx"
+#include "a_7.62x39.ltx"
+#include "a_7.62x51.ltx"
+#include "a_7.62x54r.ltx"
+#include "a_8.6x70.ltx"
+#include "a_5.7x28.ltx"
+#include "a_9x18.ltx"
+#include "a_9x19.ltx"
+#include "a_9x39.ltx"
+#include "a_12ga.ltx"
+#include "a_23x75.ltx"
+#include "a_gauss.ltx"
+#include "a_m209.ltx"
+#include "a_rpg7.ltx"
+#include "a_vog25.ltx"

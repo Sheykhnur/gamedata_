@@ -1,0 +1,15 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-war_actor_teleporting +war_core_deactivated} sr_idle@2
+
+[sr_idle@2]
+on_timer = 3000 | sr_cutscene %+war_scene_finale =gens_disabled_snd%
+
+[sr_cutscene]
+point = war_con_end_point
+look = war_con_end_point
+cam_effector = war_con_5
+pp_effector = sar_out
+on_signal = cameff_end | nil %+war_actor_teleporting =release%

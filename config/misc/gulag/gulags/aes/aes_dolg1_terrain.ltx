@@ -1,0 +1,364 @@
+[combat_ignore@aes_dolg1]
+
+[danger@aes_dolg1]
+ignore_distance = 5
+
+[threshold@aes_dolg1]
+max_ignore_distance = 2
+
+[logic@aes_dolg1_terrain_leader]
+active = walker@aes_dolg1_terrain_leader_start
+combat_ignore = combat_ignore@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_leader_start]
+path_walk = leader_wait
+path_look = leader_wait_look
+def_state_standing = ward
+combat_ignore_cond = always
+on_info = {+npp_chose_dolg1} remark@aes_dolg1_terrain_leader_call
+on_info2 = {+npp_chose_mil} walker@aes_dolg1_terrain_leader_attack
+meet = meet@aes_dolg1_leader
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+invulnerable = true
+
+[remark@aes_dolg1_terrain_leader_call]
+;snd = pripyat_pri_radiation_quest_1
+target = actor
+meet = meet@aes_dolg1_leader
+on_info = {+npp_chose_mil} walker@aes_dolg1_terrain_leader_attack
+on_info2 = {+aes_dolg1_leader_accept} walker@aes_dolg1_terrain_leader_attack, {+aes_dolg1_leader_decline} walker@aes_dolg1_terrain_leader_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+invulnerable = true
+
+;[walker@aes_dolg1_terrain_leader]
+;path_walk = leader_wait
+;path_look = leader_wait_look
+;def_state_standing = ward
+;combat_ignore_cond = always
+;on_info = {+npp_chose_mil} walker@aes_dolg1_terrain_leader_attack
+;on_info2 = {+aes_dolg1_leader_accept} walker@aes_dolg1_terrain_leader_attack, {+aes_dolg1_leader_decline} walker@aes_dolg1_terrain_leader_attack
+;meet = meet@aes_dolg1_leader
+;;danger =danger@aes_dolg1
+
+[meet@aes_dolg1_leader]
+meet_state 			= 5| wait_trade
+meet_state_wpn 		= 5| wait_trade
+victim         		= 15| actor   
+victim_wpn    		= 15| actor   
+use                 = true
+use_wpn             = true
+meet_dialog			= {-npp_chose_mil -aes_btr_death} aes_dolg1_leader_start_dialog, {-npp_chose_mil +aes_btr_death} aes_dolg1_leader_raid_dialog, {+npp_chose_mil} dm_hello_dialog
+
+[walker@aes_dolg1_terrain_leader_attack]
+path_walk = leader_attack
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+aes_mono_bridge_cleaned} walker@aes_dolg1_terrain_leader_regroup
+meet = no_meet
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+invulnerable = true
+
+[walker@aes_dolg1_terrain_leader_regroup]
+path_walk = leader_regroup
+path_look = leader_regroup_look
+meet = meet@aes_dolg1_leader
+combat_ignore_cond = always
+on_signal = regrouped| {-npp_chose_mil} walker@aes_dolg1_terrain_leader_regroup_meet %+aes_dolg1_leader_regrouped%, {+npp_chose_mil} walker@aes_dolg1_terrain_leader_regroup_meet %+aes_tranceiver_placed%, {+aes_btr_death} walker@aes_dolg1_terrain_leader_second_attack
+on_info = {+aes_dolg1_regroup} walker@aes_dolg1_terrain_leader_regroup_meet
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+invulnerable = true
+
+[walker@aes_dolg1_terrain_leader_regroup_meet]
+path_walk = leader_regroup
+path_look = leader_regroup_look
+meet = meet@aes_dolg1_leader
+on_info = {+aes_btr_death} walker@aes_dolg1_terrain_leader_second_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+invulnerable = true
+
+[walker@aes_dolg1_terrain_leader_second_attack]
+path_walk = second_attack_leader
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+on_info = {+aes_mono_defeated} walker@aes_dolg1_terrain_leader_claim
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+invulnerable = true
+
+[walker@aes_dolg1_terrain_leader_claim]
+path_walk = leader_claim
+path_look = leader_claim_look
+def_state_standing = ward
+meet = meet@aes_dolg1_leader
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+on_info = {+aes_dolg1_sar_details} walker@aes_dolg1_terrain_leader_claimed
+invulnerable = true
+
+[walker@aes_dolg1_terrain_leader_claimed]
+path_walk = leader_claim
+path_look = leader_claim_look
+def_state_standing = ward
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+invulnerable = true
+
+;*************************************************************************************************************************
+[logic@aes_dolg1_terrain_dolg1]
+active = walker@aes_dolg1_terrain_dolg1
+combat_ignore = combat_ignore@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg1]
+path_walk = dolg1_wait
+path_look = dolg1_wait_look
+def_state_standing = assault
+combat_ignore_cond = always
+on_info = {+npp_chose_mil} walker@aes_dolg1_terrain_dolg1_attack
+on_info2 = {+aes_dolg1_leader_accept} walker@aes_dolg1_terrain_dolg1_attack %+aes_dolg1_attack% , {+aes_dolg1_leader_decline} walker@aes_dolg1_terrain_dolg1_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg1_attack]
+path_walk = dolg1_attack
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+aes_mono_bridge_cleaned} walker@aes_dolg1_terrain_dolg1_regroup %+aes_dolg1_regroup%
+meet = no_meet
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg1_regroup]
+path_walk = dolg1_regroup
+path_look = dolg1_regroup_look
+on_info = {+aes_btr_death} walker@aes_dolg1_terrain_dolg1_second_attack %+aes_dolg1_second_attack%
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg1_second_attack]
+path_walk = second_attack1
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+on_info = {+aes_mono_defeated} walker@aes_dolg1_terrain_dolg1_claim %+aes_dolg1_claim%
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg1_claim]
+path_walk = dolg1_claim
+def_state_moving1 = patrol
+def_state_moving2 = patrol
+def_state_moving3 = patrol
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+;**********************************************************************************************************
+[logic@aes_dolg1_terrain_dolg2]
+active = walker@aes_dolg1_terrain_dolg2
+combat_ignore = combat_ignore@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg2]
+path_walk = dolg2_wait
+path_look = dolg2_wait_look
+def_state_standing = assault
+combat_ignore_cond = always
+on_info = {+npp_chose_mil} walker@aes_dolg1_terrain_dolg2_attack
+on_info2 = {+aes_dolg1_leader_accept} walker@aes_dolg1_terrain_dolg2_attack, {+aes_dolg1_leader_decline} walker@aes_dolg1_terrain_dolg2_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg2_attack]
+path_walk = dolg2_attack
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+aes_mono_bridge_cleaned} walker@aes_dolg1_terrain_dolg2_regroup
+meet = no_meet
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg2_regroup]
+path_walk = dolg2_regroup
+path_look = dolg2_regroup_look
+on_info = {+aes_btr_death} walker@aes_dolg1_terrain_dolg2_second_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg2_second_attack]
+path_walk = second_attack2
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+on_info = {+aes_mono_defeated} walker@aes_dolg1_terrain_dolg2_claim
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg2_claim]
+path_walk = dolg2_claim
+def_state_moving1 = patrol
+def_state_moving2 = patrol
+def_state_moving3 = patrol
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+;******************************************************************************************************************
+[logic@aes_dolg1_terrain_dolg3]
+active = walker@aes_dolg1_terrain_dolg3
+combat_ignore = combat_ignore@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg3]
+path_walk = dolg3_wait
+path_look = dolg3_wait_look
+def_state_standing = assault
+combat_ignore_cond = always
+on_info = {+npp_chose_mil} walker@aes_dolg1_terrain_dolg3_attack
+on_info2 = {+aes_dolg1_leader_accept} walker@aes_dolg1_terrain_dolg3_attack, {+aes_dolg1_leader_decline} walker@aes_dolg1_terrain_dolg3_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg3_attack]
+path_walk = dolg3_attack
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+aes_mono_bridge_cleaned} walker@aes_dolg1_terrain_dolg3_regroup
+meet = no_meet
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg3_regroup]
+path_walk = dolg3_regroup
+path_look = dolg3_regroup_look
+on_info = {+aes_btr_death} walker@aes_dolg1_terrain_dolg3_second_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg3_second_attack]
+path_walk = second_attack3
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+on_info = {+aes_mono_defeated} walker@aes_dolg1_terrain_dolg3_claim
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg3_claim]
+path_walk = dolg3_claim
+def_state_moving1 = patrol
+def_state_moving2 = patrol
+def_state_moving3 = patrol
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+;*************************************************************************************************************************************
+[logic@aes_dolg1_terrain_dolg4]
+active = walker@aes_dolg1_terrain_dolg4
+combat_ignore = combat_ignore@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg4]
+path_walk = dolg4_wait
+path_look = dolg4_wait_look
+def_state_standing = assault
+combat_ignore_cond = always
+on_info = {+npp_chose_mil} walker@aes_dolg1_terrain_dolg4_attack
+on_info2 = {+aes_dolg1_leader_accept} walker@aes_dolg1_terrain_dolg4_attack, {+aes_dolg1_leader_decline} walker@aes_dolg1_terrain_dolg4_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg4_attack]
+path_walk = dolg4_attack
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+aes_mono_bridge_cleaned} walker@aes_dolg1_terrain_dolg4_regroup
+meet = no_meet
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg4_regroup]
+path_walk = dolg4_regroup
+path_look = dolg4_regroup_look
+on_info = {+aes_btr_death} walker@aes_dolg1_terrain_dolg4_second_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg4_second_attack]
+path_walk = second_attack4
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+on_info = {+aes_mono_defeated} walker@aes_dolg1_terrain_dolg4_claim
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg4_claim]
+path_walk = dolg4_claim
+def_state_moving1 = patrol
+def_state_moving2 = patrol
+def_state_moving3 = patrol
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+;*****************************************************************************************************************
+[logic@aes_dolg1_terrain_dolg5]
+active = walker@aes_dolg1_terrain_dolg5
+combat_ignore = combat_ignore@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg5]
+path_walk = dolg5_wait
+path_look = dolg5_wait_look
+def_state_standing = assault
+combat_ignore_cond = always
+on_info = {+npp_chose_mil} walker@aes_dolg1_terrain_dolg5_attack
+on_info2 = {+aes_dolg1_leader_accept} walker@aes_dolg1_terrain_dolg5_attack, {+aes_dolg1_leader_decline} walker@aes_dolg1_terrain_dolg5_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg5_attack]
+path_walk = dolg5_attack
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+aes_mono_bridge_cleaned} walker@aes_dolg1_terrain_dolg5_regroup
+meet = no_meet
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg5_regroup]
+path_walk = dolg5_regroup
+path_look = dolg5_regroup_look
+on_info = {+aes_btr_death} walker@aes_dolg1_terrain_dolg5_second_attack
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg5_second_attack]
+path_walk = second_attack5
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+on_info = {+aes_mono_defeated} walker@aes_dolg1_terrain_dolg5_claim
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1
+
+[walker@aes_dolg1_terrain_dolg5_claim]
+path_walk = dolg5_claim
+def_state_moving1 = patrol
+def_state_moving2 = patrol
+def_state_moving3 = patrol
+;danger =danger@aes_dolg1
+threshold = threshold@aes_dolg1

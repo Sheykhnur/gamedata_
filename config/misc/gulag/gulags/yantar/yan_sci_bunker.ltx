@@ -1,0 +1,136 @@
+;*****************************state 0**********************************
+[danger@sci_bunker]
+ignore_distance = 80
+ignore_distance_corpse  = 10
+danger_inertion_time = 5000
+danger_inertion_time_corpse = 5000
+danger_inertion_time_sound = 5000
+
+[threshold@sci_bunker]
+max_ignore_distance = 13
+
+[combat_ignore@sci_bunker]
+
+[logic@yan_sci_bunker_patrol]
+active = walker@yan_sci_bunker_patrol
+
+[walker@yan_sci_bunker_patrol]
+path_walk = yard_patrol1
+danger = danger@sci_bunker
+threshold = threshold@sci_bunker
+
+[logic@yan_sci_bunker_guard]
+active = walker@yan_sci_bunker_guard
+
+[walker@yan_sci_bunker_guard]
+path_walk = guard_walk
+path_look = guard_look
+danger = danger@sci_bunker
+threshold = threshold@sci_bunker
+
+[logic@yan_sci_bunker_gate_guard]
+active = walker@yan_sci_bunker_gate_guard_start
+
+[walker@yan_sci_bunker_gate_guard_start]
+path_walk = gate_guard_open
+path_look = gate_guard_open_look
+default_state_standing = guard
+danger = danger@sci_bunker
+threshold = threshold@sci_bunker
+meet = meet@gate_guard
+
+[meet@gate_guard]
+meet_state     = 10| guard| 2| nil  
+meet_state_wpn = 10| guard| 2| nil   
+victim         = 10| actor| 2| nil  
+victim_wpn     = 10| actor| 2| nil 
+use            = true
+use_wpn        = true
+
+[logic@yan_sci_bunker_shed_walk1]
+active = walker@yan_sci_bunker_shed_walk1
+combat_ignore = combat_ignore@sci_bunker
+on_hit = hit@sci_bunker
+
+[walker@yan_sci_bunker_shed_walk1]
+path_walk = shed1_walk
+path_look = shed1_look
+meet = meet@kruglov
+combat_ignore_cond = always
+
+[meet@kruglov]
+meet_state		= 5|hello |2|nil
+meet_state_wpn	= 5|hello |2|nil
+victim			= 10|actor
+victim_wpn		= 10|actor
+use				= true
+use_wpn			= true
+meet_dialog		= yantar_kruglov_start_talk
+
+[logic@yan_sci_bunker_shed_walk2]
+active = walker@yan_sci_bunker_shed_walk2
+combat_ignore = combat_ignore@sci_bunker
+on_hit = hit@sci_bunker
+
+[walker@yan_sci_bunker_shed_walk2]
+path_walk = shed2_walk
+path_look = shed2_look
+combat_ignore_cond = always
+
+;*************************sakharov****************************
+
+[logic@yan_sci_bunker_scientist_start]
+active = walker@scientist_start
+combat_ignore = true
+trade = misc\trade\trade_sakharov.ltx
+inv_max_weight = 10000
+
+[walker@scientist_start]
+path_walk = sakharov_start_walk
+path_look = sakharov_start_look
+def_state_moving1 = yan_professor_walk
+def_state_standing = yan_professor_wait
+combat_ignore_cond = always
+invulnerable = true
+on_actor_dist_le_nvis = 10| walker@scientist_talk
+
+[walker@scientist_talk]
+path_walk = sakharov_talk_walk
+path_look = sakharov_talk_look
+def_state_moving1 = yan_professor_walk
+def_state_standing = yan_professor_wait
+combat_ignore_cond = always
+invulnerable = true
+on_signal = talk| remark@talking
+
+[remark@talking]
+anim = yan_professor_wait
+target = actor
+meet = meet@talking
+combat_ignore_cond = always
+invulnerable = true
+on_info = {+yan_scientist_bad_helmet_done} remark@helmet_talk
+
+[meet@talking]
+meet_state 			= 3| yan_professor_wait
+meet_state_wpn 		= 3| yan_professor_wait
+victim         		= 3| actor   
+victim_wpn    		= 3| actor   
+use                 = true
+use_wpn             = false
+
+[remark@helmet_talk]
+anim = yan_professor_wait
+target = actor
+meet = meet@helmet
+combat_ignore_cond = always
+invulnerable = true
+on_actor_dist_ge_nvis = 10| walker@scientist_start
+
+[meet@helmet]
+meet_state 			= 3| yan_professor_wait
+meet_state_wpn 		= 3| yan_professor_wait
+victim         		= 3| actor   
+victim_wpn    		= 3| actor   
+use                 = true
+use_wpn             = false

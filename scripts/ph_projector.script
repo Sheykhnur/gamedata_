@@ -1,0 +1,184 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ph_projector.script (analog: xr_light_guard.script)
+ Description: scheme: "automatic projector, for synchronization with npc use"
+ Copyright  : 2008 © LA
+ Author     : barin (2008-08-17)
+ Editors    : gr1ph00n(2011-09-11)
+ Last edit  : 30.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/------------------------------------------------------------------------------------------------
+class "action_search_light"
+--/------------------------------------------------------------------------------------------------
+function action_search_light:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+	self.state  = nil
+	self.path   = nil --/ path_look
+	self.broken = false
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_search_light:reset_scheme()
+--	log("reset_scheme:obj=[%s]", self.object:name(), "") --/#~#
+	if not self.path then
+		self.path = get_patrol(self.st.path_look)
+	end
+	self.wp_num     = self.path:count() - 1
+	self.rnd_wp     = self.st.rnd_wp
+	--/ wp look timeout
+	self.timeout    = self.st.timeout
+	--/ rotation speed
+	self.rot_hspeed = self.st.rot_hspeed
+	self.rot_vspeed = self.st.rot_vspeed
+	
+	self.look_mode  = "forward"
+	self.curr_wp    = 0
+	
+	self.object:set_callback(callback.hit, self.hit_callback, self)
+	self:change_state()
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_search_light:update()
+	if not self.broken and time_global() > (self.look_time or 0) then
+		self:change_state()
+		if self.state == true and not self.object:action() then
+			self:look_at()
+		end
+	end
+	
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function action_search_light:deactivate()
+	self.object:script(false, sModule)
+	self.object:set_tip_text("")
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function action_search_light:turn_on()
+	reset_action(self.object, sModule)
+	action(self.object, object(object.turn_on), cond(cond.time_end))
+	self.look_time = time_global() + self.timeout
+	--self.object:set_tip_text("turn off")
+	self.state = true
+end
+
+function action_search_light:turn_off()
+	reset_action(self.object, sModule)
+	action(self.object, object(object.turn_off), cond(cond.time_end, time_infinite))
+	--self.object:set_tip_text("turn on")
+	self.state = false
+end
+
+function action_search_light:look_at()
+	if self.rnd_wp then
+		self.curr_wp = math.random(0, self.wp_num)
+	else
+		if self.curr_wp == self.wp_num then
+			self.look_mode = "backward"
+		elseif self.curr_wp == 0 then
+			self.look_mode = "forward"
+		end
+		if self.look_mode == "forward" then
+			self.curr_wp = self.curr_wp + 1
+		else
+			self.curr_wp = self.curr_wp - 1
+		end
+	end
+	
+	reset_action(self.object, sModule)
+	action(self.object, look(self.path:point(self.curr_wp), self.rot_hspeed, self.rot_vspeed), cond(cond.look_end))
+	self.look_time = time_global() + self.timeout
+end
+
+function action_search_light:change_state()
+	if self.state == nil then
+		self:turn_off()
+	elseif self.state == true then
+		if is_day() then
+			self:turn_off()
+		end
+	elseif self.state == false then
+		if not is_day() then
+			self:turn_on()
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function action_search_light:hit_callback(victim, amount, local_direction, who, bone_index)
+	if not self.broken and amount > 0.1 then
+		self.broken = true
+		self.st.signals["broken"] = true
+		self:turn_off()
+	end
+end
+--[[
+function action_search_light:net_destroy()
+end
+
+function action_search_light:death_callback(victim, who)
+end
+
+function action_search_light:use_callback(victim, who)
+end
+--]]
+--/------------------------------------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, ">") --/#~#
+	st.action = this.action_search_light(obj, st)
+	--/ action registration, for 'reset_scheme' method call in case of change of settings of the scheme:
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section)
+--	log("set_scheme: Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	
+	st.path_look = Get_Cfg_String(ini, section, "path_look", nil, false)
+	ASSERT(validate_patrol_path(st.path_look, obj, true), "set_scheme: section=[%s] path_look=[%s] wrong!", section, st.path_look, "")
+	st.rnd_wp     = Get_Cfg_Bool  (ini, section, "rnd_wp",     true)
+	st.timeout    = Get_Cfg_Num32 (ini, section, "duration",   15*1000)
+	st.rot_hspeed = Get_Cfg_Number(ini, section, "rot_hspeed", 0.52)
+	st.rot_vspeed = Get_Cfg_Number(ini, section, "rot_vspeed", 0.22)
+	--/ fot debug:
+	if st.log then log("set_scheme: Obj=[%s],scheme=[%s],section=[%s],path_look=[%s]%s", obj:name(), scheme, section, st.path_look, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	local stor = obj and db.storage[ obj:id() ]
+	local st = stor and stor[scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(obj, st, st.action)
+	end
+end
+--/------------------------------------------------------------------
+--/ HELPERs
+--/------------------------------------------------------------------
+function is_day()
+	return level.get_time_hours() >= 5 and level.get_time_hours() < 22
+end
+--/ -----------------------------------------------------------------------------------------------

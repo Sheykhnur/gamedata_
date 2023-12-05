@@ -1,0 +1,160 @@
+[wpn_sks]:weapon_base,weapon_7.62x39
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\sks"
+animation_slot                          = 2
+class                                   = WP_SVU
+hand_dependence                         = 1
+repair_compatibility                    = sks
+scheduled                               = off
+weapon_class                            = sniper_rifle
+weapon_rank                             = 1
+
+; Inventory icon
+inv_grid_width                          = 6
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 22
+scope_x                                 = 74
+scope_y                                 = 12
+
+; Text
+inv_name                                = st_wpn_sks
+inv_name_short                          = st_wpn_sks
+description                             = st_wpn_sks_descr
+
+; Visual
+hud                                     = wpn_sks_hud
+position                                = -0.020, -0.12, 0
+orientation                             = 0, 0, 0
+strap_position                          = -0.15, -0.15, 0.45
+strap_orientation                       = -25, -189, 65
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_sks\wpn_sks.ogf
+
+; Effects
+fire_point                              = 0, 0.168, 0.755
+fire_point2                             = 0, 0.168, 0.755
+shell_point                             = 0, 0.129, 0.192
+shell_dir                               = 0, 0, 0.4
+light_disabled                          = false
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 4.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_close                               = weapons\sks\sks_close
+snd_draw                                = weapons\sks\sks_draw
+snd_empty                               = weapons\sks\sks_empty,    0.7
+snd_holster                             = weapons\sks\sks_holster
+snd_reload                              = weapons\sks\sks_reload
+snd_shoot                               = weapons\sks\sks_shoot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 0
+upgr_icon_y                             = 900
+upgr_icon_width                         = 300
+upgr_icon_height                        = 50
+
+; Cost & Weight
+cost                                    = 4000
+inv_weight                              = 3.8
+ph_mass                                 = 4
+
+; Ammo
+ammo_elapsed                            = 10
+ammo_mag_size                           = 10
+
+; Features
+fire_modes                              = 1
+scope_name                              = wpn_addon_scope_pu
+scope_status                            = 2
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Ballistics
+fire_dispersion_base                    = 0.42
+fire_dispersion_condition_factor        = 6
+
+; Performance
+rpm_semi                                = 210
+rpm_empty_click                         = 200
+
+; Reliability
+condition_shot_dec                      = 0.0004
+condition_queue_shot_dec                = 0.0004
+
+; Handling
+control_inertion_factor                 = 1.5f
+PDM_disp_base                           = 4.0
+PDM_disp_vel_factor                     = 1.6
+PDM_disp_accel_factor                   = 1.6
+
+; Recoil
+cam_dispersion                          = 2.5
+cam_dispersion_inc                      = 1.0
+cam_dispersion_frac                     = 1.0
+cam_step_angle_horz                     = 4.5
+zoom_cam_dispersion                     = 1.3
+zoom_cam_step_angle_horz                = 3.0
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.52
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_10plus3
+upgrades                                = up_gr_firstab_sks, up_gr_seconab_sks, up_gr_thirdab_sks, up_gr_thirdcd_sks
+installed_upgrades                      =
+
+; AI Params
+ef_main_weapon_type                     = 3
+ef_weapon_type                          = 7 ; Shotgun type, to make AI shoot less frequent
+min_radius                              = 50
+max_radius                              = 90
+holder_range_modifier                   = 2.00
+holder_fov_modifier                     = 0.75
+
+
+[wpn_sks_hud]:hud_base
+zoom_hide_crosshair			            = true
+attach_place_idx			            = 0
+item_visual					            = dynamics\weapons\wpn_sks\wpn_sks_hud.ogf
+hands_position				            = 0.05,-0.14,0.1
+hands_orientation			            = 2,2,0
+hands_position_16x9			            = 0.05,-0.14,0.1
+hands_orientation_16x9		            = 2,2,0
+item_position		    	            = 0,0,0
+item_orientation	    	            = 0,0,0
+aim_hud_offset_pos			            = -0.13225,0.0845,-0.23
+aim_hud_offset_rot			            = 0.0375,0.036,0
+aim_hud_offset_pos_16x9 	            = -0.13225,0.0845,-0.23
+aim_hud_offset_rot_16x9 	            = 0.0375,0.036,0
+shell_point					            = 0,0,0
+shell_dir              		            = 0,0,0
+shell_bone					            = wpn_body
+fire_point					            = 0,0,0
+fire_bone               	            = muzzle
+anim_show					            = sks_draw
+anim_hide                	            = sks_holster,,2.0
+anim_idle               	            = sks_idle
+anim_idle_sprint         	            = sks_sprint
+anim_idle_moving         	            = sks_move
+anim_shots               	            = sks_shoot, shoot
+anim_reload             	            = sks_reload, reload
+anim_idle_aim            	            = sks_aim
+anim_bore                	            = sks_bore
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+lean_hud_offset_pos        	            = 0,0,0
+lean_hud_offset_rot        	            = 0,0,0
+

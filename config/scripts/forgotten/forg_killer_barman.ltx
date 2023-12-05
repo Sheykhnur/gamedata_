@@ -1,0 +1,41 @@
+[combat_ignore@forg_barman]
+
+[hit@forg_merc_barman]
+on_info = {=hit_by_actor} %+forg_merc_unfriendly%
+
+[meet@forg_merc_barman]
+meet_state		= 5|wait_trade
+meet_state_wpn	= 5|wait_trade
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+
+[logic]
+active = walker@forg_killer_barman
+combat_ignore = combat_ignore@forg_barman
+on_hit = hit@forg_merc_barman
+trade = misc\trade\trade_killer.ltx
+inv_max_weight = 10000
+
+[walker@forg_killer_barman]
+path_walk = forg_merc_barman_walk
+path_look = forg_merc_barman_look
+combat_ignore_cond = always
+meet = meet@forg_merc_barman
+on_info = {!is_day} sleeper@forg_killer_barman
+on_info2 = {+forg_merc_unfriendly} walker@forg_killer_barman_hide
+on_info3 = {+forg_took_key} walker@forg_killer_barman_hide
+
+[sleeper@forg_killer_barman]
+path_main = forg_merc_barman_sleep
+wakeable = false
+combat_ignore_cond = always
+on_info = {=is_day} walker@forg_killer_barman
+
+[walker@forg_killer_barman_hide]
+path_walk = forg_killer_barman_hide_walk
+path_look = forg_killer_barman_hide_look
+def_state_standing = psycho_pain
+on_actor_dist_ge_nvis = 20 | walker@forg_killer_barman
+on_info = {-forg_merc_unfriendly} walker@forg_killer_barman

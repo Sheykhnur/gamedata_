@@ -1,0 +1,21 @@
+; x-7 lab primary switch logic
+
+[logic]
+active = {-esc_nimble_work_task3_brain_helm -yan_switcher_off} ph_idle@wait, {+esc_nimble_work_task3_brain_helm -yan_switcher_off} ph_button@active, {+yan_switcher_off} ph_idle@nil
+
+[ph_idle@wait]
+anim = lab_primary_switcher_idle
+nonscript_usable = false
+on_info = {+esc_nimble_work_task3_brain_helm} ph_button@active
+
+[ph_button@active]
+anim = lab_primary_switcher_idle
+tooltip = tips_labx7switcher_press
+on_press = ph_button@deactivate %=play_snd(ambient\x18\cooling_stop)%
+
+[ph_button@deactivate]
+anim = lab_primary_switcher_off
+on_timer = 500 | ph_idle@nil %+yan_switcher_off =rad_psy_basic%
+
+[ph_idle@nil]
+nonscript_usable = false

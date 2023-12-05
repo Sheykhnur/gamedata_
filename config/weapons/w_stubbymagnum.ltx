@@ -1,0 +1,175 @@
+[wpn_stubby_magnum]:pistol_base,weapon_.44
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\magnum_stubby"
+class                                   = WP_PM
+hand_dependence                         = 1
+repair_compatibility                    = revolver
+scheduled                               = off
+weapon_rank                             = 2
+
+; Inventory icon
+inv_grid_width                          = 1
+inv_grid_height                         = 1
+inv_grid_x                              = 10
+inv_grid_y                              = 16
+
+; Text
+inv_name                                = wpn_stubby_magnum_name
+inv_name_short                          = wpn_stubby_magnum_name
+description                             = wpn_stubby_magnum_descr
+
+; Visual
+hud                                     = wpn_stubby_magnum_hud
+position                                = -0.021, 0.04, 0.03
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_magnum
+visual                                  = dynamics\weapons\wpn_magnums\wpn_stubby_magnum.ogf
+
+; Effects
+fire_point                              = -0.005000, 0.020000, 0.100000
+shell_point                             = 0.0, 0.133, 0.06
+shell_dir                               = 0.0, 0.0, 0.4
+light_color                             = 0.65, 0.5, 0.3
+light_range                             = 10.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.25
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.03
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw					= weapons\mp412\mp412_deploy
+snd_holster					= weapons\mp412\mp412_holster
+snd_shoot					= weapons\mp412\mp412_1
+snd_shoot1					= weapons\mp412\mp412_2
+snd_shoot2					= weapons\mp412\mp412_3  
+snd_shoot3					= weapons\mp412\mp412_4  
+snd_empty					= weapons\mp412\mp412_click
+snd_reload					= weapons\mp412\mp412_reload_new
+
+; Upgrade icon
+upgr_icon_x                             = 1305
+upgr_icon_y                             = 464
+upgr_icon_width                         = 143
+upgr_icon_height                        = 137
+
+; Cost & Weight
+cost                                    = 2050
+inv_weight                              = 0.8
+ph_mass                                 = 1
+
+; Ammo
+ammo_mag_size                           = 6
+
+; Features
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 0.85
+
+; Ballistics
+bullet_speed                            = 300
+fire_dispersion_base                    = 0.88
+
+; Performance
+rpm                                     = 200
+rpm_semi                                = 200
+rpm_empty_click                         = 200
+
+; Reliability
+misfire_start_condition                 = 0.5
+misfire_end_condition                   = 0.0
+condition_shot_dec                      = 0.0008 ; 1600 shots
+condition_queue_shot_dec                = 0.0008
+
+; Handling
+control_inertion_factor                 = 0.9f
+PDM_disp_base                           = 2.0
+PDM_disp_vel_factor                     = 1.1
+PDM_disp_accel_factor                   = 1.1
+
+; Recoil
+cam_dispersion                          = 11.0
+cam_dispersion_inc                      = 6.0
+cam_dispersion_frac                     = 1.0
+cam_step_angle_horz                     = 3.0
+cam_relax_speed                         = 13
+zoom_cam_dispersion                     = 6.0
+zoom_cam_dispersion_inc                 = 6.0
+zoom_cam_dispersion_frac                = 1.0
+zoom_cam_step_angle_horz                = 3.0
+zoom_cam_relax_speed                    = 8.0
+
+; Aiming
+zoom_enabled                            = true
+zoom_rotate_time                        = 0.2
+zoom_inertion_factor                    = 0.9
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_revolver
+upgrades                                = up_gr_firstab_revolver, up_gr_seconab_revolver
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 5
+max_radius                              = 50
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 1.0
+
+[wpn_stubby_magnum_hud]:hud_base
+aim_hud_offset_pos				= -0.1361,0.037,-0.125
+aim_hud_offset_rot				= -0.005,0.0019,0.0
+
+aim_hud_offset_pos_16x9				= -0.137500,0.037000,-0.167201
+aim_hud_offset_rot_16x9				= 0.042500,0.029400,0.045000
+anim_show				= mp412_draw,,2.4
+anim_show_empty				= mp412_draw, opened,2.4
+
+anim_hide            				= mp412_holster,,2.0
+anim_hide_empty				= mp412_holster, opened,2.0
+
+anim_idle            				= mp412_idle
+anim_idle_empty      				= mp412_idle, opened
+
+anim_shots				= mp412_shoot, shoot
+anim_shot_l				= mp412_shoot, shoot_last
+
+anim_idle_aim				= mp412_aim
+anim_idle_aim_empty			= mp412_aim, opened
+
+anim_reload				= mp412_reload, reload
+anim_reload_empty				= mp412_reload, reload_empty
+
+anim_idle_moving				= mp412_move
+anim_idle_moving_empty			= mp412_move, opened
+
+anim_idle_sprint				= hpsa_idle_sprint
+anim_idle_sprint_empty			= hpsa_idle_sprint, opened
+
+anim_bore					= mp412_aim
+anim_bore_empty				= mp412_aim, opened
+attach_place_idx                        = 0
+fire_point					= 0,0,0
+fire_bone               				= muzzle
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_position_16x9				= 0.033000,-0.150000,0.062500
+hands_orientation_16x9			= 2.349998,2.649999,2.849998
+hands_position				= 0.033000,-0.150000,0.062500
+hands_orientation			= 2.349998,2.649999,2.849998
+item_position				= 0.000000,0.000000,0.000000
+item_orientation			= -0.590963,-0.378335,-0.034127
+item_visual                             = dynamics\weapons\wpn_magnums\wpn_stubby_magnum_hud
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true

@@ -1,0 +1,28 @@
+[logic]
+active = {-lab_generator_off} sr_idle, {+lab_generator_off} nil %=release%
+ 
+[sr_idle]
+on_actor_inside = {=current_helmet(good_psy_helmet)} sr_psy_antenna@good_helmet, sr_psy_antenna@no_helmet
+on_info = {+lab_generator_off} nil %=release%
+
+[sr_psy_antenna@no_helmet]
+eff_intensity = +200
+hit_intensity = +20
+phantom_prob = 80
+postprocess = psi2.ppe
+min_phantom_idle = 1000
+max_phantom_idle = 2000
+on_info = {+lab_generator_off} nil %=release%
+on_info2 = {=current_helmet(good_psy_helmet)} sr_psy_antenna@good_helmet
+on_actor_outside = sr_idle
+
+[sr_psy_antenna@good_helmet]
+eff_intensity = +90
+hit_intensity = +8
+phantom_prob = 10
+postprocess = psi2.ppe
+min_phantom_idle = 3000
+max_phantom_idle = 8000
+on_info = {+lab_generator_off} nil %=release%
+on_info2 = {!current_helmet(good_psy_helmet)} sr_psy_antenna@no_helmet
+on_actor_outside = sr_idle

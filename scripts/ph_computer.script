@@ -1,0 +1,340 @@
+
+-- file: ph_computer.script
+-- author: barin
+-- date: 2008-11-21
+-- edited by: barin
+-- last edited: 2012-09-02
+
+class "action_computer"
+
+function action_computer:__init(obj, storage)
+	self.object = obj
+	self.st = storage
+end
+
+function action_computer:reset_scheme()
+	self.bsod = false
+	self.locked = false
+	
+	--self.object:set_nonscript_usable(false)
+	
+	if self.st.show_tips then
+		if self.st.availability == "accessible" then
+			self.object:set_tip_text(game.translate_string("ui_pc_tip_computer_accessible"))
+		elseif self.st.availability == "locked" then
+			self.object:set_tip_text(game.translate_string("ui_pc_tip_computer_locked"))
+			self.locked = true
+		else
+			self.object:set_tip_text(game.translate_string("ui_pc_tip_computer_bsod"))
+			self.bsod = true
+		end
+	end
+	
+	self.pc_snd = xr_sound.get_safe_sound_object("pc\\loop")
+	self.pc_snd:play_at_pos(self.object, self.object:position(), 0, sound_object.looped)
+	self.pc_snd.volume = 0.2
+end
+
+function action_computer:disable_sound()
+	if self.pc_snd then
+		if self.pc_snd:playing() then
+			self.pc_snd:stop()
+		end
+		self.pc_snd = nil
+	end
+end
+
+function action_computer:update()
+	if db.actor and db.actor:alive() then
+		if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+			return
+		end
+	end
+end
+
+function action_computer:use_callback(computer, actor)
+	if not db.actor then
+		return
+	end
+	
+	if not self.bsod and not self.locked then
+		pcLoader.pcLoader(self.st.pc_data):PowerOn()
+	end
+	
+	if self.st.on_use then
+		local next_section = xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.on_use.condlist)
+		if xr_logic.switch_to_section(self.object, self.st, next_section) then
+			return
+		end
+	end
+end
+
+function action_computer:deactivate()
+	self:disable_sound()
+	self.object:set_tip_text("")
+end
+
+-- ***************************************************************************** --
+
+function add_to_binder(obj, ini, scheme, section, storage)
+	xr_logic.subscribe_action_for_events(obj, storage, action_computer(obj, storage))
+end
+
+local str_error = {
+	[0] = "[%s.script] wrong 'availability' type for pc '%s'",
+	[1] = "[%s.script] 'availability = locked' while 'unlock' is not specified for pc '%s'",
+	[2] = "[%s.script] file '%s' does not exist!",
+	[3] = "[%s.script] 'password_info' not specified for pc '%s'",
+	[4] = "[%s.script] wrong 'pc_type' for pc '%s', 'desktop|laptop' expected, got '%s'",
+	[5] = "[%s.script] wrong 'icons_alignment' for pc '%s', 'horizontal|vertical|mess' expected, got '%s'",
+	[6] = "[%s.script] error in section '%s'"
+}
+
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.availability = Get_Cfg_String(ini, section, "availability", "accessible")
+	st.show_tips = true --Get_Cfg_Bool(ini, section, "show_tips", true)
+	st.on_use = xr_logic.cfg_get_condlist(ini, section, "on_use", obj)
+	st.pc_data = {}
+	
+	if st.availability ~= "accessible" and
+		st.availability ~= "malfunction" and
+		st.availability ~= "locked"
+	then
+		abort(str_error[0], script_name(), obj:name())
+		st.availability = "malfunction"
+	end
+	
+	local pc_cfg_file = "lost_alpha\\pc_data\\pc_data.ltx"
+	local ltx = ini_file(pc_cfg_file)
+	
+	if not ltx then
+		abort(str_error[2], script_name(), pc_cfg_file)
+		st.availability = "malfunction"
+	end
+	
+	if st.availability == "malfunction" then
+		st.pc_data = nil
+		return
+	end
+	
+	st.pc_data.cerberus = Get_Cfg_Bool(ini, section, "cerberus", false)
+	st.pc_data.password = Get_Cfg_String(ini, section, "password", nil)
+	st.pc_data.password_info = Get_Cfg_String(ini, section, "password_info", nil)
+	st.pc_data.user_name = Get_Cfg_String(ini, section, "user_name", nil)
+	st.pc_data.wallpaper = Get_Cfg_String(ini, section, "wallpaper", nil)
+	st.pc_data.pc_type = Get_Cfg_String(ini, section, "pc_type", "desktop")
+	st.pc_data.icons_alignment = Get_Cfg_String(ini, section, "icons_alignment", nil)
+	st.pc_data.tetris = Get_Cfg_Bool(ini, section, "tetris", false)
+	st.pc_data.puzzle = Get_Cfg_Bool(ini, section, "puzzle", false)
+	st.pc_data.solitare = Get_Cfg_Bool(ini, section, "solitare", false)
+	
+	if st.pc_data.password and not st.pc_data.password_info then
+		abort(str_error[3], script_name(), obj:name())
+	end
+	if st.pc_data.pc_type ~= "desktop" and st.pc_data.pc_type ~= "laptop" then
+		abort(str_error[4], script_name(), obj:name(), st.pc_data.pc_type)
+		st.pc_data.pc_type = "desktop"
+	end
+	if st.pc_data.icons_alignment ~= nil then
+		if st.pc_data.icons_alignment ~= "horizontal" and
+			st.pc_data.icons_alignment ~= "vertical" and
+			st.pc_data.icons_alignment ~= "mess"
+		then
+			abort(str_error[5], script_name(), obj:name(), st.pc_data.icons_alignment)
+			st.pc_data.icons_alignment = nil
+		end
+	end
+	
+	local tbl = {}
+	
+	-- ********************** known_info *********************** --
+	
+	st.pc_data.known_info = {}
+	
+	for _, v in pairs(parser.r_string_list(ini, section, "known_info", nil)) do
+		if ltx:section_exist(v) then
+			tbl = 
+			{
+				section = v,
+				name = Get_Cfg_String(ltx, v, "name", "unknown"),
+				password = Get_Cfg_String(ltx, v, "password", nil),
+				password_info = Get_Cfg_String(ltx, v, "password_info", nil),
+				downloadable = Get_Cfg_Bool(ltx, v, "downloadable", false),
+				article = Get_Cfg_String(ltx, v, "article", nil),
+				give_info = Get_Cfg_String(ltx, v, "give_info", nil)
+			}
+			table.insert(st.pc_data.known_info, tbl)
+		end
+	end
+	for k, v in pairs(st.pc_data.known_info) do
+		if not v.article or (v.downloadable and not v.give_info) or
+			(v.password and not v.password_info)
+		then
+			abort(str_error[6], script_name(), v.section)
+			st.pc_data.known_info[k] = nil
+		else
+			st.pc_data.known_info[k].section = nil
+		end
+	end
+	
+	-- ********************** known_image ********************** --
+	
+	st.pc_data.known_image = {}
+	
+	for _, v in pairs(parser.r_string_list(ini, section, "known_image", nil)) do
+		if ltx:section_exist(v) then
+			tbl =
+			{
+				section = v,
+				name = Get_Cfg_String(ltx, v, "name", "unknown"),
+				password = Get_Cfg_String(ltx, v, "password", nil),
+				password_info = Get_Cfg_String(ltx, v, "password_info", nil),
+				icon = Get_Cfg_String(ltx, v, "icon", "ui_pc_icon_png"),
+				image = Get_Cfg_String(ltx, v, "image", nil),
+				description = Get_Cfg_String(ltx, v, "description", nil)
+			}
+			table.insert(st.pc_data.known_image, tbl)
+		end
+	end
+	for k, v in pairs(st.pc_data.known_image) do
+		if not v.image or (v.password and not v.password_info) then
+			abort(str_error[6], script_name(), v.section)
+			st.pc_data.known_image[k] = nil
+		else
+			st.pc_data.known_image[k].section = nil
+		end
+	end
+	
+	-- ********************** known_galleries ********************** --
+	
+	st.pc_data.known_galleries = {}
+	
+	for _, v in pairs(parser.r_string_list(ini, section, "known_galleries", nil)) do
+		if ltx:section_exist(v) then
+			tbl =
+			{
+				section = v,
+				name = Get_Cfg_String(ltx, v, "name", "unknown"),
+				password = Get_Cfg_String(ltx, v, "password", nil),
+				password_info = Get_Cfg_String(ltx, v, "password_info", nil),
+				images = parser.r_string_list(ltx, v, "images", nil)
+			}
+			table.insert(st.pc_data.known_galleries, tbl)
+		end
+	end
+	for k, v in pairs(st.pc_data.known_galleries) do
+		if #v.images == 0 or (v.password and not v.password_info) then
+			abort(str_error[6], script_name(), v.section)
+			st.pc_data.known_galleries[k] = nil
+		else
+			st.pc_data.known_galleries[k].section = nil
+		end
+	end
+	if #st.pc_data.known_galleries == 0 then
+		st.pc_data.known_galleries = nil
+	else
+		st.pc_data.known_galleries.name = "pc_gallery_filename"
+		st.pc_data.known_galleries.password = nil
+	end
+	
+	-- ********************** known_audio ********************** --
+	
+	st.pc_data.known_audio = {}
+	
+	for _, v in pairs(parser.r_string_list(ini, section, "known_audio", nil)) do
+		if ltx:section_exist(v) then
+			tbl = 
+			{
+				section = v,
+				name = Get_Cfg_String(ltx, v, "name", "unknown"),
+				password = Get_Cfg_String(ltx, v, "password", nil),
+				password_info = Get_Cfg_String(ltx, v, "password_info", nil),
+				icon = Get_Cfg_String(ltx, v, "icon", "ui_pc_icon_wav"),
+				snd = Get_Cfg_String(ltx, v, "snd", nil)
+			}
+			table.insert(st.pc_data.known_audio, tbl)
+		end
+	end
+	for k, v in pairs(st.pc_data.known_audio) do
+		if not v.snd or (v.password and not v.password_info) then
+			abort(str_error[6], script_name(), v.section)
+			st.pc_data.known_audio[k] = nil
+		else
+			st.pc_data.known_audio[k].section = nil
+		end
+	end
+	
+	-- ********************** known_video ********************** --
+	
+	st.pc_data.known_video = {}
+	
+	for _, v in pairs(parser.r_string_list(ini, section, "known_video", nil)) do
+		if ltx:section_exist(v) then
+			tbl = 
+			{
+				section = v,
+				name = Get_Cfg_String(ltx, v, "name", "unknown"),
+				password = Get_Cfg_String(ltx, v, "password", nil),
+				password_info = Get_Cfg_String(ltx, v, "password_info", nil),
+				icon = Get_Cfg_String(ltx, v, "icon", "ui_pc_icon_video1"),
+				video = Get_Cfg_String(ltx, v, "video", nil),
+				video_width = Get_Cfg_Number(ltx, v, "video_width", nil),
+				video_height = Get_Cfg_Number(ltx, v, "video_height", nil),
+				snd = Get_Cfg_String(ltx, v, "snd", nil)
+			}
+			table.insert(st.pc_data.known_video, tbl)
+		end
+	end
+	for k, v in pairs(st.pc_data.known_video) do
+		if (not v.video or not v.snd or not v.video_width or not v.video_height) 
+		   or (v.password and not v.password_info) then
+			abort(str_error[6], script_name(), v.section)
+			st.pc_data.known_video[k] = nil
+		else
+			st.pc_data.known_video[k].section = nil
+		end
+	end
+	
+	-- ********************** known_code *********************** --
+	
+	st.pc_data.known_code = {}
+	
+	for _, v in pairs(parser.r_string_list(ini, section, "known_code", nil)) do
+		if ltx:section_exist(v) then
+			tbl = 
+			{
+				section = v,
+				name = Get_Cfg_String(ltx, v, "name", "unknown"),
+				password = Get_Cfg_String(ltx, v, "password", nil),
+				password_info = Get_Cfg_String(ltx, v, "password_info", nil),
+				code = parser.r_string_list(ltx, v, "code", nil),
+				lang = parser.r_string_list(ltx, v, "lang", nil),
+				font = parser.r_string_list(ltx, v, "font", nil),
+				color = parser.r_string_list(ltx, v, "color", nil)
+			}
+			table.insert(st.pc_data.known_code, tbl)
+		end
+	end
+	for k, v in pairs(st.pc_data.known_code) do
+		if #v.code == 0 or (v.password and not v.password_info) then
+			abort(str_error[6], script_name(), v.section)
+			st.pc_data.known_code[k] = nil
+		else
+			st.pc_data.known_code[k].section = nil
+		end
+	end
+	
+	-- ********************** known_hex ************************ --
+	
+	st.pc_data.known_hex = Get_Cfg_Num32(ini, section, "known_hex", 0)
+end
+
+function disable_scheme(npc, scheme)
+	local stor = db.storage[npc:id()][scheme]
+	if stor then
+		xr_logic.unsubscribe_action_from_events(npc, stor, stor.action)
+	end
+end

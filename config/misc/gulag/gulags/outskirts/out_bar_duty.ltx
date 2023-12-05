@@ -1,0 +1,123 @@
+;************************ state 0 ***************************************
+
+[threshold@out_bar_kampers]
+ignore_monster = 10
+
+[logic@out_bar_duty_kamper1]
+active = kamper@out_bar_duty_kamper1
+threshold = threshold@out_bar_kampers
+
+[kamper@out_bar_duty_kamper1]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+threshold = threshold@out_bar_kampers
+
+[logic@out_bar_duty_kamper2]
+active = kamper@out_bar_duty_kamper2
+threshold = threshold@out_bar_kampers
+
+[kamper@out_bar_duty_kamper2]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp1
+threshold = threshold@out_bar_kampers
+
+[logic@out_bar_duty_kamper3]
+active = kamper@out_bar_duty_kamper3
+threshold = threshold@out_bar_kampers
+
+[kamper@out_bar_duty_kamper3]
+path_walk = kamp3_walk
+path_look = kamp3_look
+kamp_name = kamp1
+threshold = threshold@out_bar_kampers
+
+
+;************************** state 1 **********************************
+
+[logic@out_bar_duty_sleeper1]
+active = sleeper@out_bar_duty_sleeper1
+threshold = threshold@out_bar_kampers
+
+[sleeper@out_bar_duty_sleeper1]
+path_main = sleep1
+wakeable = false
+threshold = threshold@out_bar_kampers
+
+[logic@out_bar_duty_sleeper2]
+active = sleeper@out_bar_duty_sleeper2
+threshold = threshold@out_bar_kampers
+
+[sleeper@out_bar_duty_sleeper2]
+path_main = sleep2
+wakeable = false
+threshold = threshold@out_bar_kampers
+
+[logic@out_bar_duty_sleeper3]
+active = sleeper@out_bar_duty_sleeper3
+threshold = threshold@out_bar_kampers
+
+[sleeper@out_bar_duty_sleeper3]
+path_main = sleep3
+wakeable = false
+threshold = threshold@out_bar_kampers
+
+;************************** state 0,1 *************************************
+
+[danger@out_bar_patrol]
+;ignore_distance = 25
+
+[logic@out_bar_duty_kamper4]
+active = kamper@out_bar_duty_kamper4
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[kamper@out_bar_duty_kamper4]
+path_walk = kamp4_walk
+path_look = kamp4_look
+kamp_name = kamp2
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[logic@out_bar_duty_kamper5]
+active = kamper@out_bar_duty_kamper5
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[kamper@out_bar_duty_kamper5]
+path_walk = kamp5_walk
+path_look = kamp5_look
+kamp_name = kamp2
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[logic@out_bar_duty_patrol1]
+active = walker@out_bar_duty_patrol1
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[walker@out_bar_duty_patrol1]
+path_walk = patrol1_walk
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[logic@out_bar_duty_patrol2]
+active = walker@out_bar_duty_patrol2
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[walker@out_bar_duty_patrol2]
+path_walk = patrol2_walk
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[logic@out_bar_duty_patrol3]
+active = walker@out_bar_duty_patrol3
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol
+
+[walker@out_bar_duty_patrol3]
+path_walk = patrol3_walk
+threshold = threshold@out_bar_kampers
+danger = danger@out_bar_patrol

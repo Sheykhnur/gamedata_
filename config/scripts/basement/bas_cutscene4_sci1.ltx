@@ -1,0 +1,107 @@
+[combat_ignore@sc4]
+
+[danger@bas_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_sc4]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@sc4_lab_work1
+combat_ignore = combat_ignore@sc4
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+
+[remark@sc4_lab_work1]
+anim = stand_wait
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_timer = 3000 | remark@sc4_lab_work2
+meet = no_meet
+
+[remark@sc4_lab_work2]
+anim = ordinary_talk
+snd = bas_replics15
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_signal = sound_end | remark@sc4_lab_work3
+meet = no_meet
+
+[remark@sc4_lab_work3]
+anim = wait
+snd = bas_replics16
+target = bas_scene4_sci1, 0
+combat_ignore_cond = always
+danger = danger@bas_sc4
+on_signal = sound_end | %+bas_cs4_info1%
+on_info = {+bas_cs4_info2} remark@sc4_lab_work3_1
+threshold = threshold@bas_sc4
+meet = no_meet
+
+[remark@sc4_lab_work3_1]
+anim = probe
+combat_ignore_cond = always
+danger = danger@bas_sc4
+on_timer = 3000 | walker@sc4_lab_work4
+threshold = threshold@bas_sc4
+meet = no_meet
+
+[walker@sc4_lab_work4]
+path_walk = bas_cs4_sci1
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_signal = cs4sc1 | remark@sc4_lab_work5
+meet = no_meet
+
+[remark@sc4_lab_work5]
+anim = sci_think
+snd = bas_replics17
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_signal = sound_end | remark@sc4_lab_work6
+target = bas_sc4_guard, 0
+meet = no_meet
+
+[remark@sc4_lab_work6]
+anim = sci_blame_facepalm
+snd = bas_replics18
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_signal = sound_end | remark@sc4_lab_work7
+target = bas_sc4_guard, 0
+meet = no_meet
+
+[remark@sc4_lab_work7]
+anim = ordinary_talk
+snd = bas_replics19
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+target = bas_scene4_sci2, 0
+on_signal = sound_end | remark@sc4_lab_work8 %+bas_cs4_info3%
+meet = no_meet
+
+[remark@sc4_lab_work8]
+anim = stand_wait
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+target = bas_scene4_sci3, 0
+on_info = {+bas_sc4_hey} remark@sc4_lab_work_end
+meet = no_meet
+
+[remark@sc4_lab_work_end]
+anim = sci_blame
+snd = bas_replics20
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+target = bas_scene4_sci3, 0
+meet = no_meet

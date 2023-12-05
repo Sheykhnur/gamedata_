@@ -1,0 +1,940 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : lua_extension.script
+ Description: it adds new functions to Lua standard library
+ Copyright  : 2013 © STALKER-community
+ Author     : (miscellany / pack)
+ Editors    : 
+ Last edit  : 28.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tTypeToMarker = { ['nil']=0,['boolean']=1,['number']=2,['string']=3,['table']=4 }
+--/ -------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+--/ extended format of string (for output to log)
+function fStringExtraFormat(fmt,...)
+	--/ local function: transfer of argument to string
+	local val2str = function(val,lua_type)
+		if lua_type == 'table' then
+			if tonumber(val.x) and tonumber(val.y) and tonumber(val.z) then
+				return string.format('tbl{x=%.3f:y=%.3f:z=%.3f}',val.x,val.y,val.z) --/>
+			end
+			local tbl,str,separator = {},'tbl{',""
+			for key,_ in pairs(val) do
+				table.insert(tbl, key == tonumber(key) and tostring(key) or key)
+			end
+			table.sort(tbl)
+			for _,key in ipairs(tbl) do
+				if (tonumber(key) or 0) > 0 then
+					str = str..separator..tostring(val[tonumber(key)])
+				else
+					str = str..separator..key.." = "..tostring(val[key])
+				end
+				separator = ", "
+			end
+			return str..'}' --/>
+		elseif lua_type == 'userdata' then --/#?# and need we to attach this to engine?
+			if type(val.getP) == 'function' then
+				if type(val.x) == 'number' and type(val.y) == 'number' and type(val.z) == 'number' then
+					return string.format('vec(x=%.3f:y=%.3f:z=%.3f)',val.x,val.y,val.z) --/>
+				end
+				return '<vector>' --/>
+			elseif type(val.setHMSms) == 'function' then
+				return 'CTime('..val:dateToString(0).." "..val:timeToString(3)..")" --/> D/M/Y h:m:s:ms
+			end
+		elseif lua_type == 'string' then
+			return val --string.format("%q", val) --/>
+		elseif lua_type == 'boolean' then
+			return val and "true" or "false" --/>
+		elseif lua_type == 'number' then
+			return tostring(val) --/>
+		end
+		return "<"..lua_type..">" --/>
+	end
+	--/ main body of function: parsing of original string
+	if type(fmt) == 'string' then
+		if fmt:match('%\%[s|d|f]') then --/ there are pattern(s)?
+			if next({...}) then --/ there is argument(s)?
+				local arg,val,lua_type,i = {...},nil,nil,nil
+				for i=1,#arg do
+					val = arg[i] --/ value of current argument
+					lua_type = type(val) --/ type of current argument
+					if lua_type == 'number' then
+						fmt = fmt:gsub('%\%[d|s|f]',val,1)
+					else
+						fmt = fmt:gsub('%\%s',val2str(val,lua_type),1)
+					end
+				end
+			end
+			fmt = fmt:gsub('%\%[s|d|f]',"<NOT_arg!>") --/ stub from missing arguments
+		end
+	else
+		fmt = val2str(fmt,type(fmt))
+	end
+	return fmt --/> string
+	--/ with replacement of spaces (sym_space='\032') on printed ('\160')
+	--return fmt:gsub('%s','\160') --/> string
+end
+
+--/
+function fPrint_Table(tTab,sTitle,bMode) --/< bMode: key=true, value=false
+	--callstack("*print_table*") --/ for debug!
+	if type(tTab) == 'table' then
+		local sMsg,sSub,sSuf = "Print_Table:","",""
+		if type(sTitle) == 'string' then
+			sTitle,sSuf = sTitle:match('^%s*([^|]+)%|*(.*)')
+			sMsg = sMsg..sTitle
+			if sSuf and sSuf ~= '' then
+				sMsg = sMsg.."("..tostring(sSuf).."):"
+			end
+		else
+			sTitle = "Tbl:"
+		end
+		if bMode then
+			sMsg = sMsg.."keys only"
+		elseif bMode == false then
+			sMsg = sMsg.."values only"
+		end
+		--/ -----------------------------------------
+		fToLog = function(tT,sSub)
+			if next(tT) then
+				for k,v in pairs(tT) do
+					local sKey = type(k)
+					if sKey == 'string' then
+						sKey = k
+					elseif sKey == 'number' then
+						sKey =  tostring(k)
+					else
+						sKey = "[<"..sKey..">]"
+					end
+					local sType = type(v)
+					if sType == 'table' then
+						if sKey == "_G" or (sKey == "loaded" and v["package"]) then
+							fToLog({}, sSub..'.'..sKey) --/> recursive call
+						else
+							fToLog(v, sSub..'.'..sKey) --/> recursive call
+						end
+					else
+						if sType == 'string' then
+							if v ~= '' then
+								if v:len() > 255 then
+									v = v:sub(1,255) --/ limiting length of string
+								end
+							else
+								v = '<<zero_string>>'
+							end
+						elseif sType == 'number' or sType == 'boolean' then
+							v = tostring(v)
+						elseif sType == 'userdata' then
+							if type(v.setHMSms) == 'function' then
+								v = '<<CTime>>'
+							elseif type(v.getP) == 'function' then --/ vector?
+								if type(v.x) == 'number' and type(v.y) == 'number' and type(v.z) == 'number' then
+									v = '<vector>:'..string.format("x=%.3f:y=%.3f:z=%.3f", v.x, v.y, v.z)
+								end
+								v = '<<vector>>'
+							else
+								v = '<<'..sType..'>>'
+							end
+						else
+							v = '<<'..sType..'>>'
+						end
+						if bMode == nil then
+							debug_print(sSub.."."..sKey.." = ["..tostring(v).."]")
+						elseif bMode then
+							debug_print("key = %s"..sKey)
+						else
+							debug_print("value = %s"..tostring(v))
+						end
+					end
+				end
+			else --/ empty table
+				debug_print(sSub..". = <<zero_table>>")
+			end
+		end
+		--/ -----------------------------------------
+		log(sMsg.."~~~~~~~>")
+		fToLog(tTab,sTitle)
+		log(sMsg.."~~~~~~~<")
+	else
+		log("log_Table:Wrong_table(%s)=[%s]:<%s>", type(tTab), sTitle, "Warning!")
+	end
+end
+
+function fGetSizeTable(tTbl)
+	if type(tTbl) == 'table' then --/ table?
+		if next(tTbl) then --/ not empty?
+			local iCnt = 0
+			for _,_ in pairs(tTbl) do
+				iCnt = iCnt +1
+			end
+			return iCnt --/>
+		end
+	else
+		log("fGetSizeTable:arg(%s)=[%s]~NOT_table:<%s>", type(tTbl), tTbl, "Warning!")
+	end
+	return 0 --/>
+end
+
+function fCopyTable(tSrc,tTrg)
+	local tCopy = tTrg or {}
+	if type(tSrc) == 'table' then --/ table?
+		--/ local copying function
+		fCopy = function(tS,tC)
+			--ASSERT(type(tS) == 'table',"fCopyTable: wrong type=[%s]~?", type(tS))
+			for k,v in pairs(tS) do
+				if type(v) == 'table' and next(v) then --/ not empty subtable?
+					tC[k] = {} --/ copy of subtable
+					fCopy(v,tC[k]) --/> recursive call
+				else
+					tC[k] = v
+				end
+			end
+		end
+		--/<
+		if next(tSrc) then --/ table not empty?
+			fCopy(tSrc,tCopy)
+		end
+	else
+		abort("fCopyTable:=[%s]~?:<%s>", type(tSrc), "Warning!")
+	end
+	return tCopy --/>
+end
+
+function fCloneTable(tbl)
+	local lookup_tbl = {}
+	--/ local function of coping
+	fClone = function(tbl)
+		if type(tbl) ~= 'table' then
+			return tbl --/> not a table
+		elseif lookup_tbl[tbl] then
+			return lookup_tbl[tbl] --/> already have
+		end
+		local new_tbl = {}
+		lookup_tbl[tbl] = new_tbl
+		for key,value in pairs(tbl) do
+			new_tbl[fClone(key)] = fClone(value) --/> recursive calls
+		end
+		return setmetatable(new_tbl, fClone( getmetatable(tbl)) ) --/>
+	end
+	--/<
+	return fClone(tbl) --/>
+end
+
+function fFindInTable(tbl, value) --/ find element in table
+	if value ~= nil and type(tbl) == 'table' then
+		for k,v in pairs(tbl) do
+			if v == value then
+				return k --/>
+			end
+		end
+	end
+	return nil --/>
+end
+
+function fTable_Serialize(x, recur)
+	--local lua_type = type(x)
+	local marker = tTypeToMarker[type(x)] --/ 0...4
+	if marker then
+		recur = recur or {}
+		
+		if     marker == 3 then --/ lua_type == 'string'
+			return string.format('%q',x) --/>
+		elseif marker == 2 then --/ lua_type == 'number'
+			return tostring(x) --/>
+		elseif marker == 1 then --/ lua_type == 'boolean'
+			return x and "true" or "false" --/>
+		elseif marker == 0 then --/ lua_type == 'nil'
+			return "nil" --/>
+		elseif getmetatable(x) then --/ can not serialize a table that has a metatable associated with it.
+			return nil, true --/>
+		elseif marker == 4 then --/ lua_type == 'table'
+			if recur[x] then --/ can not serialize recursive tables.
+				return nil, true --/>
+			end
+			recur[x] = true
+			
+			local str,key,val,err = "{",nil,nil,nil
+			for k,v in pairs(x) do
+				key,err = fTable_Serialize(k, recur) --/> recursive call
+				if err then --/ if something wrong with table's keys
+					return nil, true --/>
+				end
+				val,err = fTable_Serialize(v, recur) --/> recursive call
+				if err then --/ if something wrong with table's values
+					return nil, true --/>
+				end
+				str = str.."["..key.."]".."="..val..","
+			end
+			
+			return str:sub(0, str:len() -1).."}" --/>
+		end
+	end
+	--/ can not serialize value of passed type
+	return nil, true --/>
+end
+
+--/ unserialize table from string
+function fTable_unSerialize(str)
+	return loadstring("return " .. str)() or {} --/>
+end
+
+
+local tMarkers = { --/ service table of packing markers
+	dec = {string.char(1), 1}, --/ 0x1 (SOH) - 'number' (dec)
+	str = {string.char(2), 2}, --/ 0x2 (STX) - 'string'
+	bln = {string.char(3), 3}, --/ 0x3 (ETX) - 'boolean'
+	tbl = {string.char(4), 4}, --/ 0x4 (EOT) - 'table'
+	tbe = {string.char(5), 5}, --/ 0x5 (ENQ) - table-end
+	tbi = {string.char(6), 6}, --/ 0x6 (ACK) - table-list
+	hex = {string.char(7), 7}, --/ 0x7 (BEL) - number-hex
+	vec = {string.char(8), 8}, --/ 0x8 (BS)  - 'vector'
+	ctm = {string.char(9), 9}  --/ 0x9 (...) - 'ctime'
+}
+--/--------------------------------------------------------
+--/ packing table (list) 'tTbl' to string 'sStr'
+--/--------------------------------------------------------
+function fTbl_Compress(tTbl,recur) --/< table [,(nil|true|false)]
+	if type(tTbl) ~= 'table' then
+		if type(tTbl) == 'userdata' then --/ if 'vector' or 'ctime'?
+			if type(tTbl.getP) == 'function' and tonumber(tTbl.x) and tonumber(tTbl.y) and tonumber(tTbl.z) then --/ 'vector'
+				log("fTbl_Compress:vec_marker(%d)=[%s]%s", tMarkers.vec[2], tMarkers.vec[1], "") --/#~# 'vector'
+				return tMarkers.vec[1] .. fTbl_Compress({tTbl.x,tTbl.y,tTbl.z},recur or {}) .. tMarkers.tbe[1] --/> recursive call
+			elseif type(tTbl.setHMSms) == 'function' then --/ 'ctime'
+				log("fTbl_Compress:ctm_marker(%d)=[%s]%s", tMarkers.ctm[2], tMarkers.ctm[1], "") --/#~# 'ctime'
+				local Y,M,D,h,m,s,ms = tTbl:get(0,0,0,0,0,0,0)
+				return tMarkers.ctm[1] .. fTbl_Compress({Y,M,D,h,m,s,ms},recur or {}) .. tMarkers.tbe[1] --/> recursive call
+			end
+		end
+		log("fTbl_Compress:Not_Table=[%s]:<%s>", type(tTbl), "Warning!")
+		return "",true --/> zero-string & error (not a table!)
+	elseif getmetatable(tTbl) then --/ can not serialize a table that has a metatable associated with it.
+		log("fTbl_Compress:metatable:<%s>", "Warning!")
+		return "",true --/> zero-string & error (not a table!)
+	elseif not next(tTbl) then --/ --/>? (missing 1st element of table)
+		return "",false --/> zero-string (table empty)
+	end
+	recur = recur or {}
+	--/-------------------
+	--/ local function: check like table:'list' or not?
+	--/-------------------
+	local fIs_List = function(tTbl)
+		local bList = false
+		local iCntIdx = #tTbl --/ length of indexed part of table
+		if iCntIdx > 0 then --/ there are elements of list?
+			--/ index'es starts from 1 and behind 'list' missing hash-element
+			if next(tTbl) == 1 and not next(tTbl,iCntIdx) then
+				for i=2,iCntIdx-1 do --/ cicle of rechek: 'missing empty elements?'
+					if tTbl[i] == nil then --/ dummy?
+						return false --/> not a list
+					end
+				end
+				bList = true --/ flag: this is a list!
+			end
+		end
+		return bList --/> flag: list or ... (true|nil)
+	end
+	--/-------------------
+	--/ local function: packing (+converter) number to 'dec' or 'hex' string
+	--/-------------------
+	local fPack_Num2Str = function(iNum)
+		if iNum == math.modf(iNum) then --/ integer? (missing fractional part)
+			local iAbs = math.abs(iNum) --/ module of number
+			if iAbs > 9 then --/ 2bit number and more?
+				local iLv = math.floor(math.log10(iAbs+1)) --/ degree of closest to module biggiest number divisible to 10
+				if iAbs >= 10^iLv and iAbs < 2^(4*iLv) then --/ capacity 'dec' > 'hex'?
+					if iNum >= 0 then --/ not negative?
+						return tMarkers.hex[1] .. string.format('%X', iAbs) --/> 'hex'-string
+					end
+					--/ negative - packing with symbol
+					return tMarkers.hex[1] .. "-" .. string.format('%X', iAbs) --/> 'hex'-string with symbol
+				end
+			end
+		end
+		return tMarkers.dec[1] .. iNum --/> 'dec'-string
+	end
+	--/-------------------
+	--/ local function: packing key(index) of table element
+	--/-------------------
+	local fPack_Key = function(key)
+		local marker = tTypeToMarker[type(key)] or -1 --/ 0...4
+		if     marker == 2 then --/ 'number'
+			return fPack_Num2Str(key) --/> 'dec|hex'-string
+		elseif marker == 3 then --/ 'string'
+			return tMarkers.str[1] .. key --/> string
+		end
+		--table.print(tTbl,sModule.."PackTbl|Key")
+		--abort("fTbl_Compress:fPack_Key:Type(%s)=[%s]~UnSupported:<%s>", key, type(key), "Error!")
+		log("fTbl_Compress:fPack_Key:Type(%s)=[%s]~unsupported:<%s>", key, type(key), "Warning!")
+		return nil,true --/> nil & error
+	end
+	--/-------------------
+	--/ local function: packing of table element value
+	--/-------------------
+	local fPack_Value = function(value)
+		local marker = tTypeToMarker[type(value)] or -1 --/ 0...4
+		if     marker == 2 then --/ 'number'
+			return fPack_Num2Str(value) --/> 'dec|hex'-string
+		elseif marker == 3 then --/ 'string'
+			return tMarkers.str[1] .. value --/> string
+		elseif marker == 1 then --/ 'boolean'
+			return tMarkers.bln[1] .. ((value and "1") or "0") --/> 'bool'-string ('0'|'1')
+		elseif getmetatable(value) then
+			--/ can not serialize a table
+		elseif marker == 4 then --/ 'table'
+			--[[
+			if recur[tTbl] then --/ can not serialize recursive tables
+				return nil, true --/> nil & error #???#
+			end
+			--]]
+			recur[tTbl] = true
+			return tMarkers.tbl[1] .. fTbl_Compress(value,recur) .. tMarkers.tbe[1] --/> recursive call
+		end
+		--table.print(tTbl,sModule.."PackTbl|Value")
+		--abort("fTbl_Compress:fPack_Value:Type(%s)=[%s]~UnSupported:List=[%s]:<%s>", value, type(value), bList, "Error!")
+		log("fTbl_Compress:fPack_Value:Type=[%s]~unsupported:bList=[%s]:<%s>", type(value), tostring(bList), "Warning!")
+		return nil,true --/> nil & error
+	end
+	--/ -------------------------------------------
+	--/ body of main function: all pack
+	--/-------------------
+	local tPackStr = {} --/ temporaly table for parts of common string
+	local key,val,err
+	if fIs_List(tTbl) then --/ packing list?
+		table.insert( tPackStr, tMarkers.tbi[1] ) --/< marker 'list'
+		for i=1,#tTbl do
+			val,err = fPack_Value(tTbl[i],recur)
+			if err then  log("fTbl_Compress:val(%s)=[%s]=>[%s]~wrong_pack:list:<%s>", type(tTbl[i]), tTbl[i], val, "Warning!")
+				return "",true --/> zero-string & error (can not serialize)
+			end
+			table.insert(tPackStr, val)
+		end
+	else --/ full packing (key and value)
+		for k,v in pairs(tTbl) do
+			key,err = fPack_Key(k,recur)
+			if err then  log("fTbl_Compress:key(%s)=[%s]=>[%s]~wrong_pack:<%s>", k, type(k), key, "Warning!")
+				return "",true --/>  zero-string & error (can not serialize)
+			end
+			table.insert(tPackStr, key)
+			val,err = fPack_Value(v,recur)
+			if err then  log("fTbl_Compress:val(%s)=[%s]=>[%s]~wrong_pack:<%s>", v, type(v), val, "Warning!")
+				return "",true --/>  zero-string & error (can not serialize)
+			end
+			table.insert(tPackStr, val)
+		end
+	end
+	return table.concat(tPackStr) --/> string
+end
+--/--------------------------------------------------------
+--/ Unpacking of string 'sString' to table
+--/--------------------------------------------------------
+function fTbl_deCompress(sString)
+	local iLen = sString:len() --/ length of string
+	--/-------------------
+	--/ local function: by-symbol parser of string 'sString' from iSym till 1st 'control' character
+	--/-------------------
+	local fGet_Str = function(iSym) --/< current index of symbol in string
+		for i=iSym,iLen do
+			local iByte = string.byte(sString:sub(i,i)) --/ code of string i-symbol
+			if iByte < 32 then --/ 'control' character?
+				if iByte > 9 then --/ forbidden 'control' character?
+					abort("fTbl_deCompress:fGet_Str:Symbol(%s)=[%s] < 32:<%s>", tostring(i), tostring(iByte), "Error!") --/#~#
+				elseif i == iSym then --/ current character same as initial control character?
+					if i > 0 and iByte ~= tMarkers.str[2] and iByte == string.byte(sString:sub(i-1,i-1)) then --/ исключаем пустые строки
+						log("fTbl_deCompress:fGet_Str:string= %s", sString, "")
+						abort("fTbl_deCompress:fGet_Str:Symbol(%s)=[%s]:<%s>", tostring(i), tostring(iByte), "Error!") --/#~#
+					else log("fTbl_deCompress:fGet_Str: symbol=[%s] <~ zero string", tostring(i), "") --/#~#
+					end
+				end
+				return sString:sub(iSym,i-1),i --/> sStr,iNext (sybstring and index of initial control character(symbol))
+			end
+		end
+		return sString:sub(iSym,iLen) --/> sStr (sybstring till end of string)
+	end
+	--/-------------------
+	--/ local function: converter of substring (sStr) to a decimal number
+	--/-------------------
+	local fGet_Num = function(sStr,bHex) --/< bHex - flag 'hex'-strings
+		local iNum = nil
+		if not bHex then --/ unpacks of 'dec'string?
+			iNum = tonumber(sStr) --/ trasnfer of 'dec'-string to a decimal number
+		else --/ unpack of 'hex'-string
+			if sStr:sub(1,1) ~= "-" then --/ missing symbol '-' (minus)?
+				iNum = tonumber(sStr,16) --/ transfer of 'hex'-string to decimal number ('0x'..sStr)
+			else --/ for negative - cut 1st symbol
+				iNum = tonumber(sStr:sub(2,-1),16) *(-1) --/ transfer 'hex'-string to negative decimal number
+			end
+		end
+		if not iNum then --/ error of unpacking number?
+			abort("fTbl_deCompress:fGet_Num:Str=[%s],Hex=[%s]:<%s>", sStr, bHex, "Error!")
+		end
+		return iNum --/> number
+	end
+	--/ -------------------------------------------
+	--/ body of main function: parse all
+	--/-------------------
+	fParse = function(iSym) --/< parsing string 'sString' from iSym character
+--		log("fTbl_deCompress:fParse:at=[%s],Len=[%s],String=[%s]%s", iSym, iLen, sString, '') --/#~#
+		local bVector,bCTime = nil,nil --/ if 'vector' or 'CTime'
+		--/ check: packed table like 'list' (table-list)?
+		local iByte = string.byte(sString:sub(iSym,iSym)) --/ code iSym symbol in string
+		iSym = iSym+1 --/ moving to next symbol
+		local bList = iByte == tMarkers.tbi[2] --/ flag: 'begining of list' (table-list)
+		if bList then --/ check: 'list'?
+			iByte,iSym = string.byte(sString:sub(iSym,iSym)), iSym+1--/ skipping marker of list and moving to next character
+		else
+			bVector,bCTime = iByte == tMarkers.vec[2], iByte == tMarkers.ctm[2]
+			if bVector or bCTime then --/ if 'vector' or 'CTime'
+				bList = string.byte(sString:sub(iSym,iSym)) == tMarkers.tbi[2] --/ flag: 'begining of list' (table-list)
+				if not bList then --/ check: 'list'?
+					abort("fTbl_deCompress:fParse:(%d)=[%s],at=(%d)=[%s],String=[%s]~wrong!:<%s>", iByte, string.char(iByte), iSym, string.char(iSym), sString, "Warning!")
+				end
+			end
+		end
+		local tTbl,key,value = {},nil,nil
+		--/ cycle of parsing string from iSym character
+		while iSym <= iLen do --/ (sub)string not finished?
+			if iByte == tMarkers.tbe[2] then --/ check: end marker of subtable (table-end)?
+				return tTbl,iSym --/> substring of subtable finished - exit from function
+			end
+			if not bList then --/ check: not a 'list'? -> mode of 'common' table
+				key,iSym = fGet_Str(iSym) --/ parsing 'key'
+				if iByte == tMarkers.dec[2] then --/ 'number' (dec)?
+					key = fGet_Num(key, false) --/< unpacking 'dec'-string
+				elseif iByte == tMarkers.hex[2] then --/ 'number-hex'?
+					key = fGet_Num(key, true) --/< 'true' - unpacking flag of 'hex'-string
+				elseif iByte ~= tMarkers.str[2] then --/ not 'string'? -> error of packing format
+					abort("fTbl_deCompress:fParse:at=(%d):UnSupported_TypeKey(%s)=[%d],String=[%s]", iSym, key, iByte, sString)
+				end
+				iByte,iSym = string.byte(sString:sub(iSym,iSym)), iSym+1 --/ code of next string character
+			end
+			--/ check 'value'
+			if iByte == tMarkers.tbl[2] then --/ 'table'?
+				value,iSym = fParse(iSym) --/> recursive call for 'table substrings'
+			elseif bVector then --/ 'vector'?
+				value,iSym = fParse(iSym) --/> recursive call for 'table substrings'
+				if value[3] then
+					value = vector():set(unpack(value)) --/ 'vector'
+				else
+					log("fTbl_deCompress:fParse:(%d),at=(%d),key(%s):Wrong_DataVector=[%d],String=[%s]", iByte, iSym, #value or -1, sString)
+					value = vector():set(0,0,0) --/> 'zero_vector'
+				end
+			elseif bCTime then --/ 'ctime'?
+				value,iSym = fParse(iSym) --/> recursive call for 'table substrings'
+				local ctime = game.CTime()
+				if value[7] then
+					value = ctime:set(unpack(value)) --/> 'CTime'
+				else
+					log("fTbl_deCompress:fParse:(%d),at=(%d):Wrong_DataCTime=[%d],String=[%s]", iByte, iSym, #value or -1, sString)
+					value = ctime --/> 'zero_oCTime'
+				end
+			else --/ parsing 'value'
+				value,iSym = fGet_Str(iSym) --/ parsing 'value'
+				if     iByte == tMarkers.dec[2] then --/ 'number' (dec)?
+					value = fGet_Num(value, false) --/< unpacking 'dec'-string
+				elseif iByte == tMarkers.hex[2] then --/ 'number-hex'?
+					value = fGet_Num(value, true) --/< 'true' - flag unpacking of 'hex'-string
+				elseif iByte == tMarkers.bln[2] then --/ 'boolean'?
+					value = value == "1"
+				elseif iByte ~= tMarkers.str[2] then --/ not a 'string'? - error in packing format
+					abort("fTbl_deCompress:fParse:at=(%d):UnSupported_TypeValue(%s)=[%d],Key=[%s],List=[%s],String=[%s]", iSym, type(value), iByte, tostring(key), tostring(bList), sString)
+				end
+			end
+			--/ remembering element to table
+--			log("fParse:key=[%s],value=[%s]:[%s]", key, value, "<") --/#~#
+			if bList then --/ element of the list?
+				--if not iSym and (bVector or bCTime) then --/#?# end of string and 'vector' or 'CTime'?
+					--return value --/#?#> quit from cycle
+				if bVector or bCTime then --/#?# end of string and 'vector' or 'CTime'?
+					tTbl = value
+					return tTbl --/#?#> quit from cycle
+				end
+				table.insert(tTbl, value) --/ adding to table like ' list' (table-list)
+			else --/ element of 'common' table
+				tTbl[key] = value
+			end
+			if not iSym then --/ end of string?
+				return tTbl --/> quit from cycle
+			end
+			iByte,iSym = string.byte(sString:sub(iSym,iSym)), iSym+1 --/ code of next string character
+		end
+		return tTbl,iSym --/> (sub)table or 'vector' or 'CTime'
+	end
+	--/----------------------------------------------------------------
+	--/ parsing string 'sString' (from 1st symbol)
+--	log("fTbl_deCompress:Len=[%s],String=[%s]%s", iLen, sString, '') --/#~#
+	return fParse(1) or {} --/> table
+end
+
+--/ string without initial and closing spaces
+function fTrim_Line(sStr)
+	if sStr and sStr ~= '' then
+		return sStr:match('^%s*(.*%S)') or '' --/>
+	end
+	return sStr or '' --/>
+end
+--/ The initial part of the string (till first space) without spaces
+function fTrim_Word(sStr)
+	if sStr and sStr ~= '' then
+--		if sStr:match('(.+)%s+(.+)') then log("fTrim_Word:Str=[%s]:<%s>", sStr, "Info!") end --/#~#
+		return sStr:match('%S+') --/>
+	end
+	return sStr --/>
+end
+--/ trasfering (part) of string 'sStr' to bool value (true|false)
+function fToBoolean(sStr)
+	return (sStr == "1" or string.lower(sStr:match('^%s*(%S*)') or '') == 'true') --/> true|false
+end
+
+--/ hash-function for string (TODO: clarify on subject of optimization)
+function fStringToHash(sStr)
+	local iHash,iMpl,i,iSym = 0,1,nil,nil
+	local iLen = sStr:len(sStr)
+	for i=1,iLen do
+		iSym = string.byte( sStr:sub(i,i) )
+		iHash = iHash + iMpl *iSym
+		iMpl = iMpl * 2
+		if iMpl == 512 then iMpl = 1 end
+	end
+	return bit_and(iHash,65535) --/>
+end
+
+function fToShortStr(val,cnt) --/< value and number of characters in log
+	local lua_type = type(val)
+	if type(cnt) ~= 'number' then cnt = 3 end
+	local pat = '%.'..cnt..'f'
+	if lua_type == 'number' then --/>
+		return string.format(pat,val)
+	elseif lua_type == 'table' then
+		if type(val.x) == 'number' and type(val.y) == 'number' and type(val.z) == 'number' then
+			return string.format("tbl{"..pat..":"..pat..":"..pat.."}", val.x, val.y, val.z) --/>
+		end
+		return "<table>" --/>
+	elseif lua_type == 'userdata' then
+		if type(val.setHMSms) == 'function' then
+			return '<CTime>' --/>
+		elseif type(val.getP) == 'function' then
+			if type(val.x) == 'number' and type(val.y) == 'number' and type(val.z) == 'number' then
+				return string.format("vec(x="..pat..":y="..pat..":z="..pat..")", val.x, val.y, val.z) --/>
+			end
+			return "<vector>" --/>
+		end
+	elseif lua_type == 'string' then --/>
+		return string.sub(val,1,cnt+1)
+	elseif lua_type == 'boolean' then --/>
+		return (val and "1") or "0" --/>
+	end
+	return "<"..lua_type..">" --/>
+end
+
+
+--/ Splitting string 'sStr'
+--/ optional: [sDiv=='string'] - splitter (when 'nil': by words)
+--/ optional: [Mode==...] - type of table on output (nil:List|true:ToTrue|false:ToNum|'string':...)
+function fSplitStrToTbl(sStr, sDiv, Mode)
+	local tRet, sPattern = {}, '[%w%_]+' --/ template for splitting string to words
+	if sDiv and type(sDiv) == 'string' then --/ if divider setted:
+		sPattern = '%s*([^'..sDiv..']+)%s*' --/ splitting by it with filtration of adjacent spaces
+	end
+	if Mode == nil then --/ ordinary array
+		for sValue in sStr:gmatch(sPattern) do
+			table.insert(tRet, sValue)
+		end
+	elseif Mode == true then --/ table '[value]=true'
+		for sValue in sStr:gmatch(sPattern) do
+			tRet[sValue] = true
+		end
+	elseif Mode == false then --/ table '[idx] = number or string'
+		local iIdx = 1
+		for sValue in sStr:gmatch(sPattern) do
+			--table.insert(tRet, tonumber(sValue) or sValue)
+			tRet[iIdx] = tonumber(sValue) or sValue
+			iIdx = iIdx +1
+		end
+	elseif type(Mode) == 'string' then --/ TODO: finish or delete!
+		local sKey
+		for sValue in sStr:gmatch(sPattern) do
+			if tRet[sValue] then
+				tRet[sValue] = tRet[sValue] +1
+			elseif sKey then
+				if type(sValue) == 'string' and sValue == sKey then
+					tRet[sKey] = 2
+				elseif tonumber(sValue) then
+					tRet[sKey] = tonumber(sValue) -1
+					sKey = nil
+				else --/#?#
+					log("fSplitStrToTbl:Value(%s)=[%s]~?,Key=[%s],Str=[%s]:<%s>", type(sStr), sValue, sKey, sStr, "Warning!")
+				end
+			elseif type(sValue) == 'string' then
+				tRet[sValue] = 1
+				sKey = sValue --/ remembering key
+			else --/#?#
+				log("fSplitStrToTbl:Value(%s)=[%s]~?,Str=[%s]:<%s>", type(sStr), sValue, sStr, "Warning!")
+			end
+		end
+	end
+	--table.print(tRet,sModule.."SplitStrToTbl") --/#~#
+	return tRet --/>
+end
+
+--/ Splitting string 'sString' on strings of setted length
+--/ optional: [iLen] - max.number of symbols in strings (int)
+--/ optional: [sDiv] - symbol(s) of splitter (default by spaces)
+--/ optional: [bNoClear] - not to cut spaces (boolean)
+function fSplitOnLength(sString,iLen,sDiv,bNoClear)
+	if type(iLen) ~= 'number' then iLen = 64 end
+	if type(sDiv) ~= 'string' then sDiv = " " end
+	local iDivLen = sDiv:len() --/ length of splitter (number of simbols)
+	local sStr,tLines = sString or "", {}
+	--/ sybcycle of selecting one string of predetermined length
+	local Get_SeparatePos = function(sStr)
+		local iDivPos = sStr:find(sDiv,1,true) --/ position of 1st splitter in string
+		if iDivPos and iDivPos < sStr:len()-iDivLen then --/ found splitter inside string
+			local iPos = iDivPos --/ position of splitter in string
+			while iDivPos and iDivPos <= iLen+1 do --/ if splitter inside separated string
+				iPos = iDivPos --/ remembering position of current splitter
+				iDivPos = sStr:find(sDiv,iDivPos+iDivLen,true)
+			end
+			if iDivPos then
+				return iPos-1 --/> position of last symbol in separated part of string (till splitter)
+			end
+		end
+		return nil --/> no splitter or it's beyond of separating part of string
+	end
+	--/ position of splitter (iPos) in string
+	local iPos = Get_SeparatePos(sStr)
+	--/ main(common) cycle of splitting original string to string of predetermined length
+	while iPos or sStr:len() > iLen do  --log("fSplitOnLength: pos=[%s] : str=[%s]", iPos, sStr:sub(1,iPos or iLen), "") --/#~#
+		if bNoClear then
+			table.insert( tLines, sStr:sub(1,iPos or iLen) )
+		else --/ with cleaning of first and trailing spaces
+			table.insert( tLines, sStr:sub(1,iPos or iLen):match('^%s*(.*%S)') ) --/ string.trim(sStr)
+		end
+		if iPos then
+			sStr = sStr:sub(1+iPos+iDivLen) --/ cutting initial part of string with splitter
+		else
+			sStr = sStr:sub(1+iLen) --/ cut initial part of string
+		end
+		iPos = Get_SeparatePos(sStr)
+	end
+	--/ rest of string:
+	if sStr ~= "" and sStr ~= sDiv then  --log("fSplitOnLength: s=[%s]", sStr, "") --/#~#
+		table.insert(tLines, (bNoClear and sStr) or sStr:match('^%s*(.*%S)')) --/ string.trim(sStr)
+	end
+	--/ returning table with strings of setted length
+	return tLines --/>
+end
+--/--------------------------------------------------------
+--/ 
+--/--------------------------------------------------------
+--/ Repacking one-dimensional array (list) to two-dimensional (section = size of it)
+function fConvert_ListToNumArray(tList)
+	local tArray = {}
+	for _,v in ipairs(tList) do
+		if tArray[v] then
+			tArray[v] = tArray[v] +1
+		else
+			tArray[v] = 1
+		end
+	end
+	return tArray --/>
+end
+--/ Kolmogor: little optimizations: insert into empty table and insert normal priority commonly
+function fInsertSort_Table(tbl, compare, value, reverse)
+	if not value or type(tbl) ~= 'table' or type(compare) ~= 'function' then
+		log("fInsertSort_Table:value=[%s],tbl=[%s],func=[%s]:<%s>", type(value), type(tbl), type(compare), "Warning!")
+		return --/>
+	end
+	
+	if #tbl == 0 then --/ if empty table
+		table.insert(tbl, value)
+	elseif not compare(value, tbl[#tbl]) then
+		table.insert(tbl, value) --/ + to end of table
+	elseif not reverse then
+		for i=1,#tbl do
+			if compare(value, tbl[i]) then
+				table.insert(tbl, i, value) --/ + to place in order of size
+				return --/>
+			end
+		end
+		table.insert(tbl, value) --/ + to end of table
+	else --/ reversible interation of the table (from end)
+		for i=#tbl, 1, -1 do
+			if not compare(value, tbl[i]) then
+				table.insert(tbl, i+1, value)
+				return --/>
+			end
+		end
+		table.insert(tbl, 1, value) --/ + to the begining of table
+	end
+end
+--/ Gr1ph00n: sorting in o(nlogn)
+--/ field is required if predicate is given, it's the name of the variable used in compare
+--/ can be used only on indexed tables
+function fMergeSort_Table(tbl, predicate)
+	if tbl and type(tbl) == 'table' and #tbl > 1 then
+		if type(predicate) ~= 'function' then
+			predicate = function(a,b) return a <= b end
+		end
+		--/
+		fMergeSort = function(tbl)
+			local cnt = #tbl
+			if cnt > 1 then
+				local half_1, half_2, half_cnt = {}, {}, cnt / 2
+				--/ divide in half:
+				for i = 1, cnt do
+					if i <= half_cnt then
+						table.insert(half_1, table.remove(tbl, 1))
+					else
+						table.insert(half_2, table.remove(tbl, 1))
+					end
+				end
+				
+				fMergeSort(half_1) --/ recursive call
+				fMergeSort(half_2) --/ recursive call
+				
+				while #half_1 > 0 and #half_2 > 0 do
+					if predicate(half_1[1], half_2[1]) then
+						table.insert(tbl, table.remove(half_1, 1))
+					else
+						table.insert(tbl, table.remove(half_2, 1))
+					end
+				end
+				while #half_1 > 0 do
+					table.insert(tbl, table.remove(half_1, 1))
+				end
+				while #half_2 > 0 do
+					table.insert(tbl, table.remove(half_2, 1))
+				end
+			end
+		end
+		--/<
+		fMergeSort(tbl)
+	end
+end
+
+function fTableKeys(tbl)
+	local tKeys = {}
+	for k,_ in pairs(tbl) do
+		table.insert(tKeys, k)
+	end
+	return tKeys
+end
+--/ ---------------------------------------------
+if not rawequal then
+	_G.rawequal = function(a,b) --/ compare_safe
+		local status,result = pcall(function(a,b) return a == b end, a, b) --/ a_eq_b
+		if status then return result end --/>
+		status,result = pcall(function(a,b) return a ~= b end, a, b) --/ a_neq_b
+		if status then return not result end --/>
+		abort("rawequal: neither == nor ~= not working for compared objects")
+	end
+end
+--/----------------------------------------------
+--/ table expansion
+--/----------------------------------------------
+if not table.print then
+	table.print = this.fPrint_Table
+end
+if not table.size then
+	table.size = this.fGetSizeTable
+end
+if not table.copy then
+	table.copy = this.fCopyTable
+end
+if not table.clone then
+	table.clone = this.fCloneTable
+end
+if not table.find then
+	table.find = this.fFindInTable
+end
+if not table.serialize then
+	table.serialize = this.fTable_Serialize
+end
+if not table.unserialize then
+	table.unserialize = this.fTable_unSerialize
+end
+if not table.compress then --/clench|shrink
+	table.compress = this.fTbl_Compress
+end
+if not table.decompress then
+	table.decompress = this.fTbl_deCompress
+end
+if not table.insert_sort then
+	table.insert_sort = this.fInsertSort_Table
+end
+if not table.merge_sort then
+	table.merge_sort = this.fMergeSort_Table
+end
+if not table.list2array then
+	table.list2array = this.fConvert_ListToNumArray
+end
+if not table.keys then
+	table.keys = this.fTableKeys
+end
+--/----------------------------------------------
+--/ string expansion
+--/----------------------------------------------
+if not string.exformat then
+	string.exformat = this.fStringExtraFormat
+end
+if not string.trim then
+	string.trim = this.fTrim_Line
+end
+if not string.trim_w then
+	string.trim_w = this.fTrim_Word
+end
+if not string.short then
+	string.short = this.fToShortStr
+end
+if not string.split then --/ splitToTbl
+	string.split = this.fSplitStrToTbl
+end
+if not string.divide then
+	string.divide = this.fSplitOnLength
+end
+if not string.toboolean then
+	string.toboolean = fToBoolean
+end
+if not string.tohash then
+	string.tohash = fStringToHash
+end
+--/----------------------------------------------
+--/ math expansion
+--/----------------------------------------------
+math.nan = -(0/0) --/ not a number
+math.isnan = function(value) --/ the following assume type(value) == 'number':
+	return value ~= value --/>
+end
+math.inf = 1/0
+math.isinf = function(value)
+	if value == -(math.inf) then
+		return -1 --/>
+	elseif value == math.inf then
+		return 1 --/>
+	end
+	return 0 --/>
+end
+math.isfinite = function(value)
+	return value > -(math.inf) and value < math.inf --/>
+end
+math.round = function(value, count)
+	local mul = math.pow(10,count) --/ 10^count
+	return math.floor(value*mul +0.5)/mul --/>
+end
+math.normalize = function(value,min,max)
+	return math.min( math.max(min or 0, value), max or 1) --/>
+end
+math.dec2hex = function(value)
+	return tonumber(tostring(value),16) --/>
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,80 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : actor_proxy.script
+ Description: Class "actor_proxy". Gives support to actor, even if he is in offline.
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : 
+ Last edit  : 17.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/------------------------------------------------------------------------------------------------
+class "actor_proxy"
+--/------------------------------------------------------------------------------------------------
+function actor_proxy:__init()
+	self.initialized = false
+end
+
+--/ initialization (happens only in moment of first after start of simulator call)
+function actor_proxy:init()  --debug_print(script_name()..":init:>") --/#~#
+	if not self.initialized then
+		self.initialized = true
+		self.actor       = nil
+		self.online      = false
+		self.alife       = alife()
+		if self.alife then
+			self.actor_id = self.alife:actor().id
+			if event then event("actor_init"):once(true):trigger() end --/#+#>
+		end
+	end
+end
+
+--/ Deinitialization.
+--/ Calls from se_smart_terrain:on_unregister(), in moment of unregistering of server objects.
+
+function actor_proxy:deinit()
+	if self.initialized then  --debug_print(script_name()..":deinit:>") --/#~#
+		self.initialized = false
+		self.online      = false
+		self.alife       = nil
+		self.actor       = nil
+		if event then event("actor_deinit"):trigger() end --/#+#>
+	end
+end
+
+--/ getting ID of player
+function actor_proxy:id()
+	self:init()
+	return self.actor_id --/>
+end
+
+function actor_proxy:has_info(sInfo)
+	self:init()
+	return has_info(sInfo) --/>
+end
+
+function actor_proxy:dont_has_info(sInfo)
+	self:init()
+	return not has_info(sInfo) --/>
+end
+
+--/ birth of actor in online
+function actor_proxy:net_spawn(oObj)
+	self:init()
+	self.online = true
+	self.actor  = oObj
+--	debug_print(script_name()..":net_spawn:Actor=["..oObj:name().."]") --/#~#
+end
+
+--/ actor leaves online
+function actor_proxy:net_destroy()
+	self:init()
+	self.online = false
+	self.actor  = nil
+end
+
+function actor_proxy:__finalize() --/#+#
+	if event then event("actor_finalize"):trigger() end --/#+#>
+end
+--/------------------------------------------------------------------------------------------------

@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {+agr_sucker_pda_dropped -agr_cutscene_small} sr_cutscene
+
+[sr_cutscene]
+point = agr_cam_walk
+look = agr_cam_look
+cam_effector = agr_liar_task
+pp_effector = sar_out
+on_signal = cameff_end | nil %+agr_cutscene_small =release%

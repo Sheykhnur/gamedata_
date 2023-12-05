@@ -1,0 +1,99 @@
+[danger@esc_dog]
+ignore_types = grenade, corpse, sound, hit
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+danger_inertion_time_grenade = 1
+danger_inertion_time_corpse  = 1
+danger_inertion_time_hit     = 1 
+danger_inertion_time_sound   = 1
+
+[danger@esc_dog2]
+
+[combat_ignore@esc_dog]
+
+[logic]
+active = walker@stay_maddog
+combat_ignore = combat_ignore@esc_dog
+invulnerable = true
+
+[walker@stay_maddog]
+path_walk = basic_way_maddog
+combat_ignore_cond = always
+danger = danger@esc_dog
+meet = no_meet
+on_timer = 5 | remark@wait
+
+[remark@wait]
+combat_ignore_cond = always
+danger = danger@esc_dog
+target = basic_way_merc_client, 0
+on_info = {+esc_merc_talk_1 -dog_teleported} %=shut_up_npc% remark@1
+on_info2 = {+dog_teleported} walker@run_away2
+
+[remark@1]
+snd = esc_merc_dialog2
+combat_ignore_cond = always
+on_signal = sound_end | %+esc_merc_talk_2%
+on_info = {+esc_merc_talk_4} remark@2
+target = basic_way_merc_client, 0
+meet = no_meet
+danger = danger@esc_dog
+
+[remark@2]
+snd = esc_merc_dialog5
+combat_ignore_cond = always
+on_signal = sound_end | %+esc_merc_talk_5%
+on_info = {+esc_merc_talk_6} remark@3
+target = basic_way_merc_client, 0
+meet = no_meet
+danger = danger@esc_dog
+
+[remark@3]
+snd = esc_merc_dialog7
+meet = no_meet
+combat_ignore_cond = always
+target = basic_way_merc_client, 0
+danger = danger@esc_dog
+on_signal = sound_end | %+esc_merc_talk_7% remark@4
+
+[remark@4]
+meet = no_meet
+combat_ignore_cond = always
+on_info = {-esc_cutscene_backdoor} remark@5, remark@dog_back
+
+[remark@5]
+meet = no_meet
+combat_ignore_cond = always
+target = maddog_target, 0
+danger = danger@esc_dog
+;on_info = {+esc_scene_runners} walker@run_away_merc_start
+on_info = {+esc_teleport_scene_end -dog_teleported} %=teleport_npc(way_telep_dog:dog_teleported)%
+on_info2 = {+dog_teleported} walker@run_away2
+
+[remark@dog_back]
+meet = no_meet
+combat_ignore_cond = always
+target = back_door_look, 0
+danger = danger@esc_dog
+on_info = {+esc_teleport_scene_end} %=release%
+on_info2 = {+dog_teleported} walker@run_away2
+
+;[walker@run_away_merc_start]
+;path_walk = esc_scene_maddog_away
+;combat_ignore_cond = always
+;danger = danger@esc_dog
+;meet = no_meet
+;on_info = {+scene_end -dog_teleported} %=teleport_npc(way_telep_dog:dog_teleported)%
+;on_info2 = {+dog_teleported} walker@run_away2
+
+[walker@run_away2]
+path_walk = esc_maddog_merc_way
+combat_ignore_cond = always
+danger = danger@esc_dog
+meet = no_meet
+on_info = {=dist_to_actor_le(8)}  %=release%
+on_info2 = {+esc_got_maddog_stuff} %=release%
+on_signal = release_dog | %=release%

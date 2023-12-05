@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle@shift
+
+[sr_idle@shift]
+on_info = {+gen2_particle_shift -gen2_shifted} sr_particle@shift
+
+[sr_particle@shift]
+name = anomaly2\teleport_out_00
+path = gen2_shift_way
+mode = 2
+looped = true
+on_timer = 4000 | %+gen2_shifted% nil

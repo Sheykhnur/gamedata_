@@ -1,0 +1,108 @@
+[death@rad_snorks_lair]
+;on_info = {=is_gulag_population_inactive(rad_snorks_lair_base)} %+rad_snorks_lair_base_done%
+on_info = {=gulag_casualities_ge(rad_snorks_lair_base:2)} %+rad_snorks_lair_base_done%
+
+[logic@rad_snorks_lair_base_home1]
+active = mob_home@rad_snorks_lair_base_home1
+
+[mob_home@rad_snorks_lair_base_home1]
+path_home = home1
+home_min_radius = 10
+home_max_radius = 30
+
+[logic@rad_snorks_lair_base_home2]
+active = mob_home@rad_snorks_lair_base_home2
+
+[mob_home@rad_snorks_lair_base_home2]
+path_home = home1
+home_min_radius = 10
+home_max_radius = 30
+
+[logic@rad_snorks_lair_base_home3]
+active = mob_home@rad_snorks_lair_base_home3
+
+[mob_home@rad_snorks_lair_base_home3]
+path_home = home3
+home_min_radius = 10
+home_max_radius = 30
+
+[logic@rad_snorks_lair_base_rush1]
+active = mob_walker@rad_snorks_lair_base_rush1
+on_death = death@rad_snorks_lair
+
+[mob_walker@rad_snorks_lair_base_rush1]
+path_walk = rush1
+panic = 0
+always_aggressive = true
+braindead = true
+on_death = death@rad_snorks_lair
+on_signal = snreacheda | mob_walker@rad_snorks_lair_base_rush1_end %+rad_snorks_new_home%
+
+[mob_walker@rad_snorks_lair_base_rush1_end]
+braindead = false
+path_walk = rush_end1
+
+
+[logic@rad_snorks_lair_base_rush2]
+active = mob_walker@rad_snorks_lair_base_rush2
+on_death = death@rad_snorks_lair
+
+[mob_walker@rad_snorks_lair_base_rush2]
+path_walk = rush2
+panic = 0
+always_aggressive = true
+braindead = true
+on_death = death@rad_snorks_lair
+on_signal = snreachedb | mob_walker@rad_snorks_lair_base_rush2_end %+rad_snorks_new_home%
+
+[mob_walker@rad_snorks_lair_base_rush2_end]
+braindead = false
+path_walk = rush_end2
+
+[logic@rad_snorks_lair_base_rush3]
+active = mob_walker@rad_snorks_lair_base_rush3
+on_death = death@rad_snorks_lair
+
+[mob_walker@rad_snorks_lair_base_rush3]
+path_walk = rush3
+panic = 0
+always_aggressive = true
+braindead = true
+on_death = death@rad_snorks_lair
+on_signal = snreachedc | mob_walker@rad_snorks_lair_base_rush3_end %+rad_snorks_new_home%
+
+[mob_walker@rad_snorks_lair_base_rush3_end]
+braindead = false
+path_walk = rush_end3
+
+[logic@rad_snorks_lair_base_rush_end1]
+active = mob_home@rad_snorks_lair_base_rush_end1
+on_death = death@rad_snorks_lair
+
+[mob_home@rad_snorks_lair_base_rush_end1]
+path_home = new_home1
+on_death = death@rad_snorks_lair
+home_min_radius = 10
+home_max_radius = 50
+
+[logic@rad_snorks_lair_base_rush_end2]
+active = mob_home@rad_snorks_lair_base_rush_end2
+on_death = death@rad_snorks_lair
+
+[mob_home@rad_snorks_lair_base_rush_end2]
+path_home = new_home2
+on_death = death@rad_snorks_lair
+home_min_radius = 10
+home_max_radius = 50
+
+[logic@rad_snorks_lair_base_rush_end3]
+active = mob_home@rad_snorks_lair_base_rush_end3
+on_death = death@rad_snorks_lair
+
+[mob_home@rad_snorks_lair_base_rush_end3]
+path_home = new_home3
+on_death = death@rad_snorks_lair
+home_min_radius = 10
+home_max_radius = 50
+
+

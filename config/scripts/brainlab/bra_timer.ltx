@@ -1,0 +1,15 @@
+[logic]
+active = sr_idle
+ 
+[sr_idle]
+on_actor_inside = sr_idle@2
+
+[sr_idle@2]
+on_info = {-bra_brain_timer_started} %+bra_brain_timer_started =scenario_autosave(x16_disable_emitter_title)%
+on_timer = 3000|sr_timer@1 %=play_snd(characters_voice\scenario\radar\rad_hat_1)%
+
+[sr_timer@1]
+type = dec
+start_value = 200000
+on_value = 15 | %=play_snd(characters_voice\scenario\radar\rad_hat_2)% | 0 | nil %=aes_kill_actor%
+on_info = {+lab_generator_off} nil %=rad_psy_basic_clear =run_cam_effector(fusker)%

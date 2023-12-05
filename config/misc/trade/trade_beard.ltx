@@ -1,0 +1,96 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = beard_generic_buy
+sell_condition = beard_start_sell
+buy_supplies = {+has_freeplay_info}supplies_freeplay, {+bas_switcher_off +deactivate_radar_done}supplies_before_prip, supplies_start
+discounts = {+out_barman_x7_switcher_talked} discount_after_x7, discount_start
+
+buy_item_condition_factor = 0.9
+
+[discount_start]
+buy  = 0.94
+sell = 1.2
+
+[discount_after_x7]
+buy  = 0.94
+sell = 0.92
+
+[beard_generic_buy]:buy_misc_cheap,buy_artefacts_cheap,buy_ammo_normal,buy_food_normal,buy_outfit_cheap,buy_weapons_normal,buy_devices_cheap
+
+
+[supplies_start]:basic_supplies,fancy_food_supplies,booster_supplies
+killer_outfit		                 = 2, 0.3
+exo_outfit                           = 1, 0.8
+dolg_scientific_outfit               = 1, 0.8
+
+helm_battle_stalker					 = 1, 0.85
+
+ammo_5.7x28_ap                       = 16, 0.7
+ammo_5.7x28_jhp                      = 16, 0.7
+ammo_.44_reg                         = 14, 0.6
+ammo_.44_frag                        = 14, 0.6
+ammo_9x19_pbp                        = 18, 0.5
+ammo_11.43x23_fmj                    = 16, 0.6
+ammo_11.43x23_hydro                  = 16, 0.6
+ammo_7.62x39_s                       = 6, 0.6
+ammo_7.62x39_ap		             	 = 4, 0.7
+ammo_7.62x51_fmj					 = 10, 0.8
+ammo_7.62x51_ap                      = 6, 0.6
+ammo_7.62x54_7h1                     = 8, 0.6
+ammo_7.62x54_7h14                    = 5, 0.6
+ammo_7.62x54_ap                      = 5, 0.6
+ammo_9x39_ap                         = 6, 0.6
+ammo_9x39_sp5                        = 6, 0.6
+ammo_12x70_cart                      = 2, 0.8
+ammo_12x70_buck                      = 2, 0.8
+ammo_12x76_zhekan                    = 2, 0.6
+ammo_12x76_dart                      = 2, 0.6
+ammo_23x75_buck                      = 10, 0.7
+ammo_23x75_buck_ap                   = 15, 0.8
+
+medkit_scientic                      = 5, 0.4
+
+cmuphob_vodka                        = 4, 0.7
+
+wpn_desert_eagle                     = 2, 0.7
+wpn_abakan                           = 1, 0.6
+wpn_svu								 = 2, 0.7
+wpn_ks23							 = 2, 0.95
+
+;addons
+wpn_addon_grenade_launcher_m203      = 2, 0.8
+wpn_addon_scope_susat_custom     	 = 1, 0.5 
+wpn_addon_scope_susat_dusk       	 = 1, 0.6
+wpn_addon_scope_galil                = 1, 0.8
+wpn_addon_silencer_76239             = 1, 1
+wpn_addon_silencer_57                = 2, 0.8
+
+wpn_electron_binoc                   = 1, 1.0
+device_torch_adv					 = 1, 1
+
+
+[supplies_before_prip]:supplies_start
+cs_ultraheavy_outfit                 = 2, 0.8
+
+helm_battle_heavy_stalker			 = 2, 0.8
+
+ammo_8.6x70_ap                       = 15, 0.7
+ammo_556_200                       	 = 6, 0.7
+ammo_556_200_ap                   	 = 6, 0.7
+ammo_762_100                   	 	 = 6, 0.7
+ammo_pkm_100                   	 	 = 6, 0.7
+ammo_23x75_barr                      = 15, 0.65
+
+wpn_rg-6                             = 2, 0.9
+wpn_addon_silencer_76254             = 1, 0.8
+wpn_addon_silencer_76251             = 1, 0.8
+
+
+[supplies_freeplay]:supplies_before_prip
+military_ultraheavy_outfit         	 = 1, 1
+cs_ultraheavy_outfit                 = 1, 1
+
+helm_battle_heavy_stalker			 = 2, 1
+
+[beard_start_sell]:sell_all_normal,sell_misc_high,sell_ammo_high

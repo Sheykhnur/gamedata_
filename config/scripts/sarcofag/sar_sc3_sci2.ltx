@@ -1,0 +1,76 @@
+[combat_ignore@sar_sci2]
+
+[danger@sar_sci2_sc3]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sar_sci_11
+combat_ignore = combat_ignore@sar_sci2
+danger = danger@sar_sci2_sc3
+
+[remark@sar_sci_11]
+anim = probe_old
+combat_ignore_cond = true
+target = sar_scene4_sci, 0
+meet = no_meet
+on_timer = 7600 | remark@sar_sci_12
+
+[remark@sar_sci_12]
+anim = ordinary_talk3
+snd = sar_replics34
+combat_ignore_cond = true
+target = sar_sci2_look, 0
+meet = no_meet
+on_signal = sound_end | remark@sar_sci12_synth %+sar_sc3_portion_1%
+
+[remark@sar_sci12_synth]
+anim = wait
+combat_ignore_cond = true
+target = sar_sci2_look, 0
+meet = no_meet
+on_info = {+sar_sc3_portion_2} remark@sar_sci13
+
+[remark@sar_sci13]
+anim = probe_old
+combat_ignore_cond = true
+target = sar_scene4_sci, 0
+meet = no_meet
+on_info = {+sar_sc3_portion_3} remark@sar_sci_131
+
+[remark@sar_sci_131]
+anim = wait
+snd = sar_replics37
+target = sar_sci2_look, 0
+combat_ignore_cond = true
+meet = no_meet
+on_signal = sound_end | %+sar_sc3_portion_4% remark@sar_sci13_synth
+
+[remark@sar_sci13_synth]
+anim = wait
+target = sar_sci2_look, 0
+combat_ignore_cond = true
+meet = no_meet
+on_info = {+sar_sc3_portion_5} remark@sar_sci_14
+
+[remark@sar_sci_14]
+anim = ordinary_talk3
+snd = sar_replics39
+combat_ignore_cond = true
+target = sar_sci2_look, 0
+meet = no_meet
+on_signal = sound_end | walker@sar_sci_11
+
+[walker@sar_sci_11]
+path_walk = sar_sc3_end_walk
+on_signal = sci_sc3_rh2 | remark@sar_sci11_end
+combat_ignore_cond = true
+meet = no_meet
+def_state_moving = run
+
+[remark@sar_sci11_end]
+anim = probe_old
+combat_ignore_cond = true
+target = sar_sci3_end2, 0
+meet = no_meet
+on_info = {+sar_sc3_end} %=release%

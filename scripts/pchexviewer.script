@@ -1,0 +1,120 @@
+
+-- file: pcHexJunk.script
+-- author: barin
+-- date: 2009-06-16
+-- edited by: barin
+-- last edited: 2009-09-09
+
+class "TextLine" (CUIListItemEx)
+
+function TextLine:__init(str, font, colour) super()
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetText(str)	
+	self.text:SetFont(pcTextViewer.get_font(font))
+	self.text:SetTextColor(pcTextViewer.get_colour(colour))
+end
+
+-- ******************************************************************************************* --
+
+class "uiHexJunk" (CUIScriptWnd)
+
+function uiHexJunk:__init(parent, x, y) super()
+	self:SetWindowName("uiHexJunk")
+	self.owner = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 480
+	self.wnd_height = 370
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+end
+
+function uiHexJunk:__finalize()
+end
+
+local error_type =
+{
+	"Heap overflow", "Stack buffer overflow",
+	"Segmentation fault", "SIGABRT received",
+	"Invalid memory reference, expected 0x7425, got 0x2364"
+}
+
+function uiHexJunk:reset()
+	local dlg = self:GetListWnd("string_list")
+	if dlg:GetSize() ~= 0 then
+		dlg:RemoveAll()
+	end
+	
+	local junk, str, chunk = "", "", ""
+	local junk_length = 212
+	
+	for index = 1, junk_length do
+		junk = string.format("%s%s", junk, string.char(math.random(32, 126)))
+	end
+	
+	junk = string.format("%s<<<ERROR : %s<<<", junk, error_type[math.random(1, #error_type)])
+	
+	for byte = 1, #junk, 16 do
+		chunk = string.sub(junk, byte, byte + 15)
+		str = string.format("%s%08X  ", str, byte - 1)
+		
+		for value in string.gfind(chunk, ".") do
+			str = string.format("%s%02X ", str, string.byte(value))
+		end
+		
+		str = str .. string.rep(" ", 3 * (16 - #chunk))
+		str = string.format("%s %s", str, string.gsub(chunk, "%c", "."))
+		
+		dlg:AddItem(TextLine(str, "small", "full_white"))
+		str = ""
+	end
+end
+
+function uiHexJunk:OnChildDialogExit(child_name)
+end
+
+function uiHexJunk:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiHexJunk:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_hex_viewer"))
+	self.wnd_frame:Show(true)
+	
+	local dlg = self.owner.xml:InitList("hex_viewer:string_list", self)
+	dlg:SetWndPos(self.wnd_x + 10, self.wnd_y + 35)
+	dlg:ShowSelectedItem(false)
+	self:Register(dlg, "string_list")
+end
+
+function uiHexJunk:InitCallBacks()
+end
+
+function uiHexJunk:OnExit()
+	self.owner:OnChildDialogExit(self:WindowName())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiHexJunk:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+	
+	return true
+end

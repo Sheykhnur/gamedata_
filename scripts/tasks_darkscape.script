@@ -1,0 +1,190 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_darkscape.script
+ Description: Tasks darkscape
+ Copyright  : 2012 © LA-team
+ Author     : vintar
+ Editors    : gr1ph00n, vintar, lox(11.02.2013)
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if not has_info("ds_boss_spoke_all") and has_info("ds_boss_spoke_personal") and has_info("ds_boss_spoke_duty") then
+		give_info("ds_boss_spoke_all")
+	end
+	if sEvent == "item_take" then
+		if obj:section() == "ds_dolg_disc" then
+			give_info("ds_find_disc_task_done")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "secret_documents_done" then
+		if not has_info("ds_leave_mines_start") then
+			start_real_timer(6, nil, {info_id = "ds_leave_mines_start"})
+		end
+		return true --/>
+	end
+	if not info_id:match('^ds_') then
+		return false --/>
+	end
+	if info_id == "ds_prisoner_task_done" then
+		local se_box = alife():object("ds_disc_stash")
+		if se_box then
+			alife():create("ds_dolg_disc", vector(), 0, 0, se_box.id)
+		end
+		give_info("ds_find_disc_task_start")
+		return true --/>
+	end
+	if info_id == "ds_sin_death" then
+		local se_box = alife():object("ds_disc_stash")
+		if se_box then
+			alife():create("ds_dolg_disc", vector(), 0, 0, se_box.id)
+		end
+		give_info("ds_find_disc_task_start")
+		return true --/>
+	end
+	if info_id == "ds_dstalkers_dead" then
+		if has_info("ds_attack_group_start") then
+			give_info("ds_actor_killed_sin")
+			if not has_info("ds_find_disc_task_start") then
+				give_info("ds_find_disc_task_start")
+			end
+		end
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+
+function gar_sins_clean_enemy_base(actor, npc)
+	return (has_info("ds_dstalkers_dead") or has_info("ds_prisoner_task_done"))
+end
+	
+	
+function actor_has_moonlight(actor, npc)
+	return db.actor:object("af_electra_moonlight") ~= nil
+end
+
+function actor_has_any_sin_af(actor, npc)
+	return (db.actor:object("af_dummy_dummy") ~= nil
+	or db.actor:object("af_gold_fish") ~= nil
+	or db.actor:object("af_dummy_spring") ~= nil
+	or db.actor:object("af_pupil") ~= nil
+	or db.actor:object("af_mercury_ball") ~= nil
+	or db.actor:object("af_cristall") ~= nil
+	or db.actor:object("af_white_sun") ~= nil
+	or db.actor:object("af_electra") ~= nil
+	or db.actor:object("af_dummy_pellicle") ~= nil
+	or db.actor:object("af_fungus") ~= nil
+	or db.actor:object("af_chestnut") ~= nil)
+end
+
+function actor_has_sin_af_1(actor, npc)
+	return db.actor:object("af_dummy_dummy") ~= nil
+end
+
+function actor_has_sin_af_2(actor, npc)
+	return db.actor:object("af_gold_fish") ~= nil
+end
+
+function actor_has_sin_af_3(actor, npc)
+	return db.actor:object("af_dummy_spring") ~= nil
+end
+
+function actor_has_sin_af_4(actor, npc)
+	return db.actor:object("af_pupil") ~= nil
+end
+
+function actor_has_sin_af_5(actor, npc)
+	return db.actor:object("af_mercury_ball") ~= nil
+end
+
+function actor_has_sin_af_6(actor, npc)
+	return db.actor:object("af_cristall") ~= nil
+end
+
+function actor_has_sin_af_7(actor, npc)
+	return db.actor:object("af_white_sun") ~= nil
+end
+
+function actor_has_sin_af_8(actor, npc)
+	return db.actor:object("af_electra") ~= nil
+end
+
+function actor_has_sin_af_9(actor, npc)
+	return db.actor:object("af_dummy_pellicle") ~= nil
+end
+
+function actor_has_sin_af_10(actor, npc)
+	return db.actor:object("af_fungus") ~= nil
+end
+
+function actor_has_sin_af_11(actor, npc)
+	return db.actor:object("af_chestnut") ~= nil
+end
+
+function actor_gives_sin_af_1(actor, npc)
+	dialogs.lost_items("af_dummy_dummy")
+end
+
+function actor_gives_sin_af_2(actor, npc)
+	dialogs.lost_items("af_gold_fish")
+	dialogs.give_items("af_vyvert", 1)
+	dialogs.give_items("af_ameba_slime", 1)
+	dialogs.give_items("af_rock", 1)
+	dialogs.give_items("af_fuzz_bagel", 1)
+	dialogs.give_items("af_hedgehog", 1)
+	dialogs.give_items("af_quartz", 2)
+end
+
+function actor_gives_sin_af_3(actor, npc)
+	dialogs.lost_items("af_dummy_spring")
+end
+
+function actor_gives_sin_af_4(actor, npc)
+	dialogs.lost_items("af_pupil")
+end
+
+function actor_gives_sin_af_5(actor, npc)
+	dialogs.lost_items("af_mercury_ball")
+end
+
+function actor_gives_sin_af_6(actor, npc)
+	dialogs.lost_items("af_cristall")
+end
+
+function actor_gives_sin_af_7(actor, npc)
+	dialogs.lost_items("af_white_sun")
+end
+
+function actor_gives_sin_af_8(actor, npc)
+	dialogs.lost_items("af_electra")
+end
+
+function actor_gives_sin_af_9(actor, npc)
+	dialogs.lost_items("af_dummy_pellicle")
+end
+
+function actor_gives_sin_af_10(actor, npc)
+	dialogs.lost_items("af_fungus")
+end
+
+function actor_gives_sin_af_11(actor, npc)
+	dialogs.lost_items("af_chestnut")
+end
+--/ -----------------------------------------------------------------------------------------------

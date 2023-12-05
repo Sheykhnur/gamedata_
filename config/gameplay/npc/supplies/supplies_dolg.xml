@@ -1,0 +1,285 @@
+	<!-- Supply templates for Dolg -->
+
+	<template id="dolg_common">
+		<include id="alcohol_normal"/>
+
+		<item s="mineral_water" 		prob="0.15"		cond="1.0"/>
+
+		<!-- Meds -->
+		<item s="bandage" 				prob="0.15"		cond="1.0"/>
+		<item s="antirad" 				prob="0.05"		cond="1.0"/>
+
+		<!-- Items -->
+		<item s="harmonica_a" 			prob="0.1"		cond="1.0"/>
+		<item s="guitar_a" 				prob="0.05"		cond="1.0"/>
+		<item s="device_torch_eco" 		prob="0.3"		cond="1.0"/>
+	</template>
+
+	<template id="dolg_regular_common">
+		<include id="dolg_common"/>
+		<include id="food_med"/>
+		<include id="boosters_low"/>
+		<item s="medkit_army"   	prob="0.12"		cond="1.0"/>
+		<item s="grenade_rgd5" 		prob="0.1"		cond="1.0"/>
+	</template>
+	<template id="dolg_veteran_common">
+		<include id="dolg_common"/>
+		<include id="food_high"/>
+		<include id="boosters_high"/>
+		<item s="medkit_army"   	prob="0.2"		cond="1.0"/>
+		<item s="grenade_rgd5" 		prob="0.35"		cond="1.0"/>
+		<item s="grenade_f1" 		prob="0.1"		cond="1.0"/>
+	</template>
+	<template id="dolg_master_common">
+		<include id="dolg_common"/>
+		<include id="food_high"/>
+		<include id="money_vhigh"/>
+		<include id="boosters_high"/>
+		<item s="medkit_army"   	prob="0.15"		cond="1.0"/>
+		<item s="medkit_scientic"   prob="0.15"		cond="1.0"/>
+		<item s="grenade_f1" 		prob="0.4"		cond="1.0"/>
+	</template>
+	<template id="dolg_common_sidearm">
+			<include id="weapon_fort"/>
+	</template>
+	<template id="dolg_sniper_sidearm">
+			<include id="weapon_pb"/>
+	</template>
+	<template id="dolg_master_sidearm">
+		<item s="wpn_aps" w_ammo="1"/>
+	</template>
+	<template id="dolg_t3_regular_sidearm">
+			<include id="weapon_oc33"/>
+	</template>
+	<template id="dolg_t3_veteran_sidearm">
+		<random_select>
+			<opt w="2"><include id="weapon_oc33_ap"/></opt>
+			<opt w="1"><include id="weapon_oc33_sil"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_master_sidearm">
+		<random_select>
+			<opt w="4"><include id="weapon_oc33_pmm"/></opt>
+			<opt w="1"><include id="weapon_oc33_sil_pmm"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_sniper_sidearm">
+			<include id="weapon_oc33_sil_ap"/>
+	</template>
+
+<!-- Tier 1 -->
+
+	<!-- Regular -->
+	<template id="dolg_t1_regular">
+		<random_select>
+			<opt w="3"><include id="dolg_t1_regular_auto"/></opt>
+			<opt w="1"><include id="dolg_t1_regular_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t1_regular_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_aks74u"/></opt>
+			<opt w="1"><include id="weapon_aks74u_ap"/></opt>
+		</random_select>
+		<include id="dolg_common_sidearm"/>
+	</template>
+	<template id="dolg_t1_regular_shotgun">
+		<include id="weapon_bm16_long"/>
+		<include id="weapon_bm16_long_slug"/>
+		<include id="weapon_pm_ap"/>
+		<include id="dolg_regular_common"/>
+	</template>
+
+	<!-- Veteran -->
+	<template id="dolg_t1_veteran">
+		<include id="weapon_aks74u_ap"/>
+		<include id="dolg_common_sidearm"/>
+		<include id="dolg_regular_common"/>
+	</template>
+
+	<!-- Sniper -->
+	<template id="dolg_t1_sniper">
+		<include id="weapon_sks"/>
+		<include id="weapon_pb"/>
+		<include id="dolg_regular_common"/>
+	</template>
+
+<!-- Tier 2 -->
+
+	<!-- Regular -->
+	<template id="dolg_t2_regular">
+		<random_select>
+			<opt w="3"><include id="dolg_t2_regular_auto"/></opt>
+			<opt w="1"><include id="dolg_t2_regular_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t2_regular_auto">
+		<random_select>
+			<opt w="2"><include id="weapon_ak74"/></opt>
+			<opt w="1"><include id="weapon_akm"/></opt>
+		</random_select>
+		<include id="dolg_common_sidearm"/>
+		<include id="dolg_regular_common"/>
+	</template>
+	<template id="dolg_t2_regular_shotgun">
+		<random_select>
+			<opt w="2"><include id="weapon_toz34"/></opt>
+			<opt w="1"><include id="weapon_toz34_slug"/></opt>
+			<opt w="1"><include id="weapon_toz34_slug_no_buck"/></opt>
+		</random_select>
+		<include id="weapon_fort"/>
+		<include id="dolg_regular_common"/>
+	</template>
+
+	<!-- Veteran -->
+	<template id="dolg_t2_veteran">
+		<random_select>
+			<opt w="3"><include id="weapon_groza_sp5"/></opt>
+			<opt w="1"><include id="weapon_akm_ap"/></opt>
+			<opt w="2"><include id="weapon_ak74_ap"/></opt>
+			<opt w="1"><include id="weapon_rpd"/></opt>
+		</random_select>
+		<include id="dolg_common_sidearm"/>
+		<include id="dolg_veteran_common"/>
+	</template>
+
+	<!-- Master -->
+	<template id="dolg_t2_master">
+		<random_select>
+			<opt w="3"><include id="weapon_akm_ap"/></opt>
+			<opt w="3"><include id="weapon_groza_ap"/></opt>
+			<opt w="1"><include id="weapon_rpd_ap"/></opt>
+		</random_select>
+		<include id="dolg_common_sidearm"/>
+		<include id="dolg_master_common"/>
+	</template>
+
+	<template id="dolg_t2_sniper">
+		<include id="weapon_svd"/>
+		<include id="dolg_sniper_sidearm"/>
+		<include id="dolg_veteran_common"/>
+	</template>
+
+<!-- Tier 3 -->
+	<!-- Veteran -->
+	<template id="dolg_t3_regular">
+		<random_select>
+			<opt w="3"><include id="dolg_t3_regular_machinegun"/></opt>
+			<opt w="1"><include id="dolg_t3_regular_auto"/></opt>
+			<opt w="1"><include id="dolg_t3_regular_shotgun"/></opt>
+		</random_select>
+		<include id="dolg_t3_regular_sidearm"/>
+		<include id="dolg_regular_common"/>
+	</template>
+	<template id="dolg_t3_regular_machinegun">
+		<random_select>
+			<opt w="1"><include id="weapon_rpk"/></opt>
+			<opt w="1"><include id="weapon_rpk74m"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_regular_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_aek971"/></opt>
+			<opt w="2"><include id="weapon_abakan"/></opt>
+			<opt w="1"><include id="weapon_aek973"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_regular_shotgun">
+		<random_select>
+			<opt w="2"><include id="weapon_vepr_buck"/></opt>
+			<opt w="1"><include id="weapon_ks23_ap"/></opt>
+		</random_select>
+	</template>
+
+	<template id="dolg_t3_veteran">
+		<random_select>
+			<opt w="3"><include id="dolg_t3_veteran_machinegun"/></opt>
+			<opt w="1"><include id="dolg_t3_veteran_auto"/></opt>
+			<opt w="1"><include id="dolg_t3_veteran_shotgun"/></opt>
+		</random_select>
+		<include id="dolg_t3_veteran_sidearm"/>
+		<include id="dolg_veteran_common"/>
+	</template>
+	<template id="dolg_t3_veteran_machinegun">
+		<random_select>
+			<opt w="2"><include id="weapon_rpk_ap"/></opt>
+			<opt w="1"><include id="weapon_rpk74m_ap"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_veteran_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_aek971_ap"/></opt>
+			<opt w="2"><include id="weapon_abakan_ap"/></opt>
+			<opt w="1"><include id="weapon_aek973_ap"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_veteran_shotgun">
+		<random_select>
+			<opt w="2"><include id="weapon_ks23_ap"/></opt>
+			<opt w="1"><include id="weapon_vepr_buck"/></opt>
+		</random_select>
+	</template>
+
+	<!-- Specnaz -->
+	<template id="dolg_t3_specnaz">
+		<random_select>
+			<opt w="1"><include id="weapon_abakan_scope"/></opt>
+			<opt w="1"><include id="weapon_val"/></opt>
+			<opt w="1"><item s="wpn_aek971" w_ammo="1" ammo_idx="1"/></opt>
+		</random_select>
+		<random_select prob="0.33">
+			<opt w="4"><include id="weapon_oc33_pmm"/></opt>
+			<opt w="1"><include id="weapon_oc33_sil_pmm"/></opt>
+		</random_select>
+		<include id="dolg_veteran_common"/>
+	</template>
+
+	<!-- Master -->
+	<template id="dolg_t3_master">
+		<random_select>
+			<opt w="3"><include id="dolg_t3_master_machinegun"/></opt>
+			<opt w="1"><include id="dolg_t3_master_auto"/></opt>
+			<opt w="1"><include id="dolg_t3_master_shotgun"/></opt>
+		</random_select>
+		<random_select prob="0.33">
+			<opt w="4"><include id="weapon_oc33_pmm"/></opt>
+			<opt w="1"><include id="weapon_oc33_sil_pmm"/></opt>
+		</random_select>
+		<include id="dolg_master_common"/>
+	</template>
+	<template id="dolg_t3_master_machinegun">
+		<random_select>
+			<opt w="2"><include id="weapon_rpk_scope_sil_ap"/></opt>
+			<opt w="1"><include id="weapon_rpk_upg_sil_ap"/></opt>
+			<opt w="2"><include id="weapon_rpk74m_upg_sil_ap"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_master_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_aek971_ap"/></opt>
+			<opt w="2"><include id="weapon_abakan_scope_ap"/></opt>
+			<opt w="1"><include id="weapon_aek973_ap"/></opt>
+		</random_select>
+	</template>
+	<template id="dolg_t3_master_shotgun">
+		<random_select>
+			<opt w="2"><include id="weapon_ks23_ap"/></opt>
+			<opt w="2"><include id="weapon_ks23_slug"/></opt>
+			<opt w="1"><include id="weapon_vepr_slug"/></opt>
+		</random_select>
+	</template>
+
+	<template id="dolg_t3_sniper">
+		<include id="weapon_svu_upg_ap"/>
+		<include id="dolg_t3_sniper_sidearm"/>
+		<include id="dolg_master_common"/>
+	</template>
+
+<!-- Tier 4 -->
+	<template id="dolg_t4_master">
+		<random_select>
+			<opt w="2"><include id="weapon_pkm"/></opt>
+			<opt w="1"><item s="wpn_rpk" w_ammo="3" ammo_s="ammo_7.62x39_ap"/></opt>
+		</random_select>
+		<include id="dolg_master_common"/>
+	</template>

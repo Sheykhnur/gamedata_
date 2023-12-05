@@ -1,0 +1,14 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+bas_scan_completed} sr_particle@holo
+
+[sr_particle@holo]
+name = anomaly2\control_monolit_holo
+path = bas_holo_particle_way
+mode = 2
+looped = true
+on_info = {+bas_cutscene_end} sr_idle@1
+
+[sr_idle@1]

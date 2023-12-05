@@ -1,0 +1,129 @@
+;-------*ќснова*-------- Радиация
+[zone_radioactive]
+
+class						= Z_RADIO
+name						= Radioactive
+
+hit_impulse_scale			= .01
+effective_radius			= 1.00 									;размер радиуса в процентах от оригинального, где действует зона
+sound						= zone_mosquito_bald
+
+art_onstart_spawn   		= false
+art_onstart_spawn_prob		= 0.0
+art_onstart_spawn_cicles	= 1
+
+ef_anomaly_type				= 3
+ef_weapon_type				= 15
+
+artefacts					= af_electra_sparkler, 0.03, af_electra_flash, 0.03, af_electra_moonlight, 0.05, af_rusty_thorn, 0.03, af_rusty_kristall,0.03, af_rusty_sea_urchin, 0.01, af_fungus, 0.01, af_dummy_battery, 0.01, af_green_beads, 0.01, af_fuzz_bagel, 0.03, af_fuzz_cupcake, 0.03, af_fuzz_kolobok, 0.01, af_ivory, 0.01, af_spine, 0.01, af_glass, 0.01, af_blue_beads, 0.01, af_ameba_slime, 0.03, af_ameba_slug, 0.03, af_ameba_mica, 0.1, af_dummy_pellicle, 0.01, af_baloon, 0.1, af_rock, 0.01, af_glass_ball, 0.01, af_blood,0.03, af_mincer_meat, 0.03,af_soul, 0.01, af_devils_guts, 0.01, af_cuttlefish, 0.01, af_liver, 0.01, af_gold_beads, 0.01, af_medusa,0.03, af_cristall_flower, 0.03, af_night_star, 0.01, af_cake, 0.01, af_bouquet, 0.01, af_dummy_spring, 0.01, af_red_beads, 0.01, af_drops, 0.03, af_fireball, 0.03, af_cristall, 0.01, af_fire, 0.01, af_eye, 0.01, af_quartz, 0.01, af_mercury_ball, 0.01, af_dummy_dummy, 0.01
+
+hit_power					= 0.99
+
+attenuation					= 0.1
+period						= 1
+
+hit_type					= radiation
+
+disable_time				= -1									;врем¤ игнорировани¤ неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= -1									;врем¤ игнорировани¤ маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= -1									;врем¤ отключени¤ idle партиклов
+
+ignore_nonalive				= true;
+ignore_small				= false;
+ignore_artefacts			= true
+
+blowout_light				= off
+idle_light					= off
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 500
+
+visible_by_detector 		= on
+
+blowout_wind				= off
+
+spawn_blowout_artefacts 	= off
+
+
+;-------*—лаба¤*--------
+[zone_radioactive_weak]:zone_radioactive
+$spawn 						= "zones\radioactive\zone_radioactive_weak"
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 250
+
+hit_power					= 0.04
+
+
+
+;-------*—редн¤¤*--------
+[zone_radioactive_average]:zone_radioactive
+$spawn 						= "zones\radioactive\zone_radioactive_average"
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 250
+
+hit_power					= 0.074
+
+
+
+;-------*—ильна¤*--------
+[zone_radioactive_strong]:zone_radioactive
+$spawn 						= "zones\radioactive\zone_radioactive_strong"
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 250
+
+hit_power					= 0.096
+
+
+;-------*—ильна¤*--------
+[zone_radioactive_very_strong]:zone_radioactive
+$spawn 						= "zones\radioactive\zone_radioactive_very_strong"
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 250
+
+hit_power					= 0.13
+
+
+;-------*********--------
+[zone_radioactive_killing]:zone_radioactive
+$spawn 						= "zones\radioactive\zone_radioactive_killing"
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 250
+
+hit_power					= 0.7
+
+;----Levels radiations-----
+[zone_radioactive_level_base]:zone_radioactive
+visible_by_detector 		= off
+name						= radioactive_level
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 100
+
+;-------*********--------
+[zone_radioactive_level_weak]:zone_radioactive_level_base
+$spawn 						= "zones\radioctive\zone_radioactive_level_weak"
+hit_power				= 0.01
+;-------*********--------
+[zone_radioactive_level_medium]:zone_radioactive_level_base
+$spawn 						= "zones\radioctive\zone_radioactive_level_medium"
+hit_power				= 0.03
+
+;-------*********--------
+[zone_radioactive_level_strong]:zone_radioactive_level_base
+$spawn 						= "zones\radioctive\zone_radioactive_level_strong"
+hit_power				= 0.04
+;-------*********--------
+[zone_radioactive_level_very_strong]:zone_radioactive_level_base
+$spawn 						= "zones\radioctive\zone_radioactive_level_very_strong"
+hit_power				= 0.055

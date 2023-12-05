@@ -1,0 +1,106 @@
+[ammo_7.62x25_fmj]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_7.62x25_fmj"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_9x18_fmj.ogf
+wm_size                     = 0.05
+
+; Icon
+inv_grid_width              = 1
+inv_grid_height             = 1
+inv_grid_x                  = 35
+inv_grid_y                  = 22
+
+; Text
+inv_name                    = st_ammo_ammo_762x25_fmj
+inv_name_short              = st_ammo_ammo_762x25_fmj
+description                 = st_ammo_ammo_762x25_fmj_descr
+
+; Economy
+cost                        = 170
+inv_weight                  = .306
+box_size                    = 30
+
+; Impact
+k_hit                       = 0.62
+k_ap                        = 0.25
+k_pierce                    = 0.25
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 2.0
+k_disp                      = 1.16
+k_dist                      = 1
+k_speed                     = 0.8
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_7.62x25_ap]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_9x18_pbp"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_9x18_pbp.ogf
+wm_size                     = 0.05
+
+; Icon
+inv_grid_width              = 1
+inv_grid_height             = 1
+inv_grid_x                  = 36
+inv_grid_y                  = 22
+
+; Text
+inv_name                    = st_ammo_ammo_762x25_ap
+inv_name_short              = st_ammo_ammo_762x25_ap
+description                 = st_ammo_ammo_762x25_ap_descr
+
+; Economy
+cost                        = 240
+inv_weight                  = .24
+box_size                    = 30
+
+; Impact
+k_hit                       = 0.57
+k_ap                        = 0.47
+k_pierce                    = 0.47
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 2.0
+k_disp                      = 1.16
+k_dist                      = 1
+k_speed                     = 0.7
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[weapon_7.62x25]
+; Effects
+shell_particles             = amik\weapons\9x18\9x18_r_00
+flame_particles             = weapons\generic_weapon03
+smoke_particles             = amik\weapons\smoke_particles\smoke_particles_00
+silencer_flame_particles    = ; no flame
+silencer_smoke_particles    = amik\weapons\smoke_particles\silencer_smoke_particles_00
+
+; Ammo
+ammo_class                  = ammo_7.62x25_fmj, ammo_7.62x25_ap
+ammo_limit                  = 120
+
+; Features
+
+; Ballistics
+bullet_speed                = 340
+
+; Impact
+hit_impulse                 = 50

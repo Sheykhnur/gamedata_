@@ -1,0 +1,116 @@
+;***********************************state 0******************************************
+[logic@gar_cranes_lager_stalker_off1]
+active = walker@gar_cranes_lager_stalker_off1
+
+[walker@gar_cranes_lager_stalker_off1]
+path_walk = patrol_walk1
+
+[logic@gar_cranes_lager_stalker_off2]
+active = walker@gar_cranes_lager_stalker_off2
+
+[walker@gar_cranes_lager_stalker_off2]
+path_walk = patrol_walk2
+
+[logic@gar_cranes_lager_stalker_off3]
+active = kamper@gar_cranes_lager_stalker_off3
+
+[kamper@gar_cranes_lager_stalker_off3]
+path_walk = kamper1_walk
+path_look = kamper1_look
+danger = danger@gar_cranes_lager
+kamp_name = kamp1
+
+[logic@gar_cranes_lager_stalker_off4]
+active = kamper@gar_cranes_lager_stalker_off4
+
+[kamper@gar_cranes_lager_stalker_off4]
+path_walk = kamper2_walk
+path_look = kamper2_look
+danger = danger@gar_cranes_lager
+kamp_name = kamp1
+
+[logic@gar_cranes_lager_bes_off]
+active = walker@gar_cranes_lager_bes_off
+
+[walker@gar_cranes_lager_bes_off]
+path_walk = bes_walk
+
+;***********************************state 1******************************************
+[danger@gar_cranes_lager]
+ignore_distance = 0
+
+[logic@gar_cranes_lager_bes]
+active = remark@gar_cranes_lager_bes
+
+[remark@gar_cranes_lager_bes]
+path_walk = bes_walk
+target = actor
+anim = guard
+meet = meet@gar_cranes_lager_bes
+danger = danger@gar_cranes_lager
+
+[meet@gar_cranes_lager_bes]
+meet_state		= 15|guard@wait|5| nil
+meet_state_wpn	= 15|guard
+victim		= 15|actor
+victim_wpn		= 15|actor
+use			= true
+use_wpn		= false
+
+[logic@gar_cranes_lager_stalker1]
+active = walker@gar_cranes_lager_stalker1a
+
+[walker@gar_cranes_lager_stalker1a]
+path_walk = patrol_walk1
+danger = danger@gar_cranes_lager
+on_signal = switch | walker@gar_cranes_lager_stalker1b
+
+[walker@gar_cranes_lager_stalker1b]
+path_walk = patrol_walk2
+danger = danger@gar_cranes_lager
+on_signal = switch | walker@gar_cranes_lager_stalker1a
+
+[logic@gar_cranes_lager_stalker2]
+active = walker@gar_cranes_lager_stalker2a
+
+[walker@gar_cranes_lager_stalker2a]
+path_walk = patrol_walk2
+danger = danger@gar_cranes_lager
+on_signal = switch | walker@gar_cranes_lager_stalker2b
+
+[walker@gar_cranes_lager_stalker2b]
+path_walk = patrol_walk1
+danger = danger@gar_cranes_lager
+on_signal = switch | walker@gar_cranes_lager_stalker2a
+
+[logic@gar_cranes_lager_stalker3]
+active = kamper@gar_cranes_lager_stalker3
+
+[kamper@gar_cranes_lager_stalker3]
+path_walk = kamper1_walk
+path_look = kamper1_look
+danger = danger@gar_cranes_lager
+kamp_name = kamp1
+on_info = {!is_day} sleeper@gar_cranes_lager_stalker3
+
+[sleeper@gar_cranes_lager_stalker3]
+path_main = sleep1
+wakeable = false
+danger = danger@gar_cranes_lager
+on_info = {=is_day} kamper@gar_cranes_lager_stalker3
+
+[logic@gar_cranes_lager_stalker4]
+active = kamper@gar_cranes_lager_stalker4
+
+[kamper@gar_cranes_lager_stalker4]
+path_walk = kamper2_walk
+path_look = kamper2_look
+danger = danger@gar_cranes_lager
+kamp_name = kamp1
+on_info = {!is_day} sleeper@gar_cranes_lager_stalker4
+
+[sleeper@gar_cranes_lager_stalker4]
+path_main = sleep2
+wakeable = false
+danger = danger@gar_cranes_lager
+on_info = {=is_day} kamper@gar_cranes_lager_stalker4

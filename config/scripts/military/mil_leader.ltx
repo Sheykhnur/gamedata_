@@ -1,0 +1,52 @@
+[logic]
+active = walker
+combat_ignore = combat_ignore
+danger = danger@mil_leader
+on_death = death
+
+[walker]
+path_walk = mil_merc_base_leader_room_walk_way
+;path_look = mil_merc_base_leader_room_walk_look
+combat_ignore_cond = always
+on_info = {+mil_i_dont_wana_die} walker@2
+danger = danger@mil_leader
+;on_signal = aaaaa | walker@2
+invulnerable = true
+
+[walker@2]
+path_walk = mil_merc_leader_run_away
+combat_ignore_cond = always
+threshold = threshold@leader
+on_info = {+mil_blowout_finished} walker@3
+;%=replace_merc%
+invulnerable = true
+
+[walker@3]
+path_walk = mil_merc_leader_run_away_2
+path_look = mil_merc_leader_look_way_2
+combat_ignore_cond = always
+threshold = threshold@leader
+on_signal = lid | remark@1
+invulnerable = true
+
+[remark@1]
+no_move = true
+meet = no_meet
+combat_ignore_cond = never
+
+[threshold@leader]
+max_ignore_distance = 0
+
+[death]
+on_info = %+mil_leader_killed%
+
+[danger@mil_leader]
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+danger_inertion_time_grenade = 0
+danger_inertion_time_corpse  = 0
+danger_inertion_time_hit     = 0 
+danger_inertion_time_sound   = 0

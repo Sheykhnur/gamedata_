@@ -1,0 +1,51 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_respawn.script
+ Description: Respawn binder
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Last edit  : 12.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function bind(obj)
+--	log("RESPAWN: [%s] binder called", obj:name())
+	if obj:spawn_ini() then
+		obj:bind_object( this.respawn_binder(obj) )
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "respawn_binder" ( object_binder )
+--/ -----------------------------------------------------------------------------------------------
+function respawn_binder:__init( obj ) super( obj )
+--	log("init: [%s]", obj:name())
+end
+
+function respawn_binder:net_spawn( se_obj )
+	if not object_binder.net_spawn( self, se_obj ) then
+		return false
+	end
+	--/ get reference on current server object
+	self.se_respawner = alife():object( se_obj.id )
+--	log("net_spawn: [%s]", self.object:name())
+	return true
+end
+
+function respawn_binder:update( delta )
+	object_binder.update( self, delta )
+	self.se_respawner:update_online()
+end
+
+function respawn_binder:net_destroy()
+--	log("net_destroy: [%s]", self.object:name())
+	object_binder.net_destroy( self )
+end
+--/ -----------------------------------------------------------------------------------------------

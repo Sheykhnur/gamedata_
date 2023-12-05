@@ -1,0 +1,902 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : surge_manager.script
+ Description: Surge manager
+ Copyright  : 2011 © LA-team
+ Author     : Cromm Cruac (25.06.2011)
+ Editors    : vintar (04.12.2013)
+ Last edit  : 22.03.2017 [SkyLoader] 06.2018
+--]] ----------------------------------------------------------------------------------------------
+
+local surge_manager	= nil
+local bInit = false --/ flag of initialization of the module
+local sModule = script_name() --/ string name of the file module
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+local LOADED = nil
+
+function init()
+	if bInit then return end
+	event("presets"):register(PreSets)
+	event("update"):register(update)
+	event("level_change"):register(stop)
+	log("surge_manager inited","")
+	bInit = true
+end
+--/ --------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	get_surge_manager():load_params()
+end
+
+function update(e)
+	get_surge_manager():Update()
+end
+
+function stop(e)
+	local m = get_surge_manager()
+	if m.started == true then
+		log("stopping blowout on level change")
+		m:end_surge()
+		bind_shelter.Update() --/ skyloader: make last update
+		for id=1,65535 do      --/ hack for shelters
+			local obj = alife():object(id)
+			if obj then
+				Del_MapSpot(id, "blowout_hideplace_location")
+			end
+		end
+		if event("update_1sec"):registered(bind_shelter.Update) then
+			event("update_1sec"):unregister(bind_shelter.Update)
+		end
+	end
+end
+
+function load(packet)
+	get_surge_manager():load(packet)
+end
+
+function save(packet)
+	get_surge_manager():save(packet)
+end
+local surge_shock_pp_eff 	= 1
+local earthquake_cam_eff 	= 2
+local sleep_cam_eff 		= 3
+local sleep_fade_pp_eff		= 4
+local START_MIN_SURGE_TIME 	= 2*60*60
+local START_MAX_SURGE_TIME 	= 4*60*60
+local MIN_SURGE_TIME 		= 12*60*60
+local MAX_SURGE_TIME 		= 24*60*60
+local prev_sec 				= -1
+local prev_game_sec 		= -1
+local currentPPEfactor = 0.001
+local sMapNow,idMapNow = db.sMapNow,db.idMapNow
+local blowout_sounds = {begin01		=sound_object("ambient\\blowout\\blowout_begin"), 
+						begin02		=sound_object("ambient\\blowout\\blowout_begin_02"), 
+						impact01	=sound_object("ambient\\blowout\\blowout_impact"), 
+						impact02	=sound_object("ambient\\blowout\\blowout_impact_02"), 
+						wave01		=sound_object("ambient\\blowout\\blowout_wave_01"), 
+						wave02		=sound_object("ambient\\blowout\\blowout_wave_02_short"), 
+						wave03		=sound_object("ambient\\blowout\\blowout_wave_03_short"), 
+						wave04		=sound_object("ambient\\blowout\\blowout_wave_04"),
+						siren		=sound_object("ambient\\blowout\\blowout_siren"),
+						rumble		=sound_object("ambient\\blowout\\blowout_rumble"),
+						particle	=sound_object("ambient\\blowout\\blowout_particle_wave"),
+						earthquake	=sound_object("ambient\\earthquake"),
+						outro		=sound_object("ambient\\blowout\\blowout_outro")
+						}
+
+class "CSurgeManager"
+function CSurgeManager:__init()
+	--self.debugMessages=debug_ui.get_debug_ui():create_elements(20)
+	self.ini = ini_file("misc\\surge_manager.ltx")
+	self.game_time_factor = level.get_time_factor()
+
+	self.finished = false
+	self.started = false
+	
+	self.effector_set 			= false
+	self.second_message_given 	= false
+	self.siren_sounded 			= false
+	self.ui_disabled 			= false
+	self.blowout_sound 			= false
+	self.wave_sound 			= false
+	
+	self.blowout_waves = {}
+	self.stages = {}
+	self.body_tears = {}
+	self.hitFactor = 0
+	
+	self.surge_time = 250
+	self.inited_time = nil
+	self._delta = Random.I(START_MIN_SURGE_TIME, START_MAX_SURGE_TIME) -- global minutes, время между выбросами
+
+	self.count = 0
+	self.hitFactor=0
+	self.fx_set = false
+end
+
+function CSurgeManager:load_params()
+	local parameters = la_utils.parse_ini_section_to_array(self.ini,"la_atmosfear_default_paramaters")
+	self.show_hideplaces = la_utils.str_to_bool(parameters["opt_show_hideplaces"])
+	self.show_warning = la_utils.str_to_bool(parameters["opt_show_warning"])
+	self.opt_blowout_freq	= tonumber(parameters["opt_blowout_freq"])
+	self.min_blowout_time = math.floor(self.opt_blowout_freq/2)*3600
+	self.max_blowout_time = self.opt_blowout_freq*3600
+	self._delta = utils.RandomI(self.min_blowout_time, self.max_blowout_time)
+	self.opt_blowout_warning = parameters["opt_blowout_warning"]
+	self.god_mode = la_utils.str_to_bool(parameters["god_mode"])
+	self.blowout_hud_timer = la_utils.str_to_bool(parameters["opt_blowout_hud_timer"])
+	--self.opt_blowout_fate = parameters["opt_blowout_fate"]
+end
+
+function CSurgeManager:start(time)
+	level.save_allowed(false)
+	level.set_time_factor(self.game_time_factor)
+	if(time) then
+		self.inited_time = time
+	else
+		self.inited_time = game.get_game_time()
+	end
+	self.started = true
+	self.finished = false
+	self.blowout_waves = {}
+	self.stages={}
+	self.body_tears={}
+	self.hitFactor=0
+	
+end
+
+function CSurgeManager:end_surge(manual)
+	self.started 			= false
+	self.finished 			= true
+	
+	for k,wave in pairs(self.blowout_waves) do
+		if wave.effect:playing() then
+			self:kill_wave(k)
+		end
+	end
+	for k,snd in pairs(blowout_sounds) do
+		if snd ~= nil and snd:playing() then
+			snd:stop()
+		end
+	end
+	
+	self.effector_set 			= false
+	self.second_message_given 	= false
+	self.ui_disabled  			= false
+	self.blowout_sound			= false
+	self.wave_sound			= false
+	prev_sec				= 0
+	self.hitFactor=0
+
+	local timer = get_hud_timer()
+	if timer then
+		timer:remove()
+	end
+
+	level.remove_pp_effector(surge_shock_pp_eff)
+	level.remove_cam_effector(earthquake_cam_eff)
+	
+	level.set_time_factor(self.game_time_factor)
+	
+	if self.show_warning and bind_shelter.actor_inside_shelter() then
+		news_manager.send_tip_hud(game.translate_string("hmm"), game.translate_string("blowout_end"), "actor", 15)
+	end
+	DelVar("booster")
+	DelVar("blow_type")
+--	log("end surge called")
+	level_weathers.get_weather_manager():BlowEnd()
+end
+
+function CSurgeManager:Update()
+	if(device().precache_frame > 1) then
+		return
+	end
+	
+	if not(self.started) then return end
+	if IsUnderground(db.sMapNow) then
+		self:end_surge()
+	end
+	if not self.inited_time then self.inited_time = game.get_game_time() end
+	local diff_sec = math.ceil(game.get_game_time():diffSec(self.inited_time)/level.get_time_factor())
+	local diff_game_sec = math.ceil(game.get_game_time():diffSec(self.inited_time)/2)
+	--log("diff sec = [%s]",tostring(diff_sec),"")
+------------------------------------update here-------------------------------- 
+	if(prev_sec~=diff_sec) then
+		--self.debugMessages[1]:SetText("dif_sec: "..tostring(diff_sec))		
+		--local rnd_sound = math.random(4000)
+		
+		local rnd_sound=math.ceil(utils.RandomIDX(4000)/1000)
+		prev_sec = diff_sec
+		if(diff_sec>=self.surge_time) then
+			self:end_surge()
+		else
+			--log(" diff sec = [%s] and weather fx playing = [%s] an fx time = [%s]",tostring(diff_sec),tostring(level.is_wfx_playing()),tostring(level.get_wfx_time()))
+			if(LOADED) then
+				if (diff_sec>=36) and (diff_sec<=50) then
+					log("game loaded blowout active diff sec = [%s]",tostring(diff_sec))
+					if self.stages['beginning'] ~= nil then
+						start_hud_timer(51-diff_sec, nil, {log = "caption_HT"}, game.translate_string("st_blowout_timer_header"))
+					end
+					self:play_siren_sound()
+				end
+				LOADED = false
+			end
+			if self.show_hideplaces then
+				if not event("update_1sec"):registered(bind_shelter.Update) then
+					event("update_1sec"):register(bind_shelter.Update)
+				end
+			end
+			-- blowout begins -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=2) and (self.stages['beginning']==nil) then
+				if not self.fx_set then
+					if (level.get_time_hours() >= 5 and level.get_time_hours() <= 20) then
+						level.set_weather_fx("blowout_day")
+					else
+						level.set_weather_fx("blowout_night")
+					end
+					self.fx_set = true
+				end
+				if (rnd_sound % 2) ~= 0 then
+					self:play_blowout_sound("begin01")
+				else
+					self:play_blowout_sound("begin02")
+				end
+				if self.blowout_hud_timer then
+					start_hud_timer(45-diff_sec, nil, {log = "caption_HT"}, game.translate_string("st_blowout_timer_header"))
+				end
+				if self.show_warning and not bind_shelter.actor_inside_shelter() then
+					news_manager.send_tip_hud(game.translate_string("blowout_start_header"), game.translate_string("blowout_start_msg"), "actor", 20)
+				end
+				self.stages['beginning']=true
+				log("blowout launched at: [%s] and sound = [%s]",tostring(diff_sec),tostring(rnd_sound))
+			end
+			-- siren warning -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=36) and (self.stages['siren']==nil) then
+				if (self.opt_blowout_warning=="siren" or self.opt_blowout_warning=="radio_siren") and not (self.siren_sounded) then
+					self:play_siren_sound()
+					self.siren_sounded = true
+				end
+				self.stages['siren']=true
+				log("blowout siren playing at [%s]",tostring(diff_sec))
+			end
+			-- blowout impact -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=47) and (self.stages['impact']==nil) then
+				if (rnd_sound % 2) ~= 0 then
+					self:play_blowout_sound("impact01")
+				else
+					self:play_blowout_sound("impact02")
+				end
+				self.stages['impact']=true
+			--	log("impact launched at: [%s] and sound = [%s]",tostring(diff_sec),tostring(rnd_sound))
+			end
+			-- start rumble -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=60) and (self.stages['rumble']==nil) and not(self.blowout_sound) then
+				local snd_obj = blowout_sounds["rumble"]
+				play_looped_sound(snd_obj)
+				self.stages['rumble']=true
+				self.blowout_sound = true
+				log("rumble launched at: [%s]",tostring(diff_sec))
+			end
+			-- 1st earthquake -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=80) and (self.stages['quake20']==nil) then
+				--self.debugMessages[2]:SetText("eathquake started at: "..tostring(diff_sec))
+				level.add_cam_effector("camera_effects\\earthquake_20.anm", earthquake_cam_eff, true, "")
+				self.stages['quake20']=true
+			--	log("quake20 at:[%s] ",tostring(diff_sec))
+			end
+			-- earthquakes -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=90) and (self.stages['quake40']==nil) then
+				local snd_obj = blowout_sounds["earthquake"]
+				play_looped_sound(snd_obj)
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake_40.anm", earthquake_cam_eff, true, "")
+				self.stages['quake40']=true
+				log("quake40 at: [%s]",tostring(diff_sec))
+			end
+			if (diff_sec>=110) and (self.stages['quake60']==nil) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake_60.anm", earthquake_cam_eff, true, "")
+				self.stages['quake60']=true
+			--	log("quake60 at: [%s]",tostring(diff_sec))
+			end
+			if (diff_sec>=120) and (self.stages['quake80']==nil) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake_80.anm", earthquake_cam_eff, true, "")
+				self.stages['quake80']=true
+			--	log("quake80 at: [%s]",tostring(diff_sec))
+			end
+			if (diff_sec>=130) and (self.stages['quake100']==nil) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake.anm", earthquake_cam_eff, true, "")
+				self.stages['quake100']=true
+			--	log("quake100 at: [%s]",tostring(diff_sec))
+			end
+			-- 1st wave sound -----------------------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=131) and (self.stages['1stwavesnd']==nil)  then
+				if rnd_sound==1 then
+					self:play_blowout_sound("wave01")
+				elseif rnd_sound==2 then
+					self:play_blowout_sound("wave02")
+				elseif rnd_sound==3 then
+					self:play_blowout_sound("wave03")
+				elseif rnd_sound==4 then
+					self:play_blowout_sound("wave04")
+				end
+				self.stages['1stwavesnd']=true
+			--	log("1st wave snd at: [%s] and sound = [%s]",tostring(diff_sec),tostring(rnd_sound))
+			end
+			-- 1st wave -----------------------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=132) and (self.stages['1stwave']==nil)  then
+				self:start_wave(1,diff_game_sec)
+				self.stages['1stwave']=true
+			--	log("1st wave at: [%s]",tostring(diff_sec))
+			end
+			-- 1st wave sound lower1 ----------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=155) and (self.stages['1stwavesound1']==nil)  then
+				self:lower_sound_volume("first")
+				self.stages['1stwavesound1']=true
+			--	log("1st wave sound down at: [%s]",tostring(diff_sec))
+			end
+			-- 1st wave sound lower2 ----------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=160) and (self.stages['1stwavesound2']==nil)  then
+				self:lower_sound_volume("second")
+				self.stages['1stwavesound2']=true
+				log("1st wave sound down2 at: [%s]",tostring(diff_sec))
+			end
+			-- wave sound volume reset ----------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=168) and (self.stages['wavesoundreset']==nil)  then
+				self:lower_sound_volume("reset")
+				self.stages['wavesoundreset']=true
+			--	log("wave sound reset at: [%s]",tostring(diff_sec))
+			end
+			-- 2nd wave sound -----------------------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=170) and (self.stages['2ndwavesnd']==nil)  then
+				--xr_sound.set_sound_play(db.actor:id(), "blowout_wave_1")
+				if rnd_sound==1 then
+					self:play_blowout_sound("wave01")
+				elseif rnd_sound==2 then
+					self:play_blowout_sound("wave02")
+				elseif rnd_sound==3 then
+					self:play_blowout_sound("wave03")
+				elseif rnd_sound==4 then
+					self:play_blowout_sound("wave04")
+				end
+				self.stages['2ndwavesnd']=true
+			--	log("2nd wave snd at: [%s] and sound = [%s]",tostring(diff_sec),tostring(rnd_sound))
+			end
+			-- 2nd wave -----------------------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=171) and (self.stages['2ndwave']==nil)  then
+				self:start_wave(2,diff_game_sec)
+				self.stages['2ndwave']=true
+				if self.opt_blowout_fate=="killonwave" then
+				  --self:get_objects_to_kill()
+				end
+			--	log("2nd wave at: [%s]",tostring(diff_sec))
+			end
+			-- earthquakes fade-----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=172) and (self.stages['quake100']==true) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake_80.anm", earthquake_cam_eff, true, "")
+				self.stages['quake100']=false
+			--	log("quake80 at: [%s]",tostring(diff_sec))
+			end
+			if (diff_sec>=182) and (self.stages['quake80']==true) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake_60.anm", earthquake_cam_eff, true, "")
+				self.stages['quake80']=false
+			--	log("quake60 at: [%s]",tostring(diff_sec))
+			end
+			if (diff_sec>=192) and (self.stages['quake60']==true) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake_40.anm", earthquake_cam_eff, true, "")
+				self.stages['quake60']=false
+			--	log("quake40 at: [%s]",tostring(diff_sec))
+			end
+			if (diff_sec>=202) and (self.stages['quake40']==true) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				level.add_cam_effector("camera_effects\\earthquake_20.anm", earthquake_cam_eff, true, "")
+				self.stages['quake40']=false
+			--	log("quake20 at: [%s]",tostring(diff_sec))
+			end
+			if (diff_sec>=207) and (self.stages['quake20']==true) and (self.stages['quakeended']==nil) then
+				level.remove_cam_effector(earthquake_cam_eff)
+				self.stages['quakeended']=true
+			--	log("quake ended at: [%s]",tostring(diff_sec))
+			end
+			-- rumble and quake sound stop -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=212) and (self.stages['rumble']==true) and (self.blowout_sound) then
+				local snd1 = blowout_sounds["rumble"]
+				if snd1 and snd1:playing() then snd1:stop() end
+				--this.stop_looped_sound(snd1)
+			--	log("sounds stopped at: [%s]",tostring(diff_sec))
+				self.stages['rumble']=false
+			end
+			-- after blow ---------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=213) and (self.stages['after_blow']==nil) then
+			--	log("after blow effects")
+				self:lower_sound_volume("first")
+				self.stages['after_blow'] = true
+				se_anom_zone.blowout_awake()
+			end
+			-- end message -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=217) and (self.stages['endmessage']==nil) then
+				self:lower_sound_volume("second")
+				self.stages['endmessage']=true  -- stub
+			end
+			-- after sound -----------------------------------------------------------------------------------------------------------------------------------------
+			if(diff_sec>=219) and (self.stages['endsnd']==nil)  then
+				self:play_blowout_sound("outro")
+				self:lower_sound_volume("third")
+				self.stages['endsnd']=true
+		--		log("ending snd at: [%s]",tostring(diff_sec))
+			end
+		end
+	end
+--------------------------------- update every 2 game sec -----------------------------------
+	local actor_pos=db.actor:position()
+	if(prev_game_sec~=diff_game_sec) then
+		prev_game_sec = diff_game_sec
+		if(diff_sec<self.surge_time) then
+			if (diff_sec>=120) and (diff_sec<210) and not(self.effector_set) then
+				level.add_pp_effector("psychic.ppe", surge_shock_pp_eff, true)
+				level.set_pp_effector_factor(surge_shock_pp_eff, 0.001)
+				self.effector_set=true
+			end
+			if (diff_sec>=120) and (diff_sec<=133) and (self.effector_set) then
+				self.hitFactor=fade(diff_game_sec,8*5,14*5,0.001,1)
+			end
+			if (diff_sec>=134) and (diff_sec<=144) and (self.effector_set) then
+				self.hitFactor=fade(diff_game_sec,14*5,20*5,1,0.3)
+			end
+			if (diff_sec>=145) and (diff_sec<=155) and (self.effector_set) then
+				self.hitFactor=fade(diff_game_sec,156*5,162*5,0.3,1)
+			end
+			if (diff_sec>=156) and (diff_sec<=166) and (self.effector_set) then
+				self.hitFactor=fade(diff_game_sec,162*5,168*5,1,0.3)
+			end
+			if (diff_sec>=167) and (diff_sec<=170) and (self.effector_set) then
+				self.hitFactor=fade(diff_game_sec,200*5,210*5,0.3,0.001)
+			end
+			if (diff_sec>=185) and (self.effector_set) then
+				self.hitFactor=0
+				level.remove_pp_effector(surge_shock_pp_eff)
+				self.effector_set=false
+			end
+
+			-- setting effector
+			local PPEfactor
+			local hitPower
+			if not bind_shelter.actor_inside_shelter() then
+				PPEfactor = self.hitFactor
+				hitPower = self.hitFactor/50
+				if PPEfactor < 0.001 then PPEfactor = 0.001 end
+				--log("blowout actor outside")
+			else
+				PPEfactor = 0.002
+				hitPower = 0
+				--log("blowout actor in cover")
+			end
+			currentPPEfactor = currentPPEfactor+(PPEfactor - currentPPEfactor) * 0.05 --0.1	
+			if(self.effector_set) then
+				level.set_pp_effector_factor(surge_shock_pp_eff, currentPPEfactor)
+				if (not(self.ui_disabled)) then
+		            local h = hit()
+		            h.type = hit.radiation
+		            h.power = calc_hit_power(hitPower, h.type)
+		            h.impulse = 0.0
+		            h.direction = vector():set(0,0,1)
+		            h.draftsman = db.actor
+		            if not(self.god_mode) then
+	                	db.actor:hit(h)
+	                end
+				end
+			end
+			--log("blowout PPE: = [%s]",tostring(currentPPEfactor))
+			--log("blowout hitPower: = [%s]",tostring(hitPower))
+			
+			-- Waves
+			local wavevol=0
+			for k,wave in pairs(self.blowout_waves) do
+				if wave.effect:playing() then
+					local wave_pos=vector():set(actor_pos.x, actor_pos.y/2, wave.inited_pos.z-(diff_game_sec-wave.inited_time)*3)
+					wave.effect:move_to(wave_pos,vector():set(0,0,0))
+					local wavevoltemp=(250-math.abs(actor_pos.z-wave_pos.z))/250
+					if (wavevoltemp>wavevol) then
+						wavevol=wavevoltemp
+					end
+					if wave_pos.z<actor_pos.z-250 then
+						wave.effect:stop_deffered()
+					end
+					self:kill_crows_at_pos(wave_pos.z)
+					--if (self.atmosfear.opt_blowout_fate=="turntozombie" or self.atmosfear.opt_blowout_fate=="explode") and k==2 then
+					--	self:kill_obj_at_pos(wave_pos.z)
+					--end
+					if (wave_pos.z<actor_pos.z) then
+						if (k==1 and not bind_shelter.actor_inside_shelter() and not get_console():get_bool('g_god') == true and self.stages['1stwavehit']==nil) then
+				            local h = hit()
+				            h.type = hit.burn
+				            h.power = calc_hit_power(2, h.type)+0.5
+				            h.impulse = 0.0
+				            h.direction = vector():set(0,0,1)
+				            h.draftsman = db.actor
+				            if not(self.god_mode) then
+			                	db.actor:hit(h)
+			                end
+							self.stages['1stwavehit']=true;
+				--			log("first wave hit at: [%s] and strength = [%s]",tostring(diff_sec),tostring(h.power))
+						end
+						if (k==2 and self.stages['2ndwavehit']==nil) then
+							if not(self.god_mode) then
+								self:kill_actor_at_pos(wave_pos.z)
+							end
+							self.stages['2ndwavehit']=true
+			--				log("second wave hit at: [%s]",tostring(diff_sec))
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function CSurgeManager:start_wave(num,inited_time)
+	if inited_time==nil then
+		inited_time=prev_game_sec
+	end
+	local actor_pos=db.actor:position()
+	local effect=particles_object("crommcruac\\blowout_wave_blend")
+	local inited_pos=vector():set(actor_pos.x, actor_pos.y/2, actor_pos.z+250)
+	self.blowout_waves[num]={effect=effect,inited_time=inited_time,inited_pos=inited_pos}
+	self.blowout_waves[num].effect:play_at_pos(inited_pos)
+	if not(self.wave_sound) then
+		local snd_obj = blowout_sounds["particle"]
+		play_looped_sound(snd_obj)
+		self.wave_sound=true
+	end
+end
+
+function CSurgeManager:kill_wave(num)
+	if self.blowout_waves[num] then
+		self.blowout_waves[num].effect:stop_deffered()
+		self.blowout_waves[num]=nil
+	end
+end
+
+function fade(currentTime,startTime,endTime,startValue,endValue)
+	local totalFadeTime=endTime-startTime
+	local totalFadeValue=endValue-startValue
+	local elapsedFadeTime=currentTime-startTime
+	local currentValue=(totalFadeValue*elapsedFadeTime)/totalFadeTime+startValue
+	if (totalFadeValue<0) then
+		if (currentValue>startValue) then
+			currentValue=startValue
+		end
+		if (currentValue<endValue) then
+			currentValue=endValue
+		end
+	else
+		if (currentValue>endValue) then
+			currentValue=endValue
+		end
+		if (currentValue<startValue) then
+			currentValue=startValue
+		end
+	end
+	return currentValue
+end
+
+function CSurgeManager:play_blowout_sound(snd)
+	local snd_obj = blowout_sounds[snd]
+	if snd_obj ~= nil and snd_obj:playing() then
+		snd_obj:stop()
+	end
+	if snd_obj ~= nil then
+		snd_obj:play(db.actor)
+		snd_obj.volume = 1
+		--self.debugMessages[12]:SetText("playing: "..tostring(id))
+	end
+end
+
+function CSurgeManager:lower_sound_volume(num)
+	for k,snd in pairs(blowout_sounds) do
+		if snd ~= nil and snd:playing() then
+			if num == "reset" then
+				snd.volume = 1
+			elseif num == "first" then
+				snd.volume = 0.5
+			elseif num == "second" then
+				snd.volume = 0.3
+			elseif num == "third" then
+				snd.volume = 0.1
+			end
+		end
+	end
+end
+
+function CSurgeManager:play_siren_sound()
+	local snd_obj=blowout_sounds["siren"]
+	local snd_position = db.actor:position()
+	if snd_obj ~= nil and snd_obj:playing() then
+		snd_obj:stop()
+	end
+	if snd_obj ~= nil then
+		snd_obj:play_at_pos(db.actor, snd_position)
+		snd_obj.volume = 1
+		--self.debugMessages[12]:SetText("playing: "..tostring(id))
+	end
+end
+
+function CSurgeManager:kill_crows_at_pos(pos)
+	local obj, h = nil, nil
+	for id, v in pairs(db.storage) do
+		obj = level.object_by_id(id)
+		if obj and obj:section() == "m_crow" then
+			h = hit()
+			h.type = hit.strike
+			h.power = 1000
+			h.impulse = 1000
+			h.direction = obj:direction()
+			h.draftsman = obj
+			if pos < obj:position().z then
+				obj:hit(h)
+			end
+		end
+	end
+end
+
+function CSurgeManager:kill_actor_at_pos(pos)
+	--local cover = self:get_nearest_cover()
+	if (db.actor and db.actor:alive()) then
+		if not bind_shelter.actor_inside_shelter() then
+			if not self.god_mode then
+				db.actor:kill(db.actor)
+				self.ui_disabled = true
+				return
+			else
+				level.add_cam_effector("camera_effects\\surge_02.anm", sleep_cam_eff, false, "surge_manager.surge_callback")
+				level.add_pp_effector("surge_fade.ppe", sleep_fade_pp_eff, false)
+				db.actor.health = db.actor.health-0.05
+			end
+		end
+	end
+end
+
+function CSurgeManager:turn_to_zombie(obj)
+	local cl_obj = level.object_by_id(obj.id)
+	local position
+	local section
+	local zombie_type
+	if cl_obj ~= nil then
+		position=cl_obj:position()
+		section=cl_obj:section()
+	else
+		position=obj.position
+		section=obj:section_name()
+	end
+	alife():release(alife():object(obj.id), true)
+	local section_number = string.sub(section, -1)
+	if section_number=="4" then 
+		zombie_type="sim_default_zombied_4"
+	elseif section_number=="3" then
+		zombie_type="sim_default_zombied_3"
+	elseif section_number=="2" or section_number=="1" then
+		zombie_type="sim_default_zombied_2"
+	else
+		zombie_type="sim_default_zombied_1"
+	end
+	alife():create(zombie_type, position, db.actor:level_vertex_id(), db.actor:game_vertex_id())
+	--self.debugMessages[1]:SetText("type: "..tostring(zombie_type))
+end
+
+function surge_callback()
+	level.add_cam_effector("camera_effects\\surge_01.anm", sleep_cam_eff, false, "surge_manager.surge_callback2")
+end
+
+function surge_callback2()
+	xr_effects.enable_ui(db.actor, nil)
+end
+
+function CSurgeManager:start_blowout()
+	self.started = true
+end
+
+function CSurgeManager:save(packet)
+	set_save_marker(packet, "save", false, "SurgeHide")
+	packet:w_bool(self.finished)
+	packet:w_bool(self.started)
+	if(self.started) then
+		--utils.w_CTime(packet, level.get_wfx_time())
+		packet:w_float(level.get_wfx_time())
+		utils.w_CTime(packet, self.inited_time)
+		packet:w_bool(self.blowout_hud_timer)
+		packet:w_bool(self.effector_set)
+		packet:w_bool(self.second_message_given)
+		packet:w_bool(self.ui_disabled)
+		packet:w_bool(self.blowout_sound)
+		packet:w_bool(self.siren_sounded)
+		packet:w_u32(self.game_time_factor)
+		local count = 0
+		for k,v in pairs(self.stages) do
+			count = count + 1
+		end
+		packet:w_u32(count)
+		for st, bool in pairs(self.stages) do
+			packet:w_stringZ(st)
+			packet:w_bool(bool)
+		end
+	end
+	packet:w_u32(self._delta)
+--	log("current get weather = [%s]", tostring(level.get_weather()))
+	set_save_marker(packet, "save", true, "SurgeHide")
+end
+
+function CSurgeManager:load(packet)
+	set_save_marker(packet, "load", false, "SurgeHide")
+	self.finished = packet:r_bool()
+	self.started = packet:r_bool()
+	if(self.started) then
+		--local time = utils.r_CTime(packet)
+		local time = packet:r_float()
+		log("loading weather fx at time = [%s]",tostring(time))
+		if (level.get_time_hours() >= 5 and level.get_time_hours() <= 20) then
+			level.start_weather_fx_from_time("blowout_day", time)
+		else
+			level.start_weather_fx_from_time("blowout_night", time)
+		end
+		self.fx_set = true
+		self.inited_time = utils.r_CTime(packet)
+		self.blowout_hud_timer = packet:r_bool()
+		self.effector_set = packet:r_bool()
+		self.second_message_given = packet:r_bool()
+		self.ui_disabled = packet:r_bool()
+		self.blowout_sound = packet:r_bool()
+		self.siren_sounded = packet:r_bool()
+		self.game_time_factor = packet:r_u32()
+		local count = packet:r_u32()
+		if count ~= nil then
+			for i = 1, count do
+				local str = packet:r_stringZ()
+		--		log("stage str [%d] = [%s]",i,str)
+				self.stages[str] = packet:r_bool()
+			end
+		end
+		self.blowout_waves = {}
+		--self.stages={}
+		self.body_tears={}
+		self.hitFactor=0
+	end
+	self._delta = packet:r_u32()
+	set_save_marker(packet, "load", true, "SurgeHide")
+	LOADED = true
+end
+--------------------------------------------------------------------------------
+function get_surge_manager()
+	if surge_manager == nil then
+		surge_manager = CSurgeManager()
+	end
+	return surge_manager
+end
+
+function start_surge(p)
+	local m = get_surge_manager()
+	m:start(true)
+end
+
+function actor_in_cover()
+	if bind_shelter.actor_inside_shelter() then
+		return true
+	else
+		return false
+	end
+end
+
+function stop_surge()
+	local m = get_surge_manager()
+	if(m.started) then
+		m:end_surge(true)
+	end
+	log("stop surge called")
+end
+
+function is_started()
+	local m = get_surge_manager()
+	return m.started == true
+end
+
+function is_killing_all()
+	local m = get_surge_manager()
+	if(m.started and m.ui_disabled) then
+		return true
+	end
+	return false
+end
+
+function is_finished()
+	local m = get_surge_manager()
+	return m.finished == true
+end
+
+function sound_started()
+	local m = get_surge_manager()
+	return m.started and m.blowout_sound
+end
+
+function is_blowout_finishing()
+	local m = get_surge_manager()
+	return m.stages['endmessage'] == true or m.stages['endsnd'] == true
+end
+
+function is_surge()
+	local m = get_surge_manager()
+	return m.stages['impact'] == true
+end
+
+function start_blowout()
+	local m = get_surge_manager()
+	m:start()
+end
+
+function is_preblow()
+	return is_started() and not is_surge()
+end
+
+function is_blowout_visible()
+	local m = get_surge_manager()
+	return m.started and not m.is_underground
+end
+
+function play_looped_sound(snd)
+	if snd then
+		if not snd:playing() then
+			local obj = db.actor
+			snd:play_at_pos(obj, obj:position(), 0, sound_object.looped)
+		end
+	else
+		log("play_looped_sound: missing sound <WARNING>")
+	end
+end
+
+function stop_looped_sound(snd)
+	if snd and snd:playing() then
+		snd:stop()
+	else
+		log("stop_looped_sound: missing sound <WARNING>")
+	end
+end
+
+function calc_hit_power(power,hit_type)
+	local hit_types={"burn", "shock", "chemical_burn", "radiation", "telepatic"}
+	local suit_factors={10,1,5,33,10}
+	local drug_factors={1,1,5,33,5}
+	if hit_type == 0 then hit_type = 1 end
+	local suit_protection = 0
+	local suit = db.actor:item_in_slot(6)
+	if suit then
+		--log("actor suit exists and section = [%s]",suit:section()) 
+		--log("hit type = [%s]",tostring(hit_type))
+		local str = hit_types[hit_type].."_protection"
+		--log("str = [%s]",str)
+		suit_protection = system_ini():r_float(suit:section(),str)
+		if suit_protection then
+			--log("suit protection = [%s]",tostring(suit_protection))
+			--log("suit factors = [%s]",tostring(suit_factors[hit_type]))
+			suit_protection = suit_protection * suit_factors[hit_type]
+		end
+	end
+	
+	local helmet_protection = 0
+	
+	local drug_protection = 0
+	local is_boost = GetVar("booster", false)
+	if is_boost then
+		drug_protection = system_ini():r_float("antidote","boost_blowout_protection") * drug_factors[hit_type]
+	end
+	--log("suit protection = [%s], helmet protection = [%s], drug protection = [%s]",tostring(suit_protection),tostring(helmet_protection),tostring(drug_protection))
+	local protection = (suit_protection + helmet_protection + drug_protection)
+	if protection > 1 then 
+		protection = 1
+	end
+	
+	hit_power = power * (1 - protection)
+	--log("hit power = [%s] and protection = [%s]",tostring(hit_power),tostring(protection))
+	return hit_power
+end

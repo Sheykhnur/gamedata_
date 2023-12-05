@@ -1,0 +1,22 @@
+[logic]
+active = ph_car
+
+[ph_car]
+path_walk = aes_btr_move2
+on_signal = btr2wait | ph_car@wait
+
+[ph_car@wait]
+on_info = {+btr_move2} ph_car@wait_go
+
+[ph_car@wait_go]
+path_walk = aes_btr_move21
+on_signal = btrend | ph_car@mono
+
+[ph_car@mono]
+on_info = {+btr_fire} ph_car@attack
+
+[ph_car@attack]
+path_walk = aes_btr_move22
+target = btr_attack, 0
+fire_gulag = true
+target = aes_gates_guards

@@ -1,0 +1,57 @@
+;*************************************************** state ************************************************************
+
+[combat_ignore@cit_trader_terrain]
+
+[logic@cit_trader_terrain_kamp1]
+active = kamp@cit_trader_terrain_kamp1
+
+[kamp@cit_trader_terrain_kamp1]
+center_point = kamp
+radius = 2
+kamp_name = kamp1
+
+[logic@cit_trader_terrain_kamp2]
+active = kamp@cit_trader_terrain_kamp2
+
+[kamp@cit_trader_terrain_kamp2]
+center_point = kamp
+radius = 2
+kamp_name = kamp1
+
+[logic@cit_trader_terrain_trader]
+active = walker@cit_trader_terrain_trader
+trade = misc\trade\trade_crash.ltx
+inv_max_weight = 10000
+combat_ignore = combat_ignore@cit_trader_terrain
+meet = meet@cit_trader
+
+[walker@cit_trader_terrain_trader]
+path_walk = trader_way
+path_look = trader_look
+def_state_standing = ward
+combat_ignore_cond = always
+
+[meet@cit_trader]
+meet_state		= 5| hello| 3| nil
+meet_state_wpn	= 5| hello| 3| nil
+victim			= 4| actor
+victim_wpn		= 4| actor
+meet_talk_enabled = true
+use				= true
+use_wpn			= false
+
+[logic@cit_trader_terrain_walker1]
+active = walker@cit_trader_terrain_walker1
+
+[walker@cit_trader_terrain_walker1]
+path_walk = walker
+
+[logic@cit_trader_terrain_walker2]
+active = walker@cit_trader_terrain_walker2
+
+[walker@cit_trader_terrain_walker2]
+path_walk = walker2
+
+
+
+

@@ -1,0 +1,80 @@
+[combat_ignore@support]
+
+[danger@support]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@support]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = walker@support_to_tank
+combat_ignore = combat_ignore@support
+danger = danger@support
+threshold = threshold@support
+
+[walker@support_to_tank]
+path_walk = soldier_walk_to_caps
+combat_ignore_cond = always
+danger = danger@support
+threshold = threshold@support
+on_signal = guardrat | %+bas_cs1_info_after%
+on_signal2 = guardready | %+bas_guard_reached% remark@support_tunk
+meet = no_meet
+
+[remark@support_tunk]
+snd = bas_replics3
+combat_ignore_cond = always
+danger = danger@support
+threshold = threshold@support
+target = bas_guard_look, 0
+on_signal = sound_end | remark@support_ready
+meet = no_meet
+
+[remark@support_ready]
+anim = ward
+combat_ignore_cond = always
+danger = danger@support
+threshold = threshold@support
+target = bas_look_to_holo, 0
+on_info = {+bas_cs1_info_4} walker@support_position
+meet = no_meet
+
+[walker@support_position]
+path_walk = bas_soldier_see
+combat_ignore_cond = always
+danger = danger@support
+threshold = threshold@support
+;target = bas_look_to_holo, 0
+on_info = {+bas_admin_not_tested} remark@indentity_synth
+;on_signal = holotalk | remark@indentity_synth
+meet = no_meet
+
+[remark@indentity_synth]
+combat_ignore_cond = always
+danger = danger@support
+threshold = threshold@support
+target = bas_look_to_holo, 0
+;on_timer = 2500 | remark@indentity
+on_timer = 3500 | remark@indentity
+meet = no_meet
+
+[remark@indentity]
+snd = bas_replics12
+combat_ignore_cond = always
+danger = danger@support
+threshold = threshold@support
+target = bas_look_to_holo, 0
+on_signal = sound_end | %+bas_cs1_info_7%
+on_info = {+bas_cs1_drain} remark@drained
+meet = no_meet
+
+[remark@drained]
+anim = drained
+combat_ignore_cond = always
+danger = danger@support
+threshold = threshold@support
+target = bas_look_to_holo, 0
+meet = no_meet
+on_timer = 6000 | nil %=bas_kill_soldier%

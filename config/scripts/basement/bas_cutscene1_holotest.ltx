@@ -1,0 +1,59 @@
+[combat_ignore@holo]
+
+[danger@bas_holo]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_holo]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@holo_rotate
+combat_ignore = combat_ignore@holo
+
+[remark@holo_rotate]
+anim = hologram_rotate
+combat_ignore_cond = always
+danger = danger@bas_holo
+threshold = threshold@bas_holo
+target = bas_holo_rotate4, 0
+;on_signal = r1 | remark@holo_rotate2
+on_info = {+bas_cs1_info_4} remark@holo_rotate_wait
+meet = no_meet
+
+[remark@holo_rotate_wait]
+anim = hologram_rotate
+combat_ignore_cond = always
+danger = danger@bas_holo
+threshold = threshold@bas_holo
+target = bas_holo_rotate4, 0
+on_timer = 1500 | remark@holo_rotate_end
+meet = no_meet
+
+[remark@holo_rotate_end]
+anim = drain_fly_idle
+snd = bas_replics9
+combat_ignore_cond = always
+danger = danger@bas_holo
+threshold = threshold@bas_holo
+target = bas_holo_rotate4, 0
+meet = no_meet
+on_signal = sound_end | %+bas_cs1_info_5%
+on_info = {+bas_cs1_info_7} remark@holo_agressive
+
+[remark@holo_agressive]
+anim = drain_fly_idle
+snd = bas_replics13
+combat_ignore_cond = always
+danger = danger@bas_holo
+threshold = threshold@bas_holo
+target = bas_holo_rotate4, 0
+on_signal = sound_end | remark@holo_kill %+bas_cs1_drain%
+
+[remark@holo_kill]
+anim = drain_fly
+combat_ignore_cond = always
+danger = danger@bas_holo
+threshold = threshold@bas_holo
+target = bas_holo_rotate4, 0

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<game_dialogs>
+
+    <dialog id="gen_ghost_dialog">
+		<has_info>gen_reached</has_info>
+        <dont_has_info>gen_ghost_instructions_recieved</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>gen_ghost_breakthrough_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>gen_ghost_breakthrough_1</text>
+                <next>2</next>
+            </phrase>
+            <phrase id="2">
+                <text>gen_ghost_breakthrough_2</text>
+                <next>3</next>
+            </phrase>
+            <phrase id="3">
+                <text>gen_ghost_breakthrough_3</text>
+                <next>4</next>
+            </phrase>
+            <phrase id="4">
+                <text>gen_ghost_breakthrough_4</text>
+                <next>5</next>
+            </phrase>
+            <phrase id="5">
+                <text>gen_ghost_breakthrough_5</text>
+                <give_info>gen_ghost_instructions_recieved</give_info>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="gen_ghost_plan">
+		<has_info>gen_reached</has_info>
+		<has_info>gen_ghost_instructions_recieved</has_info>
+        <dont_has_info>gen_distraction_leader</dont_has_info>
+        <dont_has_info>gen_activate_tip</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>gen_ghost_distraction_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>gen_ghost_distraction_1</text>
+                <next>2</next>
+            </phrase>
+            <phrase id="2">
+                <text>gen_ghost_distraction_2</text>
+                <next>3</next>
+            </phrase>
+            <phrase id="3">
+                <text>gen_ghost_distraction_3</text>
+                <next>4</next>
+            </phrase>
+            <phrase id="4">
+                <text>gen_ghost_distraction_4</text>
+                <give_info>gen_activate_tip</give_info>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="gen_ghost_final_dialog">
+        <has_info>gen_distraction_leader</has_info>
+        <dont_has_info>gen_ghost_final_talk</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>gen_ghost_final_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>gen_ghost_final_1</text>
+                <next>2</next>
+            </phrase>
+            <phrase id="2">
+                <text>gen_ghost_final_2</text>
+                <next>3</next>
+            </phrase>
+            <phrase id="3">
+                <text>gen_ghost_final_3</text>
+                <action>dialog_generators.gen_ghost_help</action>
+                <next>4</next>
+            </phrase>
+            <phrase id="4">
+                <text>gen_ghost_final_4</text>
+                <give_info>gen_ghost_final_talk</give_info>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="gen_ghost_postfinal">
+        <has_info>war_core_deactivated</has_info>
+        <dont_has_info>gen_postfinal_ghost_talked</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>gen_ghost_postfinal_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>gen_ghost_postfinal_1</text>
+                <give_info>gen_after_ghost_meet</give_info>
+                <next>2</next>
+            </phrase>
+            <phrase id="2">
+                <text>gen_ghost_postfinal_2</text>
+                <next>3</next>
+            </phrase>
+            <phrase id="3">
+                <text>gen_ghost_postfinal_3</text>
+                <next>4</next>
+            </phrase>
+            <phrase id="4">
+                <text>gen_ghost_postfinal_4</text>
+                <next>5</next>
+            </phrase>
+            <phrase id="5">
+                <text>gen_ghost_postfinal_5</text>
+                <next>6a</next>
+                <next>6b</next>
+            </phrase>
+            <phrase id="6a">
+                <text>gen_ghost_postfinal_6a</text>
+                <give_info>gen_postfinal_ghost_talked</give_info>
+            </phrase>
+            <phrase id="6b">
+				<precondition>xr_conditions.secret_ending_cond.ReturnReverse</precondition>
+                <text>gen_ghost_postfinal_6b</text>
+                <give_info>gen_postfinal_ghost_talked</give_info>
+                <give_info>has_freeplay_info</give_info>
+                <give_info>esc_freeplay_rotate_actor</give_info>
+				<action>xr_effects.gen_freeplay_jump</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+
+    <dialog id="gen_dolg_quest">
+        <phrase_list>
+            <phrase id="0">
+                <text>gen_dolg_mission_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>gen_dolg_mission_1</text>
+                <give_info>gen_dolg_quest_start</give_info>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="gen_freedom_quest">
+        <phrase_list>
+            <phrase id="0">
+                <text>gen_freedom_mission_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>gen_freedom_mission_1</text>
+                <give_info>gen_freedom_quest_start</give_info>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    </game_dialogs>

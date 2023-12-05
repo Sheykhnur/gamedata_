@@ -1,0 +1,106 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_pda_downs.script
+ Description: PDA field
+ Copyright  : 2009 © LA-team
+ Author     : barin (19.04.2009)
+ Editors    : barin(09.09.2009)
+ Last edit  : 07.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "ListItem" (CUIListItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function ListItem:__init(txt) super()
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self.text:SetWndRect(0, 2, 247, 18)
+	self.text:SetText(txt)
+	self.text:SetTextAlign(CGameFont.alLeft)
+	self.text:SetTextColor(pcTextViewer.get_colour("dark_grey"))
+	self.text:SetFont(pcTextViewer.get_font("letterica18"))
+	
+	self:AttachChild(self.text)
+end
+
+function ListItem:Invalidate(colour)
+	self.text:SetTextColor(pcTextViewer.get_colour(colour))
+end
+
+function ListItem:GetText()
+	return self.text:GetText()
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaDownloads" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaDownloads:__init(xml,pos) super()
+	self:SetWindowName("pda_downloads")
+	self:InitControls(xml,pos)
+	self:InitCallBacks()
+	
+	self.prev_item = -1
+end
+
+function uiPdaDownloads:__finalize()
+end
+
+function uiPdaDownloads:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPdaDownloads:InitControls(xml,pos)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(unpack(pos))
+	
+	xml:InitFrame(self:WindowName() .. ":left_frame", self)
+	xml:InitFrame(self:WindowName() .. ":right_frame", self)
+	
+	xml:InitFrameLine(self:WindowName() .. ":left_frame_line", self)
+	xml:InitFrameLine(self:WindowName() .. ":right_frame_line", self)
+	
+	xml:InitStatic(self:WindowName() .. ":left_horizontal_line", self)
+	xml:InitStatic(self:WindowName() .. ":left_frame_left_vertical_line", self)
+	xml:InitStatic(self:WindowName() .. ":left_frame_right_vertical_line", self)
+	xml:InitStatic(self:WindowName() .. ":right_frame_left_vertical_line", self)
+	xml:InitStatic(self:WindowName() .. ":right_frame_right_vertical_line", self)
+	
+	xml:InitAnimStatic(self:WindowName() .. ":anim", self)
+	
+	self.right_frame_caption = xml:InitStatic(self:WindowName() .. ":right_frame_caption", self)
+	
+	self.downloads_list = xml:InitList(self:WindowName() .. ":downloads_list", self)
+	self:Register(self.downloads_list, "downloads_list")
+	
+	for index = 1, 50 do
+		self.downloads_list:AddItem(ListItem("line " .. index))
+	end
+end
+
+function uiPdaDownloads:InitCallBacks()
+	self:AddCallback("downloads_list", ui_events.LIST_ITEM_CLICKED, self.OnDownloadedItemClicked, self)
+end
+
+function uiPdaDownloads:OnDownloadedItemClicked()
+	if self.downloads_list:GetSize() ~= 0 then
+		local index = self.downloads_list:GetSelectedItem()
+		if index ~= -1 then
+			if self.prev_item ~= -1 then
+				self.downloads_list:GetItem(self.prev_item):Invalidate("dark_grey")
+			end
+			self.downloads_list:GetItem(index):Invalidate("full_white")
+			self.right_frame_caption:SetText("../downloads/" .. self.downloads_list:GetItem(index):GetText())
+			self.prev_item = index
+		end
+	end
+end
+
+function uiPdaDownloads:OnWindowShow()
+end
+
+function uiPdaDownloads:OnWindowHide()
+end
+--/ -----------------------------------------------------------------------------------------------

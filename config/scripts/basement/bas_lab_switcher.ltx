@@ -1,0 +1,17 @@
+; x-7 lab primary switch logic
+
+[logic]
+active = ph_button@active
+
+[ph_button@active]
+on_info = {+bas_switcher_off} ph_idle@nil
+anim = lab_primary_switcher_idle
+tooltip = tips_labx7switcher_press
+on_press = ph_button@deactivate %=play_snd(ambient\x18\cooling_stop)%
+
+[ph_button@deactivate]
+anim = lab_primary_switcher_off
+on_timer = 500 | ph_idle@nil %+bas_switcher_off =play_snd_from_obj(8502:ambient\switch_1) =rad_psy_basic +out_quakes_stopped%
+
+[ph_idle@nil]
+nonscript_usable = false

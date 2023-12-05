@@ -1,0 +1,145 @@
+[combat_ignore@country_hermit]
+
+[danger@country_hermit]
+ignore_distance = 0
+danger_inertion_time = 1500
+
+[danger@country_hermit_spot]
+ignore_types                = hit
+ignore_distance_sound       = 0
+ignore_distance_danger_hit     = 2
+ignore_distance             = 0
+ignore_distance_hit = 0
+danger_inertion_time = 1500
+danger_inertion_time_corpse = 0
+
+[threshold@country_hermit]
+max_ignore_distance = 6
+
+[death@country_hermit]
+on_info = %+country_mark_entrance%
+
+[logic]
+active = {+country_found_real_entrance} walker@country_hermit_final, {-country_found_real_entrance} kamper@country_hermit_start
+on_death = death@country_hermit
+danger = danger@country_hermit
+threshold = threshold@country_hermit
+
+[kamper@country_hermit_start]
+path_walk = country_hermit_start_walk
+path_look = country_hermit_start_look
+kamp_name = kamp1
+combat_ignore_cond = always
+on_info = {-hermit_teleported -country_hermit_show_path} kamper@country_hermit_start_walk
+on_info2 = {+hermit_teleported} walker@country_hermit_idle
+on_info3 = {=dist_to_actor_ge(15) +country_hermit_show_path -country_talk_to_hermit} remark@hermit_lost_actor
+on_info4 = {+country_found_real_entrance} walker@country_hermit_final
+
+[kamper@country_hermit_start_walk]
+path_walk = country_hermit_start_walk
+path_look = country_hermit_start_look
+kamp_name = kamp1
+combat_ignore_cond = always
+on_actor_dist_le_nvis = 15 | {-country_hermit_path_end_talked} remark@country_hermit_meet
+on_info = {+hermit_teleported +country_hermit_path_end_talked} walker@country_hermit_idle
+on_info2 = {+country_found_real_entrance} walker@country_hermit_final
+
+[remark@country_hermit_meet]
+anim = ward
+target = actor
+meet = meet@hermit_start
+danger = danger@country_hermit
+on_info = {+country_hermit_told_entrance} walker@country_hermit_wait %+country_mark_entrance%
+on_info2 = {+country_hermit_show_path} walker@country_hermit_show_path_fake
+on_info3 = {+country_found_real_entrance} walker@country_hermit_final
+
+[meet@hermit_start]
+use = true
+use_wpn = false
+victim 	= 15| actor
+victim_wpn = 15| actor
+meet_state = 5|nil
+meet_state_wpn = 5|nil
+meet_dialog	= country_hermit_start_dialog
+
+[walker@country_hermit_wait]
+path_walk = country_hermit_start_walk
+path_look = country_hermit_start_look
+;def_state_standing = wait
+combat_ignore_cond = always
+on_info = {+country_found_real_entrance} walker@country_hermit_final
+on_actor_dist_ge_nvis = 30 | walker@country_hermit_idle %=teleport_npc(country_hermit_idle_walk:hermit_teleported)%
+
+[walker@country_hermit_idle]
+path_walk = country_hermit_idle_walk
+path_look = country_hermit_idle_look
+;def_state_standing = wait
+combat_ignore_cond = always
+on_info = {+country_found_real_entrance} walker@country_hermit_final
+
+[walker@country_hermit_show_path_fake]
+path_walk = country_hermit_show_path
+danger = danger@country_hermit
+threshold = threshold@country_hermit
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+on_timer = 2000 | walker@country_hermit_show_path
+on_info = {+country_found_real_entrance} walker@country_hermit_final
+
+[walker@country_hermit_show_path]
+path_walk = country_hermit_show_path
+combat_ignore_cond = {=fighting_dist_ge(20)}
+danger = danger@country_hermit_spot
+threshold = threshold@country_hermit
+meet = no_meet
+on_signal = reached | remark@country_hermit_meet_end %+country_talk_to_hermit%
+on_info = {+country_found_real_entrance} walker@country_hermit_final
+
+[meet@hermit_path_end]
+use = true
+use_wpn = false
+victim 	= 15| actor
+victim_wpn = 15| actor
+meet_state = 5|nil
+meet_state_wpn = 5|nil
+meet_dialog	= country_hermit_path_end
+combat_ignore_cond = always
+
+[walker@country_hermit_fake_idle]
+path_walk = country_hermit_idle_walk
+path_look = country_hermit_idle_look
+on_info = %=teleport_npc_not_seen(country_hermit_idle_walk:hermit_teleported)%
+on_info2 = {+hermit_teleported} walker@country_hermit_idle
+on_info3 = {+country_found_real_entrance} walker@country_hermit_final
+
+[remark@hermit_lost_actor]
+on_info = walker@hermit_lost_actor %=teleport_npc_not_seen(country_hermit_path_end_point:hermit_end_teleported) +country_find_lost_hermit%
+on_info2 = {+country_found_real_entrance} walker@country_hermit_final
+
+[walker@hermit_lost_actor]
+path_walk = country_hermit_path_end_point
+path_look = country_hermit_path_end_look
+on_actor_dist_le_nvis = 15| remark@country_hermit_meet_end
+on_info = {+country_found_real_entrance} walker@country_hermit_final
+
+[remark@country_hermit_meet_end]
+anim = ward
+target = actor
+meet = meet@hermit_path_end
+on_info = {+country_hermit_path_end_talked} walker@country_hermit_fake_idle
+
+
+[walker@country_hermit_final]
+path_walk = country_hermit_start_walk
+path_look = country_hermit_start_look
+meet = meet@country_hermit_final
+combat_ignore_cond = always
+
+[meet@country_hermit_final]
+use = true
+use_wpn = false
+victim 	= 15| actor
+victim_wpn = 15| actor
+meet_state = 5|ward
+meet_state_wpn = 5|ward
+combat_ignore_cond = always

@@ -1,0 +1,14 @@
+[logic]
+active = ph_button@active
+
+[ph_button@active]
+on_info = {+x16_disabled_power_sup_02} ph_idle@nil
+anim = lab_primary_switcher_idle
+tooltip = tips_labx16switcher_press
+on_press = ph_button@deactivate %=yan_gluk =turn_off(8414)%
+
+[ph_button@deactivate]
+anim = lab_primary_switcher_off
+on_timer = 500 | ph_idle@nil %+x16_disabled_power_sup_02 =play_snd_from_obj(8406:ambient\switch_1)%
+
+[ph_idle@nil]

@@ -1,0 +1,11 @@
+[logic]
+active = sr_idle@1
+
+[sr_idle@1]
+on_info = {+dol_reach_dscape_start} sr_idle@in
+
+[sr_idle@in]
+on_actor_inside = sr_idle@out
+
+[sr_idle@out]
+on_actor_outside = nil %=tasks_darkdolina.spawn_heli() =release%

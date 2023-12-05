@@ -1,0 +1,77 @@
+--[[------------------------------------------------------------------------------------------------
+ File       : mob_alife_mgr.script
+ Description: "Mob alife mgr"
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : gr1ph00n(23.09.2012)
+ Last edit  : 08.07.2013 [...]
+--]]------------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+--/ ×òåíèå èç ïàğàìåòğîâ ñåêöèè (òàáëèöà 'âğàæäåáíîñòåé')
+--/ ------------------------------------------------------------------
+function cfg_get_mode(ini, section, npc)
+	return { --/> table mode
+		braindead      = Get_Cfg_Bool(ini, section, "braindead",      false), --/ äî ïîëóñìåğòè
+		friendly       = Get_Cfg_Bool(ini, section, "friendly",       false), --/ äğóæåëşáíûé
+		npc_friendly   = Get_Cfg_Bool(ini, section, "npc_friendly",   false),
+		actor_friendly = Get_Cfg_Bool(ini, section, "actor_friendly", false)
+	}
+end
+--/ ------------------------------------------------------------------
+--/ êîëëáıê 'combat_callback'
+--/ ------------------------------------------------------------------
+function issue_combat_event(npc)
+	local stor = npc and db.storage[npc:id()]
+	if stor and stor["mob_combat"] then
+		xr_logic.issue_event(npc, stor["mob_combat"], "combat_callback")
+	end
+end
+--/ ------------------------------------------------------------------
+--/ Êîíòğîëü: íàõîäèòñÿ ëè îáúåêò â alife (true) èëè ïîä ñêğèïòîì(false)?
+--/ ------------------------------------------------------------------
+function alife_control(npc, actor, tMode)
+	--/ Ìåğòâûå ìîíñòğû ñğàçó îòïóñêàşòñÿ ïîä 'alife'
+	if not (npc:alive() and tMode) then
+		xr_logic.mob_release(npc)
+		return true --/>
+	end
+	--/ ìîíñòğû 'braindead' íå óõîäÿò èç ïîä ñêğèïòà
+	if tMode.braindead then
+		return false --/>
+	end
+	if not tMode.friendly then --/ 'äğóæåëşáíûå' íå ğåàãèğóşò íà âğàãîâ (#?# õì... à íà âğàæäåáíûõ ìîíñòğîâ?)
+		--/ ìîíñòğû, ó êîòîğûõ åñòü âğàã - òàêæå äîëæíû ğàáîòàòü â 'alife'
+		local oEnemy = npc:get_enemy()
+		if oEnemy then
+			local is_actor = oEnemy:id() == idActor
+			if (is_actor and not tMode.actor_friendly) or (is_actor == false and not tMode.npc_friendly) then
+--				log("alife_control: NPC=[%s] => Enemy=[%s]", npc:name(), oEnemy:name(), "") --/#~#
+				this.issue_combat_event(npc)
+				xr_logic.mob_release(npc)
+				return true --/>
+			end
+		end
+	end
+	--/ ìîíñòğû, êîòîğûõ îáñòğåëÿëè - îòïóñêàşòñÿ ïîä 'alife'
+	local tHitInfo = npc:get_monster_hit_info()
+	if tHitInfo.who and tHitInfo.time ~= 0 then
+		if tMode.actor_friendly and tHitInfo.who:id() == idActor then
+			--/ åñëè õîòÿ áû ğàç áûë àòàêîâàí actor-îì, òî áîëüøå íå äğóæåñòâåíåí ê íåìó
+			tMode.actor_friendly = false
+		end
+--		log("alife_control:Mob=[%s],hit_who=[%s]", npc:name(), tHitInfo.who:name(), "") --/#~#
+		this.issue_combat_event(npc)
+		xr_logic.mob_release(npc)
+		return true --/>
+	end
+	--/ Îñòàëüíûå ìîíñòğû ìîãóò ğàáîòàòü ïîä ñêğèïòîì
+	return false --/>
+end
+--/-------------------------------------------------------------------------------------------------

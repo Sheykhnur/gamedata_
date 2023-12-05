@@ -1,0 +1,210 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_heli_hunter.script
+ Description: Scheme: "Heli hunter"
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : gr1ph00n
+ Last edit  : 16.11.2017 [lox]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ TODO: add heli_hunter = false condition
+--/ TODO: fix that heli_hunters can shoot to ground surfaces if heli is under the ground when starts his way.
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local bEnabled = true --/ true|false scheme enabled(disabled)
+local def_attack_dist = 1000 --/ distance on which heli can be attacked
+local def_actor_dist  = 20  --/ distance on which actor can be attacked
+local tExludedComm = { --/ excluded comminities from scheme
+	["zombied"]     = true,
+	["trader"]      = true,
+	["arena_enemy"] = true
+}
+local tExludedNPCs = { --/ excluded NPC from scheme (by names)
+	--["esc_petruha"] = true, --/ Example!
+}
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_HeliHunter = xr_evaluators_id.chugai_heli_hunter_base
+local iAct_HeliHunter = xr_actions_id.chugai_heli_hunter_base
+local tBindActs = { --/ array of 'external' actions disconnected in case of the active scheme
+	stalker_ids.action_alife_planner,
+	stalker_ids.action_combat_planner,
+	stalker_ids.action_danger_planner
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function get_nearest_heli(vPosNPC, iDistAttackSqr)
+	local heli_id, heli_pos, heli_dist, dist = nil, nil, nil, nil
+	for id,o in pairs(db.heli) do
+		dist = o:position():distance_to_sqr(vPosNPC)
+		if dist <= iDistAttackSqr and not (heli_dist and heli_dist < dist) then
+			heli_id = id
+			heli_dist = dist
+		end
+	end
+	return (heli_id and level.object_by_id(heli_id)) --/> oHeli
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATORs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_shoot" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_shoot:__init(name, st) super(nil, name)
+	self.st  = st
+	self.log = st.log
+end
+
+function evaluator_shoot:evaluate()
+--	if self.log then log(":ev_shoot:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	if not ( self.object and self.object:alive() and self.st.enabled) then return false end --/>
+
+	local overrides = xr_logic.generic_scheme_overrides(self.object)
+	
+	if overrides and overrides.heli_hunter and xr_logic.pick_section_from_condlist(db.actor, self.object, overrides.heli_hunter) ~= nil then
+		local vPosNPC = self.object:position()
+		--/ search of heli
+		self.st.heli = get_nearest_heli(vPosNPC, self.st.attack_dist_sqr)
+		if not self.st.heli then
+			--log("st.heli=[%s]", self.st.heli)
+			return false --/>
+		end
+
+		if self.log then log("ev_shoot:NPC=[%s]:[%s]", self.object:name(), "?") end --/#~#
+		--/ Check that heli still alive.
+		if not bind_heli.is_heli_alive(self.st.heli) then
+			self.st.heli = nil
+			--log("st.heli_alive=[%s]", self.st.heli)
+			return false --/>
+		end
+		--/ Check that enemy-player not too close
+		local oBestEnemy = self.object:best_enemy()
+		if oBestEnemy and oBestEnemy:id() == idActor then
+			if db.actor:position():distance_to_sqr(vPosNPC) < self.st.attack_actor_sqr then
+				--log("npc too close to enemy")
+				return false --/>
+			end
+		end
+		-- Check that danger-player not too close
+		local oBestDanger = self.object:best_danger()
+		if oBestDanger then
+			local oObjBD = oBestDanger:object()
+			if oObjBD and oObjBD:id() == idActor then
+				if oBestDanger:position():distance_to_sqr(vPosNPC) < self.st.attack_actor_sqr then
+					--log("npc too close to danger")
+					return false --/>
+				end
+			end
+		end
+		--/sky: check if heli position above npc position
+		if vPosNPC.y >= self.st.heli:position().y then
+			--log("vPosNPC=[%s] helipos=[%s]",vPosNPC.y, self.st.heli:position().y)
+			return false --/>
+		end
+
+		if self.log then log("ev_shoot:NPC=[%s]:[%s]", self.object:name(), "+>") end --/#~#
+		--log("evaluator returns true: vPosNPC=[%s] helipos=[%s]",vPosNPC.y, self.st.heli:position().y)
+		return true --/>
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTION "fire to heli"
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_shoot" ( action_base )
+--/ -----------------------------------------------------------------
+function action_shoot:__init(action_name, st)  super(nil, action_name)
+	self.st  = st
+	self.log = st.log
+end
+
+function action_shoot:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_shoot:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+end
+
+function action_shoot:execute()
+	action_base.execute(self)
+	state_mgr.set_state(self.object, "threat_fire", nil, nil, {look_object = self.st.heli}, nil, nil, {yaw_delta=10})
+	
+  --/ gr1ph
+  --/ method doesn't exist
+  --[[
+	if self.st.can_fire_heli then
+		self.object:set_fire_forced(self.st.heli)
+	end
+	--]]
+end
+
+function action_shoot:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.is_exluded = tExludedComm[npc:character_community()] or tExludedNPCs[npc:name()]
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	if not bEnabled or st.is_exluded then --/ (exclusions)
+		oPlanner:add_evaluator( iEvl_HeliHunter, property_evaluator_const(false) )
+	else
+		oPlanner:add_evaluator( iEvl_HeliHunter, this.evaluator_shoot("ev_heli_hunter", st) )
+		--/ NewAction -----------------------------------------------------
+		local oNewAction = this.action_shoot("ac_shoot_heli", st)
+		oNewAction:add_precondition( world_property( stalker_ids.property_alive, true ) ) --/ NPC alive
+		oNewAction:add_precondition( world_property( iEvl_HeliHunter,            true ) ) --/ there is a target and can shoot
+		oNewAction:add_effect( world_property( iEvl_HeliHunter, false))
+		oPlanner:add_action( iAct_HeliHunter, oNewAction )
+		
+		--/ Actions (additional preconditions for some standard operators)
+		for _,v in ipairs(tBindActs) do
+			local oAction = oPlanner:action(v)
+			oAction:add_precondition( world_property(iEvl_HeliHunter, false) )
+		end
+		--/ for debug!
+		if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+	end
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+--	log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind( npc, ini, scheme, section )
+	if section and section ~= "" then --/ math.pow(x,y) == x^y
+		st.attack_dist_sqr  = math.pow( Get_Cfg_Number(ini, section, "dist",       def_attack_dist ), 2)
+		st.attack_actor_sqr = math.pow( Get_Cfg_Number(ini, section, "actor_dist", def_actor_dist ), 2)
+		st.no_gather_items = Get_Cfg_Bool  (ini, section, "no_gather_items", true)
+		--st.can_fire_heli    = Get_Cfg_Bool(ini, section, "can_fire_heli", false) --/ gr1ph
+	else
+		st.attack_dist_sqr  = math.pow( def_attack_dist, 2)
+		st.attack_actor_sqr = math.pow( def_actor_dist, 2)
+	end
+	st.heli = nil
+	st.enabled = bEnabled and not st.is_exluded
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],enabled=[%s]", npc:name(), scheme, section, st.enabled, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local st = npc and db.storage[npc:id()][scheme]
+	if st then
+		st.enabled = false
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

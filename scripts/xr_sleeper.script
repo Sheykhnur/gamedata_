@@ -1,0 +1,196 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_sleeper.script
+ Description: scheme: "Sleeper"
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Editors    : gr1ph00n(26.09.2012), lox(24.10.2017)
+ Last edit  : 24.10.2017 [...]
+--]] ----------------------------------------------------------------------------------------------
+--]] - fixed wrong animation declared in scheme
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Sleeper = xr_evaluators_id.zmey_sleeper_base +1
+local iAct_Sleeper = xr_actions_id.zmey_sleeper_base +1
+--local iEvl_StateMgr4 = xr_evaluators_id.state_mgr +4 --/#+# "idle_logic"
+local tBindEvls = {} --/ array of 'external' scheme conditions for activation
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout    and xr_blowout.get_ai_evl(0),   flg = false}, --/ don't see blowout
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_need_sleeper" (property_evaluator)
+--/ -----------------------------------------------------------------
+function evaluator_need_sleeper:__init(name, st) super (nil, name)
+	self.st = st
+end
+
+function evaluator_need_sleeper:evaluate ()
+	return xr_logic.is_active(self.object, self.st) --/> scheme active
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTION
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_sleeper_activity" (action_base) --/ Usual behavior
+--/ -----------------------------------------------------------------
+function action_sleeper_activity:__init (action_name, st) super(nil, action_name)
+	self.st        = st
+	self.log       = st.log
+	self.move_mgr  = st.move_mgr
+	self.was_reset = false
+	self.state     = nil
+end
+
+function action_sleeper_activity:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_sleeper_activity:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self:reset_scheme()
+end
+
+function action_sleeper_activity:reset_scheme()
+	self.timer = { begin   = nil,
+	               idle    = nil,
+	               maxidle = 10,
+	               sumidle = 20,
+	               random  = 50 }
+	self.st.signals = {}
+	self.state = nil
+	if not self.st.path_walk_info then
+		local pp = get_patrol(self.st.path_main)
+		if pp then
+			local wp_count = pp:count()
+			if wp_count == 1 then
+				self.st.path_walk      = self.st.path_main
+				self.st.path_walk_info = utils.path_parse_waypoints_from_arglist(self.st.path_main, 1, { 0, "wp00|ret=1" } )
+				self.st.path_look      = nil
+				self.st.path_look_info = nil
+				self.st.path_look_pos  = nil
+			elseif wp_count == 2 then
+				self.st.path_walk      = self.st.path_main
+				self.st.path_walk_info = utils.path_parse_waypoints_from_arglist(self.st.path_main, 2, { 1, "wp00" }, { 0, "wp01" } )
+				self.st.path_look      = self.st.path_main
+				self.st.path_look_info = utils.path_parse_waypoints_from_arglist(self.st.path_main, 2, { 0, "wp00" }, { 1, "wp01|ret=1" } )
+				self.st.path_look_pos  = pp:point(1)
+			else
+				abort("%s:reset_scheme:NPC=[%s]<~path_main=[%s],contains=[%s]_waypoints,while 1 or 2 were expected", sModule, self.object:name(), self.st.path_main, wp_count)
+			end
+		else
+			abort("%s:reset_scheme:NPC=[%s]<~unable to find path_main=[%s]", sModule, self.object:name(), self.st.path_main, "")
+		end
+	end
+	--/ Last parameter (true) disable ways validation,
+	--/ so won't be error cause of using one-point path_walk way without proper path_look.
+	self.move_mgr:reset(self.st.path_walk, self.st.path_walk_info, self.st.path_look, self.st.path_look_info, nil, nil, { obj = self, func = self.callback }, true )
+	self.was_reset = true
+end
+
+function action_sleeper_activity:activate_scheme()
+	self.was_reset = false
+end
+
+function action_sleeper_activity:callback(mode, number)
+	self.state = self.st.wakeable and "sleep_sit" or "sleep" --/ 'sit' sleap or 'lying'
+	state_mgr.set_state(self.object, self.state, nil, nil, {look_position = self.st.path_look_pos})
+	return true --/>
+end
+
+function action_sleeper_activity:execute()
+	action_base.execute(self)
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+	if not self.state then
+		self.move_mgr:update()
+		if self.move_mgr:arrived_to_first_waypoint() then
+			xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+		end
+	elseif not xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		xr_sound.set_sound(self.object, "sleep")
+	end
+	if self.log then log("ac_sleeper_activity:NPC=[%s]", self.object:name(), "") end --/#~#
+end
+
+function action_sleeper_activity:finalize()
+	if self.log then log("ac_sleeper_activity:fin:NPC=[%s]:(%s)", self.object:name(), "x") end --/#~#
+	xr_sound.set_sound(self.object, nil)
+	self.move_mgr:finalize()
+	action_base.finalize(self)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:[%s]", npc:name(), scheme, section, ">") --/#~#
+	st.move_mgr = db.storage[npc:id()].move_mgr
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:add_evaluator (iEvl_Sleeper, this.evaluator_need_sleeper("ev_sleeper_need_sleep", st))
+	--/ NewAction -----------------------------------------------------
+	local oNewAction = this.action_sleeper_activity("ac_sleeper_activity", st)
+	xr_motivator.addGeneralPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) )
+	end
+	oNewAction:add_precondition( world_property( iEvl_Sleeper, true))
+	oNewAction:add_effect( world_property( iEvl_Sleeper, false))
+	--oNewAction:add_effect( world_property( iEvl_StateMgr4, false )) --/#?#
+	oPlanner:add_action( iAct_Sleeper, oNewAction )
+	--/ registration of action, to call method 'reset_scheme' when scheme setting changed:
+	xr_logic.subscribe_action_for_events(npc, st, oNewAction)
+	--/ Actions -------------------------------------------------------
+	local oAction = oPlanner:action(xr_actions_id.alife)
+	oAction:add_precondition( world_property( iEvl_Sleeper, false) )
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	
+	st.path_main = Get_Cfg_String(ini, section, "path_main", nil, true, gulag_name)
+	st.wakeable  = Get_Cfg_Bool  (ini, section, "wakeable", false)
+	ASSERT(validate_patrol_path(st.path_main, npc, true), "set_scheme: section=[%s] path_main=[%s] wrong!", section, st.path_main, "")
+	--/ ways will be initialized with reset(), now they can be still not loaded.
+	st.path_walk      = nil
+	st.path_walk_info = nil
+	st.path_look      = nil
+	st.path_look_info = nil
+	--/ fot debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s],path=[%s]", npc:name(), scheme, section, gulag_name, st.path_main, "") end --/#~#
+end
+--/ ----------------------------------------------
+function is_npc_asleep(npc)
+	local state = npc and state_mgr.get_state(npc)
+	return state ~= nil and (state == "sleep" or state == "sleep_sit") --/>
+end
+--/ -----------------------------------------------------------------------------------------------

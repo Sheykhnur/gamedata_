@@ -1,0 +1,460 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_actor_sleep.script
+ Description: Manager "Sleep" (ñîí)
+ Copyright  : 2009 © LA-team
+ Author     : barin, Ab@dDon (DreamMod v0.2 included)
+ Editors    : gr1ph00n(14.07.2012)
+ Last edit  : 21.06.18 (tomilovsenya) - PDA messages fix
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sleep_mgr = nil
+--/ --------------------------
+local sModule = script_name() --/ string name of the file module
+--/ --------------------------
+local sTimerName = "•GT_SLEEP•" --/ sleep timer name of the actor
+local sTimerFunc = sModule..".OnTimer" --/ handler function
+--local sTimerFunc = sModule..".Sleep_Mgr.OnTimer" --/#?# handler method
+--/ --------------------------
+local tPhases = {--/ 0:"block", 1:"idle",  2:"green", 3:"yellow", 4:"red", -1:"sleep"
+	[ 0] = { time = 5*60*60, state = 24, tip = nil},
+	[ 1] = { time =17*60*60, state = 24, tip = nil},
+	[ 2] = { time =   60*60, state = 27,   tip = {game.translate_string("hmm"), game.translate_string("have_a_nap"..math.random(1,3)), "actor"}}, --/#?# to be finalized!
+	[ 3] = { time =   45*60, state = 26,   tip = {game.translate_string("hmm"), game.translate_string("really_tired"), "actor"}},
+	[ 4] = { time =   30*60, state = 25,   tip = {game.translate_string("hmm"), game.translate_string("really_exhausted"), "actor"}},
+	[-1] = { time = 7*60*60, state = 24, tip = nil} --/#!# fake time (==SLEEP_HOURs)
+}
+--/[ 0] "block"  -  5 hours from last sleeping
+--/[ 1] "idle"   - 17 hours without sleeping
+--/[ 2] "green"  - 60 minutes between phases: green->yellow
+--/[ 3] "yellow" - 45 minutes between phases: yellow->red
+--/[ 4] "red"    - 30 minutes between phase: red->passout
+--/[-1] "sleep"  -  7 hours for sleep
+--/ --------------------------
+local SLEEP_HOURs = 7
+local iSleepHours = nil --/ hours for sleep
+local iTimePause  = 15*60 --/ 15 minutes (if actor sleeping or ...)
+--/ --------------------------
+local ALIFE_TIME_FACTOR = system_ini():r_float("alife","time_factor") --10
+local TimeFactor = 218 --320 --2650 --/ for during sleeping
+--/ --------------------------
+local tTips = {
+	no_need = {"la_actor_sleep_hmmm", "la_actor_sleep_no_need"},
+	blowout = {"la_actor_sleep_hmmm", "la_actor_sleep_blow"},
+	preblowout = {"la_actor_sleep_hmmm", "la_actor_sleep_preblow"},
+	not_safe = {"la_actor_sleep_hmmm", "la_actor_sleep_not_safe"},
+	thirsty = {"la_actor_sleep_hmmm", "la_actor_sleep_thirsty"}, --/#?# to index!
+	hungry  = {"la_actor_sleep_hmmm", "la_actor_sleep_hungry"}, --/#?# to index!
+	enemy   = {"la_actor_sleep_hmmm", "la_actor_sleep_enemy"} --/#?# to index!
+}
+local awake_snd_by_dream_type = {
+	nightmare = {
+		[1] = "characters_voice\\human_01\\stalker\\states\\breath\\breath_2",
+		[2] = "characters_voice\\human_03\\newbie\\states\\sleep\\sleep_9"
+	},
+	normal = {
+		[1] = "characters_voice\\human_01\\dolg\\states\\idle\\idle_33",
+		[2] = "characters_voice\\human_01\\ecolog\\states\\idle\\idle_5",
+		[3] = "characters_voice\\human_01\\newbie\\states\\idle\\idle_16",
+		[4] = "characters_voice\\human_01\\newbie\\states\\idle\\idle_18",
+		[5] = "characters_voice\\human_03\\killer\\states\\sleep\\sleep_6"
+	},
+	happy = {
+		[1] = "characters_voice\\human_01\\dolg\\states\\idle\\idle_33",
+		[2] = "characters_voice\\human_01\\ecolog\\states\\idle\\idle_5",
+		[3] = "characters_voice\\human_01\\newbie\\states\\idle\\idle_16",
+		[4] = "characters_voice\\human_01\\newbie\\states\\idle\\idle_18",
+		[5] = "characters_voice\\human_03\\killer\\states\\sleep\\sleep_6"
+	}
+}
+local pp_eff_2007 = "yantar_underground_psi.ppe"
+local default_wakeup_callback = function() log("actor wakes up") end
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/------------------------------------------------------------------
+--/ Initialization and preset module
+--/------------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ --------------------------
+function PreSets(e)
+	event("update_1sec"):register(OnUpdate) --/ 1 time a second
+	event("item_use"):register(OnItem_Used)
+	event("actor_death"):register(stop_sleeping)
+	event("actor_wakeup"):register(default_wakeup_callback)
+	ALIFE_TIME_FACTOR = system_ini():r_float("alife","time_factor")
+	this.get_sleep_mgr()
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "Sleep_Mgr"
+--/ -----------------------------------------------------------------------------------------------
+function Sleep_Mgr:__init()
+	self.sleep_eff = pp_eff.file_pp(pp_eff_2007)
+	self:initialize()
+	self:restart_timer()
+end
+
+function Sleep_Mgr:initialize()
+	self.actor_sleeping = false
+	self.dream_type = "normal"
+	self.dream = "without_dream1"
+	self.phase = 0 --/ "block"
+	self:ResetIcons()
+end
+
+function Sleep_Mgr:restart_timer()
+	if self.timer then
+		self.timer:restart(tPhases[self.phase].time,sTimerFunc,{ph=self.phase})
+	else
+		self.timer = get_timer(sTimerName)
+		if self.timer then --/ if recovery from the loaded save games
+			self.phase = self.timer:get_property("ph")
+			if not tonumber(self.phase) then --/ insurance
+				--log("restart_timer: phase=[%s]?  %s <%s>", self.phase, tostring(self.timer), "Warning!") --/#~#
+				self.phase = 0
+				self.timer:restart(tPhases[self.phase].time,sTimerFunc,{ph=self.phase})
+			end
+		else --/ start new timer:
+			self.timer = start_game_timer(tPhases[self.phase].time,sTimerFunc,{ph=self.phase},sTimerName)
+		end
+	end
+	--log("Sleep_Mgr:(re)start_timer:[%s] phase=[%d] %s", game.get_game_time():timeToString(2), self.phase, tostring(self.timer)) --/#~#
+end
+
+function Sleep_Mgr:OnTimer()
+	local is_pause = nil
+	self.phase = self.timer.ph
+	if self.timer.ph < 0 or self.actor_sleeping or db.actor:is_talking() then
+		is_pause = true --/ wait!
+	elseif get_console():get_bool('g_god') then
+		is_pause = true --/ godmode!
+	elseif self.timer.ph < 4 then
+		self.phase = self.phase +1
+	elseif self:sleep_conditions() then --/ "red"
+		self.phase = -1 --/#!# to sleep!
+		self:set_sleep(SLEEP_HOURs)
+	else --/ timeout (wait)!
+		is_pause = true
+	end
+	--/ restart timer
+	local iTime = (is_pause and iTimePause) or tPhases[self.phase].time
+	self.timer:restart(iTime,sTimerFunc,{ph=self.phase})
+	--/ (re)set icon
+	self:ResetIcons()
+	--/ show tip
+	if tPhases[self.phase].tip then
+		news_manager.send_tip_hud( unpack(tPhases[self.phase].tip) )
+	end
+	--/ play pp_effect
+	if self.phase > 2 then --/ "yellow" or "red" (is_very_tired)
+		if self.sleep_eff and not self.sleep_eff.playing then
+			self.sleep_eff:start()
+			self.sleep_eff:set_factor(5.0)
+		end
+	end
+	--log("Sleep_Mgr:OnTimer: %s phase=[%s]=>[%s]", tostring(self.timer), tostring(self.timer.ph), tostring(self.phase)) --/#~#
+end
+
+function Sleep_Mgr:update() --/#?# demand?
+	if self.actor_sleeping then
+		if not self:sleep_conditions() then --/ must_wake_up?
+			self:wake_up(true) --/#!# interrupt!
+		end
+	end
+end
+
+function Sleep_Mgr:sleep_conditions() --/ +hack for g_god behavior
+	if (surge_manager and surge_manager.is_started()) or (psi_storm_manager and psi_storm_manager.is_started())
+		 or (la_actor_thirst and la_actor_thirst.is_very_thirsty() and not get_console():get_bool('g_god'))
+		 or (la_actor_hunger and la_actor_hunger.is_very_hungry() and not get_console():get_bool('g_god'))
+		then
+		return false --/>
+	end
+	return true --/>
+end
+
+function Sleep_Mgr:can_sleep()
+	local tbl_tip = {}
+	if self.phase == 0 then --/ "block"
+		tbl_tip = tTips.no_need
+	elseif level_weathers.is_blowout_active() then
+		tbl_tip = tTips.blowout
+	elseif level_weathers.is_preblowout() then
+		tbl_tip = tTips.preblowout
+	elseif GetVarA("safe_zone", "in") ~= "in" then
+		tbl_tip = tTips.not_safe
+	elseif la_actor_thirst and la_actor_thirst.is_thirsty() and not self:is_very_tired() then
+		tbl_tip = tTips.thirsty
+	elseif la_actor_hunger and la_actor_hunger.is_hungry() and not self:is_very_tired() then
+		tbl_tip = tTips.hungry
+	elseif xr_conditions.check_for_enemy(actor, npc, {30}) then
+		tbl_tip = tTips.enemy
+	else
+		return true --/>
+	end
+	--log("Sleep_Mgr:can_sleep:time=[%s] phase=[%s] tip=[%s]", game.get_game_time():timeToString(3), self.phase, tostring(tbl_tip[2])) --/#~#
+	news_manager.send_tip_hud( unpack(tbl_tip) )
+	return false --/>
+end
+
+function Sleep_Mgr:set_sleep(iHours) --/< game hours
+	if not db.actor:alive() then return end --/>
+	iSleepHours = iHours or 1
+	level.disable_input()
+	--self.sleep_eff:stop() --/ pp_eff_2007
+	self.actor_sleeping = true
+	if self.phase >= 0 then
+		self.phase = -1 --/ (re)set phase "to sleep"
+		self:ResetIcons() --/ clear
+		self.timer:restart(iSleepHours*60*10,sTimerFunc,{ph=self.phase}) --/ restart "sleep" (timeout)
+	end
+	if not self.sleep_eff.playing then
+		self.sleep_eff:start()
+		self.sleep_eff:set_factor(5.0)
+	end
+	--log("Sleep_Mgr:set_sleep:time=[%s] %s", game.get_game_time():timeToString(3), tostring(self.timer)) --/#~#
+	level.add_cam_effector("camera_effects\\dream.anm", 2, false, sModule..".start_sleep") --/#!#> ~2 real sec
+end
+
+function Sleep_Mgr:get_dream()
+	--log("Sleep_Mgr:get_dream: "..game.get_game_time():timeToString(3)) --/#~#
+	self.dream = dream.sleep_video_name_callback()
+	self.dream_type = dream.get_type(self.dream)
+	if self.dream == "" then
+		self.dream = "without_dream"..math.random(1,4)
+	end
+	return self.dream --/>
+end
+
+function Sleep_Mgr:wake_up(interrupt)
+	if not interrupt then interrupt = false end
+	--log("Sleep_Mgr:wake_up(%s): %s", interrupt, game.get_game_time():timeToString(3)) --/#~#
+	if interrupt or level.get_time_factor() > ALIFE_TIME_FACTOR then --/ a safety net if sleep is interrupted or the actor died
+		level.set_time_factor(ALIFE_TIME_FACTOR)
+	end
+	if self.sleep_eff.playing then
+		self.sleep_eff:stop() --/ pp_eff_2007
+	end
+	level.enable_input()
+	self:initialize()
+	if db.actor:alive() then
+		if interrupt then
+			if self.timer:get_time_rest() > 3*60*60 then --/ > 3 hours (enough sleep)?
+				self.phase = 2 --/ "green"
+			end
+		end
+		self:restart_timer()
+		self:play_awake_snd()
+		level.add_cam_effector("camera_effects\\prison_1.anm", 25, false, "")
+		level.add_pp_effector(pp_eff_2007, 2007, false)
+		level.add_pp_effector("total_recall.ppe", 2008, false)
+		level.add_cam_effector("camera_effects\\hit_back_left.anm", 26, false, "")
+		if has_info("mil_blowout_effects") and not has_info("mil_blowout_finished") then
+			give_info("mil_blowout_finished")
+		end
+	end
+	event("actor_wakeup"):trigger({})
+end
+
+function Sleep_Mgr:play_awake_snd()
+	local rnd = math.random(#awake_snd_by_dream_type[self.dream_type])
+	local sound = awake_snd_by_dream_type[self.dream_type][rnd]
+	local oSnd = xr_sound.get_safe_sound_object(sound)
+	oSnd:play(db.actor, 0, sound_object.s2d)
+end
+
+function Sleep_Mgr:ResetIcons()
+	--/skyloader: disable all icons
+	for idx,v in pairs(tPhases) do
+		if v.state then
+			db.actor:set_icon_state(v.state, false)
+		end
+	end
+
+	--/find current icon
+	local cur_icon = tPhases[(self.phase or 0)]
+
+	if cur_icon.state then
+		db.actor:set_icon_state(cur_icon.state, true)
+	end
+end
+
+function Sleep_Mgr:add_time_idle()
+	if self.phase > 1 then --/ self:is_tired()
+		local count = self.timer:get_property("cnt") or 0
+		--log("Sleep_Mgr:add_time_idle: %s phase=[%s] cnt=[%s]", tostring(self.timer), tostring(self.phase), tostring(count)) --/#~#
+		if count < 5 then
+			local time_rest = self.timer:get_time_rest() --/ game seconds
+			if     self.phase == 4 then --/ "red"
+				self.phase = 3 --/ "yellow"
+				time_rest = tPhases[self.phase].time
+			elseif self.phase == 3 then
+				self.phase = 2 --/ "green"
+				time_rest = tPhases[self.phase].time
+			elseif self.phase == 2 then
+				self.phase = 1 --/ "idle"
+				time_rest = tPhases[self.phase].time - math.random(25)*60
+			end
+			self.timer:restart(time_rest,sTimerFunc,{ph=self.phase, cnt=count+1}) --/ restart
+			--log("Sleep_Mgr:add_time_idle: %s phase=[%s]", tostring(self.timer), tostring(self.phase)) --/#~#
+		end
+	end
+end
+
+function Sleep_Mgr:sub_time_idle()
+	if self.phase ~= 4 and not self.actor_sleeping then --/ not "red" and not sleepind
+		local count = self.timer:get_property("cnt") or 0
+		--log("Sleep_Mgr:sub_time_idle: %s phase=[%s] cnt=[%s]", tostring(self.timer), tostring(self.phase), tostring(count)) --/#~#
+		if count < 5 then
+			local time_rest = self.timer:get_time_rest() --/ game seconds
+			time_rest = math.max(5*60, time_rest - 30*60) --/ sub 30 minutes
+			self.timer:restart(time_rest,sTimerFunc,{ph=self.phase, cnt=count+1}) --/ restart
+			--log("Sleep_Mgr:sub_time_idle: "..tostring(self.timer)) --/#~#
+		end
+	end
+end
+
+function Sleep_Mgr:is_active()
+	return self.actor_sleeping --/>
+end
+
+function Sleep_Mgr:is_tired()
+	return self.phase > 1 --/>
+end
+function Sleep_Mgr:is_very_tired()
+	return self.phase > 2 --/>
+end
+
+function Sleep_Mgr:get_sleep_timer()
+	return self.timer --/>
+end
+--/ -----------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------
+function get_sleep_mgr()
+	if not sleep_mgr then
+		sleep_mgr = Sleep_Mgr()
+	end
+	return sleep_mgr --/>
+end
+
+function OnTimer(t)
+	sleep_mgr:OnTimer(t)
+end
+
+function OnUpdate(e)
+	sleep_mgr:update()
+end
+
+function OnItem_Used(e)
+	if e.section == "sleeping_bag" then
+		--Spawn_ItemInInv("sleeping_bag") --/#x#
+		if sleep_mgr:can_sleep() then
+			local oGuiMenu = ui_sleeping.get_gui_menu( level.main_input_receiver(), this.start_sleeping ) --/ init menu
+			level.start_stop_menu(oGuiMenu, true)
+		end
+	elseif e.section:match('^medkit') or e.section:match('^vodka') then
+		--log("OnItem_Used: "..e.section) --/#~#
+		sleep_mgr:sub_time_idle()
+	elseif e.section:match('^energy_drink') then --/ is tired!
+		sleep_mgr:add_time_idle()
+	end
+end
+--/ ------------------------------------------------------------------
+--/ For external handlers
+--/ ------------------------------------------------------------------
+function start_sleep() --/< from add_cam_effector ("camera_effects\\dream.anm")
+	--log("start_sleep: "..game.get_game_time():timeToString(3)) --/#~#
+	level.add_pp_effector("teleport.ppe", 2006, false) --/#?#
+	game.start_tutorial("time_scaling") --/#!#> game_tutorials.xml (<time_scaling>) (set_dream)
+	level.set_time_factor(TimeFactor * (iSleepHours or 1))
+	iSleepHours = nil --/#!# clear
+end
+
+function set_time_factor()
+	level.set_time_factor(ALIFE_TIME_FACTOR)
+end
+
+function set_dream() --/< from game_tutorials.xml (<time_scaling>)
+	local dream_name = sleep_mgr:get_dream()
+	local is_active = this.is_sleep_active()
+	--log("set_dream:[%s][%s][%s]", dream_name, is_active, game.get_game_time():timeToString(3)) --/#~#
+	if is_active then
+		level.set_time_factor(ALIFE_TIME_FACTOR) --/ recovery
+		game.start_tutorial(dream_name) --/#!#> game_tutorials.xml (<...>) (stop_sleeping)
+	end
+end
+
+function stop_sleeping(e) --/< from game_tutorials.xml (<...>)
+	local is_active = this.is_sleep_active()
+	--log("stop_sleeping:(%s)[%s]", is_active, game.get_game_time():timeToString(3)) --/#~#
+	if is_active then
+		sleep_mgr:wake_up(true)
+	end
+end
+--/ ------------------------------------------------------------------
+--/ For external modules
+--/ ------------------------------------------------------------------
+function is_sleep_active()
+	return get_sleep_mgr():is_active() --/>
+end
+
+function is_tired()
+	return get_sleep_mgr():is_tired() --/>
+end
+function is_very_tired()
+	return get_sleep_mgr():is_very_tired() --/>
+end
+
+function get_sleep_timer()
+	return get_sleep_mgr():get_sleep_timer() --/>
+end
+
+function start_sleeping(duration) --/< from ui_sleeping.script or xr_effects.script
+	get_sleep_mgr():set_sleep(duration)
+end
+
+function add_sleep_time()
+	get_sleep_mgr():add_time_idle()
+end
+--/ -----------------------------------------------------------------------------------------------
+--[[
+	ALGORITHM:
+-- presets
+1. Sleep_Mgr:set_sleep(duration)
+1.1. cam_effector("camera_effects\\dream.anm") --/ (optional)
+-- time scaling
+2. start_sleep(duration) --/< cam_effector or external module
+2.1. game.start_tutorial("time_scaling") --/> to game_tutorials.xml (<time_scaling>)
+2.2. level.set_time_factor(TimeFactor * (duration or 1))
+-- watch a dream
+2. set_dream() --/< from game_tutorials.xml (<time_scaling>)
+2.1. level.set_time_factor(ALIFE_TIME_FACTOR) --/ recovery
+2.2. game.start_tutorial( sleep_mgr:get_dream() ) --/> watch a dream by game_tutorials.xml (<...>)
+-- wake up
+3. stop_sleeping(interrupt) --/< from game_tutorials.xml (<...>) or external module
+3.1. sleep_mgr:wake_up(interrupt)
+3.1.1. level.set_time_factor(ALIFE_TIME_FACTOR) --/ insurance recovery
+3.1.2. self:initialize()
+
+	CHANGE VERSIONS:
+	~ added changed to hide inventory menu during sleep from sleepbag and awakening actor.
+	  Attention: required fix  ui_sleeping.script;
+
+	+ added dependence from eaten medkit - time before sleep will decrease on ~30 minutes;
+	+ added dependence from drunk energetics - on phases of fatique time "before sleep" postponed on 30 minutes;
+	+ (base on vintar materials) added conditions during hunder or thirst to forbid "sleep" and for "awake up" on short time.
+	  Attention: required to index and localize output msgs on screen (tTips);
+	+ added handler of conditions for necessary wake up of actor (sleep_conditions);
+	+ added dependence possibility of sleeping from condition: "enemy close";;
+	~ changed argorithm of module, indexes of phases transfered from strings to numbers.
+
+	TODO:
+	1. Index in '\gamedata\config\text\eng(rus)\*.xml' strings from table tTips;
+	2. Organize random in game (and not during module load) for variantions of strings from tTips[2]["tip"].
+--]]

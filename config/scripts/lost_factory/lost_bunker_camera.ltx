@@ -1,0 +1,49 @@
+[logic]
+active = ph_camera@on
+
+[ph_camera@on]
+state = path_tracking
+path_look = lost_bunker_camera_look
+start_wp = 0
+speed_h = 0.2
+fov_angle_min = 5
+fov_angle_max = 30
+fov_zones = lost_bunker_camera_zone
+enemies = actor
+track_mutants = false
+stop_at_end_points = true
+on_signal = enemy_tracking | {+country_cutscene_finished} ph_camera@scan %+lost_scan_message%
+on_signal2 = camera_destroyed | nil ;--ph_camera@off
+
+[ph_camera@scan]
+state = path_tracking
+path_look = lost_bunker_camera_downup
+start_wp = 0
+speed_h = 0
+speed_p = 0.2
+fov_angle_min = 5
+fov_angle_max = 30
+fov_zones = lost_bunker_camera_zone
+enemies = actor
+track_mutants = false
+stop_at_end_points = true
+on_signal = camera_destroyed | nil ;--ph_camera@off
+on_timer = 6000| ph_camera@scanned %+lost_scan_cleared%
+
+[ph_camera@scanned]
+state = path_tracking
+path_look = lost_bunker_camera_look
+start_wp = 0
+speed_h = 0.2
+fov_angle_min = 5
+fov_angle_max = 30
+fov_zones = lost_bunker_camera_zone
+enemies = bandit
+track_mutants = false
+stop_at_end_points = true
+on_signal = camera_destroyed | nil ;--ph_camera@off
+on_info = {+lost_decon_reset +lost_decon_dist_check} ph_camera@on
+
+[ph_camera@off]
+state = off
+

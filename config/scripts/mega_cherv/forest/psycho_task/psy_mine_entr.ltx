@@ -1,0 +1,13 @@
+[logic]
+active = {-fore_actor_in_trap} sr_idle@1, {+fore_actor_in_trap} sr_idle@nil
+
+[sr_idle@1]
+on_info = {+fore_wounded_mine} sr_idle@2
+on_info2 = {+fore_trap_free} nil
+
+[sr_idle@2]
+on_actor_inside = sr_idle@nil %=unmark_psycho_mine +fore_actor_in_trap =play_snd(ambient\random\rnd_moan2)%
+on_info = {+fore_trap_free} nil
+
+[sr_idle@nil]
+on_info = nil

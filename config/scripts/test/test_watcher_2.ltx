@@ -1,0 +1,31 @@
+[hit]
+on_info = {=hit_by_actor} %+actor_attacked_bridge%
+
+[logic]
+active = walker@soldier_day
+combat_ignore = true
+on_hit = hit
+
+[walker@soldier_day]
+path_walk = watcher_way_2
+path_look = watcher_look_2
+on_info = {!is_day} walker@soldier_night
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge}
+
+[walker@soldier_night]
+path_walk = watcher_way_2
+path_look = watcher_look_2
+on_signal = ready | light_guard@soldier
+combat_ignore_cond = always
+
+[light_guard@soldier]
+path_walk = watcher_way_2
+path_look = watcher_look_2
+anim = guard
+rnd_wp = false
+duration = 1500
+rot_hspeed = 0.52
+rot_vspeed = 0.22
+proj_name = search_light2
+on_info = {=is_day} walker@soldier_day
+combat_ignore_cond = always

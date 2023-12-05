@@ -1,0 +1,103 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_invbox.script
+ Description: Binder "Ñaches-boxes"
+ Copyright  : 2012 © LA-team
+ Author     : ...
+ Editors    : gr1ph00n(21.09.2012)
+ Last edit  : 13.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+function AddToBinder(oObj)
+	oObj:bind_object( this.inv_box_binder(oObj) )
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "inv_box_binder" (object_binder)
+--/ -----------------------------------------------------------------------------------------------
+function inv_box_binder:__init(obj) super(obj)
+	self.initialized = false
+	self.loaded = false
+	self.obj_id = obj:id()
+end
+
+function inv_box_binder:reload(sSection)
+	object_binder.reload(self, sSection)
+end
+
+function inv_box_binder:reinit()
+	object_binder.reinit(self)
+	db.storage[self.obj_id] = {}
+	db.storage[self.obj_id].pstor = {}
+	self.st = db.storage[self.obj_id]
+end
+
+function inv_box_binder:net_spawn(se_obj)
+	if not object_binder.net_spawn(self, se_obj) then
+		return false --/>
+	end
+	return true --/>
+end
+
+function inv_box_binder:net_destroy()
+	db.storage[self.obj_id] = nil
+	self.object:set_callback(callback.use_object, nil)
+	object_binder.net_destroy(self)
+end
+--/ ---------------------------------------------
+--/ UPDATE
+--/ ---------------------------------------------
+function inv_box_binder:update(delta)
+	object_binder.update(self, delta)
+	if not self.initialized and db.actor then
+		self.initialized = true
+		if not self.st.active_section then
+			local sFileLogic = "scripts\\treasure_inventory_box.ltx"
+			xr_logic.initialize_obj(self.object, self.st, false, db.actor, modules.stype_item, sFileLogic)
+		else
+			xr_logic.initialize_obj(self.object, self.st, self.loaded, db.actor, modules.stype_item)
+		end
+	end
+	if self.st.active_section then
+		self.object:set_callback(callback.use_object, self.use_callback, self)
+	end
+end
+
+function inv_box_binder:net_save_relevant()
+	return true --/>
+end
+
+function inv_box_binder:load(reader)
+--	log("load: Obj=[%s]", self.object:name(), "") --/#~#
+	self.loaded = true
+	set_save_marker(reader, "load", false, sModule, self.object)
+	object_binder.load(self, reader)
+	xr_logic.load_obj(self.object, reader)
+	set_save_marker(reader, "load", true, sModule, self.object)
+end
+
+function inv_box_binder:save(packet)
+	set_save_marker(packet, "save", false, sModule, self.object)
+	object_binder.save(self, packet)
+	xr_logic.save_obj(self.object, packet)
+	set_save_marker(packet, "save", true, sModule, self.object)
+end
+--/ ---------------------------------------------
+--/ CALLBACKs
+--/ ---------------------------------------------
+function inv_box_binder:use_callback(obj, who)
+--	log("use_callback: Obj=[%s]", self.object:name(), "") --/#~#
+	if self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "use_callback", obj, who)
+	end
+	event("obj_use"):trigger({obj=self.object,obj_id=self.obj_id,section=self.object:section(),who=who}) --/#+#
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,616 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_ai_facer.script [optional]
+ Description: scheme: "NPC: usage of butt"
+ Copyright  : 2012 © LA-team
+ Author     : ... (by materials: ...)
+ Editor     : 
+ Last edit  : 20.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iCheckPrd     = 1500
+local tExcludedComm = {}
+local tExcludedNPCs = {}
+local tExcludedWpns = {}
+local tRankParams   = {}
+--/ --------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local bEnabled    = false --/ flag of permission of activity of the scheme
+local sSchemeName = "ai_facer" --/ string name of the scheme
+local iEvl_AI_Facer = 0 --/ property_base
+local iAct_AI_Facer = 0 --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+local tBindActs = {} --/ array of 'external' actions disconnected in case of the active scheme
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end --/>
+	iEvl_AI_Facer,iAct_AI_Facer = register_ai_module(sModule,sSchemeName)
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ ---------------------------------------------
+function get_ai_evl(idx)
+	return iEvl_AI_Facer + (idx or 0) --/>
+end
+function get_ai_act(idx)
+	return iAct_AI_Facer + (idx or 0) --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	local ltx = ini_file("lost_alpha\\ai_schemes\\"..sModule..".ltx")
+	bEnabled       = ReadFromIni(ltx,    "options", "enabled",     bEnabled, "bool")
+	iCheckPrd      = ReadFromIni(ltx,    "options", "check_period",iCheckPrd,"number")
+	tExcludedComm  = Get_IniSection(ltx, "excluded_community", "true")
+	tExcludedNPCs  = Get_IniSection(ltx, "excluded_npcs",      "true")
+	tExcludedWpns  = Get_IniSection(ltx, "excluded_weapons",   "true")
+	local tRanks   = Get_IniSection(ltx, "list_ranks",         "list")
+	for _,v in ipairs(tRanks) do
+		tRankParams[v] = {
+			power     = ReadFromIni(ltx, v.."_params", "power",     50,   "number"),
+			k_actor   = ReadFromIni(ltx, v.."_params", "k_actor",   1,    "number"),
+			k_friend  = ReadFromIni(ltx, v.."_params", "k_friend",  0.3,  "number"),
+			k_stalker = ReadFromIni(ltx, v.."_params", "k_stalker", 1,    "number"),
+			k_mutant  = ReadFromIni(ltx, v.."_params", "k_mutant",  1,    "number"),
+			min_delay = ReadFromIni(ltx, v.."_params", "min_delay", 1400, "number")
+		}
+	end
+	if table.size(tRankParams) < 4 then
+		abort(sModule..":init:Error load 'list_ranks'")
+	--else table.print(tRankParams,sModule..":RankParams|") --/#~# for debug
+	end
+	tBindActs = {
+		stalker_ids.action_alife_planner,  --/ alife
+		stalker_ids.action_combat_planner, --/ fight
+		stalker_ids.action_danger_planner  --/ panic
+	}
+	tBindEvls = {
+		[1] = { stalker_ids.property_alive,          true  }, --/ NPC alive
+		[2] = { stalker_ids.property_anomaly,        false }, --/ no anomalies
+		[3] = { xr_evaluators_id.sidor_wounded_base, false }, --/ not injured
+		--[x] = { stalker_ids.property_enemy,          true  } --/#x# if enemy(es) - provokes 'is_zone_puzzle_solved'!
+	}
+	--/ add.conditions for tBindEvls world_property(v.id, v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout and xr_blowout.get_ai_evl(0), flg = false} --/ don't see a blowout
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATORs
+--/ -----------------------------------------------------------------------------------------------
+class "CEvaluator_FacerChoice" (property_evaluator)
+--/ -----------------------------------------------------------------
+function CEvaluator_FacerChoice:__init(name, st) super (nil, name)
+	self.st       = st
+	self.st.ev0   = false --/ flag-status of evaluator (for time-out)
+	self.tm_ev0   = time_global() + 5000
+	self.tm_ev0up = 1000
+end
+
+function CEvaluator_FacerChoice:evaluate()
+	if not (self.st.enabled and self.object) then return false end --/>
+	local oNPC = self.object
+	if not oNPC:alive() then
+		this.disable_scheme(oNPC, sSchemeName)
+		return false --/>
+	end
+
+	local sActiveScheme = db.storage[oNPC:id()].active_scheme
+	if sActiveScheme and (sActiveScheme == "mgunner" or sActiveScheme == "light_guard") then --/#?#
+		return false --/>
+	end
+
+--	log("ev_facer:NPC=[%s]:(%s)", oNPC:name(), ">") --/#~#
+	--/1. periodic check of enemy close(search)
+	local iTime = time_global()
+	if iTime > self.tm_ev0 then
+		if xr_wounded.is_wounded(oNPC) then --/ NPC wounded
+			self.tm_ev0up = 5000 --/ let's increase timeout
+			self.st.enemy_id = nil
+			self.st.dist_sqr = nil
+			self.st.ev0 = false
+			return false --/>
+		end
+--		log("ev_facer:NPC=[%s]:(%s)", self.object:name(), ">") --/#~#
+		local oEnemy = oNPC:best_enemy()
+		if oEnemy and oEnemy.health > 0.2 and IsNPC(oEnemy) and oNPC:see(oEnemy) then --/ there is a target (and xr_combat_ignore.is_enemy(oNPC, oEnemy))
+			local iDistSqr,bNear = this.Get_Distance(oNPC,oEnemy,3.5) --oNPC:position():distance_to_sqr(oEnemy:position())
+			if iDistSqr < 9 then --/ enemy closer then 3m
+				self.st.dist_sqr = iDistSqr
+				self.tm_ev0up = 200 + 100*iDistSqr
+				self.tm_ev0 = iTime + self.tm_ev0up
+				if bNear then --/ enemy closer then 2.5m (small hysteresis)
+--					log("ev_facer:NPC=[%s],Enemy=[%s],dist=[%s]/(%s)~find:(%s)", oNPC:name(), oEnemy:name(), string.short(iDistSqr), self.is_near, "<!") --/#~#
+					self.st.enemy_id = oEnemy:id()
+					self.is_near = true
+					self.st.ev0 = true
+					return true --/> enemy determined
+				end
+			end
+		else
+			self.tm_ev0up = 3000
+		end
+		self.tm_ev0 = iTime + self.tm_ev0up
+		self.st.enemy_id = nil
+		self.st.dist_sqr = nil
+	end
+	--/2. periodic recheck of changing target
+	if not (self.st.target_id and self.st.tmr_chk and self.st.tmr_chk > iTime) then
+		self.st.tmr_chk = iTime + iCheckPrd
+		--log("ev_facer:NPC=[%s]~check:(%s)", oNPC:name(), "") --/#~#
+		if self.st.enemy_id and self.st.enemy_id ~= self.st.target_id then --/ there is a target and target changed
+			local oEnemy = level.object_by_id(self.st.enemy_id)
+			if oEnemy and oEnemy:alive() and oEnemy.health > 0.2 then
+				self.st.dist_sqr,self.is_near = this.Get_Distance(oNPC,oEnemy,3.5)
+				if self.is_near then
+--					log("ev_facer:NPC=[%s],Enemy=[%s],dist=[%s]~check:(%s)", oNPC:name(), oEnemy:name(), string.short(self.st.dist_sqr), "<!!") --/#~#
+					self.st.target_id = self.st.enemy_id --/ remembering target mark
+					self.st.ev0 = true
+					return true --/> new target
+				end
+			else
+				self.st.enemy_id = nil
+				self.st.dist_sqr = nil
+			end
+		end
+	end
+	--/3. re(check) of selected target (in every cycle!)
+	if self.st.target_id then
+		local oTarget = level.object_by_id(self.st.target_id)
+		if oTarget and oTarget:alive() and oTarget.health > 0.2 and oNPC:relation(oTarget) == game_object.enemy then
+			self.st.dist_sqr,self.is_near = this.Get_Distance(oNPC,oTarget,3.5)
+			self.st.ev0 = self.is_near --/ target close
+--			log("ev_facer:NPC=[%s],Target=[%s],dist=[%s]/(%s):(%s)", self.object:name(), oTarget:name(), string.short(self.st.dist_sqr), self.is_near, "!") --/#~#
+		else --/ target dissapeared
+--			log("ev_facer:NPC=[%s],Target=[%s]~?:(%s)", oNPC:name(), oTarget and oTarget:name(), "x") --/#~#
+			self.st.target_id = nil
+			self.st.ev0 = false
+		end
+	else --/ target not selected
+		self.st.ev0 = false
+	end
+--	log("ev_facer:NPC=[%s] (%s):(%s)", self.object:name(), self.st.ev0, "<") --/#~#
+	return self.st.ev0 --/>
+end
+
+--/ -----------------------------------------------------------------
+class "CEvaluator_StealUp" (property_evaluator)
+--/ -----------------------------------------------------------------
+function CEvaluator_StealUp:__init(name, st) super (nil, name)
+	self.st = st
+	self.tm_ev2 = 0
+	self.tm_ev2up = 300
+end
+
+function CEvaluator_StealUp:evaluate()
+	if not (self.st.enabled and self.object) then return false end --/>
+	local oNPC = self.object
+	if not oNPC:alive() then
+		this.disable_scheme(oNPC, sSchemeName)
+		return false --/>
+	elseif self.st.enemy_id and self.tm_ev2 <= time_global() then
+		self.tm_ev2up = 300
+		local oNPC = self.object
+		local oActItem = oNPC:active_item()
+		local sActiveScheme = db.storage[oNPC:id()].active_scheme
+		if sActiveScheme and (sActiveScheme == "mgunner" or sActiveScheme == "light_guard") then
+			self.tm_ev2up = 3000
+		elseif oActItem and isWpn(oActItem) then --/ weapon in hands
+			self.tm_ev2up = 3000
+		else
+			local oTarget = level.object_by_id(self.st.enemy_id)
+			if oTarget and oNPC:alive() and oNPC:see(oTarget) and not oTarget:see(oNPC) then --/ see and invisible
+				local vPosTrg = oTarget:position()
+				local iDistSqr = oNPC:position():distance_to_sqr(vPosTrg) --/ distance to the enemy
+				if iDistSqr > 6 and iDistSqr < 25 then --/ to enemy around 2.5m...5m
+					local idLv = oTarget:level_vertex_id()
+					if idLv and oNPC:accessible(idLv) and level.vertex_position(idLv):distance_to_sqr(vPosTrg) < 4 then
+--						log("ev_StealUp:NPC=[%s]:GoTo~>Target=[%s]", oNPC:name(), oTarget:name(), "") --/#~#
+						self.st.steal_id = self.st.enemy_id
+						return true --/>
+					end
+				end
+				self.tm_ev2up = 300
+			else
+				self.tm_ev2up = 1000
+			end
+		end
+		self.tm_ev2 = time_global() + self.tm_ev2up
+		self.st.steal_do = false
+	end
+	
+	if self.st.steal_id then
+		local oTarget = level.object_by_id(self.st.steal_id)
+		if not oTarget or oTarget.health > 0.2 then --/ target dissapeared or wounded
+			self.st.steal_id = nil
+		end
+	end
+	return self.st.steal_id ~= nil --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+class "CAction_FacerPunch" (action_base)
+--/ -----------------------------------------------------------------
+function CAction_FacerPunch:__init(action_name, st) super (nil, action_name)
+	self.st  = st
+	self.log = st.log
+	self.timeout = 0
+end
+
+function CAction_FacerPunch:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_FacerPunch:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+	self.timeout = time_global() + 3000
+	if self.st.wpn_mgr then
+		self.st.wpn_mgr:Disable(self.timeout)
+	end
+	local oNPC = self.object
+	oNPC:set_desired_position()
+	oNPC:set_desired_direction()
+	oNPC:set_movement_type(move.stand)
+	oNPC:set_body_state(move.standing)
+	self.prank = tRankParams[ranks.get_obj_rank_name(oNPC)]
+	if not self.prank then
+		log("ac_FacerPunch:ini:NPC=[%s],rank_name=[%s]:<%s>", oNPC:name(), ranks.get_obj_rank_name(oNPC), "Warning!") --/#~#
+	end
+	if state_mgr.get_state(self.object) == "use_pkm" then
+		state_mgr.set_state(self.object, "guard_na", nil, nil, nil, {animation=true}, nil)
+	end
+end
+
+function CAction_FacerPunch:execute()
+	action_base.execute(self)
+	local oNPC = self.object
+	if not (self.st.enabled and oNPC and oNPC:alive() and self.timeout > 0 and self.st.dist_sqr and self.st.dist_sqr < 4) then
+		--if self.log then log("ac_Facer:NPC=[%s]:(%s)", oNPC and oNPC:name(), "<x") end --/#~#
+		self:Cancel()
+		return --/>
+	end
+	local oTarget = self.st.target_id and level.object_by_id(self.st.target_id)
+	--if self.log then log("ac_Facer:NPC=[%s],Target=[%s],Dist=[%s]", oNPC and oNPC:name(), oTarget and oTarget:name(), self.st.dist_sqr, "") end --/#~#
+	if not (oTarget and oTarget:alive() and oTarget.health > 0.2) then
+		--if self.log then log("ac_Facer:NPC=[%s]<~not target", oNPC and oNPC:name(), "") end --/#~#
+		self:Cancel()
+		return --/>
+	end
+	local iTime = time_global()
+	--/ -------------------------------------------
+	--/ prepare beat(s)
+	--/ -------------------------------------------
+	if not self.tm_hit then
+		--if self.log then log("ac_Facer:NPC=[%s],Target=[%s]<~see=[%s]", oNPC:name(), oTarget:name(), oNPC:see(oTarget), "") end --/#~#
+		if oNPC:see(oTarget) then --/ seeing enemy
+			self.tm_hit = iTime + 150
+			--/ let's not deal with st.manager
+			oNPC:set_sight(look.fire_point,oTarget:bone_position("bip01_neck"))
+			local sAnim1, sAnim2 = nil, nil
+			if oNPC:animation_count() == 0 then
+				local oActItem = oNPC:active_item()
+				local iSlot = 0
+				if oActItem and oNPC:weapon_unstrapped() then
+					iSlot = oActItem:animation_slot()
+				end
+				if iSlot >= 5 or iSlot < 8 then iSlot = 0 end
+				if oNPC:mental_state() == anim.free then
+					if iSlot == 0 and math.random() < 0.5 then
+						sAnim1 = "udar_0"
+					else
+						sAnim1 = "free_facer_"..iSlot
+					end
+				else
+					sAnim1 = "norm_facer_"..iSlot.."_0"
+					sAnim2 = "norm_facer_"..iSlot.."_1"
+					self.tm_hit = self.tm_hit + 100
+				end
+				
+				if sAnim1 then oNPC:add_animation(sAnim1,true,false) end
+				if sAnim2 then oNPC:add_animation(sAnim2,true,false) end
+			end
+			if oNPC:mental_state() == anim.free then
+				self.tm_hit = iTime + 1000
+			end
+			if self.log then log("ac_Facer:NPC=[%s],punch=[%s]+[%s],pause=[%s]ms", oNPC:name(), sAnim1, sAnim2, self.tm_hit - iTime, "") end --/#~#
+		else --/ rotating NPC, so he will look to target
+			local vDir = vector():sub(oTarget:position(),oNPC:position()):normalize()
+			--oNPC:set_desired_direction(vDir)
+			oNPC:set_sight(look.direction,vDir,true)
+		end
+	--/ -------------------------------------------
+	--/ בüול
+	--/ -------------------------------------------
+	elseif self.tm_hit < iTime then
+		self.tm_hit = self.timeout
+--		log("ac_Facer:NPC=[%s]~run hit~>Target=[%s]", oNPC:name(), oTarget:name(), "") --/#~#
+		local vPosNPC = oNPC:bone_position("bip01_neck")
+		local vPosTrg = oTarget:bone_position("bip01_neck")
+		oNPC:set_movement_type(move.stand)
+		oNPC:set_sight(look.fire_point,vPosTrg)
+		local iHeight = vPosNPC.y - vPosTrg.y --/ height difference
+		local sBone --/ where we will punch
+		if IsStalker(oTarget) then --/ for human
+			self.target_is_human = true
+			if     iHeight >  1.5 then
+			elseif iHeight > -0.3 then sBone = "bip01_head"
+			elseif iHeight > -0.5 then sBone = "bip01_spine2"
+			elseif iHeight > -0.8 then sBone = "bip01_spine1"
+			elseif iHeight > -1.0 then sBone = "bip01_pelvis"
+			elseif iHeight > -1.4 then sBone = "bip01_l_calf"
+			elseif iHeight > -1.8 then sBone = "bip01_l_foot"
+			end
+		elseif iHeight > -1.8 and iHeight < 1.2 then --/ monsters and etc.
+			if math.random() > 0.6 then
+				sBone = "bip01_head"
+			else
+				sBone = "bip01_spine"
+			end
+		end
+--		log("ac_Facer:NPC=[%s]~hit~>Target=[%s],Height=[%s],Bone=[%s]:(%s)", oNPC:name(), oTarget:name(), iHeight, sBone, "+") --/#~#
+		if sBone and vPosNPC:distance_to_xz(vPosTrg) < 2 and oNPC:animation_count() ~= 0 then
+			--/ calculate impact force and cripple
+			local iPower = self.prank.power or 50
+			local bActor = self.st.target_id == idActor
+			if bActor then
+				iPower = iPower * self.prank.k_actor
+			elseif IsStalker(oTarget) then
+				iPower = iPower * self.prank.k_stalker
+			elseif IsMonster(oTarget) then
+				iPower = iPower * self.prank.k_mutant
+			end
+			if oNPC:relation(oTarget) ~= game_object.enemy then
+				iPower = iPower * self.prank.k_friend
+			end
+			local h = hit()
+			h:bone(sBone)
+			h.draftsman = oNPC
+			h.direction = vector():sub(oTarget:bone_position(sBone),vPosNPC):normalize()
+			h.type      = hit.strike
+			h.power     = iPower/math.random(70,120)
+			h.impulse   = math.random(iPower)*10
+			if h.power > math.random() then
+				local oItem = oTarget:active_item()
+				if oItem and isWeapon(oItem) then
+					if bActor then
+						local active_slot = db.actor:active_slot()
+						if active_slot == 1 or active_slot == 2 then
+							oTarget:drop_item(oItem)
+						end
+					else
+						oTarget:set_item(object.drop,oItem) --/ play animation 'throw' with item
+					end
+--					log("ac_Facer:NPC=[%s],Target=[%s]~>drop_item=[%s]:(%s)", oNPC:name(), oTarget:name(), oItem:name(), "+++") --/#~#
+				end
+			end
+			if math.random() < 0.33 then
+				h.type    = hit.wound
+				h.power   = h.power + math.random(3)/10
+				h.impulse = h.impulse + math.random(100)
+--				log("ac_Facer:NPC=[%s]~crit~>Target=[%s]:(%s)", oNPC:name(), oTarget:name(), "++") --/#~#
+			end
+			oTarget:hit(h)
+			if bActor then
+				level.add_cam_effector("camera_effects\\fusker.anm",959,false,"")
+				local oSnd = xr_sound.get_safe_sound_object("affects\\hit_fist")
+				oSnd:play_no_feedback(db.actor, sound_object.s2d, 0, db.actor:bone_position("bip01_spine"), 1.0)
+--				log("ac_Facer:NPC=[%s],Target is actor,add effect", oNPC:name(), "") --/#~#
+			elseif self.target_is_human and oTarget:animation_count() == 0 then
+				oTarget:add_animation("wounded_2_out",true,false)
+--				log("ac_Facer:NPC=[%s],add anim to Target=[%s]", oNPC:name(), oTarget:name(), "") --/#~#
+			end
+			local oSnd = xr_sound.get_safe_sound_object("material\\dead-body\\collide\\hithard06hl")
+			oSnd:play_at_pos(oTarget,oTarget:position(),0)
+--			log("ac_Facer:NPC=[%s],Target=[%s],Power=[%s/%s],Impulse=[%s]:(%s)", oNPC:name(), oTarget:name(), iPower, h.power, h.impulse, "+>") --/#~#
+		--else log("ac_Facer:NPC=[%s]<~fail,dxz=[%s]", oNPC:name(), vPosNPC:distance_to_xz(vPosTrg), "") --/#~#
+		end
+	--/ -------------------------------------------
+	--/ finishing facefight
+	--/ -------------------------------------------
+	elseif self.timeout < iTime or oNPC:animation_count() == 0 then
+--		log("ac_Facer:NPC=[%s]~>Cancel",oNPC:name(), "") --/#~#
+		self:Cancel()
+	end
+end
+
+function CAction_FacerPunch:finalize()
+	self:Cancel()
+	action_base.finalize(self)
+end
+
+
+function CAction_FacerPunch:Cancel()
+	self.timeout = 0
+	self.tm_hit = nil
+	self.target_is_human = nil
+	if self.object then
+		self.st.enemy_id  = nil
+		self.st.target_id = nil
+		self.object:clear_animations()
+		if self.st.wpn_mgr then
+			self.st.wpn_mgr:Enable()
+		end
+		if self.prank then
+			self.st.tmr_chk = time_global() + math.max(1000,self.prank.min_delay)
+		end
+	end
+	if self.log then log("ac_Facer:Cancel:NPC=[%s]", self.object and self.object:name(), "") end --/#~#
+end
+--/ ----------------
+--/ CALLBACKs
+--/ ----------------
+function CAction_FacerPunch:hit_callback(oObj, iAmount, local_direction, oWho, bone_index)
+--	log("ac_Facer:hit_callback:NPC=[%s]", self.object:name(), "") --/#~#
+	if self.object and iAmount > 0.01 then
+		if xr_wounded.is_wounded(self.object) or self.object:critically_wounded() then --/ NPC wounded
+			self.st.enemy_id = nil
+			self.st.dist_sqr = nil
+			self.st.ev0 = false
+		elseif oWho and  time_global() > (self.hit_upd or 0) then
+			self.hit_upd = time_global() + 100
+			local oTarget = self.st.target_id and level.object_by_id(self.st.target_id)
+			if not oTarget or self.st.target_id ~= oWho:id() then --/ there is no more our current offender or somebody else hurt us
+				if not oTarget or (IsNPC(oTarget) and oTarget.alive and oTarget:alive() and self.object:see(oTarget) and self.object:relation(oTarget) == game_object.enemy and this.Get_Distance(oObj,oTarget) > 6) then
+--				log("ac_Facer:hit_callback:NPC=[%s],Amount=[%s],Who=[%s],Target=[%s]:(%s)", self.object:name(), iAmount, oWho:name(), oTarget and oTarget:name(), "?") --/#~#
+					if IsNPC(oWho) and oWho.alive and oWho:alive() and not xr_wounded.is_wounded(oWho) then
+						self.st.target_id = oWho:id() --/ getting/changing target
+						self.st.tmr_chk = time_global() + iCheckPrd
+						if self.log then log("ac_Facer:hit_callback:NPC=[%s],Who=[%s],dist=[%s]:(%s)", self.object:name(), oWho:name(), this.Get_Distance(oObj,oWho), "+") end --/#~#
+					end
+				end
+			end
+		end
+	end
+end
+
+function CAction_FacerPunch:death_callback(oVictim, oWho)
+	if self.log then log("ac_Facer:death_callback:NPC=[%s],Who=[%s] :phShell=(%s)", self.object:name(), oWho and oWho:name(), self.object:get_physics_shell() ~= nil, "") end --/#~#
+	self:Cancel()
+	if self.st.enabled then --/#!# sometimes it doesn't wana to disable (from la_ai_mgr.script call missing)
+		this.disable_scheme(oVictim or self.object, sSchemeName)
+	end
+end
+
+--/ -----------------------------------------------------------------
+class "CAction_StealUp" (action_base)
+--/ -----------------------------------------------------------------
+function CAction_StealUp:__init(action_name, st) super (nil, action_name)
+	self.st  = st
+	self.log = st.log
+	self.timeout = 0
+end
+
+function CAction_StealUp:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_StealUp:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+	local oNPC = self.object
+	oNPC:set_desired_position()
+	oNPC:set_desired_direction()
+	oNPC:set_path_type(game_object.level_path)
+	oNPC:clear_animations()
+	oNPC:set_movement_type(move.run)
+end
+
+function CAction_StealUp:execute()
+	action_base.execute(self)
+	if self.timeout < time_global() then
+		self.timeout = time_global() + 500
+		local oTarget = self.st.steal_id and level.object_by_id(self.st.steal_id)
+		if oTarget and self.object:alive() then
+			local idLv = utils.send_to_nearest_accessible_vertex(self.object,oTarget:level_vertex_id())
+			if self.log then log("ac_StealUp:NPC=[%s]~>Target=[%s]:(%s)", self.object:name(), oTarget:name(), idLv, "") end --/#~#
+		else
+			self.st.steal_id = nil
+		end
+	end
+end
+
+function CAction_StealUp:finalize()
+	action_base.finalize(self)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	if not bEnabled or tExcludedComm[npc:character_community()] or tExcludedNPCs[npc:name()] then --/ or not tRankParams[ranks.get_obj_rank_name(npc)]
+		--/ Evaluators: exceptions
+		oPlanner:add_evaluator(iEvl_AI_Facer,    property_evaluator_const(false))
+		oPlanner:add_evaluator(iEvl_AI_Facer +1, property_evaluator_const(false))
+	else
+		--/ Evaluators
+		oPlanner:add_evaluator(iEvl_AI_Facer,    this.CEvaluator_FacerChoice("ev_ai_facer",    st))
+		oPlanner:add_evaluator(iEvl_AI_Facer +1, this.CEvaluator_StealUp    ("ev_ai_steal_up", st))
+		
+		--/ New Action(1) -----------------------------------------------
+		local oNewAction = this.CAction_FacerPunch("ac_ai_facer", st)
+		for idx,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) ) --/< add.conditions
+		end
+		oNewAction:add_precondition( world_property( iEvl_AI_Facer, true ) )
+		oNewAction:add_effect( world_property( iEvl_AI_Facer, false ) )
+		oPlanner:add_action( iAct_AI_Facer, oNewAction )
+		st.action = oNewAction --/ for subscribe
+		
+		--/ New Action(2) -----------------------------------------------
+		oNewAction = this.CAction_StealUp("ac_ai_steal_do", st)
+		for _,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) ) --/< add.conditions
+		end
+		oNewAction:add_precondition( world_property( iEvl_AI_Facer,    false))
+		oNewAction:add_precondition( world_property( iEvl_AI_Facer +1, true ))
+		oNewAction:add_effect( world_property( iEvl_AI_Facer +1, false ) )
+		oPlanner:add_action( iAct_AI_Facer +1, oNewAction )
+		
+		--/ Actions (additional preconditions for some standard operators)
+		for _,v in ipairs(tBindActs) do
+			local oAction = oPlanner:action(v)
+			oAction:add_precondition (world_property(iEvl_AI_Facer,    false))
+			oAction:add_precondition (world_property(iEvl_AI_Facer +1, false))
+		end
+		--/ for debug!
+		if st.log then log(":add_to_binder:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+--	log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	if st.action then
+		subscribe_ai_event(npc, st.action, scheme) --/#!# registering action to call 'callback'
+		st.enemy_id = nil
+		st.dist_sqr = nil
+		st.tmr_chk  = time_global() + iCheckPrd
+		st.enabled = true
+		if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+	end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st then
+		if st.action then
+			unsubscribe_ai_event(npc:id(), st.action, scheme)
+		end
+		st.enabled = false
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]:phShell=(%s)", npc:name(), scheme, npc:get_physics_shell() ~= nil, "") end --/#~#
+	end
+end
+--/-------------------------------------------------------------------
+--/ HELPERs
+--/-------------------------------------------------------------------
+function Get_Distance(o1,o2,dist)
+	if not (o1 and o2) then return 9999,false end --/>
+	local pos1, pos2 = o1:position(), o2:position()
+	local iDistSqr = pos1:distance_to_sqr(pos2)
+	if iDistSqr < (dist or 6) and math.abs(pos1.y - pos2.y) < 0.8 then
+		return iDistSqr, true --/> closer (2 meters)
+	end
+	return iDistSqr, false --/>
+end
+--/ ------------------------------------------------------------------------------------------------

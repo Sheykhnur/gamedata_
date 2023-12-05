@@ -1,0 +1,277 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_heli.script
+ Description: Helicoter binding
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : gr1ph: (05.09.2011)
+ Last edit  : 05.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tHeliBinder = {}
+--/ --------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function get_heli_binder(obj, bAdd)
+	local id = obj and obj:id()
+	if id and bAdd and not tHeliBinder[id] then
+		tHeliBinder[id] = this.CBinder_Heli(obj)
+	end
+	return tHeliBinder[id] --/>
+end
+function bind(obj)
+--	log("bind:obj=[%s],cid=[%s]:(%s)%s", obj:name(), obj:clsid(), obj:spawn_ini() ~= nil, "") --/#~#
+	local ini = obj:spawn_ini()
+	if ini and ini:section_exist("logic") then --/ binds only with logic
+		local heli_binder = this.get_heli_binder(obj, true)
+		obj:bind_object(heli_binder)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+class "CBinder_Heli" ( object_binder )
+--/ -----------------------------------------------------------------------------------------------
+function CBinder_Heli:__init( obj ) super( obj )
+--	log("init:heli=[%s],cid=[%s]:(%s)", obj:name(), obj:clsid(), ">") --/#~#
+	self.loaded      = false
+	self.initialized = false
+	self.destroyed   = false
+	self.obj_id  = obj:id()
+	self.obj_cid = obj:clsid()
+	self.obj_ini = obj:spawn_ini()
+end
+
+function CBinder_Heli:reload( sSection )
+	object_binder.reload( self, sSection )
+end
+
+function CBinder_Heli:reinit()
+	object_binder.reinit(self)
+--	log("reinit:heli=[%s],cid=[%s]:(%s)", self.object:name(), self.object:clsid(), ">") --/#~#
+	self.CHeli = self.object:get_helicopter()
+	
+	db.storage[self.obj_id] = {}
+	self.st = db.storage[self.obj_id]
+	self:set_callbacks() --/< all CALLBACKs set here
+	
+	self.last_hit_snd_timeout = 0
+	self.flame_start_health = Get_Cfg_Number(system_ini(), "helicopter", "flame_start_health", 0.3)
+	self.st.combat = heli_combat.get_heli_combat(self.object, self.st) --/ external 'fire' module
+	self.st.flame_start_snd = xr_sound.get_sound_object("heli_explosion", "random")
+	if (heli_freefly) and self.obj_ini:section_exist("fly_free") then --/#+#
+		self.st.flight_mgr = heli_freefly.get_heli_mgr(self.object, self.obj_id)
+		log("reinit:heli=[%s/%d]~fly=(%s):(%s)", self.object:name(), self.obj_id, self.st.flight_mgr ~= nil, self.st.ini_filename, "") --/#~#
+	end
+end
+
+function CBinder_Heli:net_spawn(server_obj)
+	if not object_binder.net_spawn(self, server_obj) then return false end --/>
+	local se_obj = alife():object(self.obj_id) --/ full server object
+	if se_obj then  --log("net_spawn:Obj=[%s/%d]:(%s)", self.object:name(), self.obj_id, "+") --/#~#
+		db.add_heli(self.object,self.obj_id,self.obj_cid)
+		event("obj_spawn"):trigger({obj=self.object,obj_id=self.obj_id,obj_cid=self.obj_cid,se_obj=se_obj}) --/#+?#
+	else
+		abort("%s:net_spawn:Obj=[%s/%s],server_object=NIL:<%s>", sModule, self.object:name(), self.obj_id, "Error!")
+	end
+	return true --/>
+end
+
+function CBinder_Heli:net_destroy()
+--	log("net_destroy:Obj=[%s/%s]:alive=(%s):(%s)", self.object:name(), self.obj_id, is_heli_alive(self.object), "-") --/#~#
+	event("obj_destroy"):trigger({obj=self.object,obj_id=self.obj_id,obj_cid=self.obj_cid}) --/#+?#
+	db.del_obj(self.object,self.obj_id,self.obj_cid)
+	db.del_heli(self.object,self.obj_id,self.obj_cid)
+	tHeliBinder[self.obj_id] = nil --/#+#
+	--self:clear_callbacks() --/#+?#
+	object_binder.net_destroy(self)
+end
+
+function CBinder_Heli:update(delta)
+	if not self.object then return end --/#+#>
+	object_binder.update(self, delta)
+	
+	if not self.initialized and db.actor then  --log("update:Heli=[%s]~initialize", self.obj_id, "") --/#~#
+		self.initialized = true
+		xr_logic.initialize_obj(self.object, self.st, self.loaded, db.actor, modules.stype_heli)
+	elseif self.destroyed then --/#+#
+		xr_logic.switch_to_section(self.object, self.st, "nil")
+	else  --log("update:Heli=[%s],active_section=[%s]", self.obj_id, self.st.active_section, "") --/#~#
+		if self.st.active_section then
+			xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "update", delta)
+		end
+		self:check_health()
+	end
+end
+
+function CBinder_Heli:net_save_relevant()
+	return true --/>
+end
+
+function CBinder_Heli:save(packet)
+--	log("save:Heli=[%s]", self.object:name(), "") --/#~#
+	set_save_marker(packet, "save", false, sModule, self.object)
+	object_binder.save( self, packet )
+	xr_logic.save_obj(self.object, packet)
+	set_save_marker(packet, "save", true, sModule, self.object)
+	--self.st.combat:save(packet) --/#-# moved!
+end
+
+function CBinder_Heli:load(reader)
+--	log("load:Heli=[%s]", self.object:name(), "") --/#~#
+	self.loaded = true
+	set_save_marker(reader, "load", false, sModule, self.object)
+	object_binder.load(self, reader)
+	if reader:r_eof() then
+		abort("%s:load:SAVE_FILE_IS_CORRUPT:Obj=[%s],ID=[%d]:<%s>", sModule, self.object:name(), self.obj_id, "Error!")
+	end
+	xr_logic.load_obj(self.object, reader)
+	set_save_marker(reader, "load", true, sModule, self.object)
+	--self.st.combat:load(reader) --/#-# moved!
+end
+
+--/ ---------------------------------------------
+function CBinder_Heli:check_health()
+--	log("check_health:=[%s]:[%s]", self.CHeli:GetfHealth(), ">") --/#~#
+	if self.CHeli and not self.CHeli.m_dead then
+		self:get_health()
+		if self.heli_health < self.flame_start_health and not self.CHeli.m_flame_started then
+			heli_start_flame(self.object)
+			heli_snd.play_snd(self.st, heli_snd.snd_damaged, 3)
+		end
+		if self.heli_health <= 0.005 and not self.st.immortal then
+--			log("check_health:=[%s],idHeli=[%s]~>Die:[%s]", self.heli_health, self.object:id(), "i") --/#~#
+			--self:clear_callbacks() --/#+?#
+			heli_die(self.object)
+			heli_snd.play_snd(self.st, heli_snd.snd_down, 4)
+			self.destroyed = self.st.destroyed == true
+		end
+	end
+end
+function CBinder_Heli:get_health()
+	if self.st.invulnerable then
+		self.CHeli:SetfHealth(1)
+		self.heli_health = 1
+	else
+		self.heli_health = self.CHeli:GetfHealth()
+		if self.heli_health < 0 then
+			self.CHeli:SetfHealth(0)
+			self.heli_health = 0
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ CALLBACKs
+--/ -----------------------------------------------------------------
+function CBinder_Heli:set_callbacks()
+	self.object:set_callback(callback.helicopter_on_point, self.on_point, self)
+	self.object:set_callback(callback.helicopter_on_hit,   self.on_hit,   self)
+	self.object:set_callback(callback.use_object,          self.on_use,   self) --/#+#
+end
+
+function CBinder_Heli:clear_callbacks()
+	self.object:set_callback(callback.helicopter_on_point, nil)
+	self.object:set_callback(callback.helicopter_on_hit,   nil)
+	self.object:set_callback(callback.use_object,          nil) --/#+#
+end
+
+function CBinder_Heli:on_point(iDistance, vPosition, point_index)
+	if self.st.active_section then
+--		log("on_point:Heli=[%s/%s],Pos=[%s],idLv=[%s],idGv=[%s],Dist=[%s]:pIdx=[%s]:(%s)%s", self.object:name(), self.object:id(), vPosition, self.object:level_vertex_id(), self.object:game_vertex_id(), string.short(iDistance), point_index, self.st.path_move, "") --/#~#
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "waypoint_callback", self.object, nil, point_index)
+	end
+end
+
+function CBinder_Heli:on_hit(iPower, iImpulse, iHitType, idEnemy)
+--	log("on_hit:Heli=[%s]:Hit[%s/%s/%s],idE[%s]:[%s]", self, string.short(iPower), string.short(iImpulse), iHitType, idEnemy, ">") --/#~#
+--	log("on_hit:Heli=[%s/%s]:Hit[%s/%s/%s],idE[%s]:[%s]", self.object:name(), self.object:id(), string.short(iPower), string.short(iImpulse), iHitType, idEnemy, ">") --/#~#
+	local oEnemy = idEnemy and level.object_by_id(idEnemy)
+	if oEnemy and IsStalker(oEnemy) then --/ if если enemy actor or stalker:
+		--/ make him an enemy
+		if self.heli_fire then --/#+# CS&CoP
+			self.heli_fire.enemy = oEnemy
+			self.heli_fire:update_hit()
+		elseif self.st.combat and not self.st.combat.enemy_id then --/SHoC
+			self.st.combat.enemy_id = idEnemy
+		end
+		--/
+		if self.st.hit then
+			xr_logic.issue_event(self.object, self.st.hit, "hit_callback", self.object, iPower, nil, oEnemy, nil)
+		end
+	end
+	--/ pilotes arguing on radio
+	if self.last_hit_snd_timeout < time_global() then
+		self.last_hit_snd_timeout = time_global() + math.random(4,8)*1000
+		heli_snd.play_snd(self.st, heli_snd.snd_hit, 2)
+	end
+end
+
+function CBinder_Heli:on_use(oHeli, oWho) --/#+#
+--	log("on_use:Heli=[%s],Who=[%s]:[%s]", oHeli and oHeli:name(), oWho and oWho:name(), ">") --/#~#
+	if self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "use_callback", oHeli, oWho)
+	end
+	event("obj_used"):trigger({obj=self.object,obj_id=self.object:id(),who=oWho,who_id=oWho and oWho:id()}) --/#+#
+end
+--/ -----------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------
+function get_heli_health(oCHeli, st)
+	if st.invulnerable then
+		oCHeli:SetfHealth(1)
+		return 1 --/>
+	end
+	local iHealth = oCHeli:GetfHealth()
+	if iHealth < 0 then
+		oCHeli:SetfHealth(0)
+		return 0 --/>
+	end
+	return iHealth --/>
+end
+
+function is_heli_alive(oHeli)
+	return get_heli_health(oHeli:get_helicopter(), db.storage[oHeli:id()]) > 0.005 --/>
+end
+
+function heli_start_flame(oHeli)
+	oHeli:get_helicopter():StartFlame()
+	local oSnd = db.storage[oHeli:id()].flame_start_snd
+	if oSnd then --/#+# SHoC
+		oSnd:play(oHeli)
+	end
+	if db.opt_news then m_news.on_heli(oHeli,"flame") end --/#+#
+end
+
+function heli_die(oHeli)
+	local oCHeli = oHeli and oHeli:get_helicopter()
+	if oCHeli then
+		oCHeli:Die()
+		local idHeli = oHeli:id()
+		log("heli_die:Heli=[%s/%s]:[%s]", oHeli:section(), idHeli, "x") --/#~#
+		local st = db.storage[idHeli]
+		if st then
+			if st.active_section then
+				xr_logic.issue_event(oHeli, st[st.active_scheme], "death_callback", oHeli, db.actor)
+			end
+			st.flight_mgr = nil
+			st.destroyed = true
+		end
+		db.del_heli(oHeli,true)
+		Del_MapSpot(idHeli,"green_location")
+		event("obj_death"):trigger({victim=oHeli}) --/#+#
+	end
+end
+
+function heli_release(oHeli,id)
+	heli_die(oHeli)
+	local idHeli = id or (oHeli and oHeli:id())
+	local soHeli = idHeli and alife():object(idHeli)
+	if soHeli then
+		alife():release(soHeli, true)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

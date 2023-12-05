@@ -1,0 +1,26 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {+mil_mercs_house_elim +mil_small_reject_finished -car_scene_end} sr_cutscene %+car_scene_start%
+;on_info = {+mil_mercs_house_elim +mil_small_reject_finished -car_scene_end} sr_cutscene %+car_scene_start%
+
+[sr_cutscene]
+point = camcar_point
+look = mil_player_look ;camcar_look
+cam_effector = car_mil_eff
+pp_effector = mil_out
+on_timer = 10000| %+mil_contact_arrived%
+on_signal = cameff_end | sr_idle@wait %-car_scene_start +car_scene_end =enable_ui =enable_save%
+
+[sr_idle@wait]
+on_actor_inside = {+car_scene_end +mil_actor_talked_contact -monsters_wave_end} sr_idle@wait_moar %+monsters_wave%
+
+[sr_idle@wait_moar]
+on_timer = 1400 | {+monsters_wave -monsters_wave_end} sr_cutscene@3 %+mil_wave_scene_start%
+
+[sr_cutscene@3]
+point = mutant_cam_new
+look = mutant_cam_new_look
+cam_effector = mil_base_swarm
+on_signal = cameff_end |  nil %+monsters_wave_end +mil_i_dont_wana_die =enable_ui =enable_save =release%

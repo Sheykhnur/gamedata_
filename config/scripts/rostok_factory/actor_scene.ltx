@@ -1,0 +1,40 @@
+[smart_terrains]
+none = true
+
+[logic]
+active = remark@wait
+combat_ignore = combat_ignore
+danger = danger@rostok_actor
+
+[remark@wait]
+no_move = true
+combat_ignore_cond = always
+on_timer = 500 | walker@actor
+danger = danger@rostok_actor
+meet = no_meet
+
+[walker@actor]
+path_walk = cam_rost_player_path
+on_signal = research | remark@main
+combat_ignore_cond = always
+danger = danger@rostok_actor
+
+
+[remark@main]
+no_move = true
+anim = search
+;snd = null
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@rostok_actor
+;target = null
+on_info = {+rosf_scene_end} %=release%
+
+[combat_ignore]
+
+[danger@rostok_actor]
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0

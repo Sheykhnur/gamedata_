@@ -1,0 +1,78 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_motivator.script
+ Description: Motivator binding
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Editors    : ...
+ Last edit  : 15.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Conditions array (evaluators), which have highest priority, and, accordinly, interrupt other scripts/schemes.
+--/ -------------------------
+tMainProperties = {
+	[1] = { stalker_ids.property_alive,               true }, --/ NPC alive
+	[2] = { stalker_ids.property_enemy,               false}, --/ no enemies
+	[3] = { stalker_ids.property_danger,              false}, --/ no danger
+	[4] = { stalker_ids.property_anomaly,             false}  --/ no anomalies
+}
+tCommonProperties = {
+	[1] = { xr_evaluators_id.sidor_wounded_base,      false }, --/ not wounded
+	[2] = { xr_evaluators_id.chugai_heli_hunter_base, false }, --/ don't see helicopters
+	[3] = { xr_evaluators_id.abuse_base,              false }, --/ not offended
+	[4] = { xr_evaluators_id.stohe_meet_base +1,      false }  --/ no talk
+}
+tDynamicProperties = {} --/#+#
+--/------------------------------------------------------------------------------------------------
+--/ Process
+--/------------------------------------------------------------------------------------------------
+function addCommonProperty( tProperty )
+	if type(tProperty) == 'table' then
+		table.insert( tCommonProperties, tProperty )
+	end
+end
+
+function addDynamicProperty( tProperty )
+	if type(tProperty) == 'table' then
+		table.insert( tDynamicProperties, tProperty )
+	end
+end
+
+--/ -----------------------------------
+function addMainPrecondition( oAction )
+	for _,v in ipairs (tMainProperties) do
+		oAction:add_precondition( world_property(v[1],v[2]) )
+	end
+end
+
+function addCommonPrecondition( oAction )
+	for _,v in ipairs (tCommonProperties) do
+		oAction:add_precondition( world_property(v[1],v[2]) )
+	end
+end
+
+function addGeneralPrecondition( oAction )
+	addMainPrecondition( oAction )
+	addCommonPrecondition( oAction )
+end
+
+--/#+#
+function addDynamicPrecondition( oAction )
+	for _,v in ipairs (tDynamicProperties) do
+--		log("addDynamicPrecondition: %s idEv=[%s], flg=[%s]", oAction.object and oAction.object:name(), v[1], v[2], "") --/#~#
+		oAction:add_precondition( world_property(v[1],v[2]) )
+	end
+end
+
+function addAllPrecondition( oAction )
+	addMainPrecondition( oAction )
+	addCommonPrecondition( oAction )
+	addDynamicPrecondition( oAction )
+end
+--/ -----------------------------------------------------------------------------------------------

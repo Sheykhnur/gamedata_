@@ -1,0 +1,144 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : sr_timer.script
+ Description: Таймер с выводом изображения на экран
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 20.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_timer"
+--/ -----------------------------------------------------------------------------------------------
+function action_timer:__init(oObj, st)
+	self.object = oObj
+	self.st  = st
+	self.log = st.log
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_timer:update(delta)
+--	if self.log then log("update:Obj=[%s][%s]", self.object:name(), ">") end --/#~#
+	--if has_alife_info("freeplay") then return end --/> --/#?#
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) or self.st.type == "off" then
+		return --/>
+	end
+	
+	--/ Высчитываем сколько времени уже работает счетчик
+	local iTimeUp = time_global() - (db.storage[self.object:id()].activation_time or 0)
+	--/ Изменяем значение счетчика
+	if self.st.type == "dec" then --/ таймер с 'обратным' отсчетом
+		iTimeUp = -iTimeUp
+	end
+	local iTime = math.max(0, self.st.start_value + iTimeUp)
+	
+	if self.st.timer then
+		--/ Формируем строку счетчика
+		local iHours   = math.floor(iTime/3600000)
+		local iMinutes = math.floor(iTime/60000 - iHours*60)
+		local iSeconds = math.floor(iTime/1000 - iHours*3600 - iMinutes*60)
+		self.st.timer:SetText( string.format("%d:%02d:%02d", iHours, iMinutes, iSeconds) )
+	end
+	
+	--/ Определяем нужно ли куда то переходить.
+	for k,v in pairs(self.st.on_value) do
+		if (self.st.type == "dec" and iTime <= v.dist) or (self.st.type == "inc" and iTime >= v.dist) then
+			if self.log then log("update:Obj=[%s],dist=[%s],state=[%s]", self.object:name(), v.dist, v.state, "") end --/ #~#
+			--/ Обработка значения.
+			xr_logic.switch_to_section(self.object, self.st, xr_logic.pick_section_from_condlist(db.actor, self.object, v.state))
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE
+--/------------------------------------------------------------------
+function action_timer:deactivate()
+	if self.log then log("deactivate:Obj=[%s]", self.object:name(), "") end --/#~#
+	self.st.type = "off"
+	--/ убираем худ таймера
+	if self.st.timer_id and get_hud():GetCustomStatic(self.st.timer_id) then
+		get_hud():RemoveCustomStatic(self.st.timer_id) --/ "hud_timer"
+	end
+	--/ убираем худ инфо-строки
+	if self.st.string and get_hud():GetCustomStatic("hud_timer_text") then
+		get_hud():RemoveCustomStatic("hud_timer_text")
+	end
+end
+--[[
+function action_timer:save()
+	xr_logic.pstor_store(self.object, "timer_value", self.state)
+end
+--]]
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oObj, ini, sScheme, sSection, st)
+--	log("add_to_binder:Obj=[%s],Scheme=[%s],Section=[%s]:[%s]", oObj:name(), sScheme, sSection, ">") --/ #~#
+	local oNewAction = this.action_timer(oObj, st)
+	--/ регистрация action, для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(oObj, st, oNewAction)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(oObj, ini, sScheme, sSection, sGulagName)
+	--if has_alife_info("freeplay") then return end --/> --/#?#
+	local st = xr_logic.assign_storage_and_bind(oObj, ini, sScheme, sSection)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, sSection, oObj)
+	
+	st.type = Get_Cfg_String(ini, sSection, "type", "dec")
+	if st.type == "dec" then
+		st.start_value = Get_Cfg_Num32(ini, sSection, "start_value", 0, true)
+	elseif st.type == "inc" then
+		st.start_value = Get_Cfg_Num32(ini, sSection, "start_value", 0)
+	else
+		abort("%s:set_scheme:Section=[%s],Restrictor=[%s]~Wrong_'sr_timer'_type:<%s>", sModule, sSection, oObj:name(), "Error!")
+	end
+	--/ Вычитываем значения перехода.
+	st.on_value = this.parse_data(oObj, Get_Cfg_String(ini, sSection, "on_value"))
+	st.timer_id = Get_Cfg_String(ini, sSection, "timer_id", "hud_timer")
+	st.string   = Get_Cfg_String(ini, sSection, "string")
+	
+	local hud = get_hud()
+	hud:AddCustomStatic(st.timer_id, true)
+	st.timer = hud:GetCustomStatic(st.timer_id):wnd()
+	if st.string then
+		hud:AddCustomStatic("hud_timer_text", true)
+		hud:GetCustomStatic("hud_timer_text"):wnd():SetTextST(st.string)
+	end
+	--/ for debug
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", oObj:name(), sScheme, sSection, "") end --/ #~#
+end
+
+--/ -----------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------
+function parse_data(oObj,sString)
+	local tRet,sStr = {},nil
+	if sString then
+		for sStr in sString:gmatch("(%|*%d+%|[^%|]+)%p*") do
+			local sDist,sState = sStr:match('(.-)[|](.*)')
+			local tDat = {dist=tonumber(sDist)}
+			if sState and sState ~= '' then
+				tDat.state = xr_logic.parse_condlist(oObj, sDist, sState, sState)
+			end
+			table.insert(tRet, tDat)
+		end
+	end
+	return tRet --/>
+end
+
+function time2str(iNum)
+	return string.format("%02d", iNum)
+end
+--/ -----------------------------------------------------------------------------------------------

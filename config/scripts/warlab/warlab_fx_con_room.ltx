@@ -1,0 +1,26 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+war_con_start} sr_particle@war_thing_start
+
+[sr_particle@war_thing_start]
+name = ghoul\fx-12-war-ghost3
+path = oso_walk
+mode = 2
+looped = true
+on_timer = 18000 | sr_idle@check1 %+war_thing_spawn =play_snd(characters_voice\scenario\osoznanie\teleport_osoznanie)%
+
+[sr_idle@check1]
+on_info = {+war_thing_tele} sr_particle@war_thing_end  %=play_snd(characters_voice\scenario\osoznanie\teleport_osoznanie)%
+
+[sr_particle@war_thing_end]
+name = ghoul\fx-12-war-ghost3
+path = oso_walk
+mode = 2
+looped = false
+on_timer = 1000|sr_idle@check2
+on_signal = particle_end|sr_idle@check2
+
+[sr_idle@check2]
+on_info = {=counter_equal_or_greater(mon_destroy_generator:5)} nil %+war_thing_defeated =remove_counter(mon_destroy_generator) =release%

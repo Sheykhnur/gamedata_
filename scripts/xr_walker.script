@@ -1,0 +1,209 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_walker.script
+ Description: Scheme: "Walker" - basic scheme, with which npc moves through patrol way (path_walk),
+			  stay in certain points and doing defined actions.
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey) af@svitonline.com
+ Editors    : Gr1ph00n, loxotron
+ Last edit  : 13.04.2017 [...]
+--]]-----------------------------------------------------------------------------------------------
+--/ Added no_gather_items parameter, by default it's enabled, so no cutscenes or gamedesigner waypoints will be broken by this.
+--/ If you want NPC to gather items, write in [walker] section of your logic : no_gather_items = false
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Walker = xr_evaluators_id.zmey_walker_base +1
+local iAct_Walker = xr_actions_id.zmey_walker_base +1
+local tBindEvls = {} --/ array of 'external' conditions of scheme activate
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout    and xr_blowout.get_ai_evl(0),         flg = false}, --/ don't see blowout
+		[2] = {id = db.la_ai_watcher and la_ai_watcher.get_ai_evl(0),      flg = false}, --/ no gathering
+		--[3] = {id = not db.no_gather_items and stalker_ids.property_items, flg = false}, --/#?# no items to gather
+	}
+	for _,v in ipairs(tAddEvls) do
+		if type(v.id) == 'number' then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_need_walker" (property_evaluator)
+--/ -----------------------------------------------------------------
+function evaluator_need_walker:__init(name, st) super(nil, name)
+	self.st = st
+end
+
+function evaluator_need_walker:evaluate()
+	return xr_logic.is_active(self.object, self.st) --/> scheme active
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTION
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_walker_activity" (action_base)
+--/ -----------------------------------------------------------------
+function action_walker_activity:__init (action_name, st) super(nil, action_name)
+	self.st       = st
+	self.log      = st.log
+	self.move_mgr = st.move_mgr
+end
+
+function action_walker_activity:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_walker_activity:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self:reset_scheme()
+end
+
+function action_walker_activity:activate_scheme()
+	self.st.signals = {}
+	self:reset_scheme()
+end
+
+function action_walker_activity:reset_scheme()
+	if not self.st.path_walk_info then
+		self.st.path_walk_info = utils.path_parse_waypoints(self.st.path_walk)
+		if not (self.st.path_walk or self.st.path_walk_info) then
+			log("ac_walker_activity:reset_scheme:NPC=[%s],path_walk=NIL:<%s>", self.object:name(), "Warning!") --/#?#
+		end
+	end
+	if not self.st.path_look_info then
+		self.st.path_look_info = utils.path_parse_waypoints(self.st.path_look)
+	end
+	if self.log then log("ac_walker_activity:reset_scheme:NPC=[%s]:W/L=[%s/%s]", self.object:name(), self.st.path_walk, self.st.path_look, "") end --/#~#
+	self.move_mgr:reset(self.st.path_walk, self.st.path_walk_info, self.st.path_look, self.st.path_look_info, 
+				self.st.team, self.st.suggested_state, {obj = self, func = self.move_callback}, nil, nil, nil, self.st.path_precond)
+	xr_sound.set_sound(self.object, self.st.sound_idle)
+end
+
+function action_walker_activity:move_callback(arrival_after_rotation, retval_after_rotation, index, can_log)
+	if can_log then log("action_walker_activity:move_callback [%s] [%s] [%d]", arrival_after_rotation, retval_after_rotation, index) end
+	return false
+end
+
+function action_walker_activity:execute()
+	action_base.execute(self)
+	self.move_mgr:update()
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+
+function action_walker_activity:finalize()
+	self.move_mgr:finalize()
+	xr_sound.set_sound(self.object, nil)
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.move_mgr = db.storage[npc:id()].move_mgr
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:add_evaluator( iEvl_Walker, this.evaluator_need_walker("ev_walker", st))
+	--/ NewAction -----------------------------------------------------
+	local oNewAction = this.action_walker_activity("ac_walker", st)
+	xr_motivator.addGeneralPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) )
+	end
+	oNewAction:add_precondition( world_property(iEvl_Walker, true ))
+	oNewAction:add_effect( world_property( iEvl_Walker, false))
+	--oNewAction:add_effect( world_property(tProperties["idle_logic"], false)) --/#+?#
+	oPlanner:add_action( iAct_Walker, oNewAction )
+	st.action = oNewAction --/ for registration from reset's
+	--/ Actions -------------------------------------------------------
+	local oAction = oPlanner:action( stalker_ids.action_alife_planner )
+	oAction:add_precondition( world_property( iEvl_Walker, false ))
+	if not db.no_gather_items then --/ if NOT disabled by cmd
+		oAction = oPlanner:action(stalker_ids.action_gather_items) --/ action of gathering (taking items)
+		oAction:add_precondition(world_property(iEvl_Walker, false)) --/ allowed if evaluator of scheme not active
+	end
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+--/	  Calls only at the begining of reading logic, creates actions, evaluators and making first set.
+--/   enabled - if scheme enabled
+--/   path_walk - basic way through which guard moves
+--/   path_look [optional] - way, where guard look
+--/   team [optional] - team for synth
+function set_scheme(npc, ini, scheme, section, gulag_name)
+--	log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section) --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	--/ registration of action to call method 'reset_scheme' when settings of scheme changed:
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+
+	st.path_walk  = Get_Cfg_String(ini, section, "path_walk", nil, true,  gulag_name)
+	st.path_look  = Get_Cfg_String(ini, section, "path_look", nil, false, gulag_name)
+	st.team       = Get_Cfg_String(ini, section, "team",      nil, false, gulag_name)
+	st.sound_idle = Get_Cfg_String(ini, section, "sound_idle")
+	st.path_precond = Get_Cfg_String(ini, section, "path_precond", nil)
+	st.suggested_state = {
+		moving1  = Get_Cfg_String(ini, section, "def_state_moving1"),
+		moving2  = Get_Cfg_String(ini, section, "def_state_moving2"),
+		moving3  = Get_Cfg_String(ini, section, "def_state_moving3"),
+		standing = Get_Cfg_String(ini, section, "def_state_standing")
+	}
+	st.path_walk_info = nil --/ will be initialized in reset(),
+	st.path_look_info = nil --/ now way can be still not loaded.
+	st.no_gather_items = Get_Cfg_Bool  (ini, section, "no_gather_items", true)
+	if not validate_patrol_path(st.path_walk, npc, true) then
+		log("set_scheme:NPC=[%s],section=[%s],path_walk=[%s]<~NOT_validate:<%s>", npc:name(), section, st.path_walk, "Warning!")
+		this.disable_scheme(npc, scheme)
+		smart_terrain.unregister_npc(npc)
+		xr_logic.initialize_obj(npc, db.storage[npc:id()], false, db.actor, modules.stype_stalker)
+	end
+--[[
+	gr1ph: path_look shouldnt be validated since it can be off the ai-grid, check only if it exists
+	if st.path_look and not validate_patrol_path(st.path_look, npc, false) then
+		log("set_scheme:NPC=[%s],section=[%s],path_look=[%s]<~not_validate:<%s>", npc:name(), section, st.path_look, "Info!")
+	end
+]]
+	if st.path_look and not level.patrol_path_exists(st.path_look) then
+		abort("set_scheme:NPC=[%s],section=[%s],path_look=[%s]<~NOT_FOUND:<%s>", npc:name(), section, st.path_look, "Error!")
+	end
+	--/ for debug!
+	if st.log then --/#~#
+		log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],walk=[%s],look=[%s],gulag=[%s]", npc:name(), scheme, section, st.path_walk, st.path_look, gulag_name, "")
+	end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/< "walker"
+	local stor = npc and db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]", npc:name(), scheme, "") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,276 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_bunker.script
+ Description: Gulags bunker
+ Copyright  : 2013 © LA-team
+ Author     : loxotron
+ Editors    : vintar(02.10.2012), lox(23.02.2013)
+ Last edit  : 23.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	bun_psy_portal  = {comm = {"stalker"}},
+	--/ for monsters ------------------------------
+	bunker_rats_lair_1       = {comm = {"rat","tushkano"}, out_rest = "bunker_rats_lair_1_out_rest"},
+	bunker_rats_lair_2       = {comm = {"rat","tushkano"}},
+	bunker_rats_lair_3       = {comm = {"rat","tushkano"}},
+	bunker_rats_lair_4       = {comm = {"rat","tushkano"}},
+	bunker_rats_lair_5       = {comm = {"rat","tushkano"}},
+	bunker_rats_lair_6       = {comm = {"rat","tushkano"}},
+	bunker_rats_lair_7       = {comm = {"rat","tushkano"}},
+	bunker_snorks            = {comm = {"snork"},    out_rest = "bunker_snorks_out_rest"},
+	bunker_tushkano          = {comm = {"tushkano"}, out_rest = "bunker_tushkano_out_rest"},
+	bunker_zombies_love1     = {comm = {"zombie"}},
+	bunker_zombies_love2     = {comm = {"zombie"}},
+	bunker_zombies_love3     = {comm = {"zombie"}},
+	bunker_zombies_love4     = {comm = {"zombie"}},
+	bunker_teddy_burer1      = {comm = {"burer"}, out_rest = "bunker_teddy_burer1_out_rest"},
+	bunker_teddy_burer2      = {comm = {"burer"}, out_rest = "bunker_teddy_burer2_out_rest"},
+	bunker_nerd_hermit       = {comm = {"fracture"}},
+	bun_poltergeist_scene    = {comm = {"poltergeist"}},	--/polter_flame
+	bunker_psy_portal_inside = {comm = {"poltergeist"}},	--/polter_flame
+}
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ -----------------------------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ bun psy portal
+--/ ---------------------------------------------
+gulags.bun_psy_portal.ghosts_pred = function(info)
+	return parser.section_exists(info.se_obj:spawn_ini(), "ghosting1")
+end
+
+gulags.bun_psy_portal.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("stasis" .. i,         0, 5,   {0}, squad, groups[1], "", gulags.bun_psy_portal.out_rest, false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("stasis_on_" .. i,     0, 5, {1,2}, squad, groups[1], "", gulags.bun_psy_portal.out_rest,   nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("off_teleported" .. i, 0, 5, {0,1}, squad, groups[1], "", gulags.bun_psy_portal.out_rest, false, type, gulags.bun_psy_portal.ghosts_pred))
+		table.insert(sj, gulag_tasks.getJob("teleported" .. i,     0, 5,   {2}, squad, groups[1], "", gulags.bun_psy_portal.out_rest,   nil, type, gulags.bun_psy_portal.ghosts_pred))
+	end
+end
+
+gulags.bun_psy_portal.state = function(gulag)
+	if has_info("deactivate_radar_done") and not has_info("bun_ghost_ready") then
+		return 1
+	elseif has_info("bun_ghost_ready") and has_info("deactivate_radar_done") then
+		return 2
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.bunker_rats_lair_1.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_rats_lair_1.ltx = smart_dyn_ltx.add_mob_home(type, 5, 10, 30)
+	
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", gulags.bunker_rats_lair_1.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_rats_lair_2.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_rats_lair_2.ltx = smart_dyn_ltx.add_mob_home(type, 5, 10, 30)
+	
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_rats_lair_3.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_rats_lair_3.ltx = smart_dyn_ltx.add_mob_home(type, 5, 10, 30)
+	
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_rats_lair_4.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_rats_lair_4.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 30)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_rats_lair_5.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_rats_lair_5.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_rats_lair_6.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_rats_lair_6.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_rats_lair_7.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_rats_lair_7.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ tushkanos
+--/ ---------------------------------------------
+gulags.bunker_tushkano.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_tushkano.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 8)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", gulags.bunker_tushkano.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snorks
+--/ ---------------------------------------------
+gulags.bunker_snorks.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_snorks.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 8)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", gulags.bunker_snorks.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.bunker_zombies_love1.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_zombies_love1.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 20)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_zombies_love2.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_zombies_love2.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 20)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_zombies_love3.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_zombies_love3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 20)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bunker_zombies_love4.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_zombies_love4.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 20)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ burers
+--/ ---------------------------------------------
+gulags.bunker_teddy_burer1.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_teddy_burer1.ltx = smart_dyn_ltx.add_mob_home(type, 1, 5, 15)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", gulags.bunker_teddy_burer1.out_rest, nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.bunker_teddy_burer2.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_teddy_burer2.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 15)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", gulags.bunker_teddy_burer2.out_rest, nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ fractures
+--/ ---------------------------------------------
+gulags.bunker_nerd_hermit.jobs = function(sj, gname, type, squad, groups)
+	gulags.bunker_nerd_hermit.ltx = smart_dyn_ltx.add_mob_home(type, 1, 10, 25)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ bun poltergeist fire
+--/ ---------------------------------------------
+gulags.bun_poltergeist_scene.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[logic@" .. type .. "_off]\n"
+	ltx = ltx .. "active = mob_home@" .. type .. "_off\n"
+	ltx = ltx .. "[mob_home@" .. type .. "_off]\n"
+	ltx = ltx .. "path_home = off\n"
+	ltx = ltx .. "home_min_radius = 5\n"
+	ltx = ltx .. "home_max_radius = 8\n"
+	ltx = ltx .. "[logic@" .. type .. "_walk]\n"
+	ltx = ltx .. "active = mob_home@" .. type .. "_on\n"
+	ltx = ltx .. "[mob_home@" .. type .. "_on]\n"
+	ltx = ltx .. "path_home = walk\n"
+	ltx = ltx .. "home_min_radius = 5\n"
+	ltx = ltx .. "home_max_radius = 8\n"
+	gulags.bun_poltergeist_scene.ltx = ltx
+	
+	table.insert(sj, gulag_tasks.getJob("off",  0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("walk", 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+gulags.bun_poltergeist_scene.state = function(gulag)
+	if has_info("bun_ghost_activate") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ bun poltergeist finale
+--/ ---------------------------------------------
+gulags.bunker_psy_portal_inside.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("in",  0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("out", 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+gulags.bunker_psy_portal_inside.state = function(gulag)
+	if has_info("bun_levitate") then
+		return 1
+	end
+	return 0
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,1772 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_pda_comm.script
+ Description: PDA
+ Copyright  : 2009 © LA-team
+ Author     : barin (19.04.2009)
+ Editors    : gr1ph00n(04.05.2013)
+ Last edit  : 07.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local dialog_mgr = nil
+local info_mgr = nil
+
+--local one_hour = 3600000
+local one_hour = 120000 --/ 20 minutes (game time) | 2 minutes (ctime)
+
+local task_giver_npc = {
+	[6006] = "trader",
+	[6504] = "barman",
+}
+
+local traders = {
+	sid = {
+		story_id = 6006,
+		visited = "pda_comm_sid_visited",
+		name = game.translate_string("escape_trader_name"),
+		icon = "ui_npc_u_trader_sidor",
+		bio = "escape_trader_bio"
+	},
+	barman = {
+		story_id = 6504,
+		visited = "pda_com_barman_visited",
+		tm_trader_name = "barman",
+		name = game.translate_string("bar_barmen_name"),
+		icon = "ui_npc_u_trader_barman",
+		bio = "bar_barmen_bio"
+	},
+}
+
+local status_msgs = {
+	-- by faction:
+	stalker      = {"occupied", "disturb", "anotherday", "freechat", "boringplace", "depression"},
+	stranger     = {"occupied", "disturb", "anotherday", "freechat", "boringplace", "depression"},
+	dark_stalker = {"occupied", "disturb", "anotherday", "freechat", "boringplace", "depression"},
+	bandit       = {"fuckoff", "staringat", "fuckyou", "blin", "favour", "sameshit"},
+	military     = {"home", "duty", "drunk"},
+	killer       = {"onmission", "sameshit", "occupied", "disturb"},
+	dolg         = {"huntmutants", "killspree", "chasingbandits", "occupied", "disturb"},
+	cleaning     = {"huntmutants", "killspree", "chasingbandits", "occupied", "disturb"},
+	freedom      = {"occupied", "disturb", "anotherday", "freechat", "boringplace", "depression"},
+	ecolog       = {"measure", "experiment", "studying"},
+	monolith     = {"monolith"},
+	clear_sky    = {"occupied", "disturb", "anotherday", "freechat", "boringplace", "depression"},
+	milstalker   = {"occupied", "home", "duty"},
+	zombied      = {"wohooooo"},
+	trader       = {"traiding", "meditating", "resting"},
+	
+	--/ by active scheme:
+	kamp        = {"eating", "resting", "vodka"},
+	sleeper     = {"sleeping"},
+	wounded     = {"wounded1", "wounded2", "wounded3"},
+	af_hunter   = {"afhunt"},
+	patrol      = {"patrol1", "patrol2", "patrol3", "patrol4"},
+	walker      = {"occupied", "disturb", "anotherday", "freechat", "boringplace", "depression"},
+	danger      = {"danger", "scared"},
+	light_guard = {"duty"},
+	
+	--/ by dialog type:
+	npc_buy  = {"need"},
+	npc_sell = {"sell1", "sell2"},
+	npc_know = {"know_1", "know_2"}
+}
+
+local communities = {
+	stalker			= false,
+	monolith		= false,
+	military		= false,
+	killer			= false,
+	ecolog			= false,
+	dolg			= false,
+	freedom			= false,
+	bandit			= false,
+	zombied			= false,
+	stranger		= false,
+	dark_stalker	= false,
+	milstalker		= false,
+	cleaning		= false
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule, tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialization and preset module
+--/ -----------------------------------------------------------------
+function load_module()
+	get_event(game_callbacks.on_presets):Attach(presets)
+end
+--/ --------------------------
+function presets(e)
+	if ui_pda_base and type(ui_pda_base.is_open) == 'function' then --/ insurance (подстраховка)
+		get_event(game_callbacks.on_actor_update):Attach(ui_pda_mplayer.update)
+		get_event(game_callbacks.on_stalker_spawn):Attach(on_stalker_spawn)
+		get_event(game_callbacks.on_stalker_destroy):Attach(on_stalker_destroy)
+		get_event(game_callbacks.on_stalker_update):Attach(on_stalker_update)
+		get_event(game_callbacks.on_stalker_save):Attach(on_stalker_save)
+		--get_event(game_callbacks.on_stalker_load):Attach(on_stalker_load) --/#x?#
+		this.GetDialogManager()
+		this.GetNpcInfo()
+	else
+		abort("%s:npcInfo:update: ui_pda_base wrong!  (%s)", sModule, type(ui_pda_base))
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function on_stalker_save(e, obj)
+	if obj:alive() and alife():object(obj:id()) then
+		info_mgr:Save(obj,obj:id())
+	end
+end
+
+function on_stalker_load(e, obj) --/#x?#
+	if obj:alive() and alife():object(obj:id()) then
+		info_mgr:Load(obj, obj:id())
+	end
+end
+
+function on_stalker_spawn(e, obj)
+	info_mgr:AddNpc(obj, obj:id())
+end
+
+function on_stalker_update(e, obj)
+	info_mgr:update(obj, obj:id())
+end
+
+function on_stalker_destroy(e, obj)
+	info_mgr:RemoveNpc(obj:id())
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "DialogManager"
+--/ -----------------------------------------------------------------------------------------------
+function DialogManager:__init()
+	self.dialog_list = {}
+	self.dlg_by_type = {}
+	
+	self:AddTaskDialogs()
+	self:AddTaskRewardDialogs()
+	
+	self:LoadDialogs("lost_alpha\\pda\\pda_talk_dlg.ltx")
+end
+
+function DialogManager:__finalize()
+end
+
+function DialogManager:ParsePhrase(id, phrase, string_list)
+	local t = {}
+	
+	for field in string.gfind(string_list, "%s*([^%,]+)%s*") do
+		table.insert(t, field)
+	end
+	
+	self.dialog_list[id][phrase] = {
+		condition = if_then_else(t[1] == "none", nil, t[1]),
+		action = if_then_else(t[2] == "none", nil, t[2]),
+		text = if_then_else(t[3] == "none", nil, t[3]),
+		next_phrase = {}
+	}
+	
+	for i = 4, #t do
+		table.insert(self.dialog_list[id][phrase].next_phrase, "phrase_" .. t[i])
+	end
+end
+
+function DialogManager:ParseCommunity(string_list)
+	local t = communities
+	
+	for field in string.gfind(string_list, "%s*([^%,]+)%s*") do
+		if t[field] ~= nil then
+			t[field] = true
+		end
+	end
+	
+	return t
+end
+
+function DialogManager:LoadDialogs(fileName)
+	local ltx = ini_file(fileName)
+	if not ltx then
+		abort("[%s.script] : File %s does not exist!", sModule, fileName)
+		return
+	end
+	local result, id, value, phrase = nil, nil, nil, nil
+	
+	for index = 0, ltx:line_count("all") - 1 do
+		result, id, value	= ltx:r_line("all", index, "", "")
+		if not ltx:section_exist(id) then
+			abort("[%s.script] : Cannot find section [%s] in %s", sModule, id, fileName)
+		else
+			if self.dialog_list[id] ~= nil then
+				abort("[%s.script] : Duplicated section '%s'", sModule, id)
+			end
+			self.dialog_list[id] = {}
+			for i = 0, ltx:line_count(id) - 1 do
+				result, phrase, value = ltx:r_line(id, i, "", "")
+				if phrase == "condition" then
+					self.dialog_list[id][phrase] = value
+				elseif phrase == "info" then
+					self.dialog_list[id][phrase] = value
+				elseif phrase == "article" then
+					self.dialog_list[id][phrase] = value
+				elseif phrase == "price" then
+					self.dialog_list[id][phrase] = tonumber(value)
+				elseif phrase == "community" then
+					self.dialog_list[id][phrase] = self:ParseCommunity(value)
+				elseif phrase == "items" then
+					self.dialog_list[id][phrase] = parser.r_str_num_list(value)
+				elseif phrase == "type" then
+					self.dialog_list[id][phrase] = value
+					if not self.dlg_by_type[value] then
+						self.dlg_by_type[value] = {}
+					end
+					table.insert(self.dlg_by_type[value], id)
+				elseif phrase == "priority" then
+					self.dialog_list[id][phrase] = tonumber(value)
+				elseif phrase == "one_time_dlg" then
+					self.dialog_list[id][phrase] = if_then_else(value == "true", true, false)
+				else
+					self:ParsePhrase(id, phrase, value)
+				end
+			end
+		end
+	end
+	
+	for k, v in pairs(self.dialog_list) do
+		if v.type == "npc_sell" or v.type == "npc_buy" then
+			if not v.price then
+				v.price = 0
+				if v.items then
+					for kk, vv in pairs(v.items) do
+						value = parser.r_uint(system_ini(), kk, "cost", nil)
+						if value == nil then
+							abort("[%s.script] field 'cost' not defined in section '%s'", sModule, kk)
+							value = 0
+						end
+						v.price = v.price + (vv * value)
+						if v.type == "npc_sell" then
+							v.price = (math.modf(v.price / 2)) --/ half cheaper then trader
+						elseif v.type == "npc_buy" then
+							v.price = v.price + (math.modf(v.price / 2)) --/ half more then trader
+						end
+					end
+				else
+					abort("[%s.script] error: field 'items' in dialog '%s'", sModule, k)
+					self.dialog_list[k] = nil
+				end
+			end
+		end
+	end
+end
+
+function DialogManager:GetDialogType(dlg_id)
+	return self.dialog_list[dlg_id].type
+end
+
+function DialogManager:GetRndDialog(dlg_type, npc_faction)
+	local dialogs = {}
+	if self.dlg_by_type[dlg_type] then
+		for k, v in pairs(self.dlg_by_type[dlg_type]) do
+			if self.dialog_list[v].community then
+				if self.dialog_list[v].community[npc_faction] then
+					table.insert(dialogs, v)
+				end
+			else
+				table.insert(dialogs, v) --/ hello, bye dialogs
+			end
+		end
+	end
+	
+	if next(dialogs) then
+		return dialogs[math.random(1, #dialogs)]
+	end
+	
+	return nil
+end
+
+function DialogManager:GetInfo(dlg_id)
+	if self.dialog_list[dlg_id].info then
+		return self.dialog_list[dlg_id].info
+	end
+	
+	return nil
+end
+
+function DialogManager:GetArticle(dlg_id)
+	if self.dialog_list[dlg_id].article then
+		--return game.translate_string(self.dialog_list[dlg_id].article)
+		return self.dialog_list[dlg_id].article
+	end
+	
+	return nil
+end
+
+function DialogManager:GetItemsStr(dlg_id)
+	if self.dialog_list[dlg_id].items then
+		local str = ""
+		for name, quantity in pairs(self.dialog_list[dlg_id].items) do
+			str = string.format(" %dx %s", quantity, news_manager.get_inv_name(name))
+			if next(self.dialog_list[dlg_id].items, name) then
+				str = str .. ","
+			else
+				str = str .. "."
+			end
+		end
+		return str
+	end
+	return nil
+end
+
+function DialogManager:GetItems(dlg_id)
+	if self.dialog_list[dlg_id].items then
+		return self.dialog_list[dlg_id].items
+	end
+	
+	return nil
+end
+
+function DialogManager:GetPrice(dlg_id)
+	if self.dialog_list[dlg_id].price then
+		return self.dialog_list[dlg_id].price
+	end
+	
+	return nil
+end
+
+function DialogManager:GetPhraseText(id, phrase)
+	return self.dialog_list[id][phrase].text
+end
+
+function DialogManager:GetNextPhrase(id, phrase)
+	if self:CanSwitchPhrase(id, phrase) then
+		if #self.dialog_list[id][phrase].next_phrase <= 1 then
+			return self.dialog_list[id][phrase].next_phrase[1]
+		end
+		abort("[%s.script] 'next_phrase' ambiguity in dialog '%s' phrase '%s'", sModule, id, phrase)
+	end
+	return nil
+end
+
+function DialogManager:CanSwitchPhrase(id, phrase)
+	return #self.dialog_list[id][phrase].next_phrase ~= 0
+end
+
+function DialogManager:Execute(action, npc_id, dialog_id, prev_phrase, curr_phrase)
+	if npc_id ~= info_mgr.npcs[npc_id].id then
+		abort("%s:DialogManager:Execute: npc id=[%s] are not equal!", sModule, tostring(npc_id))
+		return false
+	elseif action and action ~= "none" then
+		local func,file = la_callbacks.GetLuaFunction(action)
+		if func then
+			local npc = level.object_by_id(npc_id)
+			local tm_task_giver_name = info_mgr.npcs[npc_id].tm_task_giver_name
+			--if tm_task_giver_name then
+				return func(db.actor, npc, tm_task_giver_name, dialog_id, prev_phrase, curr_phrase)
+			--end
+			--return func(db.actor, npc, dialog_id, prev_phrase, curr_phrase)
+		end
+		abort("%s:DialogManager:Execute: action='%s' does not exist!", sModule, tostring(action))
+		return false
+	end
+	return true
+end
+
+function DialogManager:CheckCondition(id, npc_id, prev_phrase, curr_phrase)
+	if not curr_phrase then
+		return self:Execute(self.dialog_list[id].condition, npc_id, id, "phrase_0", "phrase_0")
+	end
+	return self:Execute(self.dialog_list[id][curr_phrase].condition, npc_id, id, prev_phrase, curr_phrase)
+end
+
+function DialogManager:AddActorPhrase(user_dlg, npc_dlg, dialog_id, curr_phrase, prev_phrase, npc)
+	--self:Execute(self.dialog_list[dialog_id][curr_phrase].action, npc.id, dialog_id, prev_phrase, curr_phrase)
+	
+	if not self:GetPhraseText(dialog_id, curr_phrase) then
+		for k, v in pairs(self.dialog_list[dialog_id][curr_phrase].next_phrase) do
+			if self:CheckCondition(dialog_id, npc.id, curr_phrase, v) then
+				self:AddNpcPhrase(npc_dlg, user_dlg, dialog_id, v, curr_phrase, npc)
+			end
+		end
+	else
+		local i = user_dlg:GetSize()
+		local text_line = nil
+		
+		--pcTextViewer.AddText(user_dlg, 58, self:GetPhraseText(dialog_id, curr_phrase), true, "letterica16", "yellow", false)
+		pcTextViewer.AddText(user_dlg, 58, self:GetPhraseText(dialog_id, curr_phrase), true, "letterica16", "yellow", true)
+		
+		for index = i, user_dlg:GetSize() - 1 do
+			text_line = user_dlg:GetItem(index)
+			text_line.dialog_id = dialog_id
+			text_line.curr_phrase = curr_phrase
+			text_line.prev_phrase = prev_phrase
+			text_line.npc_name = npc.name
+		end
+	end
+end
+
+function DialogManager:AddNpcPhrase(npc_dlg, user_dlg, dialog_id, curr_phrase, prev_phrase, npc)
+	--self:Execute(self.dialog_list[dialog_id][curr_phrase].action, npc.id,
+		--dialog_id, prev_phrase, curr_phrase)
+	
+	if not self:GetPhraseText(dialog_id, curr_phrase) then
+		self:Execute(self.dialog_list[dialog_id][curr_phrase].action, npc.id, dialog_id, prev_phrase, curr_phrase)
+		
+		for k, v in pairs(self.dialog_list[dialog_id][curr_phrase].next_phrase) do
+			if self:CheckCondition(dialog_id, npc.id, curr_phrase, v) then
+				self:AddActorPhrase(user_dlg, npc_dlg, dialog_id, v, prev_phrase, npc)
+			end
+		end
+	else
+		pcTextViewer.AddText(npc_dlg, 58, npc.name, false, "letterica18", "yellow", false)
+		local str = game.translate_string(self:GetPhraseText(dialog_id, curr_phrase))
+		pcTextViewer.AddText(npc_dlg, 58, string.format("\\t%s", str), false, "letterica16", "white", false)
+		
+		self:Execute(self.dialog_list[dialog_id][curr_phrase].action, npc.id, dialog_id, prev_phrase, curr_phrase)
+		
+		if not self:CanSwitchPhrase(dialog_id, curr_phrase) then
+			if self.dialog_list[dialog_id].one_time_dlg then
+				info_mgr:DisableDialog(npc.id, dialog_id)
+			end
+		else
+			for k, v in pairs(self.dialog_list[dialog_id][curr_phrase].next_phrase) do
+				if self:CheckCondition(dialog_id, npc.id, curr_phrase, v) then
+					self:AddActorPhrase(user_dlg, npc_dlg, dialog_id, v, prev_phrase, npc)
+				end
+			end
+		end
+	end
+end
+
+function DialogManager:AddTaskDialogs()
+	local tm = task_manager.get_random_task()
+	local dialog_id, phrase, n_phrase = nil, nil, nil
+	local yes_phrase, no_phrase = nil, nil
+	
+	for story_id, parent in pairs(task_giver_npc) do
+		dialog_id = "tm_" .. parent .. "_dialog"
+		self.dialog_list[dialog_id] = {
+			type = "task",
+			condition = "none",
+			priority = 10,
+			one_time_dlg = false,
+			
+			phrase_0 = {
+				condition = nil,
+				action = nil,
+				text = "tm_seek_new_job",
+				next_phrase = {"phrase_1", "phrase_2"}
+			},
+			
+			phrase_1 = {
+				condition = "pda_talk_dialogs.vendor_can_task",
+				action = "pda_talk_dialogs.vendor_list_tasks",
+				text = "tm_" .. parent .. "_list_job",
+				next_phrase = {}
+			},
+			
+			phrase_2 = {
+				condition = "pda_talk_dialogs.vendor_cannot_task",
+				action = nil,
+				text = "tm_" .. parent .. "_has_no_job",
+				next_phrase = {}
+			},
+			
+			phrase_3 = {
+				condition = nil,
+				action = nil,
+				text = "tm_seek_job_abandon",
+				next_phrase = {}
+			}
+		}
+		
+		for k, v in pairs(tm.task_id_by_parent[parent]) do
+			phrase = "phrase_" .. tm.task_info[v].init_phrase_id
+			n_phrase = "phrase_" .. tm.task_info[v].desc_phrase_id
+			yes_phrase = "phrase_" .. tm.task_info[v].yes_phrase_id
+			no_phrase = "phrase_" .. tm.task_info[v].no_phrase_id
+			
+			table.insert(self.dialog_list[dialog_id]["phrase_1"].next_phrase, phrase)
+			self.dialog_list[dialog_id][phrase] = {
+				condition = "pda_talk_dialogs.task_avail",
+				action = nil,
+				text = tm.task_info[v].name,
+				next_phrase = {n_phrase}
+			}
+			
+			self.dialog_list[dialog_id][n_phrase] = {
+				condition = nil,
+				action = nil,
+				text = tm.task_info[v].text,
+				next_phrase = {yes_phrase, no_phrase}
+			}
+			
+			self.dialog_list[dialog_id][yes_phrase] = {
+				condition = nil,
+				action = "pda_talk_dialogs.give_task",
+				text = "tm_seek_job_yes",
+				next_phrase = {}
+			}
+			
+			self.dialog_list[dialog_id][no_phrase] = {
+				condition = nil,
+				action = nil,
+				text = "tm_seek_job_no",
+				next_phrase = {}
+			}
+		end
+		table.insert(self.dialog_list[dialog_id]["phrase_1"].next_phrase, "phrase_3")
+	end
+end
+
+function DialogManager:AddTaskRewardDialogs()
+	local tm = task_manager.get_random_task()
+	local dialog_id, phrase, n_phrase = nil, nil, nil
+	local yes_phrase, no_phrase = nil, nil
+	
+	for story_id, parent in pairs(task_giver_npc) do
+		dialog_id = "tm_" .. parent .. "_reward"
+		self.dialog_list[dialog_id] = {
+			type = "task",
+			condition = "pda_talk_dialogs.has_active_vendor_task",
+			priority = 9,
+			one_time_dlg = false,
+			
+			phrase_0 = {
+				condition = nil,
+				action = nil,
+				text = "tm_reward_job",
+				next_phrase = {"phrase_2"}
+				--next_phrase = {"phrase_1", "phrase_2"}
+			},
+			--[[
+			phrase_1 = {
+				condition = "pda_talk_dialogs.have_completed_job",
+				action = "pda_talk_dialogs.action_task_reward",
+				text = "tm_" .. parent .. "_job_complete",
+				next_phrase = {}
+			},
+			--]]
+			
+			phrase_2 = {
+				condition = "pda_talk_dialogs.dont_have_completed_job",
+				action = nil,
+				text = "tm_" .. parent .. "_job_ask",
+				next_phrase = {}
+			}
+		}
+		
+		for k, v in pairs(tm.task_id_by_parent[parent]) do
+			phrase = tm.task_info[v].init_phrase_id
+			n_phrase = tm.task_info[v].desc_phrase_id
+			yes_phrase = tm.task_info[v].yes_phrase_id
+			no_phrase = tm.task_info[v].no_phrase_id
+			
+			table.insert(self.dialog_list[dialog_id]["phrase_2"].next_phrase, phrase)
+			self.dialog_list[dialog_id][phrase] = {
+				condition = "pda_talk_dialogs.active_task",
+				action = nil,
+				text = tm.task_info[v].name,
+				next_phrase = {n_phrase}
+			}
+			
+			self.dialog_list[dialog_id][n_phrase] = {
+				condition = nil,
+				action = nil,
+				text = "tm_" .. parent .. "_job_what",
+				next_phrase = {yes_phrase, no_phrase}
+			}
+			
+			self.dialog_list[dialog_id][yes_phrase] = {
+				condition = nil,
+				action = "pda_talk_dialogs.action_refuse_task",
+				text = "tm_job_refuse",
+				next_phrase = {}
+			}
+			
+			self.dialog_list[dialog_id][no_phrase] = {
+				condition = nil,
+				action = nil,
+				text = "tm_job_nothing",
+				next_phrase = {}
+			}
+		end
+	end
+end
+--/ ------------------------------------------------------------------
+function GetDialogManager()
+	if not dialog_mgr then
+		dialog_mgr = DialogManager()
+	end
+	return dialog_mgr --/>
+end
+
+function GetDialogType(dlg_id)
+	return dialog_mgr:GetDialogType(dlg_id)
+end
+
+function GetPrice(dlg_id)
+	return dialog_mgr:GetPrice(dlg_id)
+end
+
+function GetItemsStr(dlg_id)
+	return dialog_mgr:GetItemsStr(dlg_id)
+end
+
+function GetItems(dlg_id)
+	return dialog_mgr:GetItems(dlg_id)
+end
+
+function GetInfo(dlg_id)
+	return dialog_mgr:GetInfo(dlg_id)
+end
+
+function GetArticle(dlg_id)
+	return dialog_mgr:GetArticle(dlg_id)
+end
+
+--/ ------------------------------------------------------------------
+local profile_bio = {
+	-- profile_name = bio
+	esc_wolf = "esc_wolf_bio"
+}
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "npcInfo"
+--/ -----------------------------------------------------------------------------------------------
+function npcInfo:__init()
+	self.sw_distance = parser.r_uint(system_ini(), "alife", "switch_distance", 150)
+	self.npcs = {}
+	self:AddTraders()
+end
+
+function npcInfo:__finalize()
+	self.npcs = nil
+end
+
+function npcInfo:update(npc,npc_id)
+	if not npc_id then npc_id = npc:id() end
+	if npc:alive() and self:Contains(npc_id) then
+		self:SetOnlineDistance(npc)
+		if self.npcs[npc_id].upd_timer then
+			if self.npcs[npc_id].upd_timer < time_global() then
+				if ui_pda_base.is_open() then
+					self.npcs[npc_id].upd_timer = time_global() + 30*1000 --/ +5 minutes
+				elseif this.has_pda_meet_dlg(npc_id) then
+					self.npcs[npc_id].upd_timer = time_global() + 30*1000 --/ +5 minutes
+				else
+					self.npcs[npc_id].upd_timer = time_global() + one_hour
+					
+					self:RemoveDialogs(npc_id)
+					self:AddDialogs(npc_id, self.npcs[npc_id].dialogs)
+					self:SortDialogs(self.npcs[npc_id].dialogs)
+					self:EnableDialogs(npc_id, true)
+				end
+			end
+		end
+	end
+end
+
+function npcInfo:Contains(npc_id)
+	return self.npcs[npc_id] ~= nil
+end
+
+function npcInfo:CanTalk(npc)
+	local c = npc:character_community()
+	if c == "zombied" or c == "monolith" or c == "trader" or c == "military" then
+		return false
+	end
+	return true
+end
+
+function npcInfo:SetOnlineDistance(npc)
+	if self:Contains(npc:id()) then
+		self.npcs[npc:id()].online = npc:alive()
+		if db.actor:position():distance_to(npc:position()) > self.sw_distance then
+			self.npcs[npc:id()].online = false
+		end
+	end
+end
+
+function npcInfo:AddNpc(npc, npc_id)
+	local upd_timer = xr_logic.pstor_retrieve(npc, "pda_update", -1)
+	local dialogs = xr_logic.pstor_retrieve(npc, "pda_dialogs", nil)
+	if not npc_id then npc_id = npc:id() end
+	log("npcInfo:AddNpc: NPC=[%s/%d] up_time=[%d] dialogs=[%s]", npc:name(), npc_id, upd_timer, tostring(type(dialogs) == 'table' and #dialogs)) --/#~#
+	if self:Contains(npc_id) then
+		--self.npcs[npc_id].online = true
+		self:SetOnlineDistance(npc)
+		self.npcs[npc_id].upd_timer = upd_timer
+	elseif npc:alive() and self:CanTalk(npc) then
+		if not upd_timer or upd_timer == -1 then
+			upd_timer = time_global() + one_hour
+		end
+		self.npcs[npc_id] = {
+			id         = npc_id,
+			online     = true,
+			can_talk   = false,
+			upd_timer  = upd_timer,
+			name       = npc:character_name(),
+			name_short = self:GetShortName(npc),
+			community  = game.translate_string(npc:character_community()),
+			faction    = npc:character_community(),
+			status     = self:GetStatus(npc),
+			rank       = self:GetRank(npc:character_rank()),
+			reputation = self:GetReputation(npc:character_reputation()),
+			relation   = self:GetRelation(npc:relation(db.actor)),
+			relation_g = npc:relation(db.actor),
+			icon       = self:GetIcon(npc),
+			bio        = self:GetBio(npc)
+		}
+		
+		if task_giver_npc[npc:story_id()] ~= nil then
+			self.npcs[npc_id].tm_task_giver_name = task_giver_npc[npc:story_id()]
+		end
+		
+		if dialogs and type(dialogs) == 'table' and next(dialogs) then
+			local pda_meet_dlg = xr_logic.pstor_retrieve(npc, "pda_meet_dlg", nil)
+			if pda_meet_dlg then
+				this.set_pda_meet_dlg(npc_id)
+				this.set_pda_meet_dlg_id(pda_meet_dlg)
+			end
+			self:SetDialogs(npc_id, dialogs)
+		else
+			self:SetDialogs(npc_id, nil)
+		end
+	end
+end
+
+function npcInfo:RemoveNpc(id)
+	if self:Contains(id) then
+		self.npcs[id].online = false
+	end
+end
+
+function npcInfo:Save(npc,npc_id)
+	if not npc_id then npc_id = npc:id() end
+	local pda_dialogs = nil
+	local pda_update = nil
+	if self:Contains(npc_id) then
+		for _,v in pairs(self.npcs[npc_id].dialogs) do
+			if dialog_mgr.dialog_list[v.id].type ~= "task" then
+				if not pda_dialogs then pda_dialogs = {} end
+				table.insert(pda_dialogs, v.id)
+			end
+		end
+	end
+	if pda_dialogs then
+		if self.npcs[npc_id].upd_timer then
+			pda_update = self.npcs[npc_id].upd_timer - time_global()
+		else
+			pda_update = time_global() + one_hour
+			self.npcs[npc_id].upd_timer = pda_update
+		end
+		xr_logic.pstor_store(npc, "pda_dialogs", table.compress(pda_dialogs))
+		xr_logic.pstor_store(npc, "pda_update", pda_update)
+		if this.has_pda_meet_dlg(npc_id) then
+			xr_logic.pstor_store(npc, "pda_meet_dlg", this.get_pda_meet_dlg_id())
+		else
+			xr_logic.pstor_store(npc, "pda_meet_dlg", nil)
+		end
+	else --/ clear old variables
+		xr_logic.pstor_store(npc, "pda_dialogs", nil)
+		xr_logic.pstor_store(npc, "pda_update", nil)
+		xr_logic.pstor_store(npc, "pda_meet_dlg", nil)
+	end
+end
+
+function npcInfo:Load(npc,npc_id)
+	self:AddNpc(npc, npc_id)
+end
+
+function npcInfo:AddTraders()
+	local trader = nil
+	for k, v in pairs(traders) do
+		trader = alife():story_object(v.story_id)
+		if trader then
+			traders[k].id = trader.id
+			self.npcs[trader.id] = {
+				id = trader.id,
+				story_id = v.story_id, --/ only for traders!!!
+				online = true,
+				can_talk = true,
+				tm_task_giver_name = task_giver_npc[v.story_id],
+				name = v.name,
+				name_short = v.name,
+				community = game.translate_string(trader:community()),
+				rank = self:GetRank(trader:rank()),
+				reputation = self:GetReputation(trader:reputation()),
+				relation = self:GetRelation(game_object.neutral),
+				relation_g = game_object.neutral,
+				icon = v.icon,
+				bio = v.bio
+			}
+			
+			local status = status_msgs["trader"][math.random(1, #status_msgs["trader"])]
+			self.npcs[trader.id].status = game.translate_string("pda_talk_status_msg_" .. status)
+			
+			self:SetDialogs(trader.id, nil)
+		end
+	end
+end
+
+function npcInfo:GetStatus(npc)
+	local com = npc:character_community()
+	local status = nil
+	
+	if xr_wounded.is_wounded(npc) then
+		status = "wounded"
+	elseif xr_sleeper.is_npc_asleep(npc) then
+		status = "sleeper"
+	else
+		local active_scheme = db.storage[npc:id()].active_scheme
+		if active_scheme == "kamp" then
+			status = "kamp"
+		elseif active_scheme == "danger" then
+			status = "danger"
+		elseif active_scheme == "walker" then
+			status = "walker"
+		elseif active_scheme == "camper" then
+			status = "walker"
+		elseif active_scheme == "patrol" then
+			status = "patrol"
+		elseif active_scheme == "artefact_hunter" then
+			status = "af_hunter"
+		elseif active_scheme == "light_guard" then
+			status = "light_guard"
+		else
+			status = "walker"
+		end
+	end
+	
+	if status == nil then
+		status = "walker"
+	end
+	
+	if status ~= "wounded" and status ~= "sleeper" and status ~= "danger" then
+		if status_msgs[com] == nil then
+			abort("cannot find status for community '%s'", tostring(com))
+			return game.translate_string("pda_talk_status_msg_walker" .. status)
+		end
+		if math.random(1, 100) % 2 == 0 then
+			status = status_msgs[com][math.random(1, #status_msgs[com])]
+		else
+			status = status_msgs[status][math.random(1, #status_msgs[status])]
+		end
+	else
+		status = status_msgs[status][math.random(1, #status_msgs[status])]
+	end
+	
+	return game.translate_string("pda_talk_status_msg_" .. status)
+end
+
+function npcInfo:GetShortName(npc)
+	local name = npc:character_name()
+	local space = string.find(name, " ")
+	if space then
+		return string.gsub(name, string.sub(name, 2, space - 1), ".")
+	end
+	return name
+end
+
+function npcInfo:GetRank(num)
+	--
+	if num >= 0 and num <= 300 then
+		return game.translate_string("novice")
+	elseif num > 300 and num <= 600 then
+		return game.translate_string("experienced")
+	elseif num > 600 and num <= 900 then
+		return game.translate_string("veteran")
+	elseif num > 900 then
+		return game.translate_string("master")
+	end
+	--
+	--return ranks.get_game_rank_name_by_rank(num) --/>
+end
+
+function npcInfo:GetReputation(num)
+	if num >= -10000 and num <= -1000 then
+		return game.translate_string("terrible")
+	elseif num > -1000 and num <= -150 then
+		return game.translate_string("very_bad")
+	elseif num > -150 and num <= -50 then
+		return game.translate_string("bad")
+	elseif num > -50 and num <= 50 then
+		return game.translate_string("neutral")
+	elseif num > 50 and num <= 150 then
+		return game.translate_string("good")
+	elseif num > 150 and num <= 1000 then
+		return game.translate_string("very_good")
+	end
+	return game.translate_string("excellent")
+end
+
+function npcInfo:GetRelation(rel)
+	if rel == game_object.enemy then
+		return game.translate_string("enemy")
+	elseif rel == game_object.friend then
+		return game.translate_string("friendly")
+	end
+	return game.translate_string("indifferent")
+end
+
+function npcInfo:GetIcon(npc)
+	local npc = level.object_by_id(npc:id())
+	if npc then
+		local icon = npc:get_icon()
+		if icon ~= "" then return icon end
+	end
+	return "ui_npc_u_stalker_bar_security"
+end
+
+function npcInfo:GetBio(npc)
+	--/ TODO: fill profile_bio table with bio for npc profiles
+	
+	local bio = profile_bio[npc:profile_name()]
+	if not bio then
+		bio = "esc_bandit_novice_bio"
+	end
+	return game.translate_string(bio)
+end
+
+function npcInfo:SetDialogs(npc_id, dialogs)
+	local t = {}
+	
+	if dialogs then
+		for _,v in pairs(dialogs) do
+			table.insert(t, {id = v, prior = dialog_mgr.dialog_list[v].priority})
+		end
+	elseif dialog_mgr.dlg_by_type["hello"] then
+		local hello = dialog_mgr.dlg_by_type["hello"][math.random(1, #dialog_mgr.dlg_by_type["hello"])]
+		local bye = dialog_mgr.dlg_by_type["bye"][math.random(1, #dialog_mgr.dlg_by_type["bye"])]
+		
+		table.insert(t, {id = hello, prior = dialog_mgr.dialog_list[hello].priority})
+		table.insert(t, {id = bye, prior = dialog_mgr.dialog_list[bye].priority})
+		
+		if self.npcs[npc_id].tm_task_giver_name == nil then
+			self:AddDialogs(npc_id, t)
+		end
+	else
+		abort("%s:npcInfo:SetDialogs:npc_id=[%s]: not table 'hello'! :<%s>", sModule, npc_id, "Error!")
+	end
+	-- gr1ph to gr1ph: rewrite this part in order to use either mergesort or insertion sort (or simply table.sort)
+	if self.npcs[npc_id].tm_task_giver_name ~= nil then
+		local dialog_id = "tm_" .. self.npcs[npc_id].tm_task_giver_name .. "_dialog"
+		table.insert(t, {id = dialog_id, prior = dialog_mgr.dialog_list[dialog_id].priority})
+		
+		dialog_id = "tm_" .. self.npcs[npc_id].tm_task_giver_name .. "_reward"
+		table.insert(t, {id = dialog_id, prior = dialog_mgr.dialog_list[dialog_id].priority})
+	end
+	
+	self:SortDialogs(t) --/ by dialogs priority
+	
+	for k, v in pairs(t) do
+		t[k].enabled = true
+	end
+	
+	self.npcs[npc_id].dialogs = t
+end
+
+function npcInfo:SortDialogs(t) 
+--[[
+	local tmp = nil
+	for i = 1, #t - 1 do
+		for j = i + 1, #t do
+			if t[j].prior < t[i].prior then
+				tmp = t[j]
+				t[j] = t[i]
+				t[i] = tmp
+			end
+		end
+	end
+]]
+	local pred = function(a, b) 
+		return a.prior < b.prior
+	end
+	table.mergesort(t, pred)
+end
+
+function npcInfo:AddDialogs(npc_id, t)
+	local dlg_types = {"npc_buy", "npc_sell", "npc_know", "chitchat"}
+	local dlg = nil
+	
+	if #t == 0 then
+		table.insert(dlg_types, "hello")
+		table.insert(dlg_types, "bye")
+	end
+	
+	for k, v in pairs(dlg_types) do
+		dlg = dialog_mgr:GetRndDialog(v, self.npcs[npc_id].faction)
+		if dlg ~= nil then
+			table.insert(t, {id = dlg, prior = dialog_mgr.dialog_list[dlg].priority})
+		end
+	end
+end
+
+function npcInfo:RemoveDialogs(npc_id)
+	--[[
+	local dlg_types = {
+		npc_buy = true,
+		npc_sell = true,
+		npc_know = true,
+		chitchat = true
+	}
+	
+	for k, v in pairs(self.npcs[npc_id].dialogs) do
+		if dlg_types[dialog_mgr:GetDialogType(v.id)] then
+			self.npcs[npc_id].dialogs[k] = nil
+		end
+	end
+	--]]
+	
+	self.npcs[npc_id].dialogs = {}
+end
+
+function npcInfo:EnableDialogs(npc_id, enable)
+	for k, v in pairs(self.npcs[npc_id].dialogs) do
+		self.npcs[npc_id].dialogs[k].enabled = enable
+	end
+end
+
+function npcInfo:DisableDialog(npc_id, dialog_id)
+	for k, v in pairs(self.npcs[npc_id].dialogs) do
+		if v.id == dialog_id then
+			self.npcs[npc_id].dialogs[k].enabled = false
+			return
+		end
+	end
+end
+
+function npcInfo:GetMeetDialog(npc_id, dlg_type)
+	for k, v in pairs(self.npcs[npc_id].dialogs) do
+		if dialog_mgr.dialog_list[v.id].type == dlg_type then
+			return v.id
+		end
+	end
+	
+	return nil
+end
+
+function npcInfo:SetCanTalk(npc_id)
+	if self.npcs[npc_id].relation_g ~= game_object.enemy then
+		self.npcs[npc_id].can_talk = self.npcs[npc_id].online
+	else
+		self.npcs[npc_id].can_talk = false
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+function GetNpcInfo()
+	if not info_mgr then
+		info_mgr = npcInfo()
+	end
+	return info_mgr --/>
+end
+
+function GetMeetDialog(id, dlg_type)
+	return info_mgr:GetMeetDialog(id, dlg_type)
+end
+
+function GetNpcName(id)
+	return info_mgr.npcs[id].name
+end
+
+-- ************************************************************** --
+
+local PDA_MEET_DLG_TYPES = token_list()
+PDA_MEET_DLG_TYPES:add("npc_buy", 0)
+PDA_MEET_DLG_TYPES:add("npc_sell", 1)
+PDA_MEET_DLG_TYPES:add("npc_know", 2)
+
+local PDA_MEET_DLG = nil
+local PDA_MEET_DLG_TYPE = nil
+
+function has_pda_meet_dlg(id)
+	return PDA_MEET_DLG == id
+end
+
+function disable_pda_meet_dlg()
+	PDA_MEET_DLG = nil
+	PDA_MEET_DLG_TYPE = nil
+end
+
+function is_pda_meet_dlg_type_set(dlg_type)
+	return PDA_MEET_DLG_TYPE == dlg_type
+end
+
+function set_pda_meet_dlg(id)
+	PDA_MEET_DLG = id
+end
+
+function get_pda_meet_dlg()
+	return PDA_MEET_DLG
+end
+
+function get_pda_meet_dlg_id()
+	return PDA_MEET_DLG_TYPES:id(PDA_MEET_DLG_TYPE)
+end
+
+function get_pda_meet_dlg_type()
+	return PDA_MEET_DLG_TYPE
+end
+
+function set_pda_meet_dlg_id(id)
+	if type(id) == "number" then
+		PDA_MEET_DLG_TYPE = PDA_MEET_DLG_TYPES:name(id)
+	elseif type(id) == "string" then
+		PDA_MEET_DLG_TYPE = id
+	end
+end
+
+-- ************************************************************** --
+
+local contacts_list_type = "advanced" --/ "simple"
+
+--/ -----------------------------------------------------------------------------------------------
+class "Contact" (CUIListItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function Contact:__init(index) super()
+	self.npc_index = index
+	
+	if contacts_list_type == "simple" then
+		self.stat_dot = CUIStatic()
+		self.stat_dot:SetAutoDelete(true)
+		self:AttachChild(self.stat_dot)
+		self.stat_dot:SetWndRect(0, 4, 16, 18)
+		self.stat_dot:InitTexture("ui\\ui_pda_contacts_online")
+		
+		self.name = CUIStatic()
+		self.name:SetAutoDelete(true)
+		self:AttachChild(self.name)
+		self.name:SetWndRect(16, 0, 130, 18)
+		self.name:SetText(info_mgr.npcs[index].name)
+		self.name:SetTextAlign(CGameFont.alLeft)
+		self.name:SetFont(pcTextViewer.get_font("letterica16"))
+		self.name:SetTextColor(pcTextViewer.get_colour("dark_grey"))
+		
+		self.group = CUIStatic()
+		self.group:SetAutoDelete(true)
+		self:AttachChild(self.group)
+		self.group:SetWndRect(150, 0, 70, 18)
+		self.group:SetText(info_mgr.npcs[index].community)
+		self.group:SetTextAlign(CGameFont.alLeft)
+		self.group:SetFont(pcTextViewer.get_font("letterica16"))
+		self.group:SetTextColor(pcTextViewer.get_colour("dark_grey"))
+		
+		self.stat_msg = CUIStatic()
+		self.stat_msg:SetAutoDelete(true)
+		self:AttachChild(self.stat_msg)
+		self.stat_msg:SetWndRect(224, 0, 191, 18)
+		self.stat_msg:SetText(info_mgr.npcs[index].status)
+		self.stat_msg:SetTextAlign(CGameFont.alLeft)
+		self.stat_msg:SetFont(pcTextViewer.get_font("letterica16"))
+		self.stat_msg:SetTextColor(pcTextViewer.get_colour("dark_grey"))
+		
+		self.splitter = CUIStatic()
+		self.splitter:SetAutoDelete(true)
+		self:AttachChild(self.splitter)
+		self.splitter:SetWndRect(0, 17, 415, 2)
+		self.splitter:InitTexture("ui\\ui_pda_horizontal_line")
+		self.splitter:SetStretchTexture(true)
+	else
+		self:SetWndRect(0, 0, 414, 68)
+		
+		self.stat_dot = CUIStatic()
+		self.stat_dot:SetAutoDelete(true)
+		self:AttachChild(self.stat_dot)
+		self.stat_dot:SetWndRect(0, 9, 16, 16)
+		self.stat_dot:Init("ui\\ui_pda_contacts_online", 0, 9, 16, 16)
+		
+		self.name = CUIStatic()
+		self.name:SetAutoDelete(true)
+		self:AttachChild(self.name)
+		self.name:SetWndRect(15, 5, 310, 20)
+		self.name:SetText(info_mgr.npcs[index].name)
+		self.name:SetTextAlign(CGameFont.alLeft)
+		self.name:SetFont(pcTextViewer.get_font("letterica18"))
+		self.name:SetTextColor(pcTextViewer.get_colour("dark_grey"))
+		
+		self.group = CUIStatic()
+		self.group:SetAutoDelete(true)
+		self:AttachChild(self.group)
+		self.group:SetWndRect(0, 25, 310, 18)
+		self.group:SetText(game.translate_string("ui_pda_base_contact_group") .. ": " .. info_mgr.npcs[index].community)
+		self.group:SetTextAlign(CGameFont.alLeft)
+		self.group:SetFont(pcTextViewer.get_font("letterica16"))
+		self.group:SetTextColor(pcTextViewer.get_colour("dark_grey"))
+		
+		self.stat_msg = CUIStatic()
+		self.stat_msg:SetAutoDelete(true)
+		self:AttachChild(self.stat_msg)
+		self.stat_msg:SetWndRect(0, 45, 310, 18)
+		self.stat_msg:SetText(info_mgr.npcs[index].status)
+		self.stat_msg:SetTextAlign(CGameFont.alLeft)
+		self.stat_msg:SetFont(pcTextViewer.get_font("medium"))
+		--self.stat_msg:SetFont(pcTextViewer.get_font("letterica16"))
+		self.stat_msg:SetTextColor(pcTextViewer.get_colour("dark_grey"))
+		
+		self.icon = CUIStatic()
+		self.icon:SetAutoDelete(true)
+		self:AttachChild(self.icon)
+		self.icon:SetWndRect(292, 0, 100, 64)
+		self.icon:Init(info_mgr.npcs[index].icon, 314, 0, 100, 64)
+		self.icon:SetStretchTexture(true)
+		
+		self.icon_frame = CUIStatic()
+		self.icon_frame:SetAutoDelete(true)
+		self:AttachChild(self.icon_frame)
+		self.icon_frame:SetWndRect(292, 0, 100, 64)
+		self.icon_frame:Init("ui_dlg_elem_pda_icon_holder", 314, 0, 100, 64)
+		self.icon_frame:SetStretchTexture(true)
+		
+		self.splitter = CUIStatic()
+		self.splitter:SetAutoDelete(true)
+		self:AttachChild(self.splitter)
+		self.splitter:SetWndRect(0, 66, 414, 2)
+		self.splitter:Init("ui\\ui_pda_horizontal_line", 0, 66, 414, 2)
+		self.splitter:SetStretchTexture(true)
+	end
+end
+
+function Contact:SetFocus(b)
+	local colour = "yellow" --"full_white"
+	if not b then
+		colour = "dark_grey"
+	end
+	
+	self.name:SetTextColor(pcTextViewer.get_colour(colour))
+	self.group:SetTextColor(pcTextViewer.get_colour(colour))
+	self.stat_msg:SetTextColor(pcTextViewer.get_colour(colour))
+end
+
+function Contact:SetStatus()
+	info_mgr:SetCanTalk(self.npc_index)
+	
+	if info_mgr.npcs[self.npc_index].online then
+		self.stat_dot:InitTexture("ui\\ui_pda_contacts_online")
+		self.stat_msg:SetText(info_mgr.npcs[self.npc_index].status)
+	else
+		self.stat_dot:InitTexture("ui\\ui_pda_contacts_offline")
+		self.stat_msg:SetTextST("pda_talk_status_msg_offline")
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaCommContacts" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaCommContacts:__init(parent, xml) super()
+	self.prev_contact = -1
+	self.parent = parent
+	
+	self:SetWindowName("contacts_panel")
+	self:InitControls(xml)
+	self:InitCallBacks()
+end
+
+function uiPdaCommContacts:__finalize()
+end
+
+function uiPdaCommContacts:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPdaCommContacts:InitControls(xml)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(0, 0, 448, 475)
+	
+	local xml_tag = self.parent:WindowName() .. ":" .. self:WindowName()
+	
+	xml:InitFrame(xml_tag .. ":frame_wnd", self)
+	xml:InitFrameLine(xml_tag .. ":frame_line", self)
+	
+	self.contacts_counter = xml:InitStatic(xml_tag .. ":contacts_counter", self)
+	
+	if contacts_list_type == "simple" then
+		xml:InitAutoStaticGroup(xml_tag .. ":contacts_list_header", self)
+		xml:InitStatic(xml_tag .. ":splitter", self)
+	end
+	
+	self.contacts_list = xml:InitList(xml_tag .. ":contacts_list_" .. contacts_list_type, self)
+	self:Register(self.contacts_list, "contacts_list")
+	
+	self:AddContacts()
+end
+
+function uiPdaCommContacts:InitCallBacks()
+	self:AddCallback("contacts_list", ui_events.LIST_ITEM_CLICKED, self.OnContactClicked, self)
+end
+
+function uiPdaCommContacts:OnContactClicked()
+	if self.contacts_list:GetSize() ~= 0 then
+		local index = self.contacts_list:GetSelectedItem()
+		if index ~= -1 then
+			self:DeselectItem()
+			self.contacts_list:GetItem(index):SetFocus(true)
+			self.parent:SetNpcDetails(self.contacts_list:GetItem(index).npc_index)
+			self.prev_contact = index
+		end
+	end
+end
+
+function uiPdaCommContacts:DeselectItem()
+	if self.prev_contact ~= -1 then
+		self.contacts_list:GetItem(self.prev_contact):SetFocus(false)
+	end
+end
+
+function uiPdaCommContacts:AddContacts()
+	local tmp = {}
+	
+	for k, v in pairs(traders) do
+		if has_alife_info(v.visited) then
+			self.contacts_list:AddItem(Contact(v.id))
+		end		
+	end
+	
+	for id, data in pairs(info_mgr.npcs) do
+		if not tmp[id] and data.online then
+			self.contacts_list:AddItem(Contact(id))
+		end
+	end
+end
+
+function uiPdaCommContacts:OnWindowShow()
+	local npc, npc_index = nil, nil
+	local relation = nil
+	local obj = nil
+	
+	self.contacts_counter:SetText(string.format("#%03d", self.contacts_list:GetSize()))
+	
+	for index = 0, self.contacts_list:GetSize() - 1 do
+		if self.contacts_list:GetItem(index) then
+			npc_index = self.contacts_list:GetItem(index).npc_index
+			npc = info_mgr.npcs[npc_index]
+			
+			obj = level.object_by_id(npc.id)
+			if obj and obj:alive() then
+				info_mgr.npcs[npc_index].online = true
+				relation = obj:relation(db.actor)
+			else
+				if npc.story_id ~= nil then
+					obj = alife():story_object(npc.story_id)
+					if obj and obj.alive then
+						info_mgr.npcs[npc_index].online = true
+					else
+						info_mgr.npcs[npc_index].online = false
+					end
+				else
+					info_mgr.npcs[npc_index].online = false
+				end
+			end
+			
+			if relation then
+				info_mgr.npcs[npc_index].relation_g = relation
+				info_mgr.npcs[npc_index].relation = info_mgr:GetRelation(relation)
+				relation = nil
+			end
+			
+			self.contacts_list:GetItem(index):SetStatus()
+			info_mgr:EnableDialogs(npc_index, true)
+			
+			if not info_mgr.npcs[npc_index].online then
+				self.contacts_list:RemoveItem(index)
+			end
+		end
+	end
+end
+
+function uiPdaCommContacts:OnWindowHide()
+	self:DeselectItem()
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaCommContactDetails" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaCommContactDetails:__init(parent, xml) super()
+	self.contact_selected = false
+	
+	self:SetWindowName("contact_details_panel")
+	self:InitControls(parent, xml)
+	self:InitCallBacks()
+end
+
+function uiPdaCommContactDetails:__finalize()
+end
+
+function uiPdaCommContactDetails:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPdaCommContactDetails:InitControls(parent, xml)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(463, 0, 298, 475)
+	
+	local xml_tag = parent .. ":" .. self:WindowName()
+	local dlg = nil
+	
+	xml:InitFrame(xml_tag .. ":frame_wnd", self)
+	xml:InitFrameLine(xml_tag .. ":frame_line", self)
+	
+	self:Register(xml:InitStatic(xml_tag .. ":frame_line_caption", self), "npc_name")
+	self:Register(xml:InitStatic(xml_tag .. ":icon", self), "icon")
+	
+	xml:InitAnimStatic(xml_tag .. ":anim", self)
+	xml:InitStatic(xml_tag .. ":splitter_top", self)
+	
+	dlg = xml:InitStatic(xml_tag .. ":icon_frame", self)
+	dlg:Show(self.contact_selected)
+	self:Register(dlg, "icon_frame")
+	
+	for k, v in pairs({"community", "rank", "relation", "reputation"}) do
+		dlg = xml:InitStatic(xml_tag .. ":" .. v .. "_static", self)
+		dlg:Show(self.contact_selected)
+		self:Register(dlg, v .. "_static")
+		
+		dlg = xml:InitStatic(xml_tag .. ":" .. v, self)
+		dlg:Show(self.contact_selected)
+		self:Register(dlg, v)
+	end
+	
+	dlg = xml:InitFrameLine(xml_tag .. ":bio_frame_line", self)
+	dlg:Show(self.contact_selected)
+	self:Register(dlg, "bio_frame_line")
+	
+	dlg = xml:InitStatic(xml_tag .. ":splitter_bottom", self)
+	dlg:Show(self.contact_selected)
+	self:Register(dlg, "splitter_bottom")
+	
+	self.npc_bio_list = xml:InitList(xml_tag .. ":bio_list", self)
+end
+
+function uiPdaCommContactDetails:InitCallBacks()
+end
+
+function uiPdaCommContactDetails:SetNpcInfo(index)
+	if not self.contact_selected then
+		self.contact_selected = true
+	end
+	
+	local npc = info_mgr.npcs[index]
+	self:GetStatic("npc_name"):SetText(npc.name)
+	
+	for k, v in pairs({"community", "rank", "relation", "reputation"}) do
+		self:GetStatic(v .. "_static"):Show(self.contact_selected)
+		self:GetStatic(v):Show(self.contact_selected)
+		self:GetStatic(v):SetText(npc[v])
+	end
+	
+	if npc.relation_g == game_object.enemy then
+		self:GetStatic("relation"):SetTextColor(pcTextViewer.get_colour("red"))
+	elseif npc.relation_g == game_object.friend then
+		self:GetStatic("relation"):SetTextColor(pcTextViewer.get_colour("green"))
+	else
+		self:GetStatic("relation"):SetTextColor(pcTextViewer.get_colour("light_grey"))
+	end
+	
+	self:GetFrameLineWnd("bio_frame_line"):Show(self.contact_selected)
+	self:GetStatic("splitter_bottom"):Show(self.contact_selected)
+	self:GetStatic("icon"):InitTexture(npc.icon)
+	self:GetStatic("icon"):Show(self.contact_selected)
+	
+	if self:GetStatic("icon_frame") then
+		self:DetachChild(self:GetStatic("icon_frame"))
+	end
+	local dlg = CUIStatic()
+	dlg:Init("ui_dlg_elem_pda_icon_holder", 8, 60, 122, 122)
+	dlg:SetWindowName("icon_frame")
+	dlg:SetAutoDelete(true)
+	self:AttachChild(dlg)
+	
+	self.npc_bio_list:RemoveAll()
+	pcTextViewer.AddText(self.npc_bio_list, 37, npc.bio, true, "letterica16", "dark_grey")
+end
+
+function uiPdaCommContactDetails:OnWindowShow()
+end
+
+function uiPdaCommContactDetails:OnWindowHide()
+	if self.contact_selected then
+		self.contact_selected = false
+		
+		self:GetStatic("npc_name"):SetTextST("ui_pda_base_contact_details")
+		self.npc_bio_list:RemoveAll()
+		
+		for k, v in pairs({"community", "rank", "relation", "reputation"}) do
+			self:GetStatic(v .. "_static"):Show(self.contact_selected)
+			self:GetStatic(v):Show(self.contact_selected)
+		end
+		
+		self:GetFrameLineWnd("bio_frame_line"):Show(self.contact_selected)
+		self:GetStatic("splitter_bottom"):Show(self.contact_selected)
+		self:GetStatic("icon"):Show(self.contact_selected)
+		
+		if self:GetStatic("icon_frame") then
+			self:DetachChild(self:GetStatic("icon_frame"))
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+local pda_dlgs_npc_dialog = nil
+
+function GetNpcDialogList()
+	return pda_dlgs_npc_dialog
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaCommDialogs" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaCommDialogs:__init(parent, xml) super()
+	self.parent = parent
+	
+	self:SetWindowName("dialogs_panel")
+	self:InitControls(self.parent:WindowName(), xml)
+	self:InitCallBacks()
+end
+
+function uiPdaCommDialogs:__finalize()
+end
+
+function uiPdaCommDialogs:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPdaCommDialogs:InitControls(parent, xml)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(0, 0, 448, 475)
+	
+	local xml_tag = parent .. ":" .. self:WindowName()
+	
+	xml:InitFrame(xml_tag .. ":npc_dialog_frame", self)
+	xml:InitFrameLine(xml_tag .. ":npc_dialog_frame_line", self)
+	self:Register(xml:InitStatic(xml_tag .. ":frame_line_caption", self), "npc_name")
+	
+	xml:InitFrame(xml_tag .. ":actor_dialog_frame", self)
+	xml:InitFrameLine(xml_tag .. ":actor_dialog_frame_line", self)
+	
+	self.npc_dialog = xml:InitList(xml_tag .. ":npc_dialog", self)
+	self.actor_dialog = xml:InitList(xml_tag .. ":actor_dialog", self)
+	self:Register(self.actor_dialog, "actor_dialog")
+	
+	pda_dlgs_npc_dialog = self.npc_dialog
+end
+
+function uiPdaCommDialogs:InitCallBacks()
+	self:AddCallback("actor_dialog", ui_events.LIST_ITEM_CLICKED, self.OnActorPhraseClicked, self)
+end
+
+function uiPdaCommDialogs:OnActorPhraseClicked()
+	if self.actor_dialog:GetSize() ~= 0 then
+		local index = self.actor_dialog:GetSelectedItem()
+		if index ~= -1 then
+			local item = self.actor_dialog:GetItem(index)
+			
+			pcTextViewer.AddText(self.npc_dialog, 58, "actor_name", true, "letterica18", "yellow", false)
+			local str = game.translate_string(dialog_mgr:GetPhraseText(item.dialog_id, item.curr_phrase))
+			pcTextViewer.AddText(self.npc_dialog, 58, string.format("\\t%s", str), false, "letterica16", "white", false)
+			
+			local npc = info_mgr.npcs[self.parent.active_contact]
+			
+			dialog_mgr:Execute(dialog_mgr.dialog_list[item.dialog_id][item.curr_phrase].action,
+				npc.id, item.dialog_id, item.prev_phrase, item.curr_phrase)
+			
+			--[[
+			if dialog_mgr:CanSwitchPhrase(item.dialog_id, item.curr_phrase) then
+				self.actor_dialog:RemoveAll()
+				str = dialog_mgr:GetNextPhrase(item.dialog_id, item.curr_phrase)
+				
+				local npc = info_mgr.npcs[self.parent.active_contact]
+				dialog_mgr:AddNpcPhrase(self.npc_dialog, self.actor_dialog, item.dialog_id, str, item.curr_phrase, npc)
+				
+				if not dialog_mgr:CanSwitchPhrase(item.dialog_id, str) then
+					self:SwitchToNextDialog(item.dialog_id)
+				end
+			else
+				self:SwitchToNextDialog(item.dialog_id)
+			end
+			--]]
+			
+			if dialog_mgr:CanSwitchPhrase(item.dialog_id, item.curr_phrase) then
+				self.actor_dialog:RemoveAll()
+				
+				local dbg = 0
+				
+				for k, v in pairs(dialog_mgr.dialog_list[item.dialog_id][item.curr_phrase].next_phrase) do
+					if dialog_mgr:CheckCondition(item.dialog_id, npc.id, item.curr_phrase, v) then
+						dbg = dbg + 1
+						dialog_mgr:AddNpcPhrase(self.npc_dialog, self.actor_dialog, item.dialog_id, v, item.curr_phrase, npc)
+						if not dialog_mgr:CanSwitchPhrase(item.dialog_id, v) then
+							self:SwitchToNextDialog(item.dialog_id)
+						end
+					end
+				end
+				
+				if dbg > 1 then
+					abort("[%s.script] : 'next_phrase' ambiguity in dialog '%s' phrase '%s' Use conditions!", sModule, item.dialog_id, item.curr_phrase)
+				end
+			else
+				self:SwitchToNextDialog(item.dialog_id)
+			end
+		end
+	end
+end
+
+function uiPdaCommDialogs:SwitchToNextDialog(dialog_id)
+	if self.parent.active_contact then
+		if dialog_mgr.dialog_list[dialog_id].one_time_dlg then
+			info_mgr:DisableDialog(self.parent.active_contact, dialog_id)
+		end
+		
+		self:StartDialog(self.parent.active_contact, false)
+	end
+end
+
+function uiPdaCommDialogs:StartDialog(index, first_use)
+	if first_use then
+		self.npc_dialog:RemoveAll()
+		self.actor_dialog:RemoveAll()
+	else
+		self.actor_dialog:RemoveAll()
+	end
+	
+	local npc = info_mgr.npcs[index]
+	self:GetStatic("npc_name"):SetText(npc.name)
+	
+	for k, v in ipairs(npc.dialogs) do
+		if v.enabled and dialog_mgr:CheckCondition(v.id, npc.id, nil, nil) then
+			if dialog_mgr.dialog_list[v.id]["phrase_0"] and dialog_mgr:CheckCondition(v.id, npc.id, "phrase_0", "phrase_0") then
+				dialog_mgr:AddActorPhrase(self.actor_dialog, self.npc_dialog, v.id, "phrase_0", "phrase_0", npc)
+			else
+				npc.dialogs[k].enabled = false
+				if not dialog_mgr.dialog_list[v.id]["phrase_0"] then
+					abort("[%.script] : dialog '%s' does not contain 'phrase_0'", sModule, v.id)
+				end
+			end
+		end
+	end
+	
+	if self.actor_dialog:GetSize() == 0 then
+		self.parent:OnTalkClicked()
+	end
+	
+	for k, v in ipairs(npc.dialogs) do
+		if dialog_mgr.dialog_list[v.id].type == "bye" and v.enabled == false then
+			self.parent:OnTalkClicked()
+		end
+	end
+end
+
+function uiPdaCommDialogs:OnWindowShow()
+end
+
+function uiPdaCommDialogs:OnWindowHide()
+	self.npc_dialog:RemoveAll()
+	self.actor_dialog:RemoveAll()
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaComm" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaComm:__init(xml,pos) super()
+	self.active_contact = nil
+	self.is_talking = false
+	
+	self:SetWindowName("pda_comm")
+	self:InitControls(xml,pos)
+	self:InitCallBacks()
+end
+
+function uiPdaComm:__finalize()
+end
+
+function uiPdaComm:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPdaComm:InitControls(xml,pos)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(unpack(pos))
+	
+	self.contacts_wnd = uiPdaCommContacts(self, xml)
+	self.contacts_wnd:SetAutoDelete(true)
+	self:AttachChild(self.contacts_wnd)
+	
+	self.details_wnd = uiPdaCommContactDetails(self:WindowName(), xml)
+	self.details_wnd:SetAutoDelete(true)
+	self:AttachChild(self.details_wnd)
+	
+	self.dialogs_wnd = uiPdaCommDialogs(self, xml)
+	self.dialogs_wnd:SetAutoDelete(true)
+	self:AttachChild(self.dialogs_wnd)
+	
+	self.contacts_wnd:Show(true) -- left panel (contacts list)
+	self.details_wnd:Show(true) -- right panel (contact details)
+	self.dialogs_wnd:Show(false) -- dialogs panels
+	
+	local dlg = xml:Init3tButton(self:WindowName() .. ":btn_talk", self)
+	dlg:Enable(false)
+	self:Register(dlg, "btn_talk")
+end
+
+function uiPdaComm:InitCallBacks()
+	self:AddCallback("btn_talk", ui_events.BUTTON_CLICKED, self.OnTalkClicked, self)
+end
+
+function uiPdaComm:OnTalkClicked()
+	if self.active_contact and info_mgr.npcs[self.active_contact].can_talk then
+		self.is_talking = not self.is_talking
+		
+		local str = if_then_else(self.is_talking, "ui_pda_talk_chat_end", "ui_pda_base_chat_start")
+		self:GetButton("btn_talk"):SetTextST(str)
+		
+		self.dialogs_wnd:Show(not self.dialogs_wnd:IsShown())
+		self.contacts_wnd:Show(not self.contacts_wnd:IsShown())
+		
+		if self.is_talking then
+			self.dialogs_wnd:StartDialog(self.active_contact, true)
+		else
+			info_mgr:EnableDialogs(self.active_contact, true)
+		end
+	end
+end
+
+function uiPdaComm:SetNpcDetails(index)
+	self.active_contact = index
+	self:GetButton("btn_talk"):Enable(info_mgr.npcs[index].can_talk)
+	self.details_wnd:SetNpcInfo(index)
+end
+
+function uiPdaComm:OnWindowShow()
+	self.contacts_wnd:OnWindowShow()
+	self.details_wnd:OnWindowShow()
+	self.dialogs_wnd:OnWindowShow()
+end
+
+function uiPdaComm:OnWindowHide()
+	if self.contacts_wnd:IsShown() then
+		self.contacts_wnd:OnWindowHide()
+	end
+	
+	if self.details_wnd:IsShown() then
+		self.details_wnd:OnWindowHide()
+	end
+	
+	if self.dialogs_wnd:IsShown() then
+		self.dialogs_wnd:OnWindowHide()
+		self.dialogs_wnd:Show(false)
+		self.contacts_wnd:Show(true)
+		self.contacts_wnd:OnWindowHide()
+	end
+	
+	self:GetButton("btn_talk"):SetTextST("ui_pda_base_chat_start")
+	self:GetButton("btn_talk"):Enable(false)
+	
+	self.active_contact = nil
+	self.is_talking = false
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,14 @@
+[logic]
+active = ph_light_mgr@arena_off
+
+[ph_light_mgr@arena_off]
+lights_on = always_off
+on_blowout = blink
+osciallator = false
+on_info = {+bar_arena_start} ph_light_mgr@arena ; %=play_snd(ambient\switch_2)%
+
+[ph_light_mgr@arena]
+lights_on = always_on
+on_blowout = blink
+osciallator = false
+on_info = {+bar_arena_mute !bar_arena_actor_outside} ph_light_mgr@arena_off ; %=play_snd(ambient\switch_2)%

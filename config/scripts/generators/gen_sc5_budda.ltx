@@ -1,0 +1,16 @@
+[combat_ignore@budda]
+
+[logic]
+active = remark@gen_budda_gman
+combat_ignore = combat_ignore@budda
+
+[walker@gen_budda_gman]
+path_walk = gen_budda
+on_timer = 5 | remark@gen_budda_gman
+combat_ignore_cond = always
+
+[remark@gen_budda_gman]
+anim = budda
+target = gen_budda, 0
+combat_ignore_cond = always
+on_info = {+gen_sc5_end} %=release%

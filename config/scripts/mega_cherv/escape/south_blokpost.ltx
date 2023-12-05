@@ -1,0 +1,52 @@
+[logic]
+active = sr_idle@start
+
+[sr_idle@start]
+on_actor_inside = {-cordon_military_hostile -cordon_military_restrictor_been -cordon_case_task} sr_tip %+cordon_actor_in_military_space% , {-cordon_military_hostile -cordon_case_task} sr_tip@been %+cordon_actor_in_military_space% , {-cordon_military_hostile +cordon_case_task} sr_idle@task , {+cordon_military_hostile} nil %=release%
+;on_actor_inside = {-cordon_military_hostile -cordon_military_restrictor_been -cordon_case_task} sr_tip %+cordon_actor_in_military_space% , {-cordon_military_hostile -cordon_case_task} sr_tip@been %+cordon_actor_in_military_space% , {-cordon_military_hostile +cordon_case_task =is_day}} sr_tip@been %+cordon_actor_in_military_space% , {-cordon_military_hostile +cordon_case_task !is_day} sr_idle@task , {+cordon_military_hostile} nil %=release%
+
+[sr_tip]
+header = military_message_header
+name = cordon_military_blokpost_warning
+sender = military
+showtime = 15000
+single = true
+on_signal = tip_sended| sr_idle@wait %+cordon_military_restrictor_been%
+on_info = {+cordon_military_hostile} nil %=release%
+
+[sr_tip@been]
+header = military_message_header
+name = cordon_military_blokpost_warning_been
+sender = military
+showtime = 5000
+single = true
+on_signal = tip_sended| sr_idle@wait
+on_info = {+cordon_military_hostile} nil %=release%
+
+[sr_idle@wait]
+on_timer = 15000| sr_idle@inside1
+on_info = {+cordon_military_hostile} nil %=release%
+
+[sr_idle@inside1]
+on_info = {!actor_in_zone(cordon_blokpost_road_restrictor)} sr_tip@fight
+on_info2 = {+cordon_military_hostile} nil %=release%
+on_actor_outside = {-cordon_military_hostile} sr_idle@end
+
+[sr_tip@fight]
+header = military_message_header
+name = rosf_military_blokpost_fight
+sender = military
+showtime = 5000
+single = true
+on_signal = tip_sended| nil %+cordon_military_hostile =release%
+on_info = {+cordon_military_hostile} nil %=release%
+
+[sr_idle@end]
+on_info = %=play_rosf_mil_end% sr_idle@start
+on_info = {+cordon_military_hostile} nil %=release%
+
+[sr_idle@task]
+on_info = {+cordon_case_task_done} sr_idle@start
+on_info2 = {-cordon_case_task} sr_idle@start
+on_info3 = {+cordon_military_hostile} nil %=release%
+on_actor_outside = sr_idle@start

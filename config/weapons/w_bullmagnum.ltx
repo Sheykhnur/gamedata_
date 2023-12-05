@@ -1,0 +1,191 @@
+[wpn_bull_magnum]:pistol_base,weapon_.44
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\magnum_bull"
+class                                   = WP_PM
+hand_dependence                         = 1
+repair_compatibility                    = revolver
+scheduled                               = off
+weapon_rank                             = 2
+
+; Inventory icon
+inv_grid_width                          = 2
+inv_grid_height                         = 1
+inv_grid_x                              = 14
+inv_grid_y                              = 13
+scope_x                                 = 28
+scope_y                                 = -29
+silencer_x                              = 77
+silencer_y                              = -17
+
+; Text
+inv_name                                = wpn_bull_magnum_name
+inv_name_short                          = wpn_bull_magnum_name
+description                             = wpn_bull_magnum_descr
+
+; Visual
+hud                                     = wpn_bull_magnum_hud
+position                                = -0.021, 0.04, 0.03
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_magnum
+visual                                  = dynamics\weapons\wpn_magnums\wpn_bull_magnum.ogf
+
+; Effects
+fire_point                              = -0.005000, 0.020000, 0.220000
+shell_point                             = 0.0, 0.133, 0.06
+shell_dir                               = 0.0, 0.0, 0.4
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.03
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw						= weapons\357\357_deploy
+snd_holster						= weapons\357\357_holster
+snd_shoot						= weapons\357\357_1
+snd_shoot1						= weapons\357\357_2
+snd_shoot2						= weapons\357\357_3
+snd_shoot3						= weapons\357\357_4
+snd_empty						= weapons\metro_revolver\metro_hammer
+snd_reload						= weapons\metro_revolver\metro_reload
+
+; Upgrade icon
+upgr_icon_x                             = 1060
+upgr_icon_y                             = 450
+upgr_icon_width                         = 233
+upgr_icon_height                        = 152
+
+; Cost & Weight
+cost                                    = 27000
+inv_weight                              = 2.2
+ph_mass                                 = 3
+
+; Ammo
+ammo_mag_size                           = 6
+
+; Features
+scope_name                              = wpn_addon_scope_magnum
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 1.08
+
+; Ballistics
+fire_dispersion_base                    = 0.55
+
+; Performance
+rpm                                     = 180
+rpm_semi                                = 180
+rpm_empty_click                         = 200
+
+; Reliability
+misfire_start_condition                 = 0.5
+misfire_end_condition                   = 0.0
+condition_shot_dec                      = 0.00056 ; 2000 shots
+condition_queue_shot_dec                = 0.00056
+
+; Handling
+control_inertion_factor                 = 1.5f
+PDM_disp_base                           = 2.6
+PDM_disp_vel_factor                     = 1.1
+PDM_disp_accel_factor                   = 1.1
+
+; Recoil
+cam_dispersion                          = 8.0
+cam_dispersion_inc                      = 6.0
+cam_dispersion_frac                     = 1.0
+cam_step_angle_horz                     = 3.0
+cam_relax_speed                         = 8.0
+zoom_cam_dispersion                     = 8.0
+zoom_cam_dispersion_inc                 = 6.0
+zoom_cam_dispersion_frac                = 1.0
+zoom_cam_step_angle_horz                = 3.0
+zoom_cam_relax_speed                    = 8.0
+
+; Aiming
+zoom_enabled                            = true
+zoom_rotate_time                        = 0.25
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_revolver
+upgrades                                = up_gr_firstab_revolver, up_gr_seconab_revolver
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 5
+max_radius                              = 50
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 1.0
+
+
+[wpn_bull_magnum_hud]:hud_base
+aim_hud_offset_pos = -0.091450,0.040800,-0.081100
+aim_hud_offset_rot = 0.006900,0.001600,-0.002000
+
+aim_hud_offset_pos_16x9				= -0.091450,0.040800,-0.081100
+aim_hud_offset_rot_16x9				= 0.006900,0.001600,-0.002000
+anim_show				= kyky_revolver_two_hands_draw,, 1.8
+anim_hide            	= kyky_revolver_two_hands_holster
+anim_idle            	= kyky_revolver_two_hands_idle
+anim_shots				= kyky_revolver_two_hands_shoot, shoot
+anim_idle_aim			= kyky_revolver_two_hands_idle_aim
+anim_reload				= kyky_revolver_two_hands_reload, reload
+anim_idle_moving			= kyky_revolver_two_hands_idle_move
+anim_idle_sprint			= kyky_revolver_two_hands_idle_sprint
+anim_bore				= kyky_revolver_two_hands_idle
+anim_show_empty				= kyky_revolver_two_hands_draw,, 1.8
+anim_hide_empty            	= kyky_revolver_two_hands_holster
+anim_idle_empty            	= kyky_revolver_two_hands_idle
+anim_shot_l					= kyky_revolver_two_hands_shoot, shoot
+anim_idle_aim_empty			= kyky_revolver_two_hands_idle_aim
+anim_reload_empty			= kyky_revolver_two_hands_reload, reload
+anim_idle_moving_empty		= kyky_revolver_two_hands_idle_move
+anim_idle_sprint_empty		= kyky_revolver_two_hands_idle_sprint
+anim_bore_empty				= kyky_revolver_two_hands_idle
+
+attach_place_idx                        = 0
+fire_point			= -0.5,0.05,-0.6; -0.5,0.05,-0.5 ; z, x, y rotated crap
+fire_bone               	= muzzle
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = -0.500000,1.000000,1.149999
+hands_position_16x9			= 0.0,-0.165,0.0
+hands_orientation_16x9		= 0,0,0
+hands_position                          = -0.021000,-0.160000,0.002500
+item_position					= 0,0.010,0
+item_orientation				= 0,-90,0
+item_visual                             = dynamics\weapons\wpn_magnums\wpn_bull_magnum_hud
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true
+
+;---------Револьвер Борова / Borov's Revolver
+[wpn_44_magnum_m1]:wpn_bull_magnum
+$spawn                                  = "mega_cherv\weapons\wpn_44_magnum_m1"
+unique_item                             = true
+
+; Text
+inv_name                                = wpn-44_magnum_m1
+inv_name_short                          = wpn-44_magnum_m1
+description                             = enc_weapons1_wpn_44_magnum_m1
+
+; Cost & Weight
+cost                                    = 36000
+
+; Impact
+hit_power                               = 1.12
+
+; Ballistics
+fire_dispersion_base                    = 0.52

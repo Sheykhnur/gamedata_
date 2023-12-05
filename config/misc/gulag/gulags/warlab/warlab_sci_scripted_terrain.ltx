@@ -1,0 +1,46 @@
+;;;;;;;;;;;;;;start;;;;;;;;;;;;;;;;;;
+
+[logic@war_sci_scripted_work_start]
+active = walker@war_sc7_start
+combat_ignore = combat_ignore@war_sci_scripted
+
+[walker@war_sc7_start]
+path_walk = walk_start
+combat_ignore_cond = always
+
+;;;;;;;;;;;;;;online;;;;;;;;;;;;;;;;;;
+
+[combat_ignore@war_sci_scripted]
+
+[logic@war_sci_scripted_work]
+active = walker@war_sc7_sci_on
+combat_ignore = combat_ignore@war_sci_scripted
+
+[walker@war_sc7_sci_on]
+path_walk = walk
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 700 | remark@war_sc7_sci
+def_state_standing = sci_ghost_fly
+def_state_moving1 = sci_ghost_fly
+def_state_moving2 = sci_ghost_fly
+def_state_moving3 = sci_ghost_fly
+
+[remark@war_sc7_sci]
+anim = sci_ghost_fly
+snd = war_replics53
+target = war_sci_scripted_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc7_zomb_on +war_sc7_sci_off%
+;14500
+
+;;;;;;;;;;;;;;offline;;;;;;;;;;;;;;;;;;
+
+[logic@war_sci_scripted_work_off]
+active = walker@war_sc7_sci
+combat_ignore = combat_ignore@war_sci_scripted
+
+[walker@war_sc7_sci]
+path_walk = walk_off
+combat_ignore_cond = always

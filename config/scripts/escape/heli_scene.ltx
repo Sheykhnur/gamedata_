@@ -1,0 +1,43 @@
+
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = esc_heli_idle_point
+engine_sound = false
+combat_safe_altitude = -50
+combat_use_rocket = false
+combat_use_mgun = false
+on_info = {+esc_heli_attack} heli_move@fly %=prn_log(switching1)%
+default_velocity = 60
+
+[heli_move@fly]
+path_move = heli_attack_point
+engine_sound = true
+combat_safe_altitude = -50
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 60
+combat_enemy = 6024
+on_signal = reached | heli_move@bad
+on_timer = 3000 | %+esc_crouch_tip%
+on_info = {=is_dead(6024)} %=prn_log(switching2) +esc_novice_dead% heli_move@sleep
+on_info2 = {=is_dead(6024) -esc_heli_msg} %=send_msg(sid:trader_message_header:esc_sid_heli_msg) +esc_heli_msg%
+
+[heli_move@bad]
+path_move = heli_attack_point_if_bad
+engine_sound = true
+combat_safe_altitude = -50
+combat_use_rocket = true
+combat_use_mgun = true
+default_velocity = 60
+combat_enemy = 6024
+on_info = {=is_dead(6024)} %=prn_log(switching3)% heli_move@sleep
+on_info2 = {=is_dead(6024) -esc_heli_msg} %=send_msg(sid:trader_message_header:esc_sid_heli_msg) +esc_heli_msg%
+
+[heli_move@sleep]
+path_move = heli_scene_idle
+engine_sound = true
+combat_safe_altitude = -50
+combat_use_rocket = false
+combat_use_mgun = false

@@ -1,0 +1,45 @@
+;-- Базовые секции для предметов - НЕ для спавна (not for spawn)!
+;------------------
+[hud_food_base]
+visual                          = weapons\vodka\vodka_hud.ogf
+anim_show                       = vodka_1
+anim_idle                       = vodka_2
+anim_eat                        = vodka_3
+anim_prepare                    = vodka_5
+anim_play                       = vodka_5
+anim_hide                       = vodka_4
+fire_bone                       = bip01_head
+fire_point                      = 0.0, 0.0, 0.06
+orientation                     = 0, 0, 0
+position                        = 0, 0, 0
+
+;------------------
+[eatable_base]:identity_immunities
+animation_slot                  = 4
+cform                           = skeleton
+hud                             = hud_food_base
+
+eat_health                      = 0
+eat_satiety                     = 0
+eat_thirst                      = 0
+eat_alcohol                     = 0
+eat_psy_health                  = 0
+eat_radiation                   = 0
+eat_power                       = 0
+eat_max_power                   = 0
+wounds_heal_perc                = 0
+
+script_loot_class               = food	;for scripts
+
+item_use_time                   = 3
+effector_blocking_group         = 7
+
+use_sound						= interface\inv_slot
+
+;------------------
+
+[usable_base]:eatable_base,identity_immunities
+$prefetch                       = 32
+class                           = II_ANTIR
+visual                          = equipments\item_antirad.ogf
+use_sound						= interface\inv_slot

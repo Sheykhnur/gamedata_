@@ -1,0 +1,23 @@
+;-- bar backroom seif door logic
+
+[logic]
+active = ph_door@locked
+
+[ph_door@locked]
+closed = true
+locked = true
+on_info = {+bar_backroom_seif_door_open} ph_door@open
+
+
+[ph_door@closed]
+closed = true
+locked = false
+on_use = ph_door@open
+
+[ph_door@open]
+closed = false
+locked = false
+on_use = ph_door@closed
+
+
+

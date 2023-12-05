@@ -1,0 +1,274 @@
+[death@gen_ghost]
+on_info = %+mil_ghost_dead%
+
+[combat_ignore@gen_ghost]
+
+[threshold@gen_ghost]
+max_ignore_distance = 3
+ignore_monster      = 0
+
+[threshold@gen_ghost_walk]
+max_ignore_distance = 10
+ignore_monster      = 0
+
+[danger@gen_ghost_walk]
+ignore_distance = 30
+danger_inertion_time = 5000
+
+[danger@gen_ghost]
+ignore_distance = 50
+danger_inertion_time = 15000
+
+[danger@distraction]
+ignore_distance = 2
+
+[danger@gen_end]
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+danger_inertion_time_grenade = 0
+danger_inertion_time_corpse  = 0
+danger_inertion_time_hit     = 0 
+danger_inertion_time_sound   = 0
+
+[logic]
+active = {+gen_open_lab} walker@gen_ghost_final, {+gen_activate_tip -gen_open_lab} walker@gen_ghost_bunker_approach, {+gen_ghost_after_fade -gen_activate_tip} walker@gen_ghost_gens_field, {+gen_scene_fade_done -gen_ghost_after_fade} remark@gen_ghost_gens_scene, {-gen_scene_fade_done} walker@gen_ghost_start
+combat_ignore = combat_ignore@gen_ghost
+on_death = death@gen_ghost
+
+[walker@gen_ghost_start]
+path_walk = gen_ghost_start
+combat_ignore_cond = {=fighting_dist_ge(2)}
+def_state_standing = guard
+meet = no_meet
+on_timer = 1000 | remark@gen_ghost_level
+invulnerable = true
+
+[remark@gen_ghost_level]
+anim = guard
+snd = gen_ghost_welcome
+target = actor
+combat_ignore_cond = {=fighting_dist_ge(2)}
+meet = no_meet
+on_signal = sound_end | walker@gen_ghost_meet_player
+invulnerable = true
+
+[walker@gen_ghost_meet_player]
+path_walk = gen_ghost_start
+combat_ignore_cond = {=fighting_dist_ge(2)}
+def_state_standing = guard
+meet = meet@gen_ghost_talk
+on_info = {+gen_ghost_instructions_recieved} walker@gen_ghost
+threshold = threshold@gen_ghost
+danger = danger@gen_ghost_walk
+invulnerable = true
+
+[meet@gen_ghost_talk]
+use = true
+use_wpn = true
+abuse = false
+precond = visibility
+meet_talk_enabled = true
+meet_state = 5|hello|3|guard
+meet_state_wpn = 5|hello_wpn|3|guard
+victim = 5|actor
+victim_wpn = 5|actor
+meet_dialog	= gen_ghost_dialog
+
+[walker@gen_ghost]
+path_walk = gen_ghost_way_1
+combat_ignore_cond = {=fighting_dist_ge(2)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+on_info = {+gen_scene_fade -gen_scene_fade_done} remark@gen_ghost_gens_scene %=disable_anims =teleport_npc(gen_ghost_teleport:gen_scene_fade_done)%
+on_signal = reached | walker@gen_ghost_gens_scene
+threshold = threshold@gen_ghost
+danger = danger@gen_ghost_walk
+invulnerable = true
+
+[walker@gen_ghost_gens_scene]
+path_walk = gen_ghost_way_2
+combat_ignore_cond = {=fighting_dist_ge(15)}
+def_state_moving1 = sneak_run
+def_state_moving2 = sneak_run
+def_state_moving3 = sneak_run
+meet = no_meet
+on_info = {+gen_scene_fade -gen_scene_fade_done} remark@gen_ghost_gens_scene %=disable_anims =teleport_npc(gen_ghost_teleport:gen_scene_fade_done)%
+threshold = threshold@gen_ghost_walk
+danger = danger@gen_ghost_walk
+invulnerable = true
+
+[remark@gen_ghost_gens_scene]
+anim = gen_talk_scene
+target = gen_player_teleport, 0
+meet = no_meet
+no_move = true
+threshold = threshold@gen_ghost
+combat_ignore_cond = always
+on_timer = 21300 | remark@gen_ghost_gens_rotate
+invulnerable = true
+
+[remark@gen_ghost_gens_rotate]
+anim = wait
+target = gen_ghost_way_21_look, 0
+meet = no_meet
+no_move = true
+threshold = threshold@gen_ghost
+combat_ignore_cond = always
+on_timer = 500 | walker@gen_ghost_gens_field %+gen_ghost_after_fade =enable_anims%
+invulnerable = true
+
+[walker@gen_ghost_gens_field]
+path_walk = gen_ghost_way_21
+path_look = gen_ghost_way_21_look
+combat_ignore_cond = {=fighting_dist_ge(15)}
+def_state_moving1 = sneak_run
+def_state_moving2 = sneak_run
+def_state_moving3 = sneak_run
+meet = no_meet
+threshold = threshold@gen_ghost_walk
+danger = danger@gen_ghost_walk
+on_signal = nearbase | remark@gen_ghost_fix
+invulnerable = true
+
+[remark@gen_ghost_fix]
+anim = wait
+combat_ignore_cond = {=fighting_dist_ge(2)}
+meet = no_meet
+threshold = threshold@gen_ghost
+on_timer = 500 | walker@gen_ghost_temp
+invulnerable = true
+
+[walker@gen_ghost_temp]
+path_walk = gen_ghost_temp
+combat_ignore_cond = {=fighting_dist_ge(2)}
+meet = no_meet
+threshold = threshold@gen_ghost
+on_signal = temp | remark@gen_ghost_wait
+invulnerable = true
+
+[remark@gen_ghost_wait]
+anim = guard
+meet = no_meet
+threshold = threshold@gen_ghost
+combat_ignore_cond = {=fighting_dist_ge(2)}
+on_info = {=dist_to_actor_le(8)} remark@gen_ghost_binocle %+gen_bunker_attack%
+invulnerable = true
+
+[remark@gen_ghost_binocle]
+anim = binocular
+snd = gen_ghost_bunker
+target = gen_ghost_way_3, 3
+combat_ignore_cond = always
+meet = no_meet
+threshold = threshold@gen_ghost
+on_signal = sound_end | remark@gen_ghost_plan
+invulnerable = true
+
+[remark@gen_ghost_plan]
+anim = wait
+target = actor
+combat_ignore_cond = always
+threshold = threshold@gen_ghost
+meet = meet@ghost_plan
+on_info = {+gen_activate_tip} walker@gen_ghost_bunker_approach
+invulnerable = true
+
+[meet@ghost_plan]
+use = true
+use_wpn = true
+abuse = false
+precond = visibility
+meet_talk_enabled = true
+meet_state = 10|guard|3|guard
+meet_state_wpn = 10|guard|3|guard
+victim = 10|actor
+victim_wpn = 10|actor
+
+[walker@gen_ghost_bunker_approach]
+path_walk = gen_ghost_way_3
+path_look = gen_ghost_way_3_look
+combat_ignore_cond = {=fighting_dist_ge(2)}
+threshold = threshold@gen_ghost
+danger = danger@distraction
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+on_signal = near | remark@gen_ghost_lulz %+gen_distraction_leader%
+on_info = {+gen_ghost_trigger} remark@gen_ghost_lulz %+gen_distraction_leader%
+meet = no_meet
+invulnerable = true
+
+[remark@gen_ghost_lulz]
+anim = hands_up
+combat_ignore_cond = {-gen_actor_in_zone -gen_mil_bunker_cleared} true
+on_info = {+gen_ghost_anim_end -gen_mil_bunker_cleared} remark@gen_ghost_talk
+on_info2 = {+gen_mil_bunker_cleared} walker@gen_ghost_dec
+threshold = threshold@gen_ghost
+danger = danger@gen_ghost
+target = gen_ghost_distraction, 0
+invulnerable = true
+
+[remark@gen_ghost_talk]
+anim = ward
+combat_ignore_cond = {-gen_actor_in_zone -gen_mil_bunker_cleared} true
+on_info = {+gen_mil_bunker_cleared} walker@gen_ghost_dec
+threshold = threshold@gen_ghost
+danger = danger@gen_ghost
+target = gen_ghost_distraction, 0
+invulnerable = true
+
+[walker@gen_ghost_dec]
+path_walk = gen_ghost_way_4
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+combat_ignore_cond = always
+on_signal = dec | remark@gen_ghost_decode
+threshold = threshold@gen_ghost
+danger = danger@gen_end
+meet = no_meet
+invulnerable = true
+
+[remark@gen_ghost_decode]
+anim = press
+on_signal = anim_end | walker@gen_ghost_final %+gen_open_lab%
+combat_ignore_cond = always
+threshold = threshold@gen_ghost
+danger = danger@gen_ghost
+target = gen_ghost_press, 0
+meet = no_meet
+invulnerable = true
+
+[walker@gen_ghost_final]
+path_walk = gen_ghost_end
+path_look = gen_ghost_end_look
+meet = meet@gen_ghost_end
+threshold = threshold@gen_ghost
+danger = danger@gen_ghost
+on_info = {+war_core_deactivated} walker@gen_ghost_postfinal
+invulnerable = true
+
+[walker@gen_ghost_postfinal]
+path_walk = gen_ghost_end
+path_look = gen_ghost_end_look
+meet = meet@gen_ghost_end
+threshold = threshold@gen_ghost
+danger = danger@gen_ghost
+on_info = {+gen_postfinal_ghost_talked} %=release_not_seen%
+invulnerable = true
+
+[meet@gen_ghost_end]
+use = true
+use_wpn = true
+abuse = false
+precond = visibility
+meet_talk_enabled = true
+meet_state = 10|guard|3|guard
+meet_state_wpn = 10|guard|3|guard
+victim = 10|actor
+victim_wpn = 10|actor

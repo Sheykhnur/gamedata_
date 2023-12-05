@@ -1,0 +1,20 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+bas_switcher_off} sr_particle@scene1
+
+[sr_particle@scene1]
+name = ghoul\anomal-04-blue-field
+path = bas_sc1_particle
+mode = 2
+looped = true
+on_actor_inside = {+bas_switcher_off -bas_cutscene1_activated} sr_cutscene %+bas_cutscene1_activated%
+
+[sr_cutscene]
+point = bas_scene
+look = bas_scene_look
+cam_effector = bas_scene_eff
+on_signal = cameff_end | sr_idle@1 %=bas_release_all =rad_psy_basic_clear%
+
+[sr_idle@1]

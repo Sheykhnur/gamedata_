@@ -1,0 +1,1142 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_wpn_params.script
+ Description: Contains functions called by the engine to calculate weapon stat bars values and description of items.
+ Author     : GSC, phobos2077
+ --]] ----------------------------------------------------------------------------------------------
+
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+
+local reload_time = 3 -- number of seconds a typical reload takes
+
+local itemWeaponClasses = {
+--	[clsid.wpn_scope_s] = true,
+	[clsid.wpn_ak74_s] = true,
+	[clsid.wpn_automatic_shotgun_s] = true,
+	[clsid.wpn_lr300_s] = true,
+--	[clsid.wpn_binocular_s] = true,
+--	[clsid.wpn_zoomable_s] = true,
+	[clsid.wpn_bm16_s] = true,
+	[clsid.wpn_groza_s] = true,
+	[clsid.wpn_svd_s] = true,
+	[clsid.wpn_hpsa_s] = true,
+--	[clsid.wpn_knife_s] = true,
+--	[clsid.wpn_fireball_s] = true,
+	[clsid.wpn_pm_s] = true,
+	[clsid.wpn_rg6_s] = true,
+	[clsid.wpn_rpg7_s] = true,
+	[clsid.wpn_shotgun_s] = true,
+	[clsid.wpn_svu_s] = true,
+	[clsid.wpn_usp45_s] = true,
+	[clsid.wpn_val_s] = true,
+	[clsid.wpn_vintorez_s] = true,
+	[clsid.wpn_walther_s] = true,
+}
+
+--[[
+local itemLauncherGrenadeClasses = {
+	[clsid.wpn_ammo_m209] = true,
+	[clsid.wpn_ammo_og7b] = true,
+	[clsid.wpn_ammo_vog25] = true,
+}
+]]
+
+function isWeapon(item)
+	return itemWeaponClasses[item:clsid()]
+end
+
+local itemAfDetectorClasses = {
+	[clsid.af_detector_adv] = true,
+	[clsid.af_detector_elite] = true,
+	[clsid.af_detector_simple] = true,
+}
+
+function isDetector(item)
+	return itemAfDetectorClasses[item:clsid()]
+end
+
+function isScope(item)
+	return item:clsid() == clsid.wpn_scope_s
+end
+
+function isAmmo(item)
+	return item:clsid() == clsid.wpn_ammo
+end
+
+function isOutfit(item)
+	la_utils.IsOutfit(item)
+end
+
+local function normalize(val)
+	if val > 100 then
+		val = 100
+	elseif val < 1 then
+		val  = 1
+	end
+	
+	return val
+end
+
+local propertyFunctors = {}
+local system_ltx = system_ini()
+
+local function read_if_exist(readFuncName, section, value, default)
+	if system_ltx:line_exist(section, value) then
+		return system_ltx[readFuncName](system_ltx, section, value)
+	else
+		return default
+	end
+end
+
+local function r_bool_if_exist(section, value, default)
+	return read_if_exist("r_bool", section, value, default or false)
+end
+
+--- Class for reading weapon stats according to installed upgrades
+class "WeaponInfoReader"
+function WeaponInfoReader:__init(section, sUpgrades)
+	self.ltx = system_ini()
+	self.section = section
+	self.ups = WeaponInfoReader.parseList(sUpgrades) or {}
+end
+
+--- Gets true value of a weapon property.
+-- @param section - weapon section name
+-- @param upgrades - list of upgrades installed
+-- @param param - weapon param
+-- @param setNotAdd - set instead of adding
+function WeaponInfoReader:trueValue(readFuncName, param, setNotAdd)
+	local readFunc = self.ltx[readFuncName]
+	-- read base value
+	local val = self.ltx:line_exist(self.section, param) 
+		and readFunc(self.ltx, self.section, param)
+		or nil
+
+	if val == nil and not setNotAdd then
+		return nil
+	end
+	local base = val
+	for _,upSect in ipairs(self.ups) do
+		local paramMult = param .. "@mult"
+		if readFuncName == "r_float" and not setNotAdd and self.ltx:line_exist(upSect, paramMult) then
+			local mult = self.ltx:r_float(upSect, paramMult)
+			local mult2 = self.ltx:line_exist(upSect, "mult") and self.ltx:r_float(upSect, "mult") or 1.0
+			val = val + base * mult * mult2
+		elseif self.ltx:line_exist(upSect, param) and self.ltx:r_string(upSect, param) then
+			local upVal = readFunc(self.ltx, upSect, param)
+			if setNotAdd then
+				val = upVal
+			else
+				val = val + upVal
+			end
+		end
+	end
+	return val
+end
+
+function WeaponInfoReader:hasParam(param)
+	return self.ltx:line_exist(self.section, param)
+end
+
+function WeaponInfoReader.parseList(sList)
+	if type(sList) == "string" then
+		return string.split(sList, ",")
+	end
+	return sList
+end
+
+function WeaponInfoReader:isAutomatic()
+	local fire_modes = self:r_list("fire_modes")
+	if fire_modes ~= nil then
+		return table.find(fire_modes, "-1")
+	end
+	return false
+end
+
+function WeaponInfoReader:line_exist(param)
+	return self.ltx:line_exist(self.section, param)
+end
+
+function WeaponInfoReader:r_float(param, setNotAdd)
+	return self:trueValue("r_float", param, setNotAdd)
+end
+
+function WeaponInfoReader:r_float_fallback(param, fallbackKey, setNotAdd)
+	if self:line_exist(param) then
+		return self:trueValue("r_float", param, setNotAdd)
+	end
+	return self:trueValue("r_float", fallbackKey, setNotAdd)
+end
+
+function WeaponInfoReader:r_u32(param, setNotAdd)
+	return self:trueValue("r_u32", param, setNotAdd)
+end
+
+function WeaponInfoReader:r_s32(param, setNotAdd)
+	return self:trueValue("r_s32", param, setNotAdd)
+end
+
+function WeaponInfoReader:r_bool(param)
+	return self:trueValue("r_bool", param, true)
+end
+
+function WeaponInfoReader:r_string(param)
+	return self:trueValue("r_string", param, true)
+end
+
+function WeaponInfoReader:r_list(param)
+	local sList = self:r_string(param)
+	if sList == nil then
+		return nil
+	end
+	return WeaponInfoReader.parseList(sList)
+end
+
+function GetRPM(section, upgrades)
+	-- Nope, let's calculate recoil instead :P
+	return GetRecoil(section, upgrades)
+end
+
+--- Calculates recoil.
+function GetRecoil(section, upgrades)
+	local reader = WeaponInfoReader(section, upgrades)
+	local fire_modes = reader:r_list("fire_modes")
+	local cam_dispersion = reader:r_float_fallback("zoom_cam_dispersion", "cam_dispersion")
+	--[[if reader:isAutomatic() then
+		local cam_dispersion_inc = reader:r_float_fallback("zoom_cam_dispersion_inc", "cam_dispersion_inc")
+		local dispersion_start = reader:r_u32("dispersion_start", true) or 1
+		local camAfterBurst = 0
+		for i = 1, 3 do
+			if i >= dispersion_start then
+				camAfterBurst = camAfterBurst + cam_dispersion + cam_dispersion_inc * (i - 1)
+			end
+		end
+		return normalize(camAfterBurst * 15)
+	else]]
+		local cam_relax_speed = reader:r_float("cam_relax_speed")
+		if not cam_relax_speed or cam_relax_speed == 0 then
+			cam_relax_speed = 1
+		end
+		return normalize(35 * cam_dispersion / math.pow(cam_relax_speed, 0.4))
+	--end
+end
+
+--- Calculates weapon damage, according to currently loaded ammo.
+function GetDamage(section, upgrades, ammoSect)
+	local reader = WeaponInfoReader(section, upgrades)
+	local sRocket = reader:r_string("rocket_class")
+	local actualDamage
+	if sRocket and sRocket ~= "" then
+		actualDamage = system_ltx:r_float(sRocket, "blast") + system_ltx:r_float(sRocket, "frag_hit") * system_ltx:r_float(sRocket, "frags")
+	else
+		local aList = reader:r_list("ammo_class")
+		local hitPower = functional.average(reader:r_list("hit_power"), function(x) return tonumber(x) end)
+		local ammoHitCoef = 1.0
+		if ammoSect then
+			local buckKoeff = system_ltx:r_float(ammoSect, "buck_shot") * 0.8 + 0.2 -- we assume only 80% of pellets hit the target on average
+			ammoHitCoef = system_ltx:r_float(ammoSect, "k_hit") * buckKoeff
+		end
+		actualDamage = hitPower * ammoHitCoef
+	end
+
+	--[[
+		See chart here:
+		http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiJhdGFuKDAuNCp4KSo3MCIsImNvbG9yIjoiIzAwMDAwMCJ9LHsidHlwZSI6MTAwMCwid2luZG93IjpbIjAiLCIxMCIsIjAiLCIxMDAiXSwic2l6ZSI6WzUwMCw1MDBdfV0-
+	]]
+	local val = math.atan(actualDamage * 0.4) * 75
+	
+	return normalize(val)
+end
+
+--- Calculate weapon handling based on control_inertion_factor and PDM values.
+function GetHandling(section, upgrades)
+	local reader = WeaponInfoReader(section, upgrades)
+	local control_inertion_factor	= reader:r_float("control_inertion_factor") or 1.0
+	local PDM_disp_base				= reader:r_float("PDM_disp_base") or 1
+	local zoom_inertion_factor		= reader:r_float("zoom_inertion_factor") or 1.5
+
+	local ctrlInertPart = 1/control_inertion_factor
+	local pdmPart = (1 - PDM_disp_base)/3 + 1
+	local zoomInertPart = 1.5/zoom_inertion_factor
+	
+	return normalize(ctrlInertPart*15 + pdmPart*40 + zoomInertPart*30) 
+end
+
+--- Calculate weapon accuracy based on fire_dispersion_base and ammo parameters.
+function GetAccuracy(section, upgrades, ammoSect)
+	local reader = WeaponInfoReader(section, upgrades)
+			
+	local fire_dispersion_base	= reader:r_float("fire_dispersion_base")
+
+	local aList = reader:r_list("ammo_class")
+
+	local ammoDispCoef = 1.0
+	if ammoSect then
+		local buckShot = reader.ltx:r_float(ammoSect, "buck_shot")
+		if buckShot < 1 then
+			buckShot = 1
+		end
+		local kDisp = reader.ltx:r_float(ammoSect, "k_disp")
+		ammoDispCoef = kDisp / (1 + math.sqrt(buckShot - 1))   -- 2 pellets give 2x hit chance, then it increases slower
+	end
+
+	--[[
+		http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiIoMS4xLWF0YW4oeCoyKSkqOTIiLCJjb2xvciI6IiMwMDAwMDAifSx7InR5cGUiOjEwMDAsIndpbmRvdyI6WyIwIiwiMSIsIjAiLCIxMDAiXSwic2l6ZSI6WzUwMCw1MDBdfV0-
+	]]
+	local val = (1.3 - math.atan(fire_dispersion_base * ammoDispCoef * 2)) * 100
+
+	return normalize(val)
+end
+
+
+--[[
+	Code for generating item description starts here.
+]]
+
+function getAdditionalStats(reader, item)
+	local stats = {}
+	if this.isWeapon(item) then
+		additionalWeaponStats(reader, item, stats)
+	elseif this.isAmmo(item) then
+		addAmmoStats(reader, item, stats)
+	elseif this.isScope(item) then
+		addZoomFactorStat(reader, stats)
+	elseif this.isDetector(item) then
+		addDetectorStats(reader, stats)
+	elseif reader:hasParam("eat_portions_num") then
+		addPortions(reader, item, stats)
+	elseif reader:hasParam("eat_health") then  
+		addItems(reader, item, stats)
+	elseif reader:hasParam("buzzer_radius") then  
+		addDetectorAnomalStats(reader, stats)
+	elseif reader:hasParam("power_loss") then
+		addOutfitStats(reader, stats)
+	elseif reader:hasParam("power_loss_add") then
+		addHelmetStats(reader, stats)
+	end
+	return functional.map(stats, function(stat) return "• "..stat end)
+end
+
+function additionalWeaponStats(reader, item, stats)
+	local magSize
+	local currentAmmoType = item:get_ammo_section()
+	if currentAmmoType and system_ltx:line_exist(currentAmmoType, "fake_grenade_name") then
+		if string.match(item:section(), "wpn_rg") then
+			magSize = reader:r_u32("ammo_mag_size")
+		else
+			magSize = 1
+		end
+	else
+		magSize = reader:r_u32("ammo_mag_size")
+	end
+	if magSize then
+		local ammoInMag = item:get_ammo_in_magazine()
+		table.insert(stats, string.format("%s: %s/%s %s",
+			game.translate_string("st_stat_ammo"),
+			colorizeText(ammoInMag, ammoInMag > 0 and "green" or "red"),
+			colorizeText(magSize),
+			currentAmmoType and getInventoryName(currentAmmoType) or ""
+		))
+	end
+	local allAmmo = {}
+	local ammoTypes = reader:r_list("ammo_class")
+	-- No need to display ammo types if we have only 1 (it is already displayed on the previous line)
+	if ammoTypes and #ammoTypes > 1 then
+		addToAmmoList(allAmmo, ammoTypes)
+	end
+	if reader:r_u32("grenade_launcher_status", true) == 1 then
+		addToAmmoList(allAmmo, reader:r_list("grenade_class"))
+	end
+	if #allAmmo > 0 then
+		table.insert(stats, string.format("%s: %s", game.translate_string("Ammo"), table.concat(allAmmo, ", ")))
+	end
+	-- Don't show rpm for double-barrels, rocket launchers, etc
+	if magSize > 2 then
+		local rpm = reader:isAutomatic()
+			and reader:r_float("rpm")
+			or  reader:r_float("rpm_semi")
+		table.insert(stats, string.format("%s: %s %s",
+			game.translate_string("ui_inv_rate_of_fire"),
+			colorizeText(rpm),
+			game.translate_string("st_unit_rpm")
+		))
+	end
+	if reader:line_exist("bullet_speed") then
+		local speed = reader:r_float("bullet_speed")
+		table.insert(stats, string.format("%s: %s %s",
+			game.translate_string("st_stat_bullet_speed"),
+			colorizeText(math.floor(speed)),
+			game.translate_string("st_unit_mps")
+		))
+	end
+	if reader:line_exist("condition_shot_dec") then
+		local fireModes = reader:r_list("fire_modes")
+		local shotDec = (fireModes and (fireModes[#fireModes] == "-1"))
+			and reader:r_float("condition_queue_shot_dec")
+			or  reader:r_float("condition_shot_dec")
+
+		if currentAmmoType then
+			shotDec = shotDec * system_ltx:r_float(currentAmmoType, "impair")
+		end
+		table.insert(stats, string.format("%s: %s %s",
+			game.translate_string("st_stat_barrel_resource"),
+			colorizeText(utils.round(0.1 / shotDec) * 10),
+			game.translate_string("st_unit_rounds")
+		))
+	end
+	local scopeStatus = reader:r_u32("scope_status", true)
+	if scopeStatus == 2 then
+		local scopeSect = item.installed_scope_name and item:installed_scope_name()
+		if scopeSect then
+			addZoomFactorStat(WeaponInfoReader(scopeSect), stats)
+		else
+			table.insert(stats, game.translate_string("st_prop_scope_attach"))
+		end
+	elseif scopeStatus == 1 then
+		addZoomFactorStat(reader, stats)
+	end
+	if reader:r_u32("silencer_status", true) == 2 then
+		table.insert(stats, game.translate_string("st_prop_silencer"))
+	end
+	if reader:r_u32("grenade_launcher_status", true) == 2 then
+		table.insert(stats, game.translate_string("st_prop_grenade_launcher"))
+	end
+end
+
+local AMMO_AP_TEST_SECTIONS = {"kurtka_mask_damage", "lining_mask_damage", "armor_heavy_helmet_damage"}
+
+function addAmmoStats(reader, item, stats)
+	local kAp = reader:r_float("k_ap")
+	if kAp and kAp ~= 0 then
+		local value = functional.chain(AMMO_AP_TEST_SECTIONS)
+			:map(function(sect)
+				local power, hitFraction = getAmmoPenetration(kAp, sect)
+				local powerText = string.format("%.0f%%", power * 100)
+				if power > hitFraction then
+					powerText = colorizeText(powerText, "green")
+				elseif power == 0 then
+					powerText = colorizeText(powerText, "red")
+				else
+					powerText = colorizeText(powerText, "ui_clr_1")
+				end
+				return powerText
+			end)
+			:concat("/")
+
+		table.insert(stats, string.format("%s: %2.0f (%s)\n",
+			game.translate_string("st_stat_kap"), kAp*100,
+			value
+		))
+	end
+	
+		local box_size = reader:r_float("box_size") or 1
+		if box_size ~=1.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_box_size"),
+			colorizeText((box_size)*1 .." ", box_size <= 1 and "green" or "green")
+		))
+		end
+	
+	
+		local buck_shot = reader:r_float("buck_shot") or 1
+		if buck_shot ~=1.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_buck_shot"),
+			colorizeText((buck_shot)*1 .." ", buck_shot <= 1 and "green" or "green")
+		))
+		end
+		
+		local durab_k = reader:r_float("impair") or 1
+		if durab_k ~=0.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_impact"),
+			colorizeText((durab_k)*100 .."%", durab_k <= 1 and "green" or "red")
+		))
+		end
+		
+		local k_hit = reader:r_float("k_hit") or 1
+		local end_hit = string.format("%2.2f",k_hit*buck_shot)
+		if k_hit ~=0.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_k_hit"),
+			colorizeText(((end_hit)*100) .."%", "green")
+		))
+		end
+		
+		local k_air_resistance = reader:r_float("k_air_resistance") or 1
+		if k_air_resistance ~=0.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_k_air_resistance"),
+			colorizeText(((k_air_resistance)*100) .."%", k_air_resistance <= 1 and "green" or "red")
+		))
+		end
+		
+		local k_disp = reader:r_float("k_disp") or 1
+		if k_disp ~=0.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_k_disp"),
+			colorizeText(((k_disp)*100) .."%", k_disp <= 1 and "green" or "red")
+		))
+		end
+		
+		local k_dist = reader:r_float("k_dist") or 1
+		if k_dist ~=0.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_k_dist"),
+			colorizeText(((k_dist)*100) .."%", k_dist >= 1 and "green" or "red")
+		))
+		end
+		
+		local k_speed = reader:r_float("k_speed") or 1
+		if k_speed ~=0.0 then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("st_stat_k_speed"),
+			colorizeText(((k_speed)*100) .."%", k_speed <= 1 and "red" or "green")
+		))
+		end
+		
+end
+
+function getAmmoPenetration(kAp, bonesProtectionSect)
+	local hitFraction = system_ltx:r_float(bonesProtectionSect, "hit_fraction")
+	local bodyProtectionKoefs = string.split(system_ltx:r_string(bonesProtectionSect, "bip01_spine"), ",", false)
+	local bodyArmor = bodyProtectionKoefs[2]
+	local power = 0
+	if not ((kAp*3.0) < bodyArmor) then
+		if kAp > bodyArmor then
+			if kAp > bodyArmor*3 then
+				power = 1
+			else
+				power = ((kAp - bodyArmor) / kAp)*1.4
+			end
+		end
+		if power < hitFraction then
+			power = hitFraction
+		end
+	end
+	return power, hitFraction
+end
+
+function addZoomFactorStat(reader, stats)
+	if reader:r_bool("scope_dynamic_zoom") then
+		table.insert(stats, game.translate_string("st_prop_scope"))
+	else
+		local zoomFactor = reader:r_float("scope_zoom_factor")
+		if zoomFactor and zoomFactor > 0 then
+			table.insert(stats, string.format("%s: %sx",
+				game.translate_string("st_stat_scope_zoom"),
+				string.gsub(string.format("%.2f", 60 / zoomFactor), "%.?0+$", "")
+			))
+		end
+	end
+	if reader:r_string("scope_alive_detector") then
+		table.insert(stats, game.translate_string("st_prop_autolockscope"))
+	end
+	if (reader:r_string("scope_nightvision")) == "scope_contrast" then
+		table.insert(stats, game.translate_string("st_prop_contrast"))
+	end
+	if (reader:r_string("scope_nightvision")) == "scope_nightvision_best" then
+			table.insert(stats, game.translate_string("st_prop_night_vision_3"))
+	end
+	if (reader:r_string("scope_nightvision")) == "scope_nightvision" then
+			table.insert(stats, game.translate_string("st_prop_night_vision_2"))
+	end
+end
+
+function addDetectorStats(reader, stats)
+	local radius = reader:r_float("detect_radius")
+	if radius then
+		table.insert(stats, string.format("%s: %s\n",
+			game.translate_string("detector_radius"),
+			colorizeText(radius.." "..game.translate_string("st_m"))
+		))
+	end
+	local detectList = reader:r_list("af_to_detect_list")
+	if detectList then
+		local artList = functional.chain(detectList)
+			-- Filter to artifacts that are currently enabled and hide quest artifacts
+			:filter(function(afSect)
+				return reader:r_u32(afSect, true) == 1 and not r_bool_if_exist(afSect, "quest_item", false) and not r_bool_if_exist(afSect, "unique_item", false)
+			end)
+			-- Replace artifact section with it's name
+			:map(function(afSect)
+				return game.translate_string(system_ltx:r_string(afSect, "inv_name"))
+			end)
+			:value()
+
+		if (reader:r_string("af_to_detect_list")) == "all" then
+		table.insert(stats, string.format("%s\n",
+			game.translate_string("detector_all_artifacts")
+		))
+		else
+		table.insert(stats, string.format("%s (%d): %s",
+			game.translate_string("detector_artifacts"),
+			#artList,
+			table.concat(artList, ", ")
+		))
+		end
+	end
+	local is_upgradeble = reader:r_string("is_upgradeble")
+	if is_upgradeble then
+		if is_upgradeble == "true" then
+			table.insert(stats, string.format("%s\n", colorizeText(game.translate_string("st_det_is_upgradeble_true"))))
+		else
+			table.insert(stats, string.format("%s\n", colorizeText(game.translate_string("st_det_is_upgradeble_false"), "red")))
+		end
+	end
+end
+		
+function addPortions(reader, item, stats)
+	local maxPortions = reader:r_s32("eat_portions_num", true)
+	local portions = item:get_portions_num()
+	if maxPortions ~= -1 then
+		table.insert(stats, string.format("%s: %s/%s\n\n", -- 2 \n's to make it look like other descriptions containing table info
+			game.translate_string("item_usages"),
+			colorizeText(portions, portions > 0 and "green" or "red"),
+			colorizeText(maxPortions)
+		))
+	end
+end
+
+function addDetectorAnomalStats(reader, stats)
+
+	local radius = reader:r_float("buzzer_radius")
+
+	if radius then
+		table.insert(stats, string.format("%s: %s %s",
+			game.translate_string("detector_radius"),
+			colorizeText(radius),
+			game.translate_string("st_m")
+		))
+	end
+
+	local detectList = reader:r_list("anomal_list")
+	if detectList then
+		local anomList = functional.chain(detectList)
+			-- Filter to artifacts that are currently enabled and hide quest artifacts
+			:filter(function(anomSect)
+				return reader:r_u32(anomSect, true) == 1 
+			end)
+			-- Replace artifact section with it's name
+			:map(function(anomSect)
+				return game.translate_string(system_ltx:r_string(anomSect, "name"))
+			end)
+			:value()
+
+		table.insert(stats, string.format("%s (%d): %s",
+			game.translate_string("detector_anomalies"),
+			#anomList,
+			table.concat(anomList, ", ")
+		))
+	end
+end
+
+function addOutfitStats(reader, stats)
+
+	local power_loss = (reader:r_float("power_loss"))
+	local run_coef = (reader:r_float("additional_run_coef") or 0)
+	local jump_coef = (reader:r_float("additional_jump_speed") or 0)
+	local hit_fraction = (reader:r_float("hit_fraction_actor") or 1)
+	
+
+	if hit_fraction then
+	local hit_fraction_stat = string.format("%2.0f",hit_fraction*100)
+		if hit_fraction <= 0.05 then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_min")), colorizeText(hit_fraction_stat), game.translate_string("st_procent")))
+		elseif (hit_fraction > 0.06 and hit_fraction < 0.15) then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_low")), colorizeText(hit_fraction_stat), game.translate_string("st_procent")))
+		elseif (hit_fraction >= 0.15 and hit_fraction < 0.2) then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_med")), colorizeText(hit_fraction_stat), game.translate_string("st_procent")))
+		elseif (hit_fraction >= 0.2 and hit_fraction < 0.3) then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_high"), "red"), colorizeText(hit_fraction_stat, "red"), game.translate_string("st_procent")))
+		elseif hit_fraction >= 0.3 then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_vhigh"), "red"), colorizeText(hit_fraction_stat, "red"), game.translate_string("st_procent")))
+		end
+	end
+
+	if power_loss then
+	local power_loss_stat = string.format("%2.0f",power_loss*100)
+		if power_loss <= 0.2 then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_min")), colorizeText(power_loss_stat)))
+		elseif (power_loss > 0.2 and power_loss <= 0.5) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_low")), colorizeText(power_loss_stat)))
+		elseif (power_loss > 0.5 and power_loss <= 0.75) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_med")), colorizeText(power_loss_stat)))
+		elseif (power_loss > 0.75 and power_loss <= 1.0) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_high"), "red"), colorizeText(power_loss_stat, "red")))
+		elseif power_loss > 1.0 then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_max"), "red"), colorizeText(power_loss_stat, "red")))
+		end
+	end
+
+	if run_coef then
+	local run_coef_stat = string.format("%2.0f",(0.5+run_coef)*100)
+		if run_coef <= (-0.45) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_run_coef"), colorizeText(game.translate_string("st_run_coef_min"), "red"), colorizeText(run_coef_stat, "red")))
+		elseif (run_coef > (-0.45) and run_coef <= (-0.2)) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_run_coef"), colorizeText(game.translate_string("st_run_coef_vlow"), "red"), colorizeText(run_coef_stat, "red")))
+		elseif (run_coef > (-0.2) and run_coef <= (-0.1)) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_run_coef"), colorizeText(game.translate_string("st_run_coef_low"), "red"), colorizeText(run_coef_stat, "red")))
+		elseif (run_coef > (-0.1) and run_coef < (-0.05)) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_run_coef"), colorizeText(game.translate_string("st_run_coef_med")), colorizeText(run_coef_stat)))
+		elseif (run_coef >= (-0.05) and run_coef <= 0) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_run_coef"), colorizeText(game.translate_string("st_run_coef_high")), colorizeText(run_coef_stat)))
+		elseif run_coef > 0 then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_run_coef"), colorizeText(game.translate_string("st_run_coef_up")), colorizeText(run_coef_stat)))
+		end
+	end
+
+	if (jump_coef and jump_coef ~= 0) then
+	local jump_coef_stat = string.format("%2.0f",jump_coef*10)
+		if jump_coef < 0 then
+			table.insert(stats, string.format("%s (%s)\n", colorizeText(game.translate_string("st_jump_coef_low"), "red"), colorizeText(jump_coef_stat, "red")))
+		elseif (jump_coef > 0 and jump_coef <= 1.0) then
+			table.insert(stats, string.format("%s (+%s)\n", colorizeText(game.translate_string("st_jump_coef_high")), colorizeText(jump_coef_stat)))
+		elseif (jump_coef > 1.0) then
+			table.insert(stats, string.format("%s (+%s)\n", colorizeText(game.translate_string("st_jump_coef_max")), colorizeText(jump_coef_stat)))
+		end
+	end
+end
+
+function addHelmetStats(reader, stats)
+
+	local power_loss_add = (reader:r_float("power_loss_add") or 0)
+	local hit_fraction = (reader:r_float("hit_fraction_actor") or 1)
+
+	if hit_fraction then
+	local hit_fraction_stat = string.format("%2.0f",hit_fraction*100)
+		if hit_fraction <= 0.05 then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_min")), colorizeText(hit_fraction_stat), game.translate_string("st_procent")))
+		elseif (hit_fraction > 0.06 and hit_fraction < 0.15) then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_low")), colorizeText(hit_fraction_stat), game.translate_string("st_procent")))
+		elseif (hit_fraction >= 0.15 and hit_fraction < 0.2) then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_med")), colorizeText(hit_fraction_stat), game.translate_string("st_procent")))
+		elseif (hit_fraction >= 0.2 and hit_fraction < 0.3) then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_high"), "red"), colorizeText(hit_fraction_stat, "red"), game.translate_string("st_procent")))
+		elseif hit_fraction >= 0.3 then
+			table.insert(stats, string.format("%s: %s (%s%s)\n", game.translate_string("st_hit_fraction"), colorizeText(game.translate_string("st_power_loss_vhigh"), "red"), colorizeText(hit_fraction_stat, "red"), game.translate_string("st_procent")))
+		end
+	end
+
+	if power_loss_add then
+	local power_loss_add_stat = string.format("%2.0f",power_loss_add*100)
+		if power_loss_add < 0.01 then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_null")), colorizeText(power_loss_add_stat)))
+		elseif (power_loss_add >= 0.01 and power_loss_add <= 0.05) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_min")), colorizeText(power_loss_add_stat)))
+		elseif (power_loss_add > 0.05 and power_loss_add <= 0.14) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_low")), colorizeText(power_loss_add_stat)))
+		elseif (power_loss_add > 0.14 and power_loss_add <= 0.19) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_med")), colorizeText(power_loss_add_stat)))
+		elseif (power_loss_add > 0.19 and power_loss_add <= 0.3) then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_high"), "red"), colorizeText(power_loss_add_stat, "red")))
+		elseif power_loss_add > 0.3 then
+			table.insert(stats, string.format("%s: %s (%s)\n", game.translate_string("st_power_loss"), colorizeText(game.translate_string("st_power_loss_max"), "red"), colorizeText(power_loss_add_stat, "red")))
+		end
+	end
+end
+
+
+function addItems(reader, item, stats)  
+    -- time
+	local item_use_time = reader:r_float("item_use_time")
+	-- stat
+	local health_restore_rate = reader:r_float("health_restore_rate")
+	local bleeding_restore_rate = reader:r_float("bleeding_restore_rate")
+	local antirad_restore_rate = reader:r_float("antirad_restore_rate")
+	local thirst_restore_rate = reader:r_float("thirst_restore_rate")
+	local psy_booster_rate = reader:r_float("psy_booster_rate")
+	local energy_affect_rate = reader:r_float("energy_affect_rate")
+	local rad_booster_rate  = reader:r_float("rad_booster_rate")
+	local weight_booster_rate = reader:r_float("weight_booster_rate")
+	local psy_affect_rate = reader:r_float("psy_affect_rate")	
+	local antchemical_rate = reader:r_float("antchemical_rate")
+	local satiety_restore_rate = reader:r_float("satiety_restore_rate")
+	local dehidration_rate = reader:r_float("dehidration_rate")
+	local energy_restore_rate = reader:r_float("energy_restore_rate")
+	local alkaseltzer_rate = reader:r_float("alkaseltzer_rate")
+	local alkaseltzer_minus_rate = reader:r_float("alkaseltzer_minus_rate")
+	local psyhealth_restore_rate = reader:r_float("psyhealth_restore_rate")
+	local satiety_minus_rate = reader:r_float("satiety_minus_rate")
+
+	-- stat time
+	local health_restore_dur = reader:r_float("health_restore_dur")
+	local bleeding_restore_dur = reader:r_float("bleeding_restore_dur")
+	local antirad_restore_dur = reader:r_float("antirad_restore_dur")
+	local thirst_restore_dur = reader:r_float("thirst_restore_dur")
+	local psy_booster_dur = reader:r_float("psy_booster_dur")
+	local energy_affect_dur = reader:r_float("energy_affect_dur")
+	local rad_booster_dur  = reader:r_float("rad_booster_dur")
+	local weight_booster_dur = reader:r_float("weight_booster_dur")
+	local psy_affect_dur = reader:r_float("psy_affect_dur")	
+	local antchemical_dur = reader:r_float("antchemical_dur")
+	local satiety_restore_dur = reader:r_float("satiety_restore_dur")
+	local dehidration_dur = reader:r_float("dehidration_dur")
+	local energy_restore_dur = reader:r_float("energy_restore_dur")
+	local alkaseltzer_dur = reader:r_float("alkaseltzer_dur")
+	local alkaseltzer_minus_dur = reader:r_float("alkaseltzer_minus_dur")
+	local psyhealth_restore_dur = reader:r_float("psyhealth_restore_dur")
+	local satiety_minus_dur = reader:r_float("satiety_minus_dur")
+
+	-- booster
+	local bonus_psy = reader:r_float("bonus_psy")
+	local bonus_radiation = reader:r_float("bonus_radiation")
+	local bonus_chemical = reader:r_float("bonus_chemical")
+	local bonus_blowout = reader:r_float("bonus_blowout")
+	
+	-- others
+	local boost_time = reader:r_float("boost_time")
+	local boost_blowout_protection = reader:r_float("boost_blowout_protection")
+	local weight_booster_additional_weight = reader:r_float("weight_booster_additional_weight")
+	local has_portions = reader:hasParam("eat_portions_num")
+	local maxPortions = reader:r_s32("eat_portions_num", true)
+	local portions = item:get_portions_num()
+
+	if has_portions and maxPortions ~= -1 then
+		table.insert(stats, string.format("%s: %s/%s\n\n", -- 2 \n's to make it look like other descriptions containing table info
+			game.translate_string("item_usages"),
+			colorizeText(portions, portions > 0 and "green" or "red"),
+			colorizeText(maxPortions)
+		))
+	end
+	
+	if item_use_time then
+		table.insert(stats, string.format("%s: %s %s",
+			game.translate_string("item_use_time"),
+			colorizeText(item_use_time),
+			game.translate_string("st_second")
+		))
+	end
+	
+-- meds
+	if health_restore_rate and health_restore_dur then
+	local health_restore_product = string.format("%2.0f",health_restore_rate*health_restore_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_health"),
+			colorizeText(health_restore_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(health_restore_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	
+	if bleeding_restore_rate and bleeding_restore_dur then
+	local bleeding_restore_product = string.format("%2.0f",bleeding_restore_rate*bleeding_restore_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_bleeding"),
+			colorizeText(bleeding_restore_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(bleeding_restore_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if antirad_restore_rate and antirad_restore_dur then
+	local antirad_restore_product = string.format("%2.0f",antirad_restore_rate*antirad_restore_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_radiation_restore"),
+			colorizeText(antirad_restore_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(antirad_restore_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	
+-- food, water
+
+	if alkaseltzer_rate and alkaseltzer_dur then
+	local alkaseltzer_product = string.format("%2.0f",alkaseltzer_rate*alkaseltzer_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_alco"),
+			colorizeText(alkaseltzer_product, "red"),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(alkaseltzer_dur),
+			game.translate_string("st_second")
+		))
+	end
+
+	if alkaseltzer_minus_rate and alkaseltzer_minus_dur then
+	local alkaseltzer_minus_product = string.format("%2.0f",alkaseltzer_minus_rate*alkaseltzer_minus_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_alco_minus"),
+			colorizeText(alkaseltzer_minus_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(alkaseltzer_minus_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if satiety_restore_rate and satiety_restore_dur then
+	local satiety_restore_product = string.format("%2.0f",satiety_restore_rate*satiety_restore_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_satiety"),
+			colorizeText(satiety_restore_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(satiety_restore_dur),
+			game.translate_string("st_second")
+		))
+	end
+
+	if satiety_minus_rate and satiety_minus_dur then
+	local satiety_minus_product = string.format("%2.0f",satiety_minus_rate*satiety_minus_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_satiety"),
+			colorizeText(satiety_minus_product, "red"),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(satiety_minus_dur),
+			game.translate_string("st_second")
+		))
+	end
+
+	if dehidration_rate and dehidration_dur then
+	local dehidration_product = string.format("%2.0f",dehidration_rate*dehidration_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_thirst"),
+			colorizeText(dehidration_product, "red"),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(dehidration_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if thirst_restore_rate and thirst_restore_dur then
+	local thirst_restore_product = string.format("%2.0f",thirst_restore_rate*thirst_restore_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_thirst"),
+			colorizeText(thirst_restore_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(thirst_restore_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if energy_restore_rate and energy_restore_dur then
+	local energy_restore_product = string.format("%2.0f",energy_restore_rate*energy_restore_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_power"),
+			colorizeText(energy_restore_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(energy_restore_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if energy_affect_rate and energy_affect_dur then
+	local energy_affect_product = string.format("%2.0f",energy_affect_rate*energy_affect_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_power"),
+			colorizeText(energy_affect_product, "red"),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(energy_affect_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	
+	if psyhealth_restore_rate and psyhealth_restore_dur then
+	local psyhealth_restore_product = string.format("%2.0f",psyhealth_restore_rate*psyhealth_restore_dur*100)
+		table.insert(stats, string.format("%s: %s %s %s %s %s",
+			game.translate_string("ui_inv_psy_health_restore_speed"),
+			colorizeText(psyhealth_restore_product),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(psyhealth_restore_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if weight_booster_additional_weight and weight_booster_dur then
+		table.insert(stats, string.format("%s: +%s %s %s %s %s",
+			game.translate_string("ui_inv_weight_boost"),
+			colorizeText(weight_booster_additional_weight),
+			game.translate_string("st_kg"),
+			game.translate_string("st_dur"),
+			colorizeText(weight_booster_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	-- booster
+	if bonus_psy and psy_booster_dur then
+		table.insert(stats, string.format("%s: +%s%s %s %s %s",
+			game.translate_string("ui_inv_outfit_telepatic_protection"),
+			colorizeText(bonus_psy),
+			game.translate_string("st_procent"),
+			game.translate_string("st_dur"),
+			colorizeText(psy_booster_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if bonus_radiation and rad_booster_dur then
+		table.insert(stats, string.format("%s: +%s%s %s %s %s",
+			game.translate_string("ui_inv_outfit_radiation_protection"),
+			colorizeText(bonus_radiation),
+			game.translate_string("st_procent"),
+			game.translate_string("st_dur"),
+			colorizeText(rad_booster_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	if bonus_chemical and antchemical_dur then
+		table.insert(stats, string.format("%s: +%s%s %s %s %s",
+			game.translate_string("ui_inv_outfit_chemical_burn_protection"),
+			colorizeText(bonus_chemical),
+			game.translate_string("st_procent"),
+			game.translate_string("st_dur"),
+			colorizeText(antchemical_dur),
+			game.translate_string("st_second")
+		))
+	end
+	
+	-- others	
+--[[	
+	if boost_time and bonus_blowout then
+		table.insert(stats, string.format("%s: +%s%s %s %s %s",
+			game.translate_string("blowout_booster"),
+			colorizeText(bonus_blowout),
+			game.translate_string("st_procent"),
+			game.translate_string("st_za"),
+			colorizeText(boost_time),
+			game.translate_string("st_second")
+		))
+	end
+]]
+end
+
+function colorizeText(text, color)
+	color = color or "green"
+	return "%c[" .. color .. "]" .. text .. "%c[default]"
+end
+
+function getInventoryName(s, short)
+	local field = short and "inv_name_short" or "inv_name"
+	return game.translate_string( system_ltx:r_string(s, field) )
+end
+
+function addToAmmoList(t, list)
+	if list then
+		for _,ammoSect in ipairs(list) do
+			table.insert(t, getInventoryName(ammoSect, true))
+		end
+	end
+end
+
+--- Loads information about given upgrades
+function loadUpgrades(upIds)
+	return functional.map(upIds, function(upId)
+		return {
+			id    = upId,
+			sect  = system_ltx:r_string(upId, "section"),
+			props = string.split(system_ltx:r_string(upId, "property"), ",")
+		}
+	end)
+end
+
+--- Check if upgrades for given property are allowed to be grouped.
+function propAllowsGrouping(prop)
+	-- Don't group Detector upgrades together, different DB upgrades all share the same property name
+	return prop ~= "prop_af_db"
+end
+
+--- Gets a list of all properties that are affected by a list of upgrades
+-- @param upIds - List of upgrade IDs
+-- @return List of property descriptions
+function getUpgradedProperties(upgrades)
+	local upsByProp = {}
+	-- First, get a list of properties affected by all upgrades.
+	for _,up in pairs(upgrades) do
+		for _,prop in pairs(up.props) do
+			if not upsByProp[prop] then
+				upsByProp[prop] = {}
+			end
+			table.insert(upsByProp[prop], up)
+		end
+	end
+	local propList = {}
+	for prop, relatedUps in pairs(upsByProp) do
+		if propAllowsGrouping(prop) then
+			table.insert(propList, {
+				prop,
+				table.concat(functional.pluck(relatedUps, "sect"), ",")
+			})
+		else
+			for _,up in pairs(relatedUps) do
+				table.insert(propList, {
+					prop,
+					up.sect
+				})
+			end
+		end
+	end
+	-- Sort by property id
+	table.sort(propList, function(a, b) return a[1] < b[1] end)
+	-- Generate description for each property.
+	for k, tbl in pairs(propList) do
+		local prop, upSects = unpack(tbl)
+		-- Generate a comma-separated list of upgrade sections, related to this property.
+		propList[k] = string.format("• %s", getPropertyFunctor(prop)(upSects, prop))
+	end
+	return propList
+end
+
+function getPropertyFunctor(prop)
+	if not propertyFunctors[prop] then
+		local sFunctor = system_ltx:r_string(prop, "functor")
+		local module, funcName = la_utils.get_script_func_name(sFunctor)
+		if not _G[module] or not (type(_G[module][funcName]) == "function") then
+			abort("%s: Property %s has invalid functor: %s!", sModule, prop, sFunctor)
+		end
+		propertyFunctors[prop] = _G[module][funcName]
+	end
+	return propertyFunctors[prop]
+end
+
+function GetDescription(item)
+	-- log("asking item desc %s with upgs: %s", item:section(), item:installed_upgrades())
+	local section = item:section()
+	local upIds = item:installed_upgrades()
+	local upgrades = loadUpgrades(upIds)
+	local upSects = functional.map(upgrades, function(up) return up.sect end)
+	local reader = WeaponInfoReader(section, upSects)
+	local descr = {}
+
+	-- Additional stats like RPM, etc.
+	local allAdditionalStats = getAdditionalStats(reader, item)
+	if #allAdditionalStats > 0 then
+		table.insert(descr, table.concat(allAdditionalStats, "\\n"))
+	end
+
+	-- Installed upgrades
+	local allUpgradeProps = getUpgradedProperties(upgrades)
+	if #allUpgradeProps > 0 then
+		table.insert(descr, string.format("%s:\\n%s",
+			game.translate_string("ui_st_installed_upgrades"),
+			table.concat(allUpgradeProps, "\\n"))
+		)
+	end
+
+	-- Base description
+	local baseDescr = reader:r_string("description")
+	if baseDescr then
+		table.insert(descr, game.translate_string(baseDescr))
+	end
+
+	return table.concat(descr, "\\n \\n")
+end

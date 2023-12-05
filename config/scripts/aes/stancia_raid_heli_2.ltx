@@ -1,0 +1,164 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = aes_heli2_idle
+engine_sound = false
+combat_use_rocket = false
+combat_use_mgun = false
+on_info = {+aes_heli_raid} heli_move@aes2
+on_info2 = {+npp_chose_dolg1} heli_move@aes2_btr
+on_info3 = {+aes_help_raiders_refuse} heli_move@aes2_btr
+
+[heli_move@aes2]
+path_move = aes_heli_move2_5
+path_look = aes_heli_move_look2
+combat_use_rocket = true
+;combat_enemy = 7117
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -10
+invulnerable = false
+immortal = false
+on_signal = cam | {=tasks_stancia.aes_heli_cond} %+aes_heli2_pos%
+on_signal2 = reached | heli_move@2target1 %+aes_heli2_regrouped%
+
+[heli_move@aes2_btr]
+path_move = aes_heli_move2_5
+path_look = aes_heli_move_look2
+combat_use_rocket = true
+combat_enemy = 7106
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -10
+invulnerable = false
+immortal = false
+on_info = {+aes_btr_death2} heli_move@2target1
+
+[heli_move@2target1]
+path_move = aes_heli_patrol2
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7130
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7130)} heli_move@2target2
+;on_info2 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2target2]
+path_move = aes_heli_patrol2
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7131
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7131)} heli_move@2target3
+;on_info2 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2target3]
+path_move = aes_heli_patrol2
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7132
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7132)} heli_move@2target4
+;on_info2 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2target4]
+path_move = aes_heli_patrol2
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7133
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7133) +aes_ambush_dead} heli_move@2release
+on_info2 = {=is_dead_all(7137:7123) +aes_btr_death2 -aes_ambush_dead} heli_move@2ambush1
+;on_info3 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2ambush1]
+path_move = aes_raiders_heli_ambush_path
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7119
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7119)} heli_move@2ambush2
+;on_info2 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2ambush2]
+path_move = aes_raiders_heli_ambush_path
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7120
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7120)} heli_move@2ambush3
+;on_info2 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2ambush3]
+path_move = aes_raiders_heli_ambush_path
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7121
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7121)} heli_move@2ambush4
+;on_info2 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2ambush4]
+path_move = aes_raiders_heli_ambush_path
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = 7122
+engine_sound = true
+default_velocity = 30
+combat_velocity = 30
+combat_safe_altitude = -100
+invulnerable = false
+immortal = false
+on_info = {=is_dead_one(7122)} heli_move@2release
+;on_info2 = {=heli_health_le(0.3)} heli_move@death2
+
+[heli_move@2release]
+path_move = aes_heli_regroup5
+combat_use_rocket = false
+combat_use_mgun = false
+engine_sound = true
+default_velocity = 60
+on_signal = release | %=release%
+
+[heli_move@death2]
+path_move = aes_heli_die2
+invulnerable = true
+combat_ignore = true

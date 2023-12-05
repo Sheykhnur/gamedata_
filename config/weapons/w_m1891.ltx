@@ -1,0 +1,155 @@
+[wpn_m1891]:weapon_base,weapon_7.62x54r
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\m1891"
+animation_slot                          = 2
+class                                   = WP_SVD
+repair_compatibility                    = mosin
+scheduled                               = off
+weapon_class                            = sniper_rifle
+weapon_rank                             = 2
+
+; Inventory icon
+inv_grid_width                          = 6
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 20
+scope_x                                 = 75
+scope_y                                 = 8
+
+; Text
+inv_name                                = st_wpn_m1891
+inv_name_short                          = st_wpn_m1891
+description                             = st_wpn_m1891_descr
+
+; Visual
+hud                                     = wpn_m1891_hud
+position                                = -0.026, -0.123, 0
+orientation                             = 0, 0, 0
+scope_texture                           = wpn_crosshair_pu
+strap_position                          = -0.15, -0.15, 0.45
+strap_orientation                       = -25, -189, 65
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_m1891\wpn_m1891.ogf
+
+; Effects
+fire_point                              = 0, 0.168, 0.755
+fire_point2                             = 0, 0.168, 0.755
+shell_point                             = 0, 0.129, 0.192
+shell_dir                               = 0, 0, 0.4
+light_disabled                          = false
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 4.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+
+; Sounds
+snd_close                               = weapons\generic_close
+snd_draw                                = weapons\svd\svd_draw
+snd_empty                               = weapons\ak_empty, 	0.7
+snd_holster                             = weapons\sniper_holster
+snd_reload                              = weapons\m1891\m1891_reload
+snd_shoot                               = weapons\m1891\m1891_shoot, 2.0
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 0
+upgr_icon_y                             = 950
+upgr_icon_width                         = 300
+upgr_icon_height                        = 50
+
+; Cost & Weight
+cost                                    = 7550
+inv_weight                              = 3.8
+ph_mass                                 = 4
+
+; Ammo
+ammo_mag_size                           = 5
+
+; Features
+fire_modes                              = 1
+scope_name                              = wpn_addon_scope_pu
+scope_status                            = 2
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Ballistics
+fire_dispersion_base                    = 0.3
+fire_dispersion_condition_factor        = 6
+
+; Performance
+rpm                                     = 20
+rpm_semi                                = 20
+
+; Reliability
+condition_shot_dec                      = 0.000625 ; 1600 shots
+condition_queue_shot_dec                = 0.000625
+
+; Handling
+control_inertion_factor                 = 1.8f
+PDM_disp_base                           = 4.0
+PDM_disp_vel_factor                     = 2.0
+PDM_disp_accel_factor                   = 2.0
+
+; Recoil
+cam_relax_speed                         = 3.5
+cam_dispersion                          = 2.5
+cam_dispersion_inc                      = 1.0
+cam_dispersion_frac                     = 1.0
+cam_step_angle_horz                     = 3.0
+zoom_cam_dispersion                     = 1.7
+zoom_cam_step_angle_horz                = 0.5
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.65
+zoom_rotate_time                        = 0.4
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_5plus3plus3
+upgrades                                = up_gr_firstab_m1891, up_gr_seconab_m1891, up_gr_thirdab_m1891
+installed_upgrades                      = 
+
+; AI Params
+ef_main_weapon_type                     = 3
+ef_weapon_type                          = 8 ; Sniper rifle
+min_radius                              = 0
+max_radius                              = 90
+holder_range_modifier                   = 2.00
+holder_fov_modifier                     = 0.5
+
+
+[wpn_m1891_hud]:hud_base
+aim_hud_offset_pos                      = -0.09068,0.052,-0.25
+aim_hud_offset_pos_16x9                 = -0.09068,0.052,-0.25
+aim_hud_offset_rot                      = 0,0,0
+aim_hud_offset_rot_16x9                 = 0,0,0
+anim_bore                               = m1891_idle_bore
+anim_hide                               = m1891_holster,,1.5
+anim_idle                               = m1891_idle
+anim_idle_aim                           = m1891_idle_aim
+anim_idle_moving                        = m1891_idle_moving
+anim_idle_sprint                        = m1891_idle_sprint
+anim_reload                             = m1891_reload
+anim_shots                              = m1891_shoot, m1891_shoot1
+anim_show                               = m1891_draw
+attach_place_idx                        = 0
+fire_bone                               = wpn_body
+fire_point                              = 0,0.07204,1.02
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 0,0,0
+hands_orientation_16x9                  = 0,0,0
+hands_position                          = -0.063500,-0.15099,0.125
+hands_position_16x9                     = -0.063500,-0.15099,0.125
+item_orientation                        = 0,0.008,0.002
+item_position                           = 0,0.008,0.002
+item_visual                             = dynamics\weapons\wpn_m1891\wpn_m1891_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_dir                               = 0, 1, 0
+shell_point                             = 0.025,0.055,0.221
+zoom_hide_crosshair                     = true

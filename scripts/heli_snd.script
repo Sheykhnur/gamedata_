@@ -1,0 +1,83 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : heli_snd.script
+ Description: reaction sounds of heli pilotes on different events
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : 
+ Last edit  : 05.05.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+snd_see_enemy = {
+	"helicopter\\swamp\\see_actor_1",
+	"helicopter\\swamp\\see_actor_2",
+	"helicopter\\swamp\\see_actor_3",
+	"helicopter\\swamp\\see_actor_4",
+	"helicopter\\swamp\\see_actor_5",
+	"helicopter\\swamp\\see_actor_6",
+	"helicopter\\swamp\\see_actor_7"
+}
+snd_see_swamp_actor = {
+	"helicopter\\swamp\\see_actor_1",
+	"helicopter\\swamp\\see_actor_2",
+	"helicopter\\swamp\\see_actor_3",
+	"helicopter\\swamp\\see_actor_4",
+	"helicopter\\swamp\\see_actor_5",
+	"helicopter\\swamp\\see_actor_6",
+	"helicopter\\swamp\\see_actor_7"
+}
+snd_lost_swamp_actor = {
+	"helicopter\\swamp\\lost_actor_1",
+	"helicopter\\swamp\\lost_actor_2",
+	"helicopter\\swamp\\lost_actor_3",
+	"helicopter\\swamp\\lost_actor_4",
+	"helicopter\\swamp\\lost_actor_5",
+	"helicopter\\swamp\\lost_actor_6",
+	"helicopter\\swamp\\lost_actor_7"
+}
+snd_hit = {
+	"helicopter\\heli_hit_1",
+	"helicopter\\heli_hit_2",
+	"helicopter\\heli_hit_3",
+	"helicopter\\heli_hit_4",
+	"helicopter\\heli_hit_5",
+	"helicopter\\heli_hit_6"
+}
+snd_damaged = {
+	"helicopter\\damage_1",
+	"helicopter\\damage_2",
+	"helicopter\\damage_3",
+	"helicopter\\damage_4"
+}
+snd_down = {
+	"helicopter\\death_1",
+	"helicopter\\death_2",
+	"helicopter\\death_3",
+	"helicopter\\death_4",
+	"helicopter\\death_5",
+	"helicopter\\death_6"
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function play_snd( st, tbl_snd, priority )
+	if st and not (st.mute or (st.snd_obj and (priority or 0) >= st.snd_priority and st.snd_obj:playing())) then
+		stop_snd(st)
+		if tbl_snd and next(tbl_snd) then
+			st.snd_obj = xr_sound.get_safe_sound_object( tbl_snd[math.random(#tbl_snd)] )
+			if st.snd_obj then
+				st.snd_obj:play( db.actor, 0, sound_object.s2d )
+			end
+		end
+		st.snd_priority = priority or 0
+	end
+end
+
+function stop_snd(st)
+	if st and st.snd_obj then
+		st.snd_obj:stop()
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

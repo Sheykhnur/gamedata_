@@ -1,0 +1,139 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ranks.script
+ Description: Хранилище текстовых интерпретаций рангов и функции для работы с ним.
+ Copyright  : 2004 © GSC Game World
+ Author     : Чугай Александр
+ Editors    : ...
+ Last edit  : 06.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local bRanksLoaded = false
+--/ ранги. формат: {novice={0,30}, experienced={30,60}, ...}
+local tStalkerRankIntervals,tMonsterRankIntervals = {},{}
+local StalkerMaxRankName,MonsterMaxRankName = nil,nil
+
+local tRankNumberForName = {
+	novice      = 1,
+	stalker     = 2, --/#?#
+	experienced = 2,
+	veteran     = 3,
+	master      = 4
+}
+local tGameNameForRankName = { --/#+#
+	novice      = "ui_mm_novice",
+	stalker     = "ui_mm_stalker", --/#?#
+	experienced = "ui_mm_stalker",
+	veteran     = "ui_mm_veteran",
+	master      = "ui_mm_master" 
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process (функции)
+--/ -----------------------------------------------------------------
+--/ парсит заданную строку рангов в заданную таблицу. Возвращает название максимального ранга.
+function parse_ranks(sStr, tTbl)
+	sStr = "0," .. sStr .. ",10000"
+	local tT = parse_names(sStr)
+	local i = 2
+	while i < #tT do
+		tTbl[tT[i]] = { tonumber(tT[i-1]), tonumber(tT[i+1]) }
+		i = i + 2
+	end
+	return tT[i-2] --/>
+end
+
+--/ вычитывает сталкерские и монстрячие ранги из game_relations.ltx
+function read_all_ranks()
+	local sini = system_ini()
+	tStalkerRankIntervals = {}
+	tMonsterRankIntervals = {}
+	StalkerMaxRankName = parse_ranks( sini:r_string( "game_relations", "rating" ),         tStalkerRankIntervals )
+	MonsterMaxRankName = parse_ranks( sini:r_string( "game_relations", "monster_rating" ), tMonsterRankIntervals )
+	bRanksLoaded = true
+	--table.print(tStalkerRankIntervals) --/#~#
+	--table.print(tMonsterRankIntervals) --/#~#
+end
+
+--/ возвращает название ранга из таблицы по его номеру
+function get_rank_name(iRank, tTbl)
+	if iRank and tTbl then
+		for sName, tInterval in pairs(tTbl) do
+			if iRank >= tInterval[1] and iRank < tInterval[2] then
+				return sName --/>
+			end
+		end
+	end
+	return nil --/>
+end
+
+--/ возвращает название ранга заданного game_object (персонажа)
+function get_obj_rank_name(obj)
+	if not bRanksLoaded then
+		this.read_all_ranks()
+	end
+--	log("get_obj_rank_name:obj=[%s]", obj and obj:name(), "") --/#~#
+	local iRank
+	--/#~# > HACK
+	if obj == nil then
+		return get_rank_name(0, tStalkerRankIntervals)
+	elseif obj:clsid() == clsid.crow then
+		return get_rank_name(0, tMonsterRankIntervals)
+	elseif obj.m_story_id and type(obj.rank) == 'function' then
+		iRank = obj:rank() --/ для серверного сюжетного объекта
+	elseif type(obj.character_rank) == 'function' then
+		iRank = obj:character_rank()
+	elseif IsStalker(obj) then
+		return get_rank_name(StalkerMaxRankName, tStalkerRankIntervals) or StalkerMaxRankName --/>
+	else
+		return get_rank_name(MonsterMaxRankName, tMonsterRankIntervals) or MonsterMaxRankName --/>
+	end
+	--/<
+	if IsStalker(obj) then
+		return get_rank_name(iRank, tStalkerRankIntervals) or StalkerMaxRankName --/>
+	end
+	return get_rank_name(iRank, tMonsterRankIntervals) or MonsterMaxRankName --/>
+end
+
+--/ возвращает индекс (номер) ранга (1...4 or nil)
+function get_obj_rank_number(obj, iDef)
+	if obj then
+		return tRankNumberForName[get_obj_rank_name(obj)] or iDef or 1 --/>
+	end
+	return nil
+end
+
+--/#+# возвращает название ранга по индексу (числу)
+function get_obj_rank_name_by_rank(iRank) --/< iRank: -4*10^3...4*10^3
+	if not bRanksLoaded then
+		this.read_all_ranks()
+	end
+	if IsStalker(obj) then
+		return get_rank_name(iRank, tStalkerRankIntervals) or StalkerMaxRankName --/>
+	end
+	return get_rank_name(iRank, tMonsterRankIntervals) or MonsterMaxRankName --/>
+end
+
+--/#+# возвращает игровое название ранга по индексу (числу)
+function get_game_rank_name_by_rank(iRank) --/< iRank: -4*10^3...4*10^3
+	return game.translate_string( get_obj_rank_name_by_rank(iRank) ) --/>
+end
+
+--/ возвращает номер уровня сложности в игре
+function get_actor_game_rank()
+	return (get_obj_rank_number(db.actor) or 1) * (level.get_game_difficulty() +1) --/> 1|2|3|4|6|8|9|12|16
+end
+
+--/ возвращает табличку с интервалом рангов для заданного названия интервала
+function get_rank_interval(sName)
+	if not bRanksLoaded then
+		this.read_all_ranks()
+	end
+	return tStalkerRankIntervals[sName] or tMonsterRankIntervals[sName] --/>
+end
+--/ -----------------------------------------------------------------------------------------------

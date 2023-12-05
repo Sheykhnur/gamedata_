@@ -1,0 +1,640 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_hud_tools.script
+ Description: HUD for Debug Tools
+ Copyright  : 2010 © LA-team
+ Author     : barin
+ Editors    : dezodor, Lijenstina
+ Last edit  : 16.12.2013 [vintar]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local dbg_tools_mgr = nil --/#+#
+local iTimeOut = 0 --/#+#
+
+local la_levels = {
+	[ 1] = "la01_escape",
+	[ 2] = "la02_garbage",
+	[ 3] = "la03_agroprom",
+	[ 4] = "la04_darkdolina",
+	[ 5] = "la04u_darklab",
+	[ 6] = "la05_bar_rostok",
+	[ 7] = "la06_yantar",
+	[ 8] = "la07_military",
+	[ 9] = "la08_deadcity",
+	[10] = "la09_swamp",
+	[11] = "la10_radar",
+	[12] = "la10u_bunker",
+	[13] = "la11_pripyat",
+	[14] = "la12_stancia",
+	[15] = "la12u_sarcofag",
+	[16] = "la13_generators",
+	[17] = "la13u_warlab",
+	[18] = "la13u_oso", --/#+#
+	[19] = "la14_rostok_factory",
+	[20] = "la14u_secret_lab",
+	[21] = "la15_darkscape",
+	[22] = "la16_lost_factory",
+	[23] = "la16u_labx16",
+	[24] = "la17_outskirts",
+	[25] = "la17u_labx7", --/#+#
+	[26] = "la18_damned",
+	[27] = "la19_country",
+	[28] = "la20_forgotten",
+	[29] = "la21_generators_2", --/#+#
+	[30] = "la22_forest", --/#+#
+	[31] = "ai_test", --/#+#
+	[32] = "factory_test", --/#+#
+}
+
+local rank_names = {
+	["stalker"] = { "novice", "experienced", "veteran", "master" },
+	["mutant"]  = { "weak", "normal", "strong" }
+}
+
+local faction_names = {
+	["stalker"] = {
+		"stalker", "monolith", "military", "killer", "ecolog", "dolg", "freedom",
+		"bandit", "zombied", "stranger", "dark_stalker", "trader", "clear_sky"
+	},
+	["mutant"] = {
+		"tushkano", "flesh", "boar", "cat", "zombie", "burer", "fracture",
+		"chimera", "dog", "pseudodog", "psy_dog", "snork", "poltergeist",
+		"pseudo_gigant", "controller", "bloodsucker"
+	}
+}
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiPopulationListItem" (CUIListBoxItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function uiPopulationListItem:__init(lname, fname, rname, q, xml) super()
+	self:SetWndRect(2, 0, 433, 18)
+	
+	self.lname = CUIStatic()
+	self.lname:SetAutoDelete(true)
+	self:AttachChild(self.lname)
+	self.lname:SetWndRect(0, 0, 150, 18)
+	self.lname:SetTextST(lname)
+	self.lname:SetTextAlign(CGameFont.alLeft)
+	self.lname:SetFont(pcTextViewer.get_font("letterica16"))
+	self.lname:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	self.fname = CUIStatic()
+	self.fname:SetAutoDelete(true)
+	self:AttachChild(self.fname)
+	self.fname:SetWndRect(150, 0, 125, 18)
+	self.fname:SetTextST(fname)
+	self.fname:SetTextAlign(CGameFont.alLeft)
+	self.fname:SetFont(pcTextViewer.get_font("letterica16"))
+	self.fname:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	self.rname = CUIStatic()
+	self.rname:SetAutoDelete(true)
+	self:AttachChild(self.rname)
+	self.rname:SetWndRect(275, 0, 100, 18)
+	self.rname:SetText(rname)
+	self.rname:SetTextAlign(CGameFont.alLeft)
+	self.rname:SetFont(pcTextViewer.get_font("letterica16"))
+	self.rname:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	self.q = CUIStatic()
+	self.q:SetAutoDelete(true)
+	self:AttachChild(self.q)
+	self.q:SetWndRect(375, 0, 60, 18)
+	self.q:SetText(q)
+	self.q:SetTextAlign(CGameFont.alLeft)
+	self.q:SetFont(pcTextViewer.get_font("letterica16"))
+	self.q:SetTextColor(pcTextViewer.get_colour("full_white"))
+	
+	xml:InitStatic("alife_population_stats:list_item_div", self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiPopulationStats" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPopulationStats:__init(w, h, xml) super()
+	self.wnd_width, self.wnd_height = w, h
+	self.wnd_x, self.wnd_y = 0, 0
+	
+	self:InitControls(xml)
+	self:InitCallBacks()
+end
+
+function uiPopulationStats:__finalize()
+end
+
+function uiPopulationStats:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPopulationStats:AttachLevelsCombo()
+	self.cmb_level = ui_combo.uiComboBox(self, false, 5, 10, self.xml, "combobox")
+	self.cmb_level:SetWindowName("cmb_level")
+	self.cmb_level:SetAutoDelete(true)
+	self:AttachChild(self.cmb_level)
+	self.cmb_level:SetFirstItem("select level ...")
+	self.cmb_level:Show(true)
+	
+	local items = {}
+	
+	table.insert(items, {key = "all", value = "all"})
+	
+	for k, v in ipairs(la_levels) do
+		table.insert(items, {key = v, value = game.translate_string(v)})
+	end
+	
+	self.cmb_level:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:AttachEntityTypeCombo()
+	self.cmb_entity = ui_combo.uiComboBox(self, false, 5, 40, self.xml, "combobox")
+	self.cmb_entity:SetWindowName("cmb_entity_type")
+	self.cmb_entity:SetAutoDelete(true)
+	self:AttachChild(self.cmb_entity)
+	self.cmb_entity:SetFirstItem("select entity ...")
+	self.cmb_entity:Show(true)
+	
+	local items = {}
+	
+	for k, v in ipairs({"all", "stalker", "mutant"}) do
+		table.insert(items, {key = v, value = v})
+	end
+	
+	self.cmb_entity:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:AttachRankCombo()
+	self.cmb_rank = ui_combo.uiComboBox(self, false, 5, 40, self.xml, "combobox")
+	self.cmb_rank:SetWindowName("cmb_rank")
+	self.cmb_rank:SetAutoDelete(true)
+	self:AttachChild(self.cmb_rank)
+	self.cmb_rank:SetFirstItem("select rank ...")
+	self.cmb_rank:Show(true)
+	
+	local items = {}
+	
+	table.insert(items, {key = "all", value = "all"})
+	
+	for k, v in ipairs(rank_names["stalker"]) do
+		table.insert(items, {key = v, value = v})
+	end
+	for k, v in ipairs(rank_names["mutant"]) do
+		table.insert(items, {key = v, value = v})
+	end
+	
+	self.cmb_rank:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:AttachFactionsCombo()
+	self.cmb_faction = ui_combo.uiComboBox(self, false, 5, 70, self.xml, "combobox")
+	self.cmb_faction:SetWindowName("cmb_faction")
+	self.cmb_faction:SetAutoDelete(true)
+	self:AttachChild(self.cmb_faction)
+	self.cmb_faction:SetFirstItem("select faction ...")
+	self.cmb_faction:Show(true)
+	
+	local items = {}
+	
+	table.insert(items, {key = "all", value = "all"})
+	
+	for k, v in ipairs(faction_names["stalker"]) do
+		table.insert(items, {key = v, value = game.translate_string(v)})
+	end
+	for k, v in ipairs(faction_names["mutant"]) do
+		table.insert(items, {key = v, value = game.translate_string(v)})
+	end
+	
+	self.cmb_faction:AddItems(items, "letterica16", "full_white")
+end
+
+function uiPopulationStats:InitControls(xml)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(0, 30, self.wnd_width, self.wnd_height - 30)
+	
+	self.xml = xml
+	
+	self.xml:InitFrame("alife_population_stats:list_frame", self)
+	self.list_descr_frame = self.xml:InitFrame("alife_population_stats:list_descr_frame", self)
+	self.xml:InitAutoStaticGroup("alife_population_stats:list_descr", self.list_descr_frame)
+	
+	self.listview = self.xml:InitListBox("alife_population_stats:listview", self)
+	
+	self.btn_display = CUI3tButton()
+	self.btn_display:SetAutoDelete(true)
+	self.btn_display:SetWindowName("btn_display")
+	self.btn_display:Init("ui_button_ordinary", 5, 100, 117, 29)
+	self.btn_display:SetText("display")
+	self:AttachChild(self.btn_display)
+	self:Register(self.btn_display)
+	
+	self.btn_save = CUI3tButton()
+	self.btn_save:SetAutoDelete(true)
+	self.btn_save:SetWindowName("btn_save")
+	self.btn_save:Init("ui_button_ordinary", 5, 130, 117, 29)
+	self.btn_save:SetText("to log")
+	self:AttachChild(self.btn_save)
+	self:Register(self.btn_save)
+	
+	self:AttachFactionsCombo()
+	self:AttachRankCombo()
+	--self:AttachEntityTypeCombo()
+	self:AttachLevelsCombo()
+end
+
+function uiPopulationStats:InitCallBacks()
+	self:AddCallback("btn_display", ui_events.BUTTON_CLICKED, self.OnDisplayStats, self)
+	self:AddCallback("btn_save", ui_events.BUTTON_CLICKED, self.OnSaveStats, self)
+end
+
+function uiPopulationStats:OnSaveStats()
+	local item = nil
+	for i = 0, self.listview:GetSize() - 1 do
+		item = self.listview:GetItem(i)
+		parser.dbg_print("[%s] %s (%s) => %s", item.lname:GetText(), item.fname:GetText(), item.rname:GetText(), item.q:GetText())
+	end
+end
+
+function uiPopulationStats:OnDisplayStats()
+	local lname = self.cmb_level:GetSelectedItemKey()
+	local rname = self.cmb_rank:GetSelectedItemKey()
+	local fname = self.cmb_faction:GetSelectedItemKey()
+	
+	if lname and rname and fname then
+		if lname == "all" then
+			lname = la_levels
+		else
+			lname = {lname}
+		end
+		if rname == "all" then
+			rname = {}
+			for k, v in pairs(rank_names["stalker"]) do
+				table.insert(rname, v)
+			end
+			for k, v in pairs(rank_names["mutant"]) do
+				table.insert(rname, v)
+			end
+		else
+			rname = {rname}
+		end
+		if fname == "all" then
+			fname = {}
+			for k, v in pairs(faction_names["stalker"]) do
+				table.insert(fname, v)
+			end
+			for k, v in pairs(faction_names["mutant"]) do
+				table.insert(fname, v)
+			end
+		else
+			fname = {fname}
+		end
+		
+		self.listview:RemoveAll()
+		for _, lvl_name in pairs(lname) do
+			for _, comm_name in pairs(fname) do
+				for _, rank_name in pairs(rname) do
+					local q = xr_statistic.getSimStats().level_stats[lvl_name][comm_name][rank_name]
+					if q then
+						self.listview:AddItem(uiPopulationListItem(lvl_name, comm_name, rank_name, q, self.xml))
+					end
+				end
+			end
+		end
+	end
+end
+
+function uiPopulationStats:OnComboBoxItemChange(cmb_name, key, value)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiLauncher" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiLauncher:__init(parent, w, h, xml) super()
+	self.wnd_width, self.wnd_height = w, h
+	self.wnd_x, self.wnd_y = 0, 0
+	
+	self.parent = parent
+	
+	self:InitControls(xml)
+	self:InitCallBacks()
+end
+
+function uiLauncher:__finalize()
+end
+
+function uiLauncher:Update()
+	CUIScriptWnd.Update(self)
+	
+	if level_weathers.is_blowout_active() then
+		self.btn_blowout:SetText("Stop blowout")
+	else
+		self.btn_blowout:SetText("Start blowout")
+	end
+end
+
+function uiLauncher:InitControls(xml)
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(0, 30, self.wnd_width, self.wnd_height - 30)
+	
+	xml:InitFrame("tools_launcher:jump_frame", self)
+	xml:InitFrame("tools_launcher:position_frame", self)
+	xml:InitFrame("tools_launcher:vehicle_buy_frame", self)
+	
+	self.btn_jump = CUI3tButton()
+	self.btn_jump:SetAutoDelete(true)
+	self.btn_jump:SetWindowName("btn_jump")
+	self.btn_jump:Init("ui_button_ordinary", 25, 60, 117, 29)
+	self.btn_jump:SetText("go")
+	self:AttachChild(self.btn_jump)
+	self:Register(self.btn_jump)
+	
+	self.btn_luac = CUI3tButton()
+	self.btn_luac:SetAutoDelete(true)
+	self.btn_luac:SetWindowName("btn_luac")
+	self.btn_luac:Init("ui_button_ordinary", 2, 110, 117, 29)
+	self.btn_luac:SetText("Lua console")
+	self:AttachChild(self.btn_luac)
+	self:Register(self.btn_luac)
+	
+	self.btn_ppeff = CUI3tButton()
+	self.btn_ppeff:SetAutoDelete(true)
+	self.btn_ppeff:SetWindowName("btn_ppeff")
+	self.btn_ppeff:Init("ui_button_ordinary", 2, 140, 117, 29)
+	self.btn_ppeff:SetText("PP effector")
+	self:AttachChild(self.btn_ppeff)
+	self:Register(self.btn_ppeff)
+	
+	self.btn_blowout = CUI3tButton()
+	self.btn_blowout:SetAutoDelete(true)
+	self.btn_blowout:SetWindowName("btn_blowout")
+	self.btn_blowout:Init("ui_button_ordinary", 2, 170, 117, 29)
+	--self.btn_blowout:Enable(false) --/#?#
+	self:AttachChild(self.btn_blowout)
+	self:Register(self.btn_blowout)
+	
+	self.btn_vehicle_buy = CUI3tButton()
+	self.btn_vehicle_buy:SetAutoDelete(true)
+	self.btn_vehicle_buy:SetWindowName("btn_vehicle_buy")
+	self.btn_vehicle_buy:Init("ui_button_ordinary", 425, 60, 117, 29)
+	self.btn_vehicle_buy:SetText("Buy")
+	self:AttachChild(self.btn_vehicle_buy)
+	self:Register(self.btn_vehicle_buy)
+	
+	self.stc_position = xml:InitStatic("tools_launcher:stc_position", self)
+	self.stc_lvid = xml:InitStatic("tools_launcher:stc_lvid", self)
+	self.stc_gvid = xml:InitStatic("tools_launcher:stc_gvid", self)
+	
+	self.btn_save_pos = CUI3tButton()
+	self.btn_save_pos:SetAutoDelete(true)
+	self.btn_save_pos:SetWindowName("btn_save_pos")
+	self.btn_save_pos:Init("ui_button_ordinary", 175, 90, 117, 29)
+	self.btn_save_pos:SetText("Save")
+	self:AttachChild(self.btn_save_pos)
+	self:Register(self.btn_save_pos)
+	
+	self:AttachLevelsCombo(xml)
+end
+
+function uiLauncher:onShow()
+	local lvid = db.actor:level_vertex_id()
+	local gvid = db.actor:game_vertex_id()
+	local p = db.actor:position()
+	
+	self.stc_position:SetText(string.format("Position = %.2f, %.2f, %.2f", p.x, p.y, p.z))
+	self.stc_lvid:SetText(string.format("Level vertex = %d", lvid))
+	self.stc_gvid:SetText(string.format("Game vertex = %d", gvid))
+end
+
+function uiLauncher:AttachLevelsCombo(xml)
+	self.cmb_level = ui_combo.uiComboBox(nil, false, 10, 30, xml, "combobox")
+	self.cmb_level:SetWindowName("cmb_level")
+	self.cmb_level:SetAutoDelete(true)
+	self:AttachChild(self.cmb_level)
+	self.cmb_level:SetFirstItem("select level ...")
+	self.cmb_level:Show(true)
+	
+	local items = {}
+	for k, v in ipairs(la_levels) do
+		table.insert(items, {key = v, value = game.translate_string(v)})
+	end
+	
+	self.cmb_level:AddItems(items, "letterica16", "full_white")
+end
+
+function uiLauncher:InitCallBacks()
+	self:AddCallback("btn_jump",        ui_events.BUTTON_CLICKED, self.OnJumpToLevel, self)
+	self:AddCallback("btn_luac",        ui_events.BUTTON_CLICKED, self.OnLuaConsole, self)
+	self:AddCallback("btn_ppeff",       ui_events.BUTTON_CLICKED, self.OnPPEffector, self)
+	self:AddCallback("btn_blowout",     ui_events.BUTTON_CLICKED, self.OnBlowout, self)
+	self:AddCallback("btn_vehicle_buy", ui_events.BUTTON_CLICKED, self.OnBuyVehicle, self)
+	self:AddCallback("btn_save_pos",    ui_events.BUTTON_CLICKED, self.OnSavePosition, self)
+end
+
+function uiLauncher:OnBlowout()
+	if level_weathers.is_blowout_active() then
+		--surge_manager.stop_surge()
+	else
+		--surge_manager.stop_surge()
+	end
+end
+
+function uiLauncher:OnJumpToLevel()
+	local lname = self.cmb_level:GetSelectedItemKey()
+	if lname ~= nil then
+		if self.parent then
+			self.parent.jump_to_level = lname
+			self.parent:OnExit()
+		end
+	end
+end
+
+function uiLauncher:OnLuaConsole()
+	if self.parent then
+		self.parent.launch_lua_console = true
+		self.parent:OnExit()
+	end
+end
+
+function uiLauncher:OnPPEffector()
+	if self.parent then
+		self.parent.launch_pp_eff = true
+		self.parent:OnExit()
+	end
+end
+
+function uiLauncher:OnBuyVehicle()
+	if self.parent then
+		local veh = self.cmb_vehicle:GetSelectedItemKey()
+		if veh ~= nil then
+			self.parent.launch_veh_buy = veh
+			self.parent:OnExit()
+		end
+	end
+end
+
+function uiLauncher:OnSavePosition()
+	parser.dbg_print("%s", self.stc_position:GetText())
+	parser.dbg_print("%s", self.stc_lvid:GetText())
+	parser.dbg_print("%s", self.stc_gvid:GetText())
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiDbgTools" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiDbgTools:__init() super()
+	la_utils.custom_ui_usage("show", script_name())
+	self.wnd_width, self.wnd_height = 600, 400
+	self.wnd_x, self.wnd_y = la_utils.get_hud_center(self.wnd_width, self.wnd_height)
+	
+	self.active_button = nil
+	
+	self.launch_lua_console = false
+	self.launch_veh_buy = false
+	self.launch_pp_eff = false
+	self.jump_to_level = false
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiDbgTools:__finalize()
+end
+
+function uiDbgTools:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiDbgTools:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	
+	self.xml = CScriptXmlInit()
+	self.xml:ParseFile("ui_wnd\\ui_hud_tools.xml")
+	
+	self.xml:InitFrame("wnd_frame", self)
+	self.xml:InitFrame("menu_frame:frame", self)
+	
+	self.btn_exit = CUI3tButton()
+	self.btn_exit:SetAutoDelete(true)
+	self.btn_exit:SetWindowName("btn_exit")
+	self.btn_exit:Init("ui_pc_wnd_btn", self.wnd_width - 20, 6, 17, 17)
+	self:AttachChild(self.btn_exit)
+	
+	self.btn_population = self.xml:InitButton("menu_frame:btn_population", self)
+	self.btn_population:SetHighlightColor(GetARGB(255, 255, 255, 255))
+	self.btn_population:EnableTextHighlighting(true)
+	self:Register(self.btn_population, "btn_population")
+	
+	self.wnd_population = uiPopulationStats(self.wnd_width, self.wnd_height, self.xml)
+	self.wnd_population:SetAutoDelete(true)
+	self.wnd_population:SetWindowName("wnd_population")
+	self:AttachChild(self.wnd_population)
+	self.wnd_population:Show(false)
+	
+	self.btn_launcher = self.xml:InitButton("menu_frame:btn_launcher", self)
+	self.btn_launcher:SetHighlightColor(GetARGB(255, 255, 255, 255))
+	self.btn_launcher:EnableTextHighlighting(true)
+	self:Register(self.btn_launcher, "btn_launcher")
+	
+	self.wnd_launcher = uiLauncher(self, self.wnd_width, self.wnd_height, self.xml)
+	self.wnd_launcher:SetAutoDelete(true)
+	self.wnd_launcher:SetWindowName("wnd_launcher")
+	self:AttachChild(self.wnd_launcher)
+	self.wnd_launcher:Show(false)
+	--[[ --/ disabled
+	self.btn_spawner = self.xml:InitButton("menu_frame:btn_spawner", self)
+	self.btn_spawner:SetHighlightColor(GetARGB(255, 255, 255, 255))
+	self.btn_spawner:EnableTextHighlighting(true)
+	--self:Register(self.btn_spawner, "btn_spawner")
+	--]]
+end
+
+function uiDbgTools:InitCallBacks()
+	self:AddCallback("btn_population", ui_events.BUTTON_CLICKED, self.OnDisplayPopulation, self)
+	self:AddCallback("btn_launcher",   ui_events.BUTTON_CLICKED, self.OnDisplayLauncher, self)
+	self:AddCallback("btn_exit",       ui_events.BUTTON_CLICKED, self.OnExit, self)
+end
+
+function uiDbgTools:DisplayChild(wnd_name, bFlag)
+	if wnd_name == "wnd_population" then
+		self.wnd_population:Show(bFlag)
+	elseif wnd_name == "wnd_launcher" then
+		self.wnd_launcher:Show(bFlag)
+		self.wnd_launcher:onShow()
+	end
+end
+
+function uiDbgTools:OnMenuButtonClicked(btn_name)
+	if self.active_button ~= btn_name then
+		if self.active_button ~= nil then
+			self:GetButton(self.active_button):SetTextColor(255, 128, 128, 128)
+			local wnd_name = string.gsub(self.active_button, "btn_", "wnd_")
+			self:DisplayChild(wnd_name, false)
+		end
+		self:GetButton(btn_name):SetTextColor(255, 238, 155, 23)
+		self.active_button = btn_name
+		return true
+	end
+	return false
+end
+
+function uiDbgTools:OnDisplayPopulation()
+	if self:OnMenuButtonClicked("btn_population") then
+		self:DisplayChild("wnd_population", true)
+	end
+end
+
+function uiDbgTools:OnDisplayLauncher()
+	if self:OnMenuButtonClicked("btn_launcher") then
+		self:DisplayChild("wnd_launcher", true)
+	end
+end
+
+function uiDbgTools:OnExit()
+	self:GetHolder():start_stop_menu(self, true)
+	
+	if not (self.launch_lua_console or self.launch_pp_eff or self.launch_veh_buy) then
+		la_utils.custom_ui_usage("hide", script_name())
+	end
+	
+	if self.jump_to_level then
+		level_tasks.jump_to_level(self.jump_to_level)
+	end
+	if self.launch_lua_console then
+		ui_lua_console.load_uiLuaConsole()
+	end
+	if self.launch_veh_buy then
+		ui_car_buy.display(self.launch_veh_buy)
+	end
+	if self.launch_pp_eff then
+		ui_pp_test.displayPPeffWindow()
+	end
+end
+
+function uiDbgTools:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnExit()
+		end
+	end
+	return true
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------------------------------------
+function get_dbg_tools_mgr() --/#+#
+	if not dbg_tools_mgr then
+		dbg_tools_mgr = uiDbgTools()
+	end
+	return dbg_tools_mgr
+end
+
+function displayWindow()
+	if iTimeOut < time_global() then --/#+#
+		iTimeOut = time_global() + 500 --/ protection from 'bounce' ~0.5sec
+		level.start_stop_menu(get_dbg_tools_mgr(), true)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

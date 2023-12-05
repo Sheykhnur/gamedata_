@@ -1,0 +1,42 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : xr_garmon.script
+ Description: GG+garmoshka
+ Copyright  : 2010 © ‘еЌи с - основа, ALEX BOY - реализаци€
+ Author     : Starter, ¬Ћјƒ ,‘еЌи с, ALEX BOY ,Shadows
+ Last update: 02.07.2010(by ‘еЌи с) и (by ALEX BOY) 
+--]]-----------------------------------------------------------------------------------------------
+
+
+local device_active = true
+local snd_obj,react
+
+function item_update()
+    local item = db.actor:active_item()
+    if not (item and item:section() == "anim_harmonica") then
+        if snd_obj and snd_obj:playing() then
+            snd_obj:stop()
+        end
+        return
+    end
+    if device_active then
+        snd_obj = sound_object("characters_voice\\human_01\\bandit1\\music\\harmonica_"..tostring(math.random(1,10)))  
+        snd_obj:play_at_pos(db.actor, vector():set(0,0,0), 0, sound_object.s2d)
+    for k, v in pairs (db.storage) do
+        local stalker = level.object_by_id(k)
+        if (stalker and IsStalker(stalker)) then
+            if stalker:position():distance_to(db.actor:position()) < 10 then
+                if not snd_obj:playing() then
+                    react = sound_object("characters_voice\\human_01\\bandit1\\no_music\\no_sound_"..tostring(math.random(1,2)))  
+                    react:play_at_pos(stalker, stalker:position(), sound_object.s2d)
+                    react.volume = 0.8
+                end
+            end
+        end
+    end
+        device_active = false
+    else
+        if not snd_obj:playing() then
+            device_active = true
+        end
+    end
+end

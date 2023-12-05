@@ -1,0 +1,64 @@
+[spawner]
+cond = {+has_freeplay_info}
+
+[smart_terrains]
+none = true
+
+[combat_ignore@agr_task_liar]
+
+[hit@agr_task_liar]
+on_info = %+agr_task_liar_hit%
+
+[logic]
+;active = kamper@agr_task_liar
+active = walker@agr_task_liar
+combat_ignore = combat_ignore@agr_task_liar
+on_hit = hit@agr_task_liar
+
+[kamper@agr_task_liar]
+path_walk = agr_task_liar_walk
+path_look = agr_task_liar_look
+kamp_name = kamp1
+on_actor_dist_le_nvis = 30| walker@agr_task_liar
+combat_ignore_cond = {-agr_task_liar_hit}
+
+[walker@agr_task_liar]
+path_walk = agr_task_liar_walk
+path_look = agr_task_liar_look
+def_state_standing = sit_ass
+meet = meet@agr_task_liar
+combat_ignore_cond = {-agr_task_liar_hit}
+on_info = {+agr_task_liar_final_item} walker@agr_task_liar_wait
+on_info2 = {+agr_liar_enemy} walker@agr_task_liar_enemy %=actor_enemy%
+on_info3 = {+agr_liar_nomeet} walker@agr_task_liar_nomeet
+
+[walker@agr_task_liar_enemy]
+path_walk = agr_task_liar_walk
+path_look = agr_task_liar_look
+meet = no_meet
+
+[walker@agr_task_liar_nomeet]
+path_walk = agr_task_liar_walk
+path_look = agr_task_liar_look
+meet = no_meet
+combat_ignore_cond = {-agr_task_liar_hit}
+
+[walker@agr_task_liar_wait]
+path_walk = agr_task_liar_walk
+path_look = agr_task_liar_look
+def_state_standing = sit_ass
+meet = meet@agr_task_liar
+combat_ignore_cond = {-agr_task_liar_hit}
+on_actor_dist_ge_nvis = 50| %=drop_sucker_pda =release_not_seen%
+on_info = {+agr_liar_enemy} walker@agr_task_liar_enemy %=actor_enemy%
+on_info2 = {+agr_liar_nomeet} walker@agr_task_liar_nomeet
+
+[meet@agr_task_liar]
+meet_state     = 15| hello| 5| nil
+meet_state_wpn = 15| hello| 5| nil
+victim         = 25| nil| 20| actor   
+victim_wpn     = 25| nil| 20| actor   
+use            = true 
+use_wpn        = true   
+meet_dialog    = agr_task_liar_dialog
+combat_ignore_cond = {-agr_task_liar_hit}

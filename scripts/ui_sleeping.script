@@ -1,0 +1,196 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_sleeping.script
+ Description: GUI menu for manager "Sleep"
+ Copyright  : 2008 © LA-team
+ Author     : barin (10.08.2008)
+ Editors    : barin (14.08.2008)
+ Last edit  : 07.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "ui_sleep_wnd" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function ui_sleep_wnd:__init(owner,callback) super()
+	if la_utils and la_utils.custom_ui_usage then
+		la_utils.custom_ui_usage("show", script_name()) --/#?# maybe it's not required?
+	end
+	self.owner = owner
+	self.callback = callback
+	self.duration = 1
+	self.disposing = false
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function ui_sleep_wnd:__finalize()
+end
+
+function ui_sleep_wnd:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	local wnd_width, wnd_height = 397, 400
+	local wnd_x, wnd_y = math.modf(512 - wnd_width/2), math.modf(384 - wnd_height/2)
+	self:SetWndRect(wnd_x, wnd_y, wnd_width, wnd_height)
+	
+	local dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("background")
+	dlg:Init("ui\\ui_sleep_wnd", 0, 0, 397, 400)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("caption")
+	dlg:Init(30, 4, 397, 20)
+	dlg:SetTextST("ui_sleep_caption")
+	dlg:SetFont(GetFontGraffiti22Russian())
+	dlg:SetTextColor(255, 255, 255, 255)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("video")
+	dlg:Init("ui\\credits_back_512_v10", 4, 34, 385, 320)
+	dlg:SetStretchTexture(true)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("bottom_frm")
+	dlg:Init("ui\\ui_sleep_frm", 105, 330, 187, 20)
+	self:AttachChild(dlg)
+	
+	self.curr_time = CUIStatic()
+	self.curr_time:SetAutoDelete(true)
+	self.curr_time:SetWindowName("curr_time")
+	self.curr_time:Init(325, 5, 65, 20)
+	self.curr_time:SetText("")
+	self.curr_time:SetFont(GetFontGraffiti22Russian())
+	self.curr_time:SetTextColor(255, 238, 155, 23)
+	self:AttachChild(self.curr_time)
+	
+	self.btn_sub = CUI3tButton()
+	self.btn_sub:SetAutoDelete(true)
+	self.btn_sub:SetWindowName("btn_sub")
+	self.btn_sub:Init("ui_beltbut_min", 80, 327, 24, 25)
+	self.btn_sub:Enable(false)
+	self:AttachChild(self.btn_sub)
+	
+	self.btn_add = CUI3tButton()
+	self.btn_add:SetAutoDelete(true)
+	self.btn_add:SetWindowName("btn_add")
+	self.btn_add:Init("ui_beltbut_plus", 293, 327, 24, 25)
+	self:AttachChild(self.btn_add)
+	
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self.text:SetWindowName("text")
+	self.text:Init(130, 330, 167, 20)
+	self.text:SetTextST("ui_sleep_sleep_for1")
+	self.text:SetFont(GetFontLetterica18Russian())
+	self.text:SetTextColor(255, 255, 255, 255)
+	self:AttachChild(self.text)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_sleep")
+	dlg:SetTextST("ui_sleep_sleep")
+	dlg:SetFont(GetFontGraffiti22Russian())
+	dlg:Init("ui_inv_elem_button", 20, 360, 119, 40)
+	self:AttachChild(dlg)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_cancel")
+	dlg:SetTextST("ui_sleep_cancel")
+	dlg:SetFont(GetFontGraffiti22Russian())
+	dlg:Init("ui_inv_elem_button", 266, 360, 119, 40)
+	self:AttachChild(dlg)
+end
+
+function ui_sleep_wnd:InitCallBacks()
+	self:AddCallback("btn_add",    ui_events.BUTTON_CLICKED, self.OnAdd,   self)
+	self:AddCallback("btn_sub",    ui_events.BUTTON_CLICKED, self.OnSub,   self)
+	self:AddCallback("btn_sleep",  ui_events.BUTTON_CLICKED, self.OnSleep, self)
+	self:AddCallback("btn_cancel", ui_events.BUTTON_CLICKED, self.OnExit,  self)
+end
+
+function ui_sleep_wnd:Update()
+	CUIScriptWnd.Update(self)
+	self.curr_time:SetText(game.get_game_time():timeToString(game.CTime.TimeToMinutes))
+end
+
+function ui_sleep_wnd:OnAdd()
+	self.duration = self.duration + 1
+	if self.duration >= 8 then
+		self.btn_add:Enable(false)
+	else
+		self.btn_add:Enable(true)
+	end
+	
+	if not self.btn_sub:IsEnabled() then
+		self.btn_sub:Enable(true)
+	end
+	
+	local str = game.translate_string("ui_sleep_sleep_for") .. " " .. self.duration
+	if self.duration == 1 then
+		str = str .. " " .. game.translate_string("ui_sleep_hour")
+	else
+		str = str .. " " .. game.translate_string("ui_sleep_hours")
+	end
+	self.text:SetText(str)
+end
+
+function ui_sleep_wnd:OnSub()
+	self.duration = self.duration - 1
+	local str = game.translate_string("ui_sleep_sleep_for") .. " " .. self.duration
+	if self.duration <= 1 then
+		str = str .. " " .. game.translate_string("ui_sleep_hour")
+		self.btn_sub:Enable(false)
+	else
+		str = str .. " " .. game.translate_string("ui_sleep_hours")
+		self.btn_sub:Enable(true)
+	end
+	self.text:SetText(str)
+	
+	if not self.btn_add:IsEnabled() then
+		self.btn_add:Enable(true)
+	end
+end
+
+function ui_sleep_wnd:OnSleep()
+	if self.disposing then
+		return 
+	end
+	if self.owner then
+		self:GetHolder():start_stop_menu(self.owner, false)
+		self.owner:Show(false) --/ close owner window
+	end
+	self.disposing = true
+	self:OnExit()
+	self.callback(self.duration)
+end
+
+function ui_sleep_wnd:OnExit()
+	if la_utils and la_utils.hide_ui_window then
+		la_utils.hide_ui_window() --/#?# maybe it's not required?
+	end
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function ui_sleep_wnd:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnExit()
+		end
+	end
+	return true
+end
+--/ ------------------------------------------------------------------
+function get_gui_menu(...)
+	return ui_sleep_wnd(...) --/>
+end
+--/ ------------------------------------------------------------------------------------------------

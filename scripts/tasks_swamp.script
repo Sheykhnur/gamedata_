@@ -1,0 +1,120 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_swamp.script
+ Description: Tasks swamp
+ Copyright  : 2012 © LA-team
+ Author     : vintar, loxotron
+ Editors    : loxotron(30.01.2013)
+ Last edit  : 05.03.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	--/ stub
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^swamp_') then
+		return false --/>
+	end
+	if info_id == "swamp_heli_start" then
+		local snd = xr_sound.get_safe_sound_object("helicopter\\swamp\\here_we_go")
+		snd:play(db.actor, 1, sound_object.s2d)
+		return true --/>
+	end
+	if info_id == "swamp_actor_end" then
+		this.swamp_scene_snd_start()
+		return true --/>
+	end
+	if info_id == "swamp_actor_talk4" then
+		--/ launching quick-timer: [time(sec), func, param]
+		start_quick_timer(1.5, this.swamp_repeat) --/ ~1.5 real-sec
+		return true --/>
+	end
+	if info_id == "swamp_scene2_start" then
+		this.swamp_after()
+		return true --/>
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function swamp_repeat(t)
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\swa_something")
+	snd:play(db.actor, 1.0, sound_object.s2d)
+end
+
+function swamp_after()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\swa_something")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+
+function swamp_scene_snd_start()
+	--[[ --/#x# redirect
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\swa_dram_moment")
+	snd:play(db.actor, 1.0, sound_object.s2d)
+	start_real_timer(1, sMoidule..".swamp_scene_snd1")
+	--]]
+	this.swamp_scene_snd()
+end
+
+function swamp_scene_snd(t) --/#+#
+	local tbl_phases = {
+		[0] = {snd = "swa_dram_moment",    pause = 1.0}, --/ ~1.0 real-sec
+		[1] = {snd = "swa_scream_actor",   pause = 0.5}, --/ ~0.5 real-sec
+		[2] = {snd = "swa_actor_effects2", pause = 0.5}, --/ ~0.5 real-sec
+		[3] = {snd = "swa_actor_whispers", pause = 3.5}, --/ ~3.5 real-sec
+		[4] = {snd = "swa_actor_effects3"} --/ done
+	}
+	local idx = (t and t.idx) or 0
+	local tbl_phase = tbl_phases[idx]
+	if not tbl_phase then return end --/>
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\"..tbl_phase.snd)
+	if snd then
+		snd:play(db.actor, 1.0, sound_object.s2d)
+	end
+	if tbl_phase.pause then
+		start_quick_timer(tbl_phase.pause, this.swamp_scene_snd, {idx = idx+1})
+	end
+end
+--[[
+function swamp_scene_snd1(t)
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\swa_scream_actor")
+	snd:play(db.actor, 1.0, sound_object.s2d)
+	start_quick_timer(0.5, this.swamp_scene_snd2) --/ ~0.5 real-sec 
+end
+
+function swamp_scene_snd2(t)
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\swa_actor_effects2")
+	snd:play(db.actor, 1.0, sound_object.s2d)
+	start_quick_timer(0.5, this.swamp_scene_snd3) --/ ~0.5 real-sec
+end
+
+function swamp_scene_snd3(t)
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\swa_actor_whispers")
+	snd:play(db.actor, 1.0, sound_object.s2d)
+	start_quick_timer(3.5, this.swamp_scene_snd4) --/ ~3.5 real-sec
+end
+
+function swamp_scene_snd4(t)
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\swa_actor_effects3")
+	snd:play(db.actor, 1.0, sound_object.s2d)
+end
+
+function swamp_scene_snd(_snd)
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\swa\\" .. _snd)
+	if snd then
+		snd:play(db.actor, 1.0, sound_object.s2d)
+	end
+end
+--]]
+--/ -----------------------------------------------------------------------------------------------

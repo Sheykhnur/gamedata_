@@ -1,0 +1,1527 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : task_manager.script
+ Description: Manager of game tasks
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : Barin(08.08.2010), Gr1ph00n(23.09.2012), bardak`s  BFA included!, (05.11.16) Rafa, phobos2077, lox(10.17)
+ Last edit  : (14.11.17) phobos2077 - a few incorrect variable references fixed
+--]]-----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local random_task = nil
+
+local tParentByStoryId  = {} --/ table [iStoryId] = sParent
+local tStoryIdByParent  = {} --/ table [sParent] = iStoryId
+local tReturnTaskByType = {} --/ table [sTaskType] = sDescription
+local tHirers           = {} --/ table [sParent] = sCharName
+local tNumByStatus      = {}
+local tStatusByNum      = {}
+local tStoryIdDefend    = {} --/ array StoryId by enemy smart_terrain (от кого защищать)
+local bRndReward        = false --/ true|false - random or usual rewards
+local bColorLine        = true --/ true|false - lighting color lines in PDA
+local tRndRewards       = nil -- lists of random rewards
+local tKillTargets      = nil -- array of targets for killing
+local iCntUpd1s         = 13 --/ counter of seconds
+--/ -------------------------
+local bInit   = false --/ flag of initialization of the module
+--/ -------------------------
+local sModule = script_name()
+
+local double_check_task_types = {["artefact"] = true, ["find_item"] = true, ["find_item_hide"] = true, ["monster_part"] = true}
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Initialize
+--/ -----------------------------------------------------------------
+function init()
+--	debug_print("init:[>]") --/#~#
+	this.clear_task_manager()
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------
+function PreSets(e)
+--	log("PreSets:[>]") --/#~#
+	if not bInit then abort(sModule..":Not_initialised!") end
+	event("options"):register(ReInit_Options)
+	event("actor_task"):register(OnTask)
+	event("actor_save"):register(save)
+	this.get_random_task()
+	if HasVar("sav_"..sModule) then
+		local tbl = GetVar("sav_"..sModule,{})
+		--log("PreSets:load:#tasks=[%s],size=[%s]", table.size(tbl), GetSizeVar("sav_"..sModule), "") --/#~#
+		DelVar("sav_"..sModule) --/ clear
+		random_task:load(tbl)
+	end
+	ReInit_Options()
+end
+
+function ReInit_Options(e)
+--	log("ReInit_Options:AutoTasks=[%s]", GetVar("opt_tasks", true), "") --/#~#
+	if GetVar("opt_tasks", true) then --/ (not)allowed self-initializing tasks?
+		event("update_1sec"):register(OnUpdate_1s)
+		iCntUpd1s = 13
+	elseif event("update_1sec"):registered(OnUpdate_1s) then
+		event("update_1sec"):unregister(OnUpdate_1s)
+	end
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "TasksManager"
+--/ -----------------------------------------------------------------------------------------------
+function TasksManager:__init()
+--	log("TasksManager:init:[>]") --/#~#
+	--/ initial settings
+	self.task_phrase_id = 100
+	self.task_info    = {}
+	self.task_by_hash = {} --
+	--/ On constructor reading LTX and creating quest drafts.
+	local task_ini = ini_file("misc\\task_manager.ltx")
+	this.Build_Tables(task_ini) --/ reading common tables
+	
+	--/ Integrating by all pharases settings
+	local tTaskList,iCnt = Get_IniSection(task_ini, "list")
+	if iCnt == 0 then
+		abort(sModule..":init:Error while parsing task_manager.ltx")
+	end
+	if not bind_actor.binder_check22() then 
+		abort("Something went wrong, pls reinstall the game")
+	end
+	local diff_koef = level.get_game_difficulty() == game_difficulty.novice and 1.8 or level.get_game_difficulty() == game_difficulty.stalker and 1.4 or level.get_game_difficulty() == game_difficulty.veteran and 1.2 or 1
+	for k,v in ipairs(tTaskList) do
+		if not task_ini:section_exist(v) then
+			abort("%s:init:Not_Section(%s)=[%s]~>in_'task_manager.ltx'", sModule, k, v)
+		elseif not task_ini:line_exist(v, "type") then
+			abort("%s:init:Not_Field='type'~>in_Section(%s)=[%s]", sModule, k, v)
+		end  --log("init:Task(%s/%s)=[%s]%s", k, iCnt, v, "")
+		self.task_info[v] = {}
+		local tTask = self.task_info[v]
+		tTask.name  = v
+		
+		tTask.type   = Get_Cfg_String(task_ini, v, "type", nil, true) -- type of task
+		tTask.parent = Get_Cfg_String(task_ini, v, "parent") -- story_id of customer
+
+		if tTask.parent and tTask.parent ~= "" then
+			tTask.complex_type = tTask.type.."_"..tTask.parent
+		else
+			tTask.complex_type = tTask.type
+			tTask.parent = "nil"
+		end
+		tTask.target      = Get_Cfg_String(task_ini, v, "target"       ) --/ task target
+		tTask.target_count= Get_Cfg_Num32 (task_ini, v, "target_count",1) --/ count of needed objects
+ 		tTask.targer_check= Get_Cfg_Bool (task_ini, v, "targer_check",true) --/ check if item already was spawned, only for find_item_hide task type
+		tTask.idx        = Get_Cfg_Num32 (task_ini, v, "idx", 0) --/ 
+		tTask.text        = Get_Cfg_String(task_ini, v, "text"         ) --/ name of target
+		tTask.description = Get_Cfg_String(task_ini, v, "description"  ) --/ description of target
+ 		tTask.time        = Get_Cfg_Num32 (task_ini, v, "time" , 0) --/ time on quest finishing (game-sec)
+		tTask.prior       = Get_Cfg_Num32 (task_ini, v, "prior" , 0) --/ priority of quest, given avaliable quests with lower weight of priority
+		tTask.idle_time   = Get_Cfg_Number(task_ini, v, "idle_time", 1018400.0) --/ time on 'deliver' quest (game-sec) (86400)
+		tTask.need_return = Get_Cfg_Bool  (task_ini, v, "need_return", true) --/ necessarity of returning quest(item) to customer
+		tTask.target_dlg  = Get_Cfg_String(task_ini, v, "target_dialog") -- dialog with quest vitcim (TODO: add check - alive?)
+		tTask.hirer       = Get_Cfg_String(task_ini, v, "hirer"        ) -- color-selecting of customer in quest string
+		tTask.state       = Get_Cfg_String(task_ini, v, "state"        ) -- color-selecting of quest string
+
+		if task_ini:line_exist(v, "init_condition") then
+			tTask.init_condition = xr_logic.parse_condlist(nil, "task_manager", "init_condition", task_ini:r_string(v, "init_condition"))
+			if not next(tTask.init_condition) then tTask.init_condition = nil end --/ clear!
+		end
+
+		if task_ini:line_exist(v, "condlist") then
+			tTask.condlist = xr_logic.parse_condlist(nil, "task_manager", "condlist", task_ini:r_string(v, "condlist"))
+		else
+			tTask.condlist = xr_logic.parse_condlist(nil, "task_manager", "condlist", "true")
+		end
+		if tTask.idx ~= 0 then
+            tTask.complex_type = tTask.complex_type.."_"..tTask.idx
+        end
+		--/ -------------------------------
+		--/ REWARDS
+		--/ -------------------------------
+		--/ reward with items
+		tTask.reward_item = nil
+		tTask.reward_rnd = ReadFromIni(task_ini, v, "reward_random", bRndReward, "bool") -- mark of reward random
+		if tTask.reward_rnd and tTask.parent and tTask.parent ~= 'nil' then -- if enabled mode of 'random' rewards
+			local tRewardItems = this.Get_RandomRewards(v, tTask)
+			if tRewardItems and type(tRewardItems) == 'table' and next(tRewardItems) then
+				tTask.reward_item = tRewardItems
+				--table.print(tRewardItems) --#~#
+			else
+				tTask.reward_rnd = false
+			end
+		end
+		if not tTask.reward_item then --/ checking usual rewards
+			tTask.reward_rnd = false -- mark of usual rewards
+			local tRewardItems = ReadFromIni(task_ini, v, "reward_item", "<<Nil!>>", "table", ",") --
+			if tRewardItems and type(tRewardItems) == 'table' and next(tRewardItems) then
+				tTask.reward_item = table.list2array(tRewardItems) --/ usual rewards (new format: [sSection]=iNum)
+			end
+		end
+		--/ reward with money
+		tTask.reward_money = ReadFromIni(task_ini, v, "reward_money", "<<Nil!>>", "number")
+		if tTask.reward_money then
+			tTask.reward_money = tTask.reward_money*diff_koef
+		end
+		-- reward with info
+		tTask.reward_info = ReadFromIni(task_ini, v, "reward_info", "<<Nil!>>", "string") -- info reward
+		if tTask.reward_info then
+--			log("init:TaskId=[%s],RewardInfo=[%s]%s", v, tTask.reward_info, "") --#~#
+			local sPhraseId = ReadFromIni(task_ini, tTask.reward_info, "phrase_1", "<<Nil!>>", "string")
+			if sPhraseId then
+				tTask.reward_info_dialog = {sPhraseId}
+				local iCnt = 2
+				while true do
+--					log("init:reward_info:TaskId=[%s],Phrase=[%s],PhraseId=[%s]%s", v, sPhraseId, iCnt, "") --/#~#
+					sPhraseId = ReadFromIni(task_ini, tTask.reward_info, "phrase_"..tostring(iCnt), "<<Nil!>>", "string")
+					if not (sPhraseId and sPhraseId ~= "") then
+						break
+					end
+					table.insert(tTask.reward_info_dialog, sPhraseId)
+					iCnt = iCnt +1
+				end
+			end
+			tTask.reward_info = ReadFromIni(task_ini, tTask.reward_info, "info_portion", "<<Err!>>", "string") --/ reading section with infoportion
+		end
+		--/ Rewards by rank, reputation, attitude(relation)
+		tTask.reward_rank       = ReadFromIni(task_ini, v, "reward_rank"      ,          0, "number")
+		tTask.reward_reputation = ReadFromIni(task_ini, v, "reward_reputation", "<<Nil!>>", "number")
+		tTask.reward_relation   = ReadFromIni(task_ini, v, "reward_relation"  , "<<Nil!>>", "string")
+		if tTask.reward_relation then
+			tTask.reward_relation = parse_key_value(tTask.reward_relation) --
+		end
+		
+		tTask.init_phrase_id = self:gen_phrase_id()
+		tTask.desc_phrase_id = self:gen_phrase_id()
+		tTask.yes_phrase_id  = self:gen_phrase_id()
+		tTask.no_phrase_id   = self:gen_phrase_id()
+		tTask.cmpl_phrase_id = self:gen_phrase_id() -- completed
+		
+		--/ By default quest avaliable for giving
+		tTask.enabled = true
+		--/ Does quest avaliable with it's properties. By default always unavaliable.
+		--/ This parameter depends on having targets for quests and if precondition of quest works
+		tTask.enabled_props = false
+		--/ Status of quest, can be: "normal", "selected", "completed", "rewarded", "refused", "failed"
+		tTask.status = "normal"
+		-- creating hash table
+		local iHash = string.tohash(v)
+		if self.task_by_hash[iHash] then
+			abort("%s:init:Hash=[%s],Task=[%s/%s]:<%s>", sModule, iHash, v, self.task_by_hash[iHash], "Collision!")
+		end
+		tTask.hash_task = iHash
+		self.task_by_hash[iHash] = v
+		--table.print(tTask,sModule..":Task|"..v) --/#~#
+--		log("init:Task(%s/%s)=[%s],Hash=[%s],ctype=[%s]%s", k, iCnt, v, iHash, tTask.complex_type, "") --/#~#
+	end
+	
+	--/ Creating additional associative tables to make search easier
+	self.task_id_by_type = { --/ all avaliable type of tasks in game
+		eliminate_lager = {}, --/ destroy/clear
+		defend_lager    = {}, --/ protect
+		kill_stalker    = {}, --/ kill
+		find_item       = {}, --/ find item
+		find_item_hide	= {}, --/ find item without mapspot
+		artefact        = {}, --/ find artefact
+		monster_part    = {}  --/ find part of monster
+	}
+	self.task_id_by_parent         = {} --/ tasks by 'name-giver'
+	self.task_id_by_yes_phrase_id  = {} --/ tasks with confirmation phrase of finishing quest
+	self.task_id_by_init_phrase_id = {} --/ tasks with started finishing dialog
+	self.task_id_by_desc_phrase_id = {} -- selected tasks in finishing dialog
+	self.task_id_by_cmpl_phrase_id = {} -- tasks with delivering to customer
+	self.active_task_by_type       = {} --/ active (given) tasks
+	self.task_id_self_inited       = {} --/ auto-tasks (selfgiven)
+	self.task_id_by_target_dlg     = {} -- tasks on killing with dialogs
+	self.prior_by_type             = {}
+	
+	for k,v in pairs(self.task_info) do
+		--/ by type of quest
+		if not self.task_id_by_type[v.type] then
+			self.task_id_by_type[v.type] = {}
+		end
+		table.insert(self.task_id_by_type[v.type], k)
+		--/ by type of vendor
+		if not self.task_id_by_parent[v.parent] then
+			self.task_id_by_parent[v.parent] = {}
+		end
+		table.insert(self.task_id_by_parent[v.parent], k)
+		--/ by accept phrase id on quest
+		self.task_id_by_yes_phrase_id[v.yes_phrase_id] = k
+		--/ by confirm phrase Id of finishing quest
+		self.task_id_by_cmpl_phrase_id[v.cmpl_phrase_id] = k
+		--/ by Id of finishing dialog
+		self.task_id_by_desc_phrase_id[v.desc_phrase_id] = k
+		--/ by Id of phares on giving quest
+		self.task_id_by_init_phrase_id[v.init_phrase_id] = k
+		--/ by selfgiving
+		if v.init_condition then
+			table.insert(self.task_id_self_inited, k)
+		end
+		--/ by vitcim dialog of quest
+		if v.target_dlg then
+			self.task_id_by_target_dlg[v.target_dlg] = k
+		end
+	end
+--	log("TasksManager:init:count_tasks=[%s]", table.size(self.task_info), "") --/#~#
+	--table.print(self.task_info,sModule..":task_info|") --/#~#
+end
+
+--/ Generator of unique ID's for phrases
+function TasksManager:gen_phrase_id()
+	self.task_phrase_id = self.task_phrase_id + 1
+	return tostring(self.task_phrase_id)
+end
+
+--/ Retuns indetificator of vendor, with which we talking
+function TasksManager:get_parent(npc)
+	if npc then
+		local story_id = npc:story_id()
+		if tParentByStoryId[story_id] then
+			return tParentByStoryId[story_id] --/>
+		end
+		abort("tm:get_parent:=[%s] story_id=[%d] ~wrong!", npc and npc:name(), story_id, "")
+	end
+	abort("tm:get_parent<NPC is nil>!")
+end
+
+--/ Check: can vendor give any quest
+function TasksManager:parent_can_task(npc,parent)
+	if not parent then
+		parent = self:get_parent(npc)
+	end
+	local can_task,avail,prior,t = false,nil,nil,nil
+	self.prior_by_type = {} --/ reset array of current priority by quest types
+	for _,task_id in pairs(self.task_id_by_parent[parent]) do
+		t = self.task_info[task_id]
+		--/ check avaliability and priority of quest:
+		if t and not t.init_condition then
+			self:check_task_props(task_id) --/ check quest properties
+			avail = t.enabled and t.enabled_props
+			if avail then --/ setting limitations by priorities:
+				prior = self.prior_by_type[t.complex_type]
+				if not (prior and prior < t.prior) then
+					self.prior_by_type[t.complex_type] = t.prior --/ correcting current priority of quests
+				end
+			end
+--			log("tm:parent_can_task:NPC=[%s],parent=[%s],task=[%s],prior=[%s] avail(%s/%s)=>(%s)", npc:name(), parent, task_id, t.prior, t.enabled, t.enabled_props, avail, "") --/#~#
+			can_task = can_task or avail == true
+		--elseif t and t.init_condition then table.print(t.init_condition,sModule..":init_condition|"..task_id) --/#~#
+		end
+	end
+--	log("tm:parent_can_task:=(%s): NPC=[%s], parent=[%s], #tasks=[%s]", can_task, npc and npc:name(), parent, parent and #self.task_id_by_parent[parent], "")
+	return can_task --/>
+end
+
+function TasksManager:active_parent_task(npc)
+	local parent = self:get_parent(npc)
+	for _,task_id in pairs(self.active_task_by_type) do
+		local t = self.task_info[task_id]
+		if t.parent == parent and (t.status == "selected" or t.status == "completed") then
+			return true --/>
+		end
+	end
+	return false --/>
+end
+
+function TasksManager:have_completed_job(npc)
+	local parent = self:get_parent(npc)
+	for _,task_id in pairs(self.active_task_by_type) do
+	local t = self.task_info[task_id]
+		if t.parent == parent and t.status == "completed" then
+			if not double_check_task_types[t.type] then -- check if actor has the targeted item, before showing dialog node
+				return true
+			else
+				if xr_conditions.actor_has_item_count(db.actor, npc, {t.target, t.target_count}) then
+					return true --/>
+				else
+					return false
+				end
+			end
+		end
+	end
+	return false --/>
+end
+
+function TasksManager:action_give_task(sDlgId, idPhase)
+	local task_id = sDlgId
+	if idPhase then
+		task_id = idPhase and self.task_id_by_yes_phrase_id[tostring(idPhase)]
+	end
+	local t = task_id and self.task_info[task_id]
+	if not t then
+		log("action_give_task:task_id=[%s]:<%s>", task_id, "Error!") --/#~#
+		return --/>
+	elseif t.target_objects and  #t.target_objects > 0 then
+		if #t.target_objects > 1 then --/ selecting random target for current quest
+			t.selected_target = t.target_objects[math.random(#t.target_objects)]
+		else
+			t.selected_target = t.target_objects[1]
+		end
+--		log("action_give_task:=[%s],selected_target=[%s]", task_id, t.selected_target, "") --/#~#
+	end
+	
+	local oTask = CGameTask()
+	oTask:load(t.complex_type)
+	oTask:set_title(t.type)
+	oTask:get_objective(0):set_article_id(t.description)
+	
+	local objective = SGameTaskObjective(oTask,1)
+	objective:set_description(t.name)
+	objective:add_complete_func(sModule..".task_complete")
+	if t.selected_target and (
+		 t.type == "eliminate_lager" or --/ destroy/clear
+		 t.type == "defend_lager" or    --/ protect
+		 t.type == "kill_stalker" or    --/ kill
+		 t.type == "find_item")        --/ find
+		then
+		objective:set_object_id(t.selected_target)
+		objective:set_map_location(t.type.."_location")
+		objective:set_map_hint(t.text)
+		if t.type == "defend_lager" then --/ remembering StoryId by enemy smart_terrain (from whom to protect)
+			t.defend_target = self:Get_StoryId_DefendTarget(t.selected_target)
+		end
+	end
+	oTask:add_objective(objective)
+	
+	if t.need_return then --/ adding additional task on returning to vendor
+		local soNPC = alife():story_object(tStoryIdByParent[t.parent])
+		if soNPC then
+			objective = SGameTaskObjective(oTask, 2)
+			objective:set_description(tReturnTaskByType[t.type])
+			objective:set_map_hint(tReturnTaskByType[t.type])
+			objective:set_object_id(soNPC.id)
+			objective:set_map_location("blue_location")
+			objective:set_map_hint(tReturnTaskByType[t.type])
+			oTask:add_objective(objective)
+		else --/ Vendor (questgiver) dead/dissapeared
+			log("action_give_task:=[%s],parent=[%s],story_id=[%s]:<%s>", task_id, t.parent, tStoryIdByParent[t.parent], "Warning!")
+		end
+	end
+	
+	t.status = "selected"
+	self.active_task_by_type[t.complex_type] = task_id --/ adding quest to list of active
+	--/ disabling all other quests of current type (player can't have two tasks of same type)
+	for _,v in pairs(self.task_info) do
+		if v.complex_type == t.complex_type then
+			v.enabled = false
+		end
+	end
+	
+	db.actor:give_task(oTask, (t.time or 0)*1000, false)
+end
+
+--/ Actor refused from quest
+function TasksManager:action_refuse_task(idPhase)
+	local task_id = idPhase and self.task_id_by_yes_phrase_id[tostring(idPhase)]
+	local t = task_id and self.task_info[task_id]
+	if t then
+		t.status = "refused"
+		t.selected_target = nil
+		--self.active_task_by_type[t.complex_type] = nil --/#???#
+		--/ making avaliable all tasks of current type
+		t.last_task_time = Get_PastSeconds() -- Теперь хранит время в секундах от начала игры  vintar  : attempt to avoid a same pending job from initiating right after another completing
+		for k,v in pairs(self.task_info) do
+			if v.complex_type == t.complex_type then
+				if t.name ~= task_id then  -- vintar : exclude current failed task from available tasks
+					v.enabled = true
+				end
+			end
+		end
+	end
+end
+
+--/ Check: if task finished
+function TasksManager:task_complete(p1, p2)
+	if not db.actor then return false end --/> рано...
+	
+	local task_id = p1 and self.active_task_by_type[p1]
+	local t = task_id and self.task_info[task_id]
+	if not t then
+		abort("WRONG RANDOM TASK %s %s", tostring(p1), tostring(p2))
+	end
+	
+	if p2 == 0 then
+		if t.status == "completed" then
+			if not t.need_return then
+				t.last_task_time = Get_PastSeconds() -- Теперь хранит время в секундах от начала игры 
+				return true --/> quest already finished
+			end
+		elseif t.status == "rewarded" then
+			t.last_task_time = Get_PastSeconds() -- Теперь хранит время в секундах от начала игры 
+			return true --/> reward recieved => quest finished
+		end
+	elseif p2 == 1 then
+		if t.type == "eliminate_lager" and type(t.selected_target) == 'number' then --/ eliminating ...
+			local se_obj = alife():object(t.selected_target) --/< ID
+			if se_obj and se_obj.gulag:get_population_comed() == 0 then
+				t.status = "completed"
+				return true --/> no population => quest finished
+			end
+		elseif t.type == "defend_lager" and type(t.defend_target) == 'number' then --/ protection from ...
+			local se_obj = alife():story_object(t.defend_target) --/< story_id
+			local gulag = se_obj and se_obj.gulag
+			if gulag then
+				if gulag.state == 0 then
+					t.status = "completed"
+					return true --/> raid stopped => quest finished
+				elseif gulag:get_population_comed() == 0 then
+					t.status = "completed"
+					return true --/> no enemies => quest finished
+				end
+			end
+		elseif t.type == "kill_stalker" then
+			local soNPC = type(t.selected_target) == 'number' and alife():object(t.selected_target)
+			if not (soNPC and IsStalker(soNPC) and soNPC:alive()) then
+				t.status = "completed"
+				return true --/> stalker died => quest finished
+			end
+		elseif t.target then
+			if double_check_task_types[t.type] and xr_conditions.actor_has_item_count(db.actor, npc, {t.target, t.target_count}) then
+				t.status = "completed"
+				return true --/> actor has item => quest finished
+			end
+		end
+	end
+	return false --/> task NOT completed
+end
+
+--/ Check: task failed?
+function TasksManager:task_fail(p1, p2)
+	--log("task_fail:=[%s]/[%s]", p1, p2, "")
+	if p2 == 0 and db.actor then
+		local task_id = p1 and self.active_task_by_type[p1]
+		--log("task_id:=[%s]", task_id, "", "")
+		local t = task_id and self.task_info[task_id]
+		--log("t:=[%s]", t, "", "")
+		if not t then
+			abort("%s:tm:task_fail:=[%s],[%s]:<%s>", sModule, p1, p2, "Wrong!")
+		end
+		--/ Check: of failing quest or refusing from quest
+		if t.status == "refused" or t.status == "failed" then
+			t.last_task_time = Get_PastSeconds() -- Теперь хранит время в секундах от начала игры 
+			return true --/> task failed or actor refused from it
+		end
+		--/ Check: vendor alive? (the one who gave quest)
+		local soNPC = alife():story_object(tStoryIdByParent[t.parent])
+		if not soNPC or (soNPC.alive and not soNPC:alive()) then
+			t.status = "failed"
+			t.last_task_time = Get_PastSeconds() -- Теперь хранит время в секундах от начала игры 
+			--log("task_fail:=[%s]/[%s],Parent=[%s]<~death:[%s]", task_id, p1, soNPC and soNPC:name(), "Info!") --/#~#
+			return true --/> vendor dead => quest failed
+		end
+		--/ Check: is there 'population' in defenders camp
+		if t.type == "defend_lager" and type(t.selected_target) == 'number' then
+			local soStrn = alife():object(t.selected_target) --/< 'id_or_sid'
+			local gulag = soStrn and soStrn.gulag
+			if gulag and gulag:get_population_comed() == 0 then
+				--log("task_fail:=[%s]/[%s],Target(%s)=[%s]<~not_Pop:[%s]", task_id, p1, soGulag ~= nil, t.selected_target, "Info!") --/#~#
+				t.status = "failed"
+				t.last_task_time = Get_PastSeconds() -- Теперь хранит время в секундах от начала игры 
+				return true --/> no population => quest failed
+			end
+		end
+	end
+	return false --/> task NOT failed
+end
+
+function TasksManager:task_callback(oTask, oObjective, iTaskState)
+	local sTaskState = nil
+	local idTask = oTask:get_id() --/ p1
+	local idObjective = oObjective:get_idx() --/ p2
+	if idObjective == 0 then
+		if iTaskState == task.completed or iTaskState == task.fail or iTaskState == task.skipped then
+
+			if iTaskState == task.skipped then
+				sTaskState = "skipped"
+			else
+				sTaskState = (iTaskState == task.completed and "complete") or "fail" --/ task completed or failed
+			end
+			--/ restoring other tasks of current type
+			local task_id = self.active_task_by_type[idTask]
+			local t = task_id and self.task_info[task_id]
+			if t then
+				self.active_task_by_type[idTask] = nil
+				t.status = "normal"
+				t.last_task_time = Get_PastSeconds() -- Теперь хранит время в секундах от начала игры  vintar : attempt to avoid a same pending job from initiating right after another completing
+				for _,v in pairs(self.task_info) do
+					if v.complex_type == t.complex_type then
+						--log("list id = [%s] and task id = [%s]", tostring(v.name),tostring(task_id))
+						if v.name ~= task_id then   -- vintar : exclude current failed task from available tasks
+							v.enabled = true
+						end
+					end
+				end
+			end
+		else
+			sTaskState = "new" --/ new task given
+		end
+	elseif oTask:get_objective(0):get_state() == task.in_progress then
+		sTaskState = "update" --/ task updated/changed
+	end
+	if sTaskState then
+		news_manager.send_task(sTaskState, oTask, idObjective)
+		event("on_task"):trigger({task_id=idTask,objective_id=idObjective,state_str=sTaskState}) -->
+	end
+end
+
+function TasksManager:show_next_podzadanie(p1, p2, oTask)
+	local next_punkt = p2 + 1
+	local boool = true
+	oTask:get_objective(next_punkt):show_subtask(boool)
+end
+
+--/ Gives a list of avaliable quests
+function TasksManager:action_task_show(npc)
+	local parent = self:get_parent(npc)
+	for _,task_id in pairs(self.task_id_by_parent[parent]) do
+		local t = self.task_info[task_id]
+		if t and self:task_avail(t.init_phrase_id) then
+			local task_texture, task_rect = get_texture_info("ui_icons_task_" .. t.type, "ui_iconsTotal_locations")
+			db.actor:give_talk_message(game.translate_string(t.name), task_texture, task_rect, "iconed_trade_info")
+		end
+	end
+end
+
+--/ Check: current task avaliable for giving?
+function TasksManager:task_avail(idPhase)
+	local task_id = self.task_id_by_init_phrase_id[tostring(idPhase)]
+	local t = self.task_info[task_id]
+---------------------------------------------------------
+	local ttt
+	local text
+	local tttname = "none"
+	local tttenabled
+	local tttenabledprops
+	local tttinitcond
+	local tttactive_task_type
+	local times
+	local timess
+	if t then
+		ttt = "     true"
+		tttname = t.text
+	else
+		ttt = "     false"
+	end
+	if t.enabled then
+		tttenabled = "     true"
+	else
+		tttenabled = "     false"
+	end
+	if t.enabled_props then
+		tttenabledprops = "     true"
+	else
+		tttenabledprops = "     false"
+	end
+	if t.init_condition then
+		tttinitcond = "     true     "
+	else
+		tttinitcond = "     false     "
+	end
+	local timegame = Get_PastSeconds()
+	if t.last_task_time then
+		times = tostring(t.last_task_time + t.idle_time)
+	else
+		times = "nill"
+	end
+	--timess = tostring(timegame)
+	--news_manager.send_tip(db.actor, "-------------------------------------------------------", 0, "trader", 20000)
+	--text = tttname..ttt..tttenabled..tttenabledprops..tttinitcond..times.."---------"..timess
+	--news_manager.send_tip(db.actor, text, 0, "trader", 20000)
+---------------------------------------------------------
+	if t and t.enabled and t.enabled_props and not t.init_condition then
+		local prior = self.prior_by_type[t.complex_type]
+		if not prior or prior >= t.prior then
+--			log("tm:task_avail:task=[%s],prior=[%s]<!>[%s]:(%s)", task_id, prior, t.prior, "+") --/#~#
+			return true --/> priority quest
+		end
+	end
+--	log("tm:task_avail:task=[%s],prior=[%s] avail(%s/%s/%s):(%s)", task_id, prior, t.enabled, t.enabled_props, not t.init_condition, "x") --/#~#
+	return false --/>
+end
+
+--/ Check properties of task
+function TasksManager:check_task_props(task_id)
+	local t = task_id and self.task_info[task_id]
+	if not (t and db.actor) then return end --/>
+	--/ check: by active tasks of current type from vendor
+	if self.active_task_by_type[t.complex_type] then
+		t.enabled_props = false
+--news_manager.send_tip(db.actor, "active", 0, "trader", 20000)
+--		log("tm:check_task_props: task=[%s] ~type_active:(%s)", task_id, "-") --/#~#
+		return --/> quest same type already given
+	end
+	--/ check: by condlist
+	if not xr_logic.pick_section_from_condlist(db.actor, db.actor, t.condlist) then
+--news_manager.send_tip(db.actor, "pick_section_from_condlist", 0, "trader", 20000)
+		t.enabled_props = false
+		--if type(t.condlist) == 'table' then table.print(t.condlist,sModule..":condlist|"..task_id) end --/#~#
+--		log("tm:check_task_props: task=[%s] ~not_condition(%s):(%s)", task_id, type(t.condlist), "-") --/#~#
+		return --/>
+	end
+	--/ check: by timeout
+	if t.last_task_time then
+		if Get_PastSeconds() < t.last_task_time + t.idle_time  then
+--news_manager.send_tip(db.actor, "last_task_time", 0, "trader", 20000)
+			t.enabled_props = false
+--			log("tm:check_task_props: task=[%s]~timeout=[%s]:(%s)", task_id, t.idle_time - Get_PastSeconds(t.last_task_time), "x") --/#~#
+			return --/> time of timeout still not finished
+		else --/ timeout finished:
+			t.last_task_time = nil -- clear
+		end
+	end
+	--/ check: by targets
+	local bNoTargets = t.target_objects == nil or #t.target_objects == 0
+	if t.type == "eliminate_lager" then
+		if bNoTargets then
+			t.enabled_props = false
+--news_manager.send_tip(db.actor, "eliminate_lager", 0, "trader", 20000)
+--			log("tm:check_task_props: task=[%s] ~NOT_eliminate_lager:(%s)", task_id, "-") --/#~#
+			return --/> no registered targets for quest
+		end
+		for _,id in ipairs(t.target_objects) do
+			local se_obj = alife():object(id)
+			local gulag = se_obj and se_obj.gulag
+			if gulag and gulag:get_population_comed() > 0 then
+				t.enabled_props = true
+--				log("tm:check_task_props: task=[%s]~Yes_eliminate_lager:(%s)", task_id, "+") --/#~#
+				return --/> quest avaliable, 'population' present
+			end
+		end
+--news_manager.send_tip(db.actor, "eliminate_lager2", 0, "trader", 20000)
+		t.enabled_props = false
+--		log("tm:check_task_props:Wrong_eliminate_lager: task=[%s]:(%s)", task_id, "?") --/#~#
+		return --/> quests not avaliable
+	elseif t.type == "defend_lager" then
+		if bNoTargets then
+			t.enabled_props = false
+--			log("tm:check_task_props: task=[%s] ~NOT_defend_lager:(%s)", task_id, "-") --/#~#
+			return --/> no registered targets for quest
+		end
+		for _,id in ipairs(t.target_objects) do
+			local story_id = self:Get_StoryId_DefendTarget(id) --/ story_id by enemy smart_terrain
+			if story_id and xr_gulag.getGulagState(story_id) == 1 then --/ smart in condition 'attack/raid'
+				t.enabled_props = true
+				return --/> quest avaliable, enemies in condition 'attack/raid'
+			end
+		end
+		t.enabled_props = false
+--		log("tm:check_task_props:NOT_defend_lager: task=[%s]:(s)", task_id, "x") --/#~#
+		return --/> quests not avaliable
+	elseif t.type == "kill_stalker" then
+		if bNoTargets then
+			t.enabled_props = false
+--			log("tm:check_task_props: task=[%s] ~kill_stalker:(%s)", task_id, "-") --/#~#
+			return --/> no registered targets for quest
+		end
+		for idx,id in ipairs(t.target_objects) do
+			local se_obj = alife():object(id)
+			if se_obj then
+				if not se_obj.alive then --/ checking bug
+					abort("%s:check_task_props:TaskId=[%s],NPC=[%s],NPC.alive=NIL%s", sModule, task_id, se_obj.name and se_obj:name(), "")
+					return --/>
+				elseif se_obj:alive() then
+					t.enabled_props = true
+					return --/> quest possible, target alive
+				end
+			end
+			--/ stalker killed/dissapeared -> removing his ID from target list
+			table.remove(t.target_objects, idx)
+		end
+		t.enabled_props = false
+--		log("tm:check_task_props:NOT_kill_stalker: task=[%s]:(%s)", task_id, "x") --/#~#
+		return --/> quests not avaliable
+	elseif t.type == "find_item" then
+		if bNoTargets then
+			t.enabled_props = false
+--			log("tm:check_task_props:NOT_find_item: task=[%s]:<%s>", task_id, "Info!") --/#~#
+			return --/> no registered targets for quest
+		end
+		for idx,id in ipairs(t.target_objects) do
+			local se_obj = alife():object(id)
+			if se_obj then
+				if se_obj.parent_id then --/ need to ignore items, which vendors have
+					for story_id,v in pairs(tParentByStoryId) do
+						local parent = alife():story_object(story_id)
+						if parent and parent.id == se_obj.parent_id then
+							t.enabled_props = false
+							log("tm:check_task_props: task=[%s],item=[%s]~from_target:(%s)", task_id, se_obj:name(), "-") --/#~#
+							return --/> ignoring (vendor item)
+						end
+					end
+				end
+				t.enabled_props = true
+				return --/> quest possible
+			else
+				log("tm:check_task_props: task=[%s],item_id=[%s]~not_exist:<%s>", task_id, id, "Info!") --/#~#
+				table.remove(t.target_objects, idx) --/ clear
+			end
+		end
+		t.enabled_props = false
+--		log("tm:check_task_props: task=[%s]~NOT_items:(%s)", task_id, "-") --/#~#
+		return --/> item missing in game
+	elseif t.type == "find_item_hide" and t.targer_check then
+		if bNoTargets then
+			t.enabled_props = false
+			log("tm:check_task_props:NOT_find_item: task=[%s]:<%s>", task_id, "Info!") --/#~#
+			return --/> no registered targets for quest
+		end
+		for idx,id in ipairs(t.target_objects) do
+			local se_obj = alife():object(id)
+			if se_obj then
+				if se_obj.parent_id then --/ need to ignore items, which vendors have
+					for story_id,v in pairs(tParentByStoryId) do
+						local parent = alife():story_object(story_id)
+						if parent and parent.id == se_obj.parent_id then
+							t.enabled_props = false
+							log("tm:check_task_props: task=[%s],item=[%s]~from_target:(%s)", task_id, se_obj:name(), "-") --/#~#
+							return --/> ignoring (vendor item)
+						end
+					end
+				end
+				t.enabled_props = true
+				return --/> quest possible
+			else
+				log("tm:check_task_props: task=[%s],item_id=[%s]~not_exist:<%s>", task_id, id, "Info!") --/#~#
+				table.remove(t.target_objects, idx) --/ clear
+			end
+		end
+		t.enabled_props = false
+--		log("tm:check_task_props: task=[%s]~NOT_items:(%s)", task_id, "-") --/#~#
+		return --/> item missing in game
+	else --/ quest possible
+		t.enabled_props = true
+	end
+end
+
+--/ Check: can we give any selfinitialized quest(task) now?
+function TasksManager:Update_AutoTasks()
+	local oActor = db.actor
+	for _,task_id in pairs(self.task_id_self_inited) do
+		local t = self.task_info[task_id]
+		if t.enabled and t.init_condition and t.status == "normal" then
+			self:check_task_props(task_id)
+			if t.enabled_props and xr_logic.pick_section_from_condlist(oActor, oActor, t.init_condition) then
+				self:action_give_task(nil, t.yes_phrase_id) --/ giving task automaticly (quest)
+			end
+		end
+	end
+end
+
+--/ Check: current task given to player?
+function TasksManager:active_task(idPhase)
+--	log("tm:active_task: idPhase=[%s]", idPhase, "") --/#~#
+	local status = self.task_info[ self.task_id_by_init_phrase_id[tostring(idPhase)] ].status
+	return (status == "selected" or status == "completed")
+end
+
+function TasksManager:init_task_dialog(dlg, parent)
+	local phr = dlg:AddPhrase("tm_seek_new_job", "0", "", -10000)
+	local scr = phr:GetPhraseScript()
+	
+	phr = dlg:AddPhrase("tm_"..parent.."_list_job", "1", "0", -10000)
+	scr = phr:GetPhraseScript()
+	scr:AddAction(sModule..".action_task_show")
+	scr:AddPrecondition(sModule..".precondition_vendor_can_task")
+	
+	phr = dlg:AddPhrase("tm_"..parent.."_has_no_job", "2", "0", -10000)
+	scr = phr:GetPhraseScript()
+	scr:AddPrecondition(sModule..".precondition_vendor_cannot_task")
+	
+	for k, v in pairs(self.task_id_by_parent[parent]) do
+		phr = dlg:AddPhrase(self.task_info[v].name, tostring(self.task_info[v].init_phrase_id), "1", -10000)
+		scr = phr:GetPhraseScript()
+		scr:AddPrecondition(sModule..".precondition_task_avail")
+		
+		phr = dlg:AddPhrase(self.task_info[v].text, tostring(self.task_info[v].desc_phrase_id), tostring(self.task_info[v].init_phrase_id), -10000)
+		
+		phr = dlg:AddPhrase("tm_seek_job_yes", tostring(self.task_info[v].yes_phrase_id), tostring(self.task_info[v].desc_phrase_id), -10000)
+		scr = phr:GetPhraseScript()
+		scr:AddAction(sModule..".action_give_task")
+		
+		phr = dlg:AddPhrase("tm_seek_job_no", tostring(self.task_info[v].no_phrase_id), tostring(self.task_info[v].desc_phrase_id), -10000)
+	end
+	
+	dlg:AddPhrase("tm_seek_job_abandon", "3", "1", -10000)
+end
+
+-- Check: actor have quest items?
+function TasksManager:completed_task(idParent, idPhase)
+--	log("tm:completed_task:idParent=[%s/%s],idPhase=[%s/%s]:[%s]", idParent, type(idParent), idPhase, type(idPhase), ">") --/#~#
+	if idPhase then
+		local task_id = self.task_id_by_desc_phrase_id[tostring(idParent)]
+		local t = task_id and self.task_info[task_id]
+		if t and t.status == "completed" then --/ status of task == 'completed'
+			if double_check_task_types[t.type] then
+				if t.target and not xr_conditions.actor_has_item_count(db.actor, npc, {t.target, t.target_count}) then
+					return false --/> no objective item
+				end
+			end
+			return true --/> task completed
+		end
+	end
+	return false --/> task NOT completed
+end
+
+function TasksManager:task_reward(actor, npc)
+	--log("calling task reward function")
+	local parent = self:get_parent(npc)
+	for _,task_id in pairs(self.active_task_by_type) do
+		local t = self.task_info[task_id]
+		if t.status == "completed" and t.parent == parent then
+			local can_finish = not double_check_task_types[t.type]
+			if not can_finish then
+				can_finish = xr_conditions.actor_has_item_count(db.actor, npc, {t.target, t.target_count})
+				if can_finish then
+					dialogs.lost_items(t.target, t.target_count)
+				end
+			end
+			if can_finish == true then
+				t.status = "rewarded"
+				if t.reward_money then
+					dialogs.relocate_money(npc, t.reward_money, "in")
+				end
+				if t.reward_item then
+					for sect,cnt in pairs(t.reward_item) do
+						if type(sect) == 'string' and type(tonumber(sect)) ~= 'number' and (not cnt or type(cnt) == 'number') then
+							dialogs.relocate_item_section(npc, sect, "in", cnt)
+						else
+							log("tm:task_reward:NPC=[%s],task_id=[%s],item=[%s/%s],cnt=[%s/%s]:<%s>", oNPC:name(), task_id, sect, type(sect), cnt, type(cnt), "Warning!")
+						end
+					end
+				end
+				self:task_rewards(t)
+			end
+		end
+	end
+end
+
+--/ Giving rewards for completed story quest
+function TasksManager:task_reward_storyline(oTask, oObjective, iTaskState)
+	local t = self.task_info[oTask:get_id()]
+	if t and t.type == "storyline" then
+		local idObjective = oObjective:get_idx()
+		if idObjective == 0 and iTaskState == 2 then
+			local str = game.translate_string(oTask:get_title()) --game.translate_string(oTask:get_objective(0):get_description())
+			if str and type(str) == 'string' then
+				actor_stats.add_points("quests", str, 1, 1)
+			end
+			--/ increase reputation
+			if t.reward_reputation then
+				db.actor:change_character_reputation(t.reward_reputation) --/ bardak's BFA
+			end
+			--/ improving relations
+			if t.reward_relation then
+				for k,v in pairs(t.reward_relation) do
+					relation_registry.change_community_goodwill(k, idActor, tonumber(v))
+				end
+			end
+			--/ increase rank
+			if t.reward_rank then
+				db.actor:set_character_rank(db.actor:character_rank() + t.reward_rank)
+				pdaSkills.add_rank_skills_count(t.reward_rank)
+			end
+		end
+	end
+end
+
+--/ increasing reputation/relations/rank
+function TasksManager:task_rewards(t)
+	--/ increase reputation
+	if t.reward_reputation then
+		db.actor:change_character_reputation(t.reward_reputation) --/ bardak's BFA
+	end
+	--/ improving relations
+	if t.reward_relation then
+		for k,v in pairs(t.reward_relation) do
+			relation_registry.change_community_goodwill(k, idActor, tonumber(v))
+		end
+	end
+	--/ increase rank
+	if t.reward_rank then
+		db.actor:set_character_rank(db.actor:character_rank() + t.reward_rank)
+		pdaSkills.add_rank_skills_count(t.reward_rank)
+	end
+	if t.text then
+		--local str = game.translate_string(t.text)
+		local str = t.type
+		if str and type(str) == 'string' then
+			actor_stats.add_points("quests", str, 1, 1)
+		end
+	end
+end
+
+function TasksManager:init_reward_dialog(dlg, parent)
+	local phr = dlg:AddPhrase("tm_reward_job", "0", "", -10000)
+	local scr = phr:GetPhraseScript()
+	
+	phr = dlg:AddPhrase("tm_"..parent.."_job_complete", "1", "0", -10000)
+	scr = phr:GetPhraseScript()
+	scr:AddAction(sModule..".action_task_reward")
+	scr:AddPrecondition(sModule..".precondition_have_completed_job")
+	
+	phr = dlg:AddPhrase("tm_"..parent.."_job_ask", "2", "0", -10000)
+	scr = phr:GetPhraseScript()
+	scr:AddPrecondition(sModule..".precondition_dont_have_completed_job")
+	
+	for k, v in pairs(self.task_id_by_parent[parent]) do
+		phr = dlg:AddPhrase(self.task_info[v].name, tostring(self.task_info[v].init_phrase_id), "2", -10000)
+		scr = phr:GetPhraseScript()
+		scr:AddPrecondition(sModule..".precondition_active_task")
+		
+		phr = dlg:AddPhrase("tm_"..parent.."_job_what", tostring(self.task_info[v].desc_phrase_id), tostring(self.task_info[v].init_phrase_id), -10000)
+		
+		phr = dlg:AddPhrase("tm_job_refuse", tostring(self.task_info[v].yes_phrase_id), tostring(self.task_info[v].desc_phrase_id), -10000)
+		scr = phr:GetPhraseScript()
+		scr:AddAction(sModule..".action_refuse_task")
+		
+		phr = dlg:AddPhrase("tm_job_nothing", tostring(self.task_info[v].no_phrase_id), tostring(self.task_info[v].desc_phrase_id), -10000)
+	end
+end
+
+function TasksManager:register_target(se_obj)
+	if IsStalker(se_obj) then
+		if se_obj.alive and se_obj:alive() then
+			local obj_name = se_obj:profile_name()
+			for _,v in pairs(self.task_id_by_type["kill_stalker"]) do
+				if self.task_info[v].target == obj_name then
+					if not self.task_info[v].target_objects then
+						self.task_info[v].target_objects = {}
+					end
+					table.insert(self.task_info[v].target_objects, se_obj.id)
+				end
+			end
+		end
+	elseif se_obj:clsid() == clsid.smart_terrain then
+		local obj_name = se_obj:name()
+		for _,v in pairs(self.task_id_by_type["eliminate_lager"]) do
+			if self.task_info[v].target == obj_name then
+				if not self.task_info[v].target_objects then
+					self.task_info[v].target_objects = {}
+				end
+				table.insert(self.task_info[v].target_objects, se_obj.id)
+			end
+		end
+		for _,v in pairs(self.task_id_by_type["defend_lager"]) do
+			if self.task_info[v].target == obj_name then
+				local sm_ini = se_obj:spawn_ini()
+				local defend_target = utils.cfg_get_number(sm_ini, "random_task", "defend_target", nil, true)
+				if not self.task_info[v].target_objects then
+					self.task_info[v].target_objects = {}
+				end
+				table.insert(self.task_info[v].target_objects, se_obj.id)
+			end
+		end
+	else  --/TODO: add indication - 'item'
+		local section = se_obj:section_name()
+		for _,v in pairs(self.task_id_by_type["find_item"]) do
+			if self.task_info[v].target == section then
+				if not self.task_info[v].target_objects then
+					self.task_info[v].target_objects = {}
+				end
+				table.insert(self.task_info[v].target_objects, se_obj.id)
+			end
+		end
+		for _,v in pairs(self.task_id_by_type["find_item_hide"]) do
+			if self.task_info[v].target == section then
+				if not self.task_info[v].target_objects then
+					self.task_info[v].target_objects = {}
+				end
+				table.insert(self.task_info[v].target_objects, se_obj.id)
+			end
+		end
+	end
+end
+
+function TasksManager:unregister_target(se_obj)
+	if IsStalker(se_obj) then
+		for _,v in pairs(self.task_id_by_type["kill_stalker"]) do
+			if self.task_info[v].target_objects then
+				for _,id in pairs(self.task_info[v].target_objects) do
+					if id == se_obj.id then
+						table.remove(self.task_info[v].target_objects, id)
+					end
+				end
+			end
+		end
+	else
+		for _,v in pairs(self.task_id_by_type["find_item"]) do
+			if self.task_info[v].target_objects then
+				for _,id in pairs(self.task_info[v].target_objects) do
+					if id == se_obj.id then
+						table.remove(self.task_info[v].target_objects, id)
+					end
+				end
+			end
+		end
+		for _,v in pairs(self.task_id_by_type["find_item_hide"]) do
+			if self.task_info[v].target_objects then
+				for _,id in pairs(self.task_info[v].target_objects) do
+					if id == se_obj.id then
+						table.remove(self.task_info[v].target_objects, id)
+					end
+				end
+			end
+		end
+	end
+end
+
+function TasksManager:Get_StoryId_DefendTarget(idTarget)
+	if not tStoryIdDefend[idTarget] then
+		local se_obj = idTarget and alife():object(idTarget)
+		local ini = se_obj and se_obj:spawn_ini()
+		if ini then --/ from custom_data: StoryId by enemy smart_terrain (from whom to protect)
+			tStoryIdDefend[idTarget] = Get_Cfg_Num32(ini, "random_task", "defend_target", -1)
+		else
+			tStoryIdDefend[idTarget] = -1
+		end
+	end
+	if tStoryIdDefend[idTarget] ~= -1 then
+		return tStoryIdDefend[idTarget] --/>
+	end
+	return nil --/>
+end
+
+--/ -----------------------------------------------------------------
+--/ Saving (used 'compressed' format):
+function TasksManager:save()
+	--/ selecting active quests
+	local tActiveTask = {}
+	for k,v in pairs(self.active_task_by_type) do --/ k - sCType, v - task_id
+		tActiveTask[v] = self.task_info[v]
+	end
+	local tTasks = {} --/ table of remember tasks/records
+	--/ selecting active quests or with not 'normal' status and activities
+	for k,v in pairs(self.task_info) do
+		if not v.hash_task then abort("%s:save:TaskId=[%s]~>Not_find_Hash:<%s>", sModule, k, "Error!") end
+		local actived = tActiveTask[k] ~= nil
+		if v.text or v.status ~= "normal" then
+----	if actived or v.status ~= "normal" then --Рафа:Убрал условие на сохранение только активных квестов, для возможности сохранения last_task_time
+			local tbl,iFlgs = {}, tNumByStatus[v.status]
+			if not iFlgs then abort("%s:save:TaskId=[%s],Status=[%s]~Wrong:<%s>", sModule, k, v.status, "Error!") end
+			if v.enabled       then iFlgs = bit_or(iFlgs,  8) end --/ accessibility flag of quest for giving
+			if v.enabled_props then iFlgs = bit_or(iFlgs, 16) end --/ accessibility flag of quest for giving by propeties
+
+------------Рафа:Перенес секцию для возможности сохранения last_task_time>>>>>>>>>>>>>
+			if v.last_task_time then 
+				local ReactivateTime = v.last_task_time + v.idle_time
+				if Get_PastSeconds() < ReactivateTime then
+					tbl.timer = v.last_task_time --/ Теперь last_task_time хранит время в секундах от начала игры и до сдачи задания
+				end
+			end
+------------Рафа:Перенес секцию для возможности сохранения last_task_time<<<<<<<<<<<<<<
+
+			if actived         then iFlgs = bit_or(iFlgs, 32) --/ flag of quest activing
+--				log("save:Actived:TaskId=[%s],CType=[%s]", k, v.complex_type, "") --/#~#
+				if v.selected_target and v.selected_target > 0 then --/ presence of selected quest target
+					tbl.trg_id = v.selected_target --/< target-ID
+--					log("save:TaskId=[%s],idTarget=[%s]", k, v.selected_target, "") --/#~#
+				end
+				if v.reward_rnd then -- promised random rewards
+					tbl.money = v.reward_money
+					tbl.items = v.reward_item and table.compress(v.reward_item) --/ packing to string
+--					log("save:Task=[%s],Rewards=[%s/%s]", k, tbl.items, tbl.money, "") --/#~#
+				end
+			end
+			tbl.flags = iFlgs --/ recording 'sum flags' to one byte
+			tTasks[v.hash_task] = tbl --/ remembering by hash, not by name
+--			log("save:TaskId=[%s],status=[%s],flags=[%s]", k, v.status, iFlgs, "") --/#~#
+		--else --log("save:TaskId=[%s],status=[%s]:<%s>", k, v.status, "?") --/#~#
+			--if k == "esc_tutorial_artefact" then table.print(v, sModule..":Task|"..k) end
+		end
+	end
+	SetVar("sav_"..sModule,tTasks)
+	log("save:#tasks=[%s]/[%s],size=[%s]", table.size(tTasks), table.size(tActiveTask), GetSizeVar("sav_"..sModule), "") --/#~#
+end
+
+--/ Loading (used compressed format)
+function TasksManager:load(tTasks)
+	for k,v in pairs(tTasks) do
+		local task_id = self.task_by_hash[k]
+		if task_id then
+			local t = self.task_info[task_id]
+			--log("Loading id of task - [%s]", task_id, "", "")
+			local iFlgs = v.flags
+			t.enabled       = bit_and(iFlgs,  8) ~= 0 --/ quest avaliable for giving
+			t.enabled_props = bit_and(iFlgs, 16) ~= 0 --/ quest avaliable by properties
+			local actived   = bit_and(iFlgs, 32) ~= 0 --/ quest active
+			--/ deleting 'extras' from flags
+			if t.enabled       then iFlgs = iFlgs -  8 end
+			if t.enabled_props then iFlgs = iFlgs - 16 end
+			if actived         then iFlgs = iFlgs - 32 end
+			t.status = tStatusByNum[iFlgs]
+			if not t.status then
+				abort("%s:load:Task=[%s],status=[%s/%s]~?:<%s>", sModule, task_id, iFlgs, v.flags, "Error!")
+			end
+	
+			if v.trg_id then
+				t.selected_target = v.trg_id
+			end
+			if actived then
+				self.active_task_by_type[t.complex_type] = task_id
+				if t.selected_target and t.type == "defend_lager" then --/ restoring StoryId targets
+					t.defend_target = self:Get_StoryId_DefendTarget(t.selected_target) --/ StoryId by enemy smart_terrain
+				end
+			end
+			--/ restoring timer of timeout (game-sec: past_time):
+			if v.timer and v.timer > 0 then
+				t.last_task_time = v.timer
+			end
+			--/ restoring promised rewards
+			if t.reward_rnd and (v.money or v.items) then --/ and bRndReward - if mode of random rewards permitted
+				if v.money and v.money > 0 then
+					t.reward_money = v.money
+				end
+				local items = v.items and table.decompress(v.items)
+				if items and next(items) then
+					t.reward_item = items
+				end
+		--			log("load:Task(%s/%s)=[%s/%s]~>Rewards=[%s/%s]%s", i, iCnt, task_id, sCType, v.items, v.money, "") --/#~#
+			end
+		else
+			log("load: hash=[%s] ~> Cannot find task_id :<%s>", k, "Warning!")
+		end
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+--/ 
+--/ ------------------------------------------------------------------------------------------------
+function get_random_task()
+	if not random_task then
+		if event and not GetVar("BuildSav",nil) then --/ if 'new' game
+			event("new_game"):once(true):trigger() --/#!#> event 'objects are successfully loaded'
+		end
+		random_task = TasksManager()
+	end
+	return random_task --/>
+end
+
+function init_trader_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "trader")
+end
+function init_shustriy_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "a_esc_shustriy")
+end
+function init_esc_wolf_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "esc_wolf")
+end
+
+function init_rosf_duty_leader_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "rosf_duty_leader")
+end
+function init_gar_seriy_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "gar_seriy")
+end
+function init_gar_hellcar_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "gar_hellcar")
+end
+function init_mole_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "agr_krot")
+end
+function init_agr_ratcatcher_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "agr_ratcatcher")
+end
+function init_forg_alex_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "forg_alex")
+end
+function init_barman_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "barman")
+end
+function init_bar_informer_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "bar_informer")
+end
+function init_bar_hunter_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "bar_hunter")
+end
+function init_bar_petrenko_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "bar_petrenko")
+end
+function init_dolina_gusarov_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "dolina_gusarov")
+end
+function init_shulga_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "a_fore_dolg_leader")
+end
+function init_ds_veles_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "ds_veles")
+end
+function init_yan_professor_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "yan_professor")
+end
+function init_swa_doctor_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "swa_doctor")
+end
+function init_mil_supplier_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "mil_supplier")
+end
+function init_out_bar_barman_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "out_bar_barman")
+end
+function init_lukash_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "lukash")
+end
+function init_hermit_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "hermit")
+end
+function init_hills_major_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "hills_major")
+end
+function init_deedee_task_dialog(dlg)
+	get_random_task():init_task_dialog(dlg, "deedee")
+end
+--/ ---------------------------------------------
+function init_trader_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "trader")
+end
+function init_shustriy_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "a_esc_shustriy")
+end
+function init_esc_wolf_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "esc_wolf")
+end
+function init_rosf_duty_leader_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "rosf_duty_leader")
+end
+function init_gar_seriy_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "gar_seriy")
+end
+function init_gar_hellcar_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "gar_hellcar")
+end
+function init_mole_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "agr_krot")
+end
+function init_agr_ratcatcher_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "agr_ratcatcher")
+end
+function init_forg_alex_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "forg_alex")
+end
+function init_barman_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "barman")
+end
+function init_bar_informer_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "bar_informer")
+end
+function init_bar_hunter_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "bar_hunter")
+end
+function init_bar_petrenko_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "bar_petrenko")
+end
+function init_dolina_gusarov_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "dolina_gusarov")
+end
+function init_shulga_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "a_fore_dolg_leader")
+end
+function init_ds_veles_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "ds_veles")
+end
+function init_yan_professor_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "yan_professor")
+end
+function init_swa_doctor_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "swa_doctor")
+end
+function init_mil_supplier_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "mil_supplier")
+end
+function init_out_bar_barman_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "out_bar_barman")
+end
+function init_lukash_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "lukash")
+end
+function init_hermit_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "hermit")
+end
+function init_hills_major_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "hills_major")
+end
+function init_deedee_reward_dialog(dlg)
+	get_random_task():init_reward_dialog(dlg, "deedee")
+end
+--/ ---------------------------------------------
+function has_active_vendor_task(oSpeaker1, oSpeaker2)
+	local oNPC = Get_NPC(oSpeaker1, oSpeaker2)
+	return random_task:active_parent_task(oNPC)
+end
+function precondition_task_avail(oSpeaker1, oSpeaker2, sDlgId, idParent, idPhase)
+	return random_task:task_avail(idPhase) --/ =>tostring!
+end
+function precondition_active_task(oSpeaker1, oSpeaker2, sDlgId, idParent, idPhase)
+	return random_task:active_task(idPhase) --/ =>tostring!
+end
+function precondition_completed_task(oSpeaker1, oSpeaker2, sDlgId, idParent, idPhase)
+	return random_task:completed_task(idParent, idPhase) -- =>tostring!
+end
+function precondition_notcompleted_task(oSpeaker1, oSpeaker2, sDlgId, idParent, idPhase)
+	return not random_task:completed_task(idParent, idPhase) -- =>tostring!
+end
+--/ ---------------------------------------------
+function precondition_vendor_can_task(oSpeaker1, oSpeaker2)
+	local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+	return random_task:parent_can_task(oNPC)
+end
+function precondition_vendor_cannot_task(oSpeaker1, oSpeaker2)
+	local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+	return not random_task:parent_can_task(oNPC)
+end
+function precondition_have_completed_job(oSpeaker1, oSpeaker2)
+	local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+	return random_task:have_completed_job(oNPC)
+end
+function precondition_dont_have_completed_job(oSpeaker1, oSpeaker2)
+	local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+	return not random_task:have_completed_job(oNPC)
+end
+--/ ---------------------------------------------
+function action_task_show(oSpeaker1, oSpeaker2) --/npc,actor
+	local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+	random_task:action_task_show(oNPC)
+end
+function action_give_task(oSpeaker1, oSpeaker2, sDlgId, idPhase) --/actor,npc
+	random_task:action_give_task(sDlgId, idPhase) --/ =>tostring!
+end
+function action_refuse_task(oSpeaker1, oSpeaker2, sDlgId, idPhase) --/npc,actor
+	random_task:action_refuse_task(idPhase) --/ =>tostring!
+end
+function action_task_reward(oSpeaker1, oSpeaker2, sDlgId, idPhase) --/actor,npc
+	local oActor,oNPC = Get_Actor_NPC(oSpeaker1, oSpeaker2)
+	random_task:task_reward(oActor, oNPC, sDlgId, idPhase) --/ =>tostring!
+end
+function reward_by_task(oTask, oObjective, iTaskState)
+	random_task:task_reward_storyline(oTask, oObjective, iTaskState)
+end
+--/ ---------------------------------------------
+function task_complete(...)
+	return get_random_task():task_complete(...)
+end
+function show_next_podzadanie(...)
+	return get_random_task():show_next_podzadanie(...)
+end
+function task_fail(...)
+	return get_random_task():task_fail(...)
+end
+--/ ---------------------------------------------
+function OnTask(e)
+	get_random_task():task_callback(e.task, e.objective, e.state_idx)
+	get_random_task():task_reward_storyline(e.task, e.objective, e.state_idx)
+end
+
+function actor_update() --/#x# disabled!
+	--random_task:OnUpdate_1s()
+end
+function OnUpdate_1s(e,uo) --/ 1 time per sec
+	if iCntUpd1s > 0 then
+		iCntUpd1s = iCntUpd1s -1
+	else --/ 1 time in 5 sec
+		iCntUpd1s = 5
+		random_task:Update_AutoTasks()
+	end
+end
+
+function save(e)
+	random_task:save()
+end
+
+function clear_task_manager()
+	random_task  = nil
+end
+
+
+function register_target(se_obj)
+	get_random_task():register_target(se_obj)
+end
+
+function unregister_target(se_obj)
+	if db.bGameLoaded then --
+		get_random_task():unregister_target(se_obj)
+	end
+end
+
+--/------------------------------------------------------------------
+-- Reading tables from config
+--/------------------------------------------------------------------
+function Build_Tables(ini)
+--	log("Build_Tables:>") --/#~#
+	local sim = alife()
+	local tT = Get_IniSection(ini, "parent_by_story_id", "table", "key2num", ",")
+	for k,v in pairs(tT) do
+		local sParent,sCharName = v[1], v[2]
+		if k > 0 then
+			tParentByStoryId[k] = sParent --/ [iStoryId] = sParent
+			tStoryIdByParent[sParent] = k --/ [sParent] = iStoryId
+			local se_obj = sim and sim:story_object(k)
+			if se_obj then
+				sCharName = Get_CharName(se_obj)
+			end
+		end
+		tHirers[sParent] = sCharName --/ [sParent] = sCharName
+	end
+	tReturnTaskByType = Get_IniSection(ini, "return_task_by_type", "string")
+	if not (next(tParentByStoryId) and next(tReturnTaskByType)) then
+		abort(sModule..":init:Error while parsing at sections in task_manager.ltx")
+	end
+	--/
+	tNumByStatus = Get_IniSection(ini, "num_by_status", "number")
+	for k,v in pairs(tNumByStatus) do
+		tStatusByNum[v] = k
+	end
+	if not (next(tNumByStatus) and next(tStatusByNum)) then
+		abort(sModule..":init:Error while parsing at added sections in task_manager.ltx")
+	end
+	--/
+	bColorLine = ReadFromIni(ini, "options", "color_line",     bColorLine, "bool")
+	bRndReward = ReadFromIni(ini, "options", "random_rewards", bRndReward, "bool")
+	if bRndReward then
+		tRndRewards = {}
+		local tT = Get_IniSection(ini, "rnd_lists", "bool")
+		for k,v in pairs(tT) do
+			tRndRewards[k] = {}
+			tT[k] = Get_IniSection(ini, k.."_list", "list")
+			for _,vv in pairs(tT[k]) do
+				tRndRewards[k][vv] = Get_IniSection(ini, k.."_"..vv, "list")
+			end
+		end
+		if not next(tRndRewards) then
+			abort(sModule..":init:Error while parsing at random sections in task_manager.ltx")
+		end
+	end
+	--table.print(tRndRewards) --/#~#
+end
+
+--/ -----------------------------------------------------------------
+--/ Debug
+--/ -----------------------------------------------------------------
+local _DEBUG_ = true
+
+function check_type(t)
+	if _DEBUG_ then
+		if t == "storyline" then
+			return true
+		end
+		return (tReturnTaskByType[t] ~= nil)
+	end
+	return true
+end
+
+function check_parent(p)
+	if _DEBUG_ then
+		return (tStoryIdByParent[p] ~= nil)
+	end
+	return true
+end
+
+function check_text(t)
+	if _DEBUG_ then
+		if not t then
+			return false
+		end
+	end
+	return true
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,257 @@
+;**************************offline*******************************************
+
+[logic@esc_fox_house_fox_off]
+active = camper@esc_fox_house_fox_off
+
+[camper@esc_fox_house_fox_off]
+path_walk = fox_walk
+path_look = fox_look
+
+[logic@esc_fox_house_off_dstalker1]
+active = kamper@esc_fox_house_off_dstalker1
+
+[kamper@esc_fox_house_off_dstalker1]
+path_walk = kamper1_walk
+path_look = kamper1_look
+kamp_name = kamp1
+
+[logic@esc_fox_house_off_dstalker2]
+active = kamper@esc_fox_house_off_dstalker2
+
+[kamper@esc_fox_house_off_dstalker2]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+
+[logic@esc_fox_house_off_dstalker3]
+active = walker@esc_fox_house_off_dstalker3
+
+[walker@esc_fox_house_off_dstalker3]
+path_walk = walk1
+path_look = look1
+
+[logic@esc_fox_house_off_dstalker4]
+active = walker@esc_fox_house_off_dstalker4
+
+[walker@esc_fox_house_off_dstalker4]
+path_walk = walk2
+path_look = fox_walk
+
+[logic@esc_fox_house_dstalker_leader_off]
+active = walker@esc_fox_house_dstalker_leader_off
+
+[walker@esc_fox_house_dstalker_leader_off]
+path_walk = boss_walk
+path_look = boss_look
+
+
+
+;******************************online****************************************************
+
+[combat_ignore@esc_fox_house]
+
+[danger@esc_fox_self]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+ignore_monster   = 1
+
+[threshold@esc_fox_self]
+max_ignore_distance   = 0
+ignore_monster        = 1
+
+[danger@esc_village_lager_fox_2]
+
+[danger@dstalker]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance = 0
+
+[threshold@esc_sin_house]
+max_ignore_distance = 0
+ignore_monster      = 0
+
+[hit@esc_fox_house_fox]
+
+[death@fox]
+on_info = {+esc_rescue_fox_start -esc_rescue_fox_done} %+esc_fox_dead%
+
+[logic@esc_fox_house_fox]
+active = remark@esc_fox_house_fox
+combat_ignore = combat_ignore@esc_fox_house
+on_hit = hit@esc_fox_house_fox
+threshold = threshold@esc_fox_self
+danger = danger@esc_fox_self
+on_death = death@fox
+
+;here we created fake remark section, so after teleport fox won't try to use fox_walk
+
+[remark@esc_fox_house_fox]
+path_walk = fox_walk
+anim = wait
+combat_ignore_cond = {-esc_actor_attacks_dstalker} always
+danger = danger@esc_fox_self
+threshold = threshold@esc_fox_self
+meet = no_meet
+on_info = {+esc_rescue_fox_start -esc_fixer_teleported} camper@esc_fox_house_fox ;here we added info to protect us from switching to wrong scheme after teleport
+on_info2 = {+esc_fixer_teleported -esc_fixer_working} %+esc_fixer_working% ;here we adding after teleport infoportion to switch to another smart
+
+;here goes normal fox smart logic
+
+[camper@esc_fox_house_fox]
+path_walk = fox_walk
+path_look = fox_look
+combat_ignore_cond = {-esc_actor_attacks_dstalker} always
+def_state_moving1 = prisoner
+def_state_moving2 = prisoner
+def_state_moving3 = prisoner
+def_state_campering = prisoner
+def_state_standing = prisoner
+danger = danger@esc_fox_self
+threshold = threshold@esc_fox_self
+on_info = {+esc_fox_rescued} walker@esc_fox_house_fox
+meet = no_meet
+
+[walker@esc_fox_house_fox]
+path_walk = fox_stand
+path_look = fox_stand_look
+on_info = {+esc_fox_dialog_thanks} walker@esc_fox_house_fox1
+on_info2 = {=dist_to_actor_ge(45)} walker@esc_fox_house_fox1 %+esc_fox_dialog_thanks%
+invulnerable = {!hit_by_actor} true
+danger = danger@esc_village_lager_fox_2
+combat_ignore_cond = {-esc_actor_attacks_dstalker} always
+;def_state_moving1 = rush
+;def_state_moving2 = rush
+;def_state_moving3 = rush
+meet = meet@esc_fox_house_fox
+
+[meet@esc_fox_house_fox]
+victim = 30| nil| 20| actor
+use			= true
+use_wpn		= true
+
+[walker@esc_fox_house_fox1]
+path_walk = fox_way
+on_info = {+esc_fox_dialog_thanks -esc_fixer_teleported} %=teleport_distance_fox_not_seen(esc_village_lager_fixer_walk:esc_fixer_teleported)%
+;on_info2 = {=npc_inside_space_restrictor(esc_village_lager_out_rest)} %+esc_fixer_working =smart_terrain_force_update(esc_village_lager)%
+invulnerable = {!hit_by_actor} true
+danger = danger@esc_fox_self
+combat_ignore_cond = {-esc_actor_attacks_dstalker} always
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+meet = no_meet
+
+;--------------------------------------------------------------------------------------------------------------------------------------------------
+
+[logic@esc_fox_house_dstalker1]
+active = kamper@esc_fox_house_dstalker1
+combat_ignore = combat_ignore@esc_fox_house
+on_hit = hit@esc_fox_house
+on_death = death@esc_sin
+threshold = threshold@esc_sin_house
+danger = danger@dstalker
+
+[kamper@esc_fox_house_dstalker1]
+path_walk = kamper1_walk
+path_look = kamper1_look
+kamp_name = kamp1
+danger = danger@dstalker
+combat_ignore_cond = {=check_fighting(6025)}
+meet = no_meet
+
+[logic@esc_fox_house_dstalker2]
+active = kamper@esc_fox_house_dstalker2
+combat_ignore = combat_ignore@esc_fox_house
+on_hit = hit@esc_fox_house
+on_death = death@esc_sin
+threshold = threshold@esc_sin_house
+danger = danger@dstalker
+
+[kamper@esc_fox_house_dstalker2]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+danger = danger@dstalker
+combat_ignore_cond = {=check_fighting(6025)}
+meet = no_meet
+
+[logic@esc_fox_house_dstalker3]
+active = walker@esc_fox_house_dstalker3
+combat_ignore = combat_ignore@esc_fox_house
+on_hit = hit@esc_fox_house
+on_death = death@esc_sin
+threshold = threshold@esc_sin_house
+danger = danger@dstalker
+
+[walker@esc_fox_house_dstalker3]
+path_walk = walk1
+path_look = look1
+danger = danger@dstalker
+combat_ignore_cond = {=check_fighting(6025)}
+on_info = {-esc_actor_attacks_dstalker +esc_sin_leader_dead} walker@esc_fox_house_dstalker3_meet
+meet = no_meet
+
+[walker@esc_fox_house_dstalker3_meet]
+path_walk = walk1
+path_look = look1
+danger = danger@dstalker
+combat_ignore_cond = {=check_fighting(6025)}
+
+[logic@esc_fox_house_dstalker4]
+active = walker@esc_fox_house_dstalker4
+combat_ignore = combat_ignore@esc_fox_house
+on_hit = hit@esc_fox_house
+on_death = death@esc_sin
+threshold = threshold@esc_sin_house
+danger = danger@dstalker
+
+[walker@esc_fox_house_dstalker4]
+path_walk = walk2
+path_look = fox_walk
+danger = danger@dstalker
+combat_ignore_cond = {=check_fighting(6025)}
+on_info = {-esc_actor_attacks_dstalker +esc_sin_leader_dead} walker@esc_fox_house_dstalker4_meet
+meet = no_meet
+
+[walker@esc_fox_house_dstalker4_meet]
+path_walk = walk2
+path_look = fox_walk
+danger = danger@dstalker
+combat_ignore_cond = {=check_fighting(6025)}
+
+[logic@esc_fox_house_dstalker_leader]
+active = walker@esc_fox_house_dstalker_leader
+combat_ignore = combat_ignore@esc_fox_house
+on_hit = hit@esc_fox_house
+threshold = threshold@esc_sin_house
+danger = danger@dstalker
+on_death = death@esc_sin_leader
+
+[walker@esc_fox_house_dstalker_leader]
+path_walk = boss_walk
+path_look = boss_look
+danger = danger@dstalker
+combat_ignore_cond = {-esc_actor_attacks_dstalker} always
+meet = meet@esc_dstalker_leader
+on_info = {+esc_actor_attacks_dstalker} walker@esc_fox_house_dstalker_leader_attack
+
+[walker@esc_fox_house_dstalker_leader_attack]
+path_walk = boss_walk
+path_look = boss_look
+
+[meet@esc_dstalker_leader]
+use = true
+use_wpn = false
+victim 	= 5| actor
+victim_wpn = 5| actor
+meet_state = 5|ward
+meet_state_wpn = 5|ward
+meet_dialog = esc_darkstalkers_dialog
+
+[hit@esc_fox_house]
+on_info = {=hit_by_actor -esc_actor_attacks_dstalker} %+esc_actor_attacks_dstalker%
+
+[death@esc_sin]
+on_info = {=killed_by_actor -esc_actor_attacks_dstalker} %+esc_actor_attacks_dstalker%
+
+[death@esc_sin_leader]
+on_info = {=killed_by_actor -esc_sin_leader_dead} %+esc_actor_attacks_dstalker +esc_sin_leader_dead%

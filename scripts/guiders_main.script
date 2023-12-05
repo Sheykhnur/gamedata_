@@ -1,0 +1,180 @@
+--[[
+Version: 1.1p3 (release) [8.08.2014]
+Author: Lipkiy [www.ap-pro.ru|www.amk-team.ru]
+Special Thanks for unnamed author of teleportation function.
+Специальное спасибо неизвестному автору функции телепортации.
+]]
+
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+function get_waypoint_position(path_name)
+	if not level.patrol_path_exists(path_name) then
+		abort("Path %s doesnt exist. Function 'get_waypoint_position'", tostring(path_name))
+	end
+	local ptr = patrol(path_name)
+	return ptr:point(0), ptr:level_vertex_id(0), ptr:game_vertex_id(0)
+end
+
+function get_waypoint_position_with_rot(path_name)
+	if not level.patrol_path_exists(path_name) then
+		abort("Path %s doesnt exist. Function 'get_waypoint_position_with_rotation'", tostring(path_name))
+	end
+	local ptr = patrol(path_name)
+	local dir = vector():sub(ptr:point(0), ptr:point(1))
+	return ptr:point(0), ptr:level_vertex_id(0), ptr:game_vertex_id(0), dir
+end
+
+function get_map_group_horz(level)
+	if	level == "la01_escape" or
+		level == "la14_rostok_factory" or
+		level == "la15_darkscape" then
+		return 1
+	elseif	level == "la02_garbage" or
+		level == "la03_agroprom" or
+		level == "la20_forgotten" or
+		level == "la04_darkdolina" then
+		return 2
+	elseif	level == "la05_bar_rostok" or
+		level == "la22_forest" or 
+		level == "la06_yantar" then
+		return 3
+	elseif	level == "la09_swamp" or
+		level == "la07_military" or
+		level == "la23_oldroad" or
+		level == "la08_deadcity" then
+		return 4
+	elseif	level == "la17_outskirts" or
+		level == "la19_country" or
+		level == "la16_lost_factory" or
+		level == "la10_radar" then
+		return 5
+	elseif	level == "la11_pripyat" or
+		level == "la18_damned" or
+		level == "la16_lost_factory" then
+		return 5
+	else
+		return 6
+	end
+end
+
+function get_map_group_vert(level)
+	if	level == "la14_rostok_factory" or 
+		level == "la03_agroprom" or
+		level == "la06_yantar" or
+		level == "la09_swamp" or
+		level == "la17_outskirts" then
+		return 1
+	elseif	level == "la20_forgotten" or
+		level == "la08_deadcity" then
+		return 2
+	elseif	level == "la01_escape" or
+		level == "la02_garbage" or
+		level == "la05_bar_rostok" or
+		level == "la07_military" or
+		level == "la10_radar" then
+		return 3
+	elseif	level == "la15_darkscape" or
+		level == "la04_darkdolina" or
+		level == "la22_forest" or
+		level == "la23_oldroad" or
+		level == "la19_country" or
+		level == "la16_lost_factory" then
+		return 4
+	else
+		return 5
+	end
+end
+
+function get_map_tier(level)
+	if	level == "la01_escape" or 
+		level == "la02_garbage" or
+		level == "la03_agroprom" or
+		level == "la14_rostok_factory" or
+		level == "la15_darkscape" or
+		level == "la04_darkdolina" then
+		return 1
+	elseif	level == "la05_bar_rostok" or
+		level == "la20_forgotten" or
+		level == "la22_forest" or
+		level == "la06_yantar" or
+		level == "la07_military" or
+		level == "la08_deadcity" then
+		return 2
+	elseif	level == "la09_swamp" or
+		level == "la23_oldroad" or
+		level == "la17_outskirts" or
+		level == "la19_country" or
+		level == "la16_lost_factory" or
+		level == "la10_radar" then
+		return 3
+	else
+		return 4
+	end
+end
+--------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+		--parser.dbg_print("guidersmod: ")
+---------------------------------------------------------------------------------------------------------------
+
+local cost
+	
+function payment(act, npc, dialog_id, prev_phrase_id, phrase_id)
+    local icon_tip = "ui_iconsTotal_found_money"
+    local task_texture, task_rect = get_texture_info(icon_tip)    
+	cost = 50
+	cost = cost * (level.get_game_difficulty() == game_difficulty.novice and 1 or level.get_game_difficulty() == game_difficulty.stalker and 2 or level.get_game_difficulty() == game_difficulty.veteran and 4 or 8)
+	
+	cost = cost * (math.abs(get_map_group_horz(level.name()) - get_map_group_horz(phrase_id)) + math.abs(get_map_group_vert(level.name()) - get_map_group_vert(phrase_id)) + get_map_tier(phrase_id) + 1)
+	
+    db.actor:give_talk_message(cost .. " RU", task_texture, task_rect, "iconed_trade_info")
+	
+	if db.actor:money() >= cost then
+    return true
+	end
+return false
+end	
+
+function take_payment(actor, npc, dialog_id, phrase_id)
+    db.actor:give_money(-cost)
+end
+---------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------
+
+function test_curr_map(actor, npc, dialog_id, prev_phrase_id, phrase_id)
+	local curr_map = "la"..tostring(phrase_id)
+	--log("%s", curr_map)
+	return level.name() ~= curr_map
+end
+
+---------------------------------------------------------------------------------------------------------------
+-- Additional conditions
+
+function bar_condition()
+    if has_info("gar_free_pass") then
+		if has_info("yan_bar_help_start") and not has_info("bar_outskirts_barman_meet_start") then
+			return false
+		end
+		return true
+	end
+return false
+end
+
+---------------------------------------------------------------------------------------------------------------
+function teleport_to_map(actor, npc, dialog_id, phrase_id)
+	SetVarA("is_jumping", true)
+    transport("guide_tp_"..phrase_id.."_point")
+end
+------------------TELEPORT FUNCTION----------------------------------------------------------------------------
+function transport(path_name)
+	local point, lv, gv, dir = get_waypoint_position_with_rot(path_name)
+	alife():change_actor_level(point, lv, gv, dir)
+end
+
+
+function check_vasyan_mod()
+	return false
+end

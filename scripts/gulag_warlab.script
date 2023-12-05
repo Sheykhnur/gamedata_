@@ -1,0 +1,527 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_warlab.script
+ Description: Gulags Warlab
+ Copyright  : 2013 © LA-team
+ Author     : loxotron
+ Editors    : loxotron(23.02.2013)
+ Last edit  : 30.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	war_sci_scripted    = {comm = {"stalker"}},	
+	--/ for monsters ------------------------------
+	war_burer_smart     = {comm = {"burer"}},
+	war_karl_smart      = {comm = {"karlik"}},
+	war_karl_smart2     = {comm = {"karlik"}},
+	war_karl_smart3     = {comm = {"karlik"}},
+	war_karl_smart4     = {comm = {"karlik"}},
+	war_rats_smart1     = {comm = {"rat","tushkano"}, out_rest= "war_rats_smart1_out_rest"},
+	war_rats_smart2     = {comm = {"rat","tushkano"}},
+	war_rats_smart3     = {comm = {"rat","tushkano"}},
+	war_rats_smart4     = {comm = {"rat","tushkano"}},
+	war_rats_smart5     = {comm = {"rat","tushkano"}},
+	war_rats_smart6     = {comm = {"rat","tushkano"}},
+	war_zombie_smart    = {comm = {"zombie"}},
+	war_zombie_smart2   = {comm = {"zombie"}},
+	war_zombie_smart3   = {comm = {"zombie"}},
+	war_zombie_smart4   = {comm = {"zombie"}},
+	war_zombie_smart5   = {comm = {"zombie"}},
+	war_zombie_smart6   = {comm = {"zombie"}},
+	war_zombie_smart7   = {comm = {"zombie"}},
+	war_zombie_smart8   = {comm = {"zombie"}},
+	war_zombie_smart9   = {comm = {"zombie"}},
+	war_zombie_smart10  = {comm = {"zombie"}},
+	war_zombie_smart11  = {comm = {"zombie"}, out_rest= "war_zombie_smart11_out_rest"},
+	war_zombie_smart12  = {comm = {"zombie"}},
+	war_zombie_smart13  = {comm = {"zombie"}},
+	war_scripted_zombie = {comm = {"zombie"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+function is_war_cutscene_played()
+	return (has_info("war_sc1_start") and not has_info("war_sc1_end"))
+	    or (has_info("war_sc2_start") and not has_info("war_sc2_end"))
+	    or (has_info("war_sc3_start") and not has_info("war_sc3_end"))
+	    or (has_info("war_sc4_start") and not has_info("war_sc4_end"))
+	    or (has_info("war_sc5_start") and not has_info("war_sc5_end"))
+		or (has_info("war_con_start") and not has_info("war_con_end"))
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+local is_online = "{=actor_on_level(la13u_warlab)}"
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ stalkers
+--/ -----------------------------------------------------------------
+gulags.war_sci_scripted.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("work_start", 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("work",       0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("work_off",   0, 5, {2}, squad, groups[1], "", "", false, type, on_level_pred))
+end
+
+gulags.war_sci_scripted.state = function(gulag)
+	if has_info("war_sc7") then
+		if has_info("war_sc7_zomb_on") then
+			return 2
+		end
+		return 1
+	end
+	return 0
+end
+
+
+
+--/ -----------------------------------------------------------------
+--/ burers
+--/ -----------------------------------------------------------------
+gulags.war_burer_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_burer_smart.ltx = smart_dyn_ltx.add_mob_home(type, 4, 5, 20)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "warlab_burers_out_restrictor", false, type, on_level_pred))
+	end
+	for i = 3, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "warlab_burers_out_restrictor",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_burer_smart.state = function(gulag)
+	if has_info("war_tech_pc_found") then
+		return 1
+	end
+	return 0
+end
+
+--/ -----------------------------------------------------------------
+--/ karlito
+--/ -----------------------------------------------------------------
+gulags.war_karl_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_karl_smart.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_karl_smart.state = function(gulag)
+	if has_info("war_tech_pc_found") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_karl_smart2.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_karl_smart2.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_karl_smart2.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_karl_smart3.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_karl_smart3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_karl_smart3.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_karl_smart4.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_karl_smart4.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_karl_smart4.state = function(gulag)
+if has_info("war_sc3_end")then
+		return 1
+	end
+	return 0
+end
+
+--/ -----------------------------------------------------------------
+--/ rats
+--/ -----------------------------------------------------------------
+gulags.war_rats_smart1.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_rats_smart1.ltx = smart_dyn_ltx.add_mob_home(type, 4, 5, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "war_rats_smart1_out_rest", false, type, on_level_pred))
+	end
+	for i = 3, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "war_rats_smart1_out_rest",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_rats_smart1.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_rats_smart2.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_rats_smart2.ltx = smart_dyn_ltx.add_mob_home(type, 4, 5, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	end
+	for i = 3, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_rats_smart2.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_rats_smart3.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_rats_smart3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_rats_smart3.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_rats_smart4.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_rats_smart4.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))	
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_rats_smart4.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_rats_smart5.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_rats_smart5.ltx = smart_dyn_ltx.add_mob_home(type, 6, 5, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	end
+	for i = 4, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_rats_smart5.state = function(gulag)
+	if has_info("war_sc4_end") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_rats_smart6.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_rats_smart6.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_rats_smart6.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ -----------------------------------------------------------------
+--/ zombies
+--/ -----------------------------------------------------------------
+gulags.war_zombie_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_zombie_smart.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	elseif has_info("war_tech_pc_found") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart2.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart2.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_zombie_smart2.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart3.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_zombie_smart3.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	elseif has_info("war_laser_off") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart4.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart4.ltx = smart_dyn_ltx.add_mob_home(type, 4, 5, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	end
+	for i = 3, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_zombie_smart4.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart5.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart5.ltx = smart_dyn_ltx.add_mob_home(type, 6, 5, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	end
+	for i = 4, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_zombie_smart5.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	elseif has_info("war_sc1_end") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart6.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart6.ltx = smart_dyn_ltx.add_mob_home(type, 6, 5, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	end
+	for i = 4, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_zombie_smart6.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart7.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart7.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))	
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_zombie_smart7.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart8.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart8.ltx = smart_dyn_ltx.add_mob_home(type, 8, 5, 30)
+	
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	end
+	for i = 5, 8 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_zombie_smart8.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	elseif has_info("war_sc4_end") then
+		return 1
+	end
+		return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart9.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart9.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_zombie_smart9.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	elseif has_info("war_sc7_end") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart10.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart10.ltx = smart_dyn_ltx.add_mob_home(type, 4, 5, 30)
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	end
+	for i = 3, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_zombie_smart10.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart11.jobs = function(sj, gname, type, squad, groups)
+	gulags.war_zombie_smart11.ltx = smart_dyn_ltx.add_mob_home(type, 6, 5, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "war_zombie_smart11_out_rest", false, type, on_level_pred))
+	end
+	for i = 4, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "war_zombie_smart11_out_rest",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_zombie_smart11.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart12.jobs = function(sj, gname, type, squad, groups)
+	local ltx = smart_dyn_ltx.add_mob_home(type, 4, 5, 30)
+	
+	gulags.war_zombie_smart12.ltx = ltx
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.war_zombie_smart12.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+gulags.war_zombie_smart13.jobs = function(sj, gname, type, squad, groups)
+	local ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 30)
+	
+	gulags.war_zombie_smart13.ltx = ltx
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "",     false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",       nil, type, on_level_pred))
+end
+
+gulags.war_zombie_smart13.state = function(gulag)
+	if is_war_cutscene_played() then
+		return 0
+	elseif has_info("war_thing_spoke") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.war_scripted_zombie.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("work_off", 0, 5, {0}, squad, groups[1], "warlab_monsters_in_restrictor", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("work",     0, 5, {1}, squad, groups[1], "warlab_monsters_in_restrictor", "",   nil, type, on_level_pred))
+end
+
+gulags.war_scripted_zombie.state = function(gulag)
+	if has_info("war_sc7_sci_off") then
+		return 1
+	end
+	return 0
+end
+--/ -----------------------------------------------------------------------------------------------

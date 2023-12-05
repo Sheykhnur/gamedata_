@@ -1,0 +1,402 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File           : inventory_upgrades.script
+ Description    : Item upgrade system.
+ Copyright      : 2008 © GSC Game World
+ Author         : GSC
+ Editors        : Distemper, lox, phobos2077, Michael K
+ Last edit      : 01.2018 [phobos2077, Michael K]
+--]] ----------------------------------------------------------------------------------------------
+--' 03.08 --------------------------------------------------------------------------------
+	--' функция доступности апгрейда
+		--' function precondition_functor_a( param1, section )
+	--' функция применения апгрейда (отнимание денег)
+		--' function effect_functor_a( param2, section )
+	--' функция отображения нужных средств  для апгрейда
+		--' function prereq_functor_a( param3, section )
+	--' функция временно не используеться
+		--' function prereq_tooltip_functor_a( param3 )
+		--' функции для отображения свойств апгрейдов
+		--' function property_functor_a( param1, name ) +%, +кг и тд
+		--' function property_functor_b( param1, name ) только отображение имени апгрейда без value
+		--' function property_functor_c( param1, name ) только отображение имени апгрейда без value
+		--' функция для отображения специализации техника
+--------------------------------------------------------------------------------------------
+local diff_koef = level.get_game_difficulty() == game_difficulty.novice and 0.7 or level.get_game_difficulty() == game_difficulty.stalker and 1.0 or level.get_game_difficulty() == game_difficulty.veteran and 1.3 or 1.5
+
+local REPAIR_COST_MULT = 1.84*diff_koef -- global repair cost (multiplied by condition to repair, item base price and fixer profit mult)
+local REPAIR_COST_OUTFIT_MULT = 1.3*diff_koef -- repair cost for outfits
+
+local UPG_COST_MULT = 1.75*diff_koef
+
+cur_hint = nil
+local issue_condlist = true
+local mechanic_name = ""
+local char_ini = system_ini()
+local param_ini = ini_file("misc\\stalkers_upgrade_info.ltx")
+local unupgradable_wpns = parser.read_section("misc\\stalkers_upgrade_info.ltx", "unupgradable_wpns", "parse_bool")
+local cur_price_percent = 1
+local fixer_profits 	= parser.read_section("misc\\stalkers_upgrade_info.ltx", "fixer_profit", "parse_num")
+local fixer_conditions 	= parser.read_section("misc\\stalkers_upgrade_info.ltx", "fixer_condition", "parse_num")
+
+local anomaly_detector_upgrade_names = {
+	[1] = "prop_af_db_zhrk",
+	[2] = "prop_af_db_vrnk",
+	[3] = "prop_af_db_krsl",
+	[4] = "prop_af_db_trpl",
+	[5] = "prop_af_db_lktr",
+	[6] = "prop_af_db_hldc",
+	[7] = "prop_af_db_rvls",
+	[8] = "prop_af_db_pstk",
+	[9] = "prop_af_db_zhph",
+	[10] ="prop_af_db_przt",
+	[11] ="prop_af_db_tsmt",
+}
+
+function get_fixer_profit(mechanic)
+	return fixer_profits[mechanic or mechanic_name] or fixer_profits["general_fixer"]
+end
+
+function how_much_for_upgrade(section)
+	local profit = get_fixer_profit()
+	return math.floor(char_ini:r_u32(section, "cost") * cur_price_percent * profit * UPG_COST_MULT)
+end
+
+function precondition_functor_a( param1, section)
+	if (param_ini:line_exist(mechanic_name.."_upgr", section)) then
+		local param = param_ini:r_string(mechanic_name.."_upgr", section)
+		if param then
+			if (param == "false") then
+				return 1
+			elseif (param ~= "true") then
+				local possibility_table = xr_logic.parse_condlist(victim, mechanic_name.."_upgr", section, param)
+				local possibility = xr_logic.pick_section_from_condlist(db.actor, victim, possibility_table)
+				if not(possibility) or (possibility=="false") then
+					return 2
+				end
+			end
+		end
+	else
+		return 1
+	end
+	if (db.actor) then
+		local price = how_much_for_upgrade(section)
+		local cash = db.actor:money()
+		if (cash < price) then
+			return 2
+		end
+	end
+	return 0
+end
+
+function effect_functor_a( param2, section, loading ) --( string, string, int )
+	local profit = get_fixer_profit()
+	if loading == 0 then
+		db.actor:give_money(-how_much_for_upgrade(section))
+	end
+end
+
+function get_upgrade_cost(section)
+	local profit = get_fixer_profit()
+	if db.actor then
+		local price = how_much_for_upgrade(section)
+		return game.translate_string("st_upgr_cost")..": "..price
+	end
+	return " "
+end
+
+function get_possibility_string(mechanic_name, possibility_table)
+	local str = ""
+	if (cur_hint) then
+		for k,v in pairs(cur_hint) do
+			str = str.."\\n - "..game.translate_string(v)
+		end
+	end
+	if (str=="") then
+		str = " - add hints for this upgrade"
+	end
+	return str
+end
+
+function prereq_functor_a( param3, section )
+	local str = ""
+	if (param_ini:line_exist(mechanic_name.."_upgr", section)) then
+		local param = param_ini:r_string(mechanic_name.."_upgr", section)
+		if (param) then
+			if (param == "false") then
+				return str
+			else
+				cur_hint = nil
+				local possibility_table = xr_logic.parse_condlist(victim, mechanic_name.."_upgr", section, param)
+				local possibility = xr_logic.pick_section_from_condlist(db.actor, victim, possibility_table)
+				if not(possibility) or (possibility == "false") then
+					str = str..get_possibility_string(mechanic_name, possibility_table)
+				end
+			end
+		end
+	end
+	if (db.actor) then
+		local price = how_much_for_upgrade(section)
+		local cash = db.actor:money()
+		if (cash<price) then
+			return str.."\\n - "..game.translate_string("st_upgr_enough_money")--.." "..price-cash.." RU"
+		end
+	end
+	return str
+end
+
+function is_weight_property(name)
+	return name=="prop_tonnage" or name=="prop_weightoutfit" or name=="prop_weight"
+end
+
+function get_upgrade_value(up_sect, name)
+	if char_ini:line_exist(up_sect, "value") and char_ini:r_string(up_sect, "value") then
+		return char_ini:r_string(up_sect, "value")
+	elseif char_ini:line_exist(up_sect, "mult") then
+		return char_ini:r_float(up_sect, "mult") * 100
+	elseif is_weight_property(name) and char_ini:line_exist(up_sect, "inv_weight") then
+		return char_ini:r_float(up_sect, "inv_weight")
+	elseif name == "prop_ammo_size" and char_ini:line_exist(up_sect, "ammo_mag_size") then
+		return char_ini:r_float(up_sect, "ammo_mag_size")
+	end
+	return nil
+end
+
+function colorize_value(text, isBad)
+	local color = isBad and "red" or "green"
+	return "%c[" .. color .. "]" .. text .. "%c[default] "
+end
+
+function property_functor_a( param1, name )
+	local property_name = char_ini:r_string(name, "name")
+	local t_property_name = game.translate_string(property_name)
+	local section_table = utils.parse_names(param1)
+	local section_table_n = #section_table
+	local section = section_table[1]
+	if (section_table_n == 0) then
+		return ""
+	end
+	local value = 0
+	local sum = 0
+	for i = 1,section_table_n do
+		value = get_upgrade_value(section_table[i], name)
+		if not value then
+			return t_property_name
+		end
+		if (name ~= "prop_night_vision") then
+			sum = sum + tonumber(value)
+		else
+			sum = tonumber(value)
+		end
+	end
+	if (sum < 0) then
+		value = sum
+	else
+		value = "+"..sum
+	end
+
+	if (name == "prop_ammo_size" or name == "prop_artefact") then
+		return t_property_name.." "..colorize_value(value)
+	elseif (name == "prop_restore_bleeding" or name == "prop_restore_health" or name == "prop_power") then
+		if (name == "prop_power") then
+			value = "+"..tonumber(value) * 2
+		end
+		return t_property_name.." "..colorize_value(value)
+	elseif (is_weight_property(name)) then
+		local str = t_property_name.." "..colorize_value(string.format("%5.2f %s", value, game.translate_string("st_kg")))
+		return str
+	elseif (name == "prop_radius") then
+		local str = t_property_name.." "..colorize_value(string.format("%5.2f %s", value, game.translate_string("st_m")))
+		return str
+	elseif (name == "prop_night_vision") then
+		if (tonumber(value) == 1) then
+			return t_property_name
+		else
+			return game.translate_string(property_name.."_"..tonumber(value))
+		end
+	elseif (name == "prop_no_buck" or name == "prop_autofire" or name == "prop_zoom") then
+		return t_property_name
+	elseif (name == "prop_af_db") then
+		local detUpName = anomaly_detector_upgrade_names[tonumber(value)]
+		if detUpName then
+			return game.translate_string(detUpName)
+		else
+			return t_property_name
+		end
+	end
+	return t_property_name.." "..colorize_value(value .. "%")
+end
+
+function property_functor_b( param1, name )
+	return issue_property( param1, name )
+end
+
+function property_functor_c( param1, name )
+	return issue_property( param1, name )
+end
+
+function need_victim(obj)
+	victim = obj
+end
+
+function issue_property( param1, name )
+	local property_name = char_ini:r_string(name, "name")
+	local t_property_name = game.translate_string(property_name)
+	local value_table = utils.parse_names(param1)
+	local section = value_table[1]
+	if section then
+		local value = get_upgrade_value(section, name)
+		if not value then
+			return t_property_name
+		end
+		return t_property_name.." "..string.sub(value, 2, -2)
+	else
+		return t_property_name
+	end
+end
+
+local function how_much_for_repair(item_name, item_condition, mechanic)
+	local profit = get_fixer_profit(mechanic)
+	local cost = char_ini:r_u32(item_name, "cost")
+	local mult = la_utils.IsOutfit(item_name)
+		and REPAIR_COST_OUTFIT_MULT
+		or REPAIR_COST_MULT
+
+	return math.floor(cost * (1 - item_condition) * mult * cur_price_percent * profit)
+end
+
+function get_min_item_condition(mechanic)
+	local cond = fixer_conditions[mechanic]
+	if cond == nil then
+		cond = fixer_conditions["general_fixer"]
+	end
+	return cond
+end
+
+function can_repair_item( item_name, item_condition, mechanic ) --( string, float, string )
+	local cond = get_min_item_condition(mechanic)
+	if cond and item_condition < cond then
+		return false
+	end
+	local price = how_much_for_repair(item_name, item_condition, mechanic)
+	if db.actor:money() < price then
+		return false
+	end
+	return true
+end
+
+function question_repair_item( item_name, item_condition, can, mechanic ) --( string, float, bool, string )
+	local cond = get_min_item_condition(mechanic)
+	if cond then
+		if (item_condition) < cond then
+			return game.translate_string("st_no_repair_tip_2")
+		end
+	end
+	local price = how_much_for_repair( item_name, item_condition, mechanic)
+	if db.actor:money() < price then
+		return game.translate_string("st_upgr_cost")..": "..price.." RU\\n"..game.translate_string("st_not_enough_money")..": "..price-db.actor:money().." RU"
+	end
+	return game.translate_string("st_upgr_cost").." "..price.." RU. "..game.translate_string("ui_inv_repair").."?"
+end
+
+function effect_repair_item( item_name, item_condition, mechanic, itemid)
+	local outfit = db.actor:item_in_slot(6)
+	local helmet = db.actor:item_in_slot(11)
+	if outfit and outfit:id() == itemid then
+		db.actor:move_to_ruck(outfit)
+	end
+	if helmet and helmet:id() == itemid then
+		db.actor:move_to_ruck(helmet)
+	end
+	local price = how_much_for_repair( item_name, item_condition, mechanic)
+	db.actor:give_money(-price)
+end
+
+function move_outfit_to_inv(itemid)
+	local outfit = db.actor:item_in_slot(6)
+	local helmet = db.actor:item_in_slot(11)
+	if outfit and outfit:id() == itemid then
+		db.actor:move_to_ruck(outfit)
+	end
+	if helmet and helmet:id() == itemid then
+		db.actor:move_to_ruck(helmet)
+	end
+end
+
+function can_add_item( item_name, mechanic, item )
+	mechanic_name = mechanic
+	setup_discounts()
+	return (la_utils.IsWeapon(item_name) or la_utils.IsOutfit(item_name) or la_utils.IsDetector(item_name))
+		and item_name ~= "wpn_knife"
+		and not unupgradable_wpns[item_name]
+end
+
+function can_upgrade_item( item_name, mechanic, item )
+	mechanic_name = mechanic
+	setup_discounts()
+	local cond = get_min_item_condition(mechanic)
+	if cond and item:condition() < cond then
+		return false
+	end
+	if param_ini:line_exist(mechanic, item_name) then 
+		local param = param_ini:r_string(mechanic, item_name) 
+		if param then 
+			if (param == "false") then 
+				return false
+			elseif (param == "true") then 
+				return true
+			else
+				local possibility_table = xr_logic.parse_condlist(victim, mechanic, item_name, param) 
+				local possibility = xr_logic.pick_section_from_condlist(db.actor, victim, possibility_table) 
+				if not (possibility) or (possibility == "true") then
+					return true
+				end
+			end
+		else
+			return true
+		end
+	end
+	return false
+end
+
+function can_upgrade_item2( item_name, mechanic )
+	mechanic_name = mechanic
+	setup_discounts()
+	if not param_ini:line_exist(mechanic, item_name) then
+		if not mechanic_name or mechanic_name == "" then
+			return true
+		else
+			return false
+		end
+	end
+	if param_ini:line_exist(mechanic, item_name) then
+		local param = param_ini:r_string(mechanic, item_name)
+		if param then
+			if (param == "false") then
+				return false
+			elseif (param == "true") then
+				return true
+			else
+				local possibility_table = xr_logic.parse_condlist(victim, mechanic, item_name, param)
+				local possibility = xr_logic.pick_section_from_condlist(db.actor, victim, possibility_table)
+				if not(possibility) or (possibility == "true") then
+					return true
+				end
+			end
+		else
+			return true
+		end
+	end
+	return false
+end
+
+function setup_discounts()
+	if param_ini:line_exist(mechanic_name, "discount_condlist") then
+		local condlist = param_ini:r_string(mechanic_name, "discount_condlist")
+		local parsed = xr_logic.parse_condlist(db.actor, nil, nil, condlist)
+		xr_logic.pick_section_from_condlist(db.actor, nil, parsed)
+	end
+end
+
+function mech_discount(perc)
+	cur_price_percent = perc
+end

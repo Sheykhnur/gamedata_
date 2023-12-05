@@ -1,0 +1,285 @@
+;**************************state 0***************************************
+
+[logic@out_pool_room_chatter1]
+active = walker@out_pool_room_chatter1_idle
+
+[walker@out_pool_room_chatter1_idle]
+path_walk = chatter1
+path_look = chatter2
+combat_ignore_cond = {!hit_by_actor}
+on_actor_in_zone = out_pool_room_zone | remark@chatter1_check
+meet = no_meet
+
+[remark@chatter1_check]
+target = out_pool_room_chatter2,0
+combat_ignore_cond = {!hit_by_actor}
+on_info = {-out_dialog1} remark@chatter1_1, remark@chatter1_random
+meet = no_meet
+
+[remark@chatter1_1]
+snd = out_dialog1
+target = out_pool_room_chatter2,0
+on_signal = sound_end| %+out_dialog1%
+on_info = {+out_dialog2} remark@chatter1_3
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter1_3]
+snd = out_dialog3
+target = out_pool_room_chatter2,0
+on_signal = sound_end| %+out_dialog3%
+on_info = {+out_dialog4} remark@chatter1_5
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter1_5]
+snd = out_dialog5
+target = out_pool_room_chatter2,0
+on_signal = sound_end| %+out_dialog5%
+on_info = {+out_dialog6} remark@chatter1_7
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter1_7]
+snd = out_dialog7
+target = out_pool_room_chatter2,0
+on_signal = sound_end| %+out_dialog7%
+on_info = {+out_dialog8} remark@chatter1_9
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter1_9]
+snd = out_dialog9
+target = out_pool_room_chatter2,0
+on_signal = sound_end| %+out_dialog9%
+on_info = {+out_dialog10} remark@chatter1_11
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter1_11]
+snd = out_dialog11
+target = out_pool_room_chatter2,0
+on_signal = sound_end| %+out_dialog11% walker@out_pool_room_chatter1_idle
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter1_random]
+snd = out_bar_whistle1
+on_timer = 5000| remark@chatter1_random_1
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter2,0
+
+[remark@chatter1_random_1]
+anim = drink_vodka
+combat_ignore_cond = {!hit_by_actor}
+on_timer = 10000| remark@chatter1_random_1_1
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter2,0
+
+[remark@chatter1_random_1_1]
+anim = drink_vodka_out
+on_signal = anim_end| remark@chatter1_random_2
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter2,0
+
+[remark@chatter1_random_2]
+snd = out_bar_sing1
+on_timer = 5000| remark@chatter1_random_3
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter2,0
+
+[remark@chatter1_random_3]
+anim = drink_vodka
+on_timer = 10000| remark@chatter1_random_3_1
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter2,0
+
+[remark@chatter1_random_3_1]
+anim = drink_vodka_out
+on_signal = anim_end| remark@chatter1_random_4
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter2,0
+
+[remark@chatter1_random_4]
+snd = out_bar_whistle2
+on_timer = 15000| walker@out_pool_room_chatter1_idle
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter2,0
+
+;**************************************************************************************************************
+[logic@out_pool_room_chatter2]
+active = walker@out_pool_room_chatter2_idle
+
+[walker@out_pool_room_chatter2_idle]
+path_walk = chatter2
+path_look = chatter1
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+on_actor_in_zone = out_pool_room_zone | remark@chatter2_check
+
+[remark@chatter2_check]
+target = out_pool_room_chatter1,0
+combat_ignore_cond = {!hit_by_actor}
+on_info = {-out_dialog2} remark@out_pool_room_chatter2, remark@chatter2_random
+meet = no_meet
+
+[remark@out_pool_room_chatter2]
+target = out_pool_room_chatter1,0
+on_info = {+out_dialog1} remark@chatter2_2
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter2_2]
+snd = out_dialog2
+target = out_pool_room_chatter1,0
+on_signal = sound_end| %+out_dialog2%
+on_info = {+out_dialog3} remark@chatter2_4
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter2_4]
+snd = out_dialog4
+target = out_pool_room_chatter1,0
+on_signal = sound_end| %+out_dialog4%
+on_info = {+out_dialog5} remark@chatter2_6
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter2_6]
+snd = out_dialog6
+target = out_pool_room_chatter1,0
+on_signal = sound_end| %+out_dialog6%
+on_info = {+out_dialog7} remark@chatter2_8
+meet = no_meet
+
+[remark@chatter2_8]
+snd = out_dialog8
+target = out_pool_room_chatter1,0
+on_signal = sound_end| %+out_dialog8%
+on_info = {+out_dialog9} remark@chatter2_10
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter2_10]
+snd = out_dialog10
+target = out_pool_room_chatter1,0
+on_signal = sound_end| %+out_dialog10%
+on_info = {+out_dialog11} walker@out_pool_room_chatter2_idle
+combat_ignore_cond = {!hit_by_actor}
+meet = no_meet
+
+[remark@chatter2_random]
+snd = out_bar_sing2
+on_timer = 5000| remark@chatter2_random_1
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+[remark@chatter2_random_1]
+anim = drink_vodka
+combat_ignore_cond = {!hit_by_actor}
+on_timer = 10000| remark@chatter2_random_1_1
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+[remark@chatter2_random_1_1]
+anim = drink_vodka_out
+on_signal = anim_end| remark@chatter2_random_2
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+[remark@chatter2_random_2]
+snd = out_bar_sing3
+on_timer = 15000| remark@chatter2_random_3
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+[remark@chatter2_random_3]
+anim = drink_vodka
+on_timer = 10000| remark@chatter2_random_3_1
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+[remark@chatter2_random_3_1]
+anim = drink_vodka_out
+on_signal = anim_end| remark@chatter2_random_4
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+[remark@chatter2_random_4]
+snd = out_bar_cough1
+on_timer = 15000| remark@chatter2_random_5
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+[remark@chatter2_random_5]
+snd = out_bar_whistle2
+on_timer = 15000| walker@out_pool_room_chatter2_idle
+combat_ignore_cond = {!hit_by_actor}
+target = out_pool_room_chatter1,0
+
+
+;****************************************************************************************************************
+[logic@out_pool_room_guard1]
+active = walker@out_pool_room_guard1
+
+[walker@out_pool_room_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+
+[logic@out_pool_room_guard2]
+active = walker@out_pool_room_guard2
+
+[walker@out_pool_room_guard2]
+path_walk = guard2_walk
+path_look = guard2_look
+
+[logic@out_pool_room_sniper]
+active = camper@out_pool_room_sniper
+
+[camper@out_pool_room_sniper]
+path_walk = sniper_walk
+path_look = sniper_look
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+sniper = true
+radius = 100
+
+;**************************************state 1**********************************************************
+
+[logic@out_pool_room_sleeper1]
+active = sleeper@out_pool_room_sleeper1
+
+[sleeper@out_pool_room_sleeper1]
+path_main = sleeper1
+wakeable = false
+
+[logic@out_pool_room_sleeper2]
+active = sleeper@out_pool_room_sleeper2
+
+[sleeper@out_pool_room_sleeper2]
+path_main = sleeper2
+wakeable = false
+
+[logic@out_pool_room_sleeper3]
+active = sleeper@out_pool_room_sleeper3
+
+[sleeper@out_pool_room_sleeper3]
+path_main = sleeper3
+wakeable = false
+
+[logic@out_pool_room_sleeper4]
+active = sleeper@out_pool_room_sleeper4
+
+[sleeper@out_pool_room_sleeper4]
+path_main = sleeper4
+wakeable = false
+
+[logic@out_pool_room_sleeper5]
+active = sleeper@out_pool_room_sleeper5
+
+[sleeper@out_pool_room_sleeper5]
+path_main = sleeper5
+wakeable = false
+
+
+

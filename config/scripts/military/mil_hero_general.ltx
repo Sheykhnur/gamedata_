@@ -1,0 +1,38 @@
+[danger@mil_hero]
+ignore_types                = grenade, corpse, sound, hit
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+danger_inertion_time_grenade = 0
+danger_inertion_time_corpse  = 0
+danger_inertion_time_hit     = 0 
+danger_inertion_time_sound   = 0
+
+[threshold@mil_hero]
+max_ignore_distance = 0
+ignore_monster      = 0
+
+[logic]
+active = remark@wait
+combat_ignore = true
+
+[remark@wait]
+anim = wait
+combat_ignore_cond = always
+on_timer = 5 | remark@main
+danger = danger@mil_hero
+threshold = threshold@mil_hero
+meet = no_meet
+target = player_radio_look, 0
+
+[remark@main]
+anim = guard_rac
+snd = mil_assistance
+combat_ignore_cond = always
+danger = danger@mil_hero
+threshold = threshold@mil_hero
+target = player_radio_look, 0
+meet = no_meet
+;on_signal = sound_end| %+mil_mercs_house_elim%

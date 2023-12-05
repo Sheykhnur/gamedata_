@@ -1,0 +1,143 @@
+[list]
+ai_test
+la01_escape
+la02_garbage
+la03_agroprom
+la04_darkdolina
+la04u_darklab
+la05_bar_rostok
+la06_yantar
+la07_military
+la08_deadcity
+la09_swamp
+la10_radar
+la10u_bunker
+la11_pripyat
+la12_stancia
+la12u_sarcofag
+la13_generators
+la13u_oso
+la13u_warlab
+la14_rostok_factory
+la14u_secret_lab
+la15_darkscape
+la16_lost_factory
+la16u_labx16
+la17_outskirts
+la17u_labx7
+la18_damned
+la19_country
+la20_forgotten
+la22_forest
+la23_oldroad
+la24_antennas
+
+[ai_test]
+condlist = false ; test only , remove before release
+
+[la01_escape]
+condlist = {=actor_on_level(la01_escape) +esc_fixer_teleported} true, false
+
+[la02_garbage]
+condlist = {=actor_on_level(la02_garbage) +gar_seriy_give_info} true, false
+
+[la03_agroprom]
+condlist = {=actor_on_level(la03_agroprom) +agr_gunslinger_flash_have} true, false
+
+[la04_darkdolina]
+condlist = {=actor_on_level(la04_darkdolina) +dol_get_doc_about_x18_done} true, false
+
+[la04u_darklab]
+condlist = false
+
+[la05_bar_rostok]
+condlist = {=actor_on_level(la05_bar_rostok)} true, false
+
+[la06_yantar]
+condlist = {=actor_on_level(la06_yantar) -yan_pribor_task_start} true, {=actor_on_level(la06_yantar) +yan_pribor_task_start -yan_pribor_task_done} false, {=actor_on_level(la06_yantar) +yan_pribor_task_done} true, false
+
+[la07_military]
+condlist = {=actor_on_level(la07_military) +mil_killer_base_reached} true, false
+
+[la08_deadcity]
+condlist = {=actor_on_level(la08_deadcity) +cit_doctor_saved} true, false
+
+[la09_swamp]
+condlist = {=actor_on_level(la09_swamp)} true, false
+
+[la10_radar]
+condlist = {=actor_on_level(la10_radar) +deactivate_radar_done} true, false
+
+[la10u_bunker]
+condlist = false
+
+[la11_pripyat]
+condlist = {=actor_on_level(la11_pripyat) +pri_ghost_teleported} true, false
+
+[la12_stancia]
+condlist = {=actor_on_level(la12_stancia) +aes_sarcofag_found} true, false
+
+[la12u_sarcofag]
+condlist = false
+
+[la13_generators]
+condlist = false
+
+[la13u_oso]
+condlist = false
+
+[la13u_warlab]
+condlist = false
+
+[la14_rostok_factory]
+condlist = {=actor_on_level(la14_rostok_factory) +rosf_bloodsucker_duty_task_done} true, false
+
+[la14u_secret_lab]
+condlist = false
+
+[la15_darkscape]
+condlist = {=actor_on_level(la15_darkscape)} true, false
+
+[la16_lost_factory]
+condlist = {=actor_on_level(la16_lost_factory)} true, false
+
+[la16u_labx16]
+condlist = false
+
+[la17_outskirts]
+condlist = {=actor_on_level(la17_outskirts)} true, false
+
+[la17u_labx7]
+condlist = false
+
+[la18_damned]
+condlist = false
+
+[la19_country]
+condlist = {=actor_on_level(la19_country) +lost_scientist_talked} true, false
+
+[la20_forgotten]
+condlist = {=actor_on_level(la20_forgotten)} true, false
+
+[la22_forest]
+condlist = {=actor_on_level(la22_forest) -fore_looser_dvinuli} true, {=actor_on_level(la22_forest) +fore_looser_dvinuli -fore_traitor_task_done} false, {=actor_on_level(la22_forest) +fore_traitor_task_done} true, false
+
+[la23_oldroad]
+condlist = false
+
+[la24_antennas]
+condlist = false
+
+[la_atmosfear_default_paramaters]
+opt_blowout_enabled				= true				;blowout enabled
+opt_blowout_freq				= 48				;blowout wave frequency
+opt_blowout_fate				= turntozombie		;fate of stalkers caught outside in blowout
+opt_blowout_warning				= siren				;warning sound
+opt_blowout_hud_timer			= true				;show hud timer before blowout
+opt_psi_storm_freq				= 24				;psi storm frequency
+opt_psi_storm_fate				= turntozombie		;fate of stalkers caught outside in psi storm
+opt_psi_storm_warning			= siren				;warning sound
+opt_psi_storm_hud_timer			= true				;show hud timer before psi storm
+opt_show_hideplaces				= true				;show blowout shelters
+opt_show_warning				= true				;show warning message
+god_mode						= false				;blowout god mode for actor

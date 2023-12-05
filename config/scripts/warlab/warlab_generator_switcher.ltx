@@ -1,0 +1,15 @@
+[logic]
+active = ph_button@gen_start
+
+[ph_button@gen_start]
+anim = lab_primary_switcher_off
+tooltip = tips_labx2_gen_1
+on_press = ph_button@gen_locked %=play_snd(device\door_locked) +war_get_fuel_task%
+
+[ph_button@gen_locked]
+anim = lab_primary_switcher_off
+tooltip = tips_labx2_gen_1
+on_press = {+war_gen_filled} %+war_generator_on% ph_button@turn_on
+
+[ph_button@turn_on]
+anim = lab_primary_switcher_idle

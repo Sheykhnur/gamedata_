@@ -1,0 +1,567 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : dialogs.script
+ Description: Dialogs
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin (2010-08-16)
+ Last edit  : 07.05.2013
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------
+function break_dialog(oSpeaker1, oSpeaker2, sDlgId)
+	oSpeaker1:stop_talk()
+	oSpeaker2:stop_talk()
+	if not bind_actor.binder_check22() then 
+		abort("Something went wrong, pls reinstall the game")
+	end
+end
+--/ ---------------------------------------------
+function get_actor(oSpeaker1, oSpeaker2)
+	if oSpeaker1:id() == idActor then
+		return oSpeaker1 --/>
+	end
+	return oSpeaker2 --/>
+end
+function get_npc(oSpeaker1, oSpeaker2)
+	if oSpeaker2:id() == idActor then
+		return oSpeaker1 --/>
+	end
+	return oSpeaker2 --/>
+end
+function get_actor_npc(oSpeaker1, oSpeaker2)
+	if oSpeaker1:id() == idActor then
+		return oSpeaker1,oSpeaker2 --/>
+	end
+	return oSpeaker2,oSpeaker1 --/>
+end
+--/ ---------------------------------------------
+
+function allow_break_dialog(oSpeaker1, oSpeaker2, sDlgId) --/first_speaker, second_speaker
+	if (oSpeaker2:profile_name() == "osoznanie" or oSpeaker2:profile_name() == "osoznanie_representative") then
+		return false
+	end
+	return true
+end
+
+function punch(oSpeaker1, oSpeaker2)
+	db.storage[oSpeaker2:id()].punch.enabled = true
+end
+
+function is_wounded(oSpeaker1, oSpeaker2)
+	local wound_manager = xr_wounded.get_wound_manager(oSpeaker1:id())
+	if wound_manager and not wound_manager.can_use_medkit then
+		return tostring(wound_manager.state) ~= "nil" --/>
+	end
+	return false --/>
+end
+function is_not_wounded(oSpeaker1, oSpeaker2)
+	return not this.is_wounded(oSpeaker1, oSpeaker2) --/>
+end
+
+function is_opp_wounded(oSpeaker1, oSpeaker2) --/ oSpeaker1-actor, oSpeaker2-npc
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	return is_wounded(oNPC, db.actor) --/>
+end
+
+function have_medkit(oSpeaker1)
+	if  oSpeaker1:object("medkit") or
+		oSpeaker1:object("medkit_army") or
+		oSpeaker1:object("medkit_scientic") then
+		return true
+	end
+	return false
+end
+
+function actor_have_medkit()
+	return have_medkit(db.actor) --/>
+end
+
+function give_medkit(oSpeaker1, oSpeaker2)
+	return oSpeaker1:object("medkit") or
+				 oSpeaker1:object("medkit_army") or
+				 oSpeaker1:object("medkit_scientic") --/> medkit
+end
+function actor_give_medkit(oSpeaker1, oSpeaker2)
+	return give_medkit(db.actor) --/> medkit
+end
+
+function transfer_medkit(oSpeaker1, oSpeaker2)
+	if oSpeaker1:object("medkit") then
+		this.relocate_item_section(oSpeaker2, "medkit", "out")
+	elseif oSpeaker1:object("medkit_army") then
+		this.relocate_item_section(oSpeaker2, "medkit_army", "out")
+	elseif oSpeaker1:object("medkit_scientic") then
+		this.relocate_item_section(oSpeaker2, "medkit_scientic", "out")
+	else
+		return --/>
+	end
+	--/there need to unlock medkit for use.
+	xr_wounded.unlock_medkit(oSpeaker2)
+	
+	if this.is_enemy(oSpeaker2, oSpeaker1) then
+		oSpeaker1:change_character_reputation(-math.random(4,8))
+	else
+		oSpeaker1:change_character_reputation(math.random(6,12))
+		if this.is_not_friend(oSpeaker2, oSpeaker1) then
+			this.become_friend(oSpeaker2, oSpeaker1)
+		end
+	end
+end
+
+function actor_have_bandage(oSpeaker1, oSpeaker2)
+	return oSpeaker1:object("bandage") ~= nil --/>
+end
+
+function transfer_bandage(oSpeaker1, oSpeaker2)
+	this.relocate_item_section(oSpeaker2, "bandage", "out")
+	if this.is_not_friend(oSpeaker2, oSpeaker1) then
+		oSpeaker2:set_relation(game_object.friend, oSpeaker1)
+	end
+end
+--/ -----------------------------------------------------------------
+--/ RELOCATE: transfering of item(items) or money of Actor <~> NPC with message on screen
+--/   oVictim: if НПС - transfer, if Actor or 'nil' - spawn/remove
+--/   sType: "out" - Actor outs (default), "in" - Actor gets
+--/ -----------------------------------------------------------------
+--/#~# Transfering of item(items) (by section or by sample)
+function relocate_item(oVictim, Item, sType, iNum, iSid)
+	local sSection = ( type(Item) == 'string' and Item )
+	if not sSection and type(Item) == 'userdata' and Item.section then
+		sSection = Item:section()
+	end
+	Relocate_Items(oVictim, sSection, (iNum or 1), sType, iSid)
+end
+--/#+# Transfering of item(items)
+--/ Example1: relocate_items(nil, sSection) - actor losing one item
+--/ Example2: relocate_items(oNPC, sSection) - actor gives one time to NPC
+--/ Example3: relocate_items(oNPC, sSection, 5, "in") - actor gets 5 items fron NPC
+function relocate_items(oVictim, sSection, sType, iNum, iSid)
+	Relocate_Items(oVictim, sSection, (iNum or 1), sType, iSid)
+end
+--/#~# Передача предмета(ов) (by section)
+function relocate_item_section(oVictim, sSection, sType, iNum, iSid)
+	Relocate_Items(oVictim, sSection, (iNum or 1), sType, iSid)
+end
+--/#+# giving to actor N-items (iNum,oNPC - optional)
+--/ Example1: give_items(sSection) - actor get one item
+--/ Example2: give_items(sSection, 5, oNPC) - actor get from NPC 5 items
+function give_items(sSection, iNum, oNPC, iSid)
+	Relocate_Items(oNPC, sSection, (iNum or 1), "in", iSid)
+end
+--/#+# taking from actor N-items (iNum,oNPC - optional)
+--/ Example1: lost_items(sSection) - actor lost one item
+--/ Example3: lost_items(sSection, 5, oNPC) - actor transfer to NPC 5 items
+function lost_items(sSection, iNum, oNPC)
+	Lost_Items(sSection, iNum, oNPC)
+end
+
+--/#~# Trasfer of money Actor <~> NPC
+--/ Example1: relocate_money(nil, 200) - actor give (lose) 200 ru
+--/ Example2: relocate_money(oNPC, 500, "in") - actor get from NPC 500 ru
+function relocate_money(oVictim, iAmount, sType)
+	Relocate_Money(oVictim, iAmount, sType)
+end
+--/#+# actor get money (+message on screen)
+function give_money(iAmount)
+	db.actor:give_money(iAmount) --/ adding money to Actor
+	--game_stats.money_quest_update(iAmount,"in") --/#?# statistic ~> to 'news_manager'
+	news_manager.relocate_money(db.actor, "in", iAmount)
+end
+--/#+# actor lose money (+message on screen)
+function lost_money(iAmount)
+	db.actor:give_money(-iAmount) --/ getting money from Actor
+	--game_stats.money_quest_update(iAmount,"out") --/#?# statistic ~> to 'news_manager'
+	news_manager.relocate_money(db.actor, "out", iAmount)
+end
+
+function relocate_medkits(oNPC, iNum)
+	local tMedkits = {"medkit","medkit_army","medkit_scientic"}
+	Relocate_AnyItems(oNPC,tMedkits,iNum) --/ transfering 'set' of medkits
+end
+
+--/------------------------------------------------------------------
+--/ DIALOG ALLOWED
+--/------------------------------------------------------------------
+function dialog_allowed(oSpeaker1, oSpeaker2, sDlgId)
+--	log("dialog_allowed:Speaker2=[%s],DlgId=[%s]%s", oSpeaker2:name(), sDlgId, "") --/#~#
+	local st = oSpeaker2 and db.storage[oSpeaker2:id()]
+	if st and st.actor_dialogs then
+		for _,v in ipairs(st.actor_dialogs) do
+			if v == sDlgId then
+				return true --/>
+			end
+		end
+	end
+	return false --/>
+end
+
+function dialog_not_disable(oSpeaker1, oSpeaker2, sDlgId)
+--	log("dialog_not_disable:Speaker2=[%s],DlgId=[%s]%s", oSpeaker2:name(), sDlgId, "") --/#~#
+	local st = oSpeaker2 and db.storage[oSpeaker2:id()]
+	if st and st.actor_disable ~= nil then
+		for _,v in ipairs(st.actor_disable) do
+			if v == sDlgId then
+				return false --/>
+			end
+		end
+	end
+	return true --/>
+end
+
+function allow_wounded_dialog(object, oSpeaker2, sDlgId)
+	local st = sDlgId and oSpeaker2 and db.storage[oSpeaker2:id()]
+	if st and st.wounded and st.wounded.help_dialog == sDlgId then
+		return true --/>
+	end
+	return false --/>
+end
+
+--/------------------------------------------------------------------
+--/ Relation functions (for oSpeaker1 to oSpeaker2)
+--/------------------------------------------------------------------
+function is_friend_to_actor(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	return oNPC:relation(db.actor) == game_object.friend --/>
+end
+function is_not_friend_to_actor(oSpeaker1, oSpeaker2)
+	return not is_friend_to_actor(oSpeaker1, oSpeaker2) --/>
+end
+function become_friend_to_actor(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	oNPC:set_relation(game_object.friend, db.actor)
+end
+
+function is_friend(oSpeaker1, oSpeaker2)
+	return oSpeaker1:relation(oSpeaker2) == game_object.friend --/>
+end
+function is_not_friend(oSpeaker1, oSpeaker2)
+	return not is_friend(oSpeaker1, oSpeaker2) --/>
+end
+function become_friend(oSpeaker1, oSpeaker2)
+	oSpeaker1:set_relation(game_object.friend, oSpeaker2)
+end
+
+function is_neutral(oSpeaker1, oSpeaker2)
+	return oSpeaker1:relation(oSpeaker2) == game_object.neutral --/>
+end
+function is_not_neutral(oSpeaker1, oSpeaker2)
+	return not is_neutral(oSpeaker1, oSpeaker2) --/>
+end
+function become_neutral(oSpeaker1, oSpeaker2)
+	oSpeaker1:set_relation(game_object.neutral, oSpeaker2) --/>
+end
+
+function is_enemy(oSpeaker1, oSpeaker2)
+	return oSpeaker1:relation(oSpeaker2) == game_object.enemy --/>
+end
+function is_not_enemy(oSpeaker1, oSpeaker2)
+	return not is_enemy(oSpeaker1, oSpeaker2) --/>
+end
+function become_enemy(oSpeaker1, oSpeaker2)
+	oSpeaker1:set_relation(game_object.enemy, oSpeaker2) --/>
+end
+
+--/------------------------------------------------------------------
+--/ Rank functions (for NPC)
+--/------------------------------------------------------------------
+function is_novice(oNPC)
+	--return (type(oNPC).character_rank) == "function" and oNPC:character_rank() <= 300) --/>
+	return ranks.get_obj_rank_name(oNPC) == "novice" --/>
+end
+function is_not_novice(oNPC)
+	return not is_novice(oNPC) --/>
+end
+
+function is_experienced(oNPC)
+	return ranks.get_obj_rank_name(oNPC) == "experienced" --/>
+end
+function is_not_experienced(oNPC)
+	return not is_experienced(oNPC) --/>
+end
+
+function is_veteran(oNPC)
+	return ranks.get_obj_rank_name(oNPC) == "veteran" --/>
+end
+function is_not_veteran(oNPC)
+	return not is_veteran(oNPC) --/>
+end
+
+function is_master(oNPC)
+	return ranks.get_obj_rank_name(oNPC) == "master" --/>
+end
+function is_not_master(oNPC)
+	return not is_master(oNPC) --/>
+end
+--/------------------------------------------------------------------
+--/ Community Actor
+--/------------------------------------------------------------------
+function actor_clear_community(actor, npc)
+	if db.actor then
+		db.actor:set_character_community("actor", 0, 0)
+		return true --/>
+	end
+	return false --/>
+end
+
+--/ Dolg
+function actor_in_dolg(actor, npc)
+	return (db.actor ~= nil and db.actor:character_community() == "dolg") --/>
+end
+function actor_not_in_dolg(actor, npc)
+	return not actor_in_dolg(actor, npc) --/>
+end
+function actor_set_dolg(actor, npc)
+	if db.actor then
+		db.actor:set_character_community("dolg", 0, 0)
+		return true --/>
+	end
+	return false --/>
+end
+
+--/ Army
+function actor_in_military(actor, npc)
+	return (db.actor ~= nil and db.actor:character_community() == "military") --/>
+end
+function actor_not_in_military(actor, npc)
+	return not actor_in_military(actor, npc) --/>
+end
+function actor_set_military(actor, npc)
+	if db.actor then
+		db.actor:set_character_community("military", 0, 0)
+		return true --/>
+	end
+	return false --/>
+end
+
+--/ Bandits
+function actor_in_bandit(actor, npc)
+	return (db.actor ~= nil and db.actor:character_community() == "bandit") --/>
+end
+function actor_not_in_bandit(actor, npc)
+	return not actor_in_bandit(actor, npc) --/>
+end
+function actor_set_bandit(actor, npc)
+	if db.actor then
+		db.actor:set_character_community("bandit", 0, 0)
+		return true --/>
+	end
+	return false --/>
+end
+
+--/ Ecologs
+function actor_in_ecolog(actor, npc)
+	return (db.actor ~= nil and db.actor:character_community() == "ecolog") --/>
+end
+function actor_not_in_ecolog(actor, npc)
+	return not actor_in_ecolog(actor, npc) --/>
+end
+function actor_set_ecolog(actor, npc)
+	if db.actor then
+		db.actor:set_character_community("ecolog", 0, 0)
+		return true --/>
+	end
+	return false --/>
+end
+
+--/------------------------------------------------------------------
+--/ Community
+--/------------------------------------------------------------------
+function precondition_community_hunter(oSpeaker1, oSpeaker2)
+	local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+	return oNPC:character_community() == "hunter" --/>
+end
+function precondition_community_dark_stalker(oSpeaker1, oSpeaker2)
+	local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+	return oNPC:character_community() == "dark_stalker" --/>
+end
+
+--/------------------------------------------------------------------
+--/ TimeOut functions (in development)
+--/------------------------------------------------------------------
+local tTimerNames = {
+	["actor_friends_barter"] = "tmr_barter",
+	["none"]                 = "tm_dlg_none"
+}
+
+function precondition_timeout(oSpeaker1, oSpeaker2, sDlgId)
+	local sTimerName = sDlgId and tTimerNames[sDlgId]
+	if sTimerName then
+		local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+		local iTimeOut = GetVarObj(oNPC, sTimerName, nil)
+		if iTimeOut then
+			if iTimeOut > Get_PastMinutes() then
+				return true --/> speaker has timeout
+			end
+			DelVarObj(oNPC, sTimerName) --/ cleaning
+		end
+	end
+	return false --/>
+end
+function precondition_not_timeout(...)
+	return not precondition_timeout(...)
+end
+
+function action_set_timeout(oSpeaker1, oSpeaker2, sDlgId)
+	local sTimerName = sDlgId and tTimerNames[sDlgId]
+	if sTimerName then
+		local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+		local iTimeOut = math.random(30,60) --/#?#TODO: do as parameter
+		SetVarObj(oNPC, sTimerName, Get_PastMinutes() + iTimeOut)
+	end
+end
+function action_set_timeout_15(oSpeaker1, oSpeaker2, sDlgId)
+	local sTimerName = sDlgId and tTimerNames[sDlgId]
+	if sTimerName then
+		local oNPC = Get_NPC(oSpeaker2, oSpeaker1)
+		local iTimeOut = math.random(10,20) --/#?#TODO: do as parameter
+		SetVarObj(oNPC, sTimerName, Get_PastMinutes() + iTimeOut)
+	end
+end
+
+function has_3500_rubles()
+	return db.actor:money() >= 3500
+end
+
+function has_4000_rubles()
+	return db.actor:money() >= 4000
+end
+
+function has_6000_rubles()
+	return db.actor:money() >= 6000
+end
+
+function recipe_give_3500_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)	
+	dialogs.relocate_money(oNPC, 3500, "out")
+end
+
+function recipe_give_4000_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)	
+	dialogs.relocate_money(oNPC, 4000, "out")
+end
+
+function recipe_give_5000_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)	
+	dialogs.relocate_money(oNPC, 5000, "out")
+end
+
+function recipe_give_6000_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)	
+	dialogs.relocate_money(oNPC, 6000, "out")
+end
+
+
+---/// CAR PURCHASE
+
+function has_car()
+	local car = GetVar("actor_car",false)
+	return car == true
+end
+
+function not_has_car()
+	return not has_car()
+end
+
+function get_car_price(section)
+	return system_ini():r_u32(section, "cost")
+end
+
+function has_zaz_money()
+	return db.actor:money() >= get_car_price("vehicle_zaz")
+end
+
+function has_cheap_car_money()
+	return db.actor:money() >= get_car_price("vehicle_moskvich")
+end
+
+function has_car_money()
+	return db.actor:money() >= get_car_price("vehicle_niva_white")
+end
+
+function has_truck_money()
+	return db.actor:money() >= get_car_price("vehicle_raf")
+end
+
+function has_kamaz_money()
+	return db.actor:money() >= get_car_price("vehicle_kamaz")
+end
+
+function has_btr_money()
+	return db.actor:money() >= get_car_price("vehicle_btr")
+end
+
+function not_has_zaz_money()
+	return not has_zaz_money()
+end
+
+function not_has_cheap_car_money()
+	return not has_cheap_car_money()
+end
+
+function not_has_car_money()
+	return not has_car_money()
+end
+
+function not_has_truck_money()
+	return not has_truck_money()
+end
+
+function not_has_kamaz_money()
+	return not has_kamaz_money()
+end
+
+function not_has_btr_money()
+	return not has_btr_money()
+end
+
+function start_vehicle_menu(sSection, oSpeaker1, oSpeaker2, sDlgId)
+	ui_car_buy.display(sSection, oSpeaker2)
+	this.break_dialog(oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function start_btr_menu(oSpeaker1, oSpeaker2, sDlgId)
+	this.start_vehicle_menu("vehicle_btr", oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function start_wniva_menu(oSpeaker1, oSpeaker2, sDlgId)
+	this.start_vehicle_menu("vehicle_niva_white", oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function start_kamaz_menu(oSpeaker1, oSpeaker2, sDlgId)
+	this.start_vehicle_menu("vehicle_kamaz", oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function start_raf_menu(oSpeaker1, oSpeaker2, sDlgId)
+	this.start_vehicle_menu("vehicle_raf", oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function start_uaz_menu(oSpeaker1, oSpeaker2, sDlgId)
+	this.start_vehicle_menu("vehicle_uaz", oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function start_moskv_menu(oSpeaker1, oSpeaker2, sDlgId)
+	this.start_vehicle_menu("vehicle_moskvich", oSpeaker1, oSpeaker2, sDlgId)
+end
+
+function start_zaz_menu(oSpeaker1, oSpeaker2, sDlgId)
+	this.start_vehicle_menu("vehicle_zaz", oSpeaker1, oSpeaker2, sDlgId)
+end
+
+local info_rec_tbl = {	"recipe_info_af_mercury_ball", "recipe_info_af_electra", "recipe_info_af_gold_beads", "recipe_info_af_crystal", "recipe_info_af_brown_beads", "recipe_info_af_pupil"}
+
+function artefact_merger_cond()
+	if info_rec_tbl and has_info_portions(info_rec_tbl) then return true end
+	return false
+end
+
+function recipes_cond()
+	if info_rec_tbl and not has_info_portions(info_rec_tbl) then return true end
+	return false
+end
+--/------------------------------------------------------------------------------------------------

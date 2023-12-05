@@ -1,0 +1,145 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : stalker_network.script
+ Description: ...
+ Copyright  : 2009 © LA-team
+ Author     : Gr1ph00n
+ Editors    : gr1ph00n(03.02.2013)
+ Last edit  : 19.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local news     = {}
+local names    = {}
+local surnames = {}
+local monsters = {}
+local messages = {}
+local help_requests = {
+	"Please, someone help me, i was attacked by %s, i have added my position on your pda"
+}
+local corpse_found = {
+	"I have a bad news for you, %s is no longer with us..."
+}
+local msg_threshold = 0.7
+local msg_timeout = 15 --/ real minutes
+local sTimerName = "ХQT_NEWSХ"
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/------------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/------------------------------------------------------------------
+function PreSets(e)
+	for k,v in pairs (xr_statistic.monster_classes) do
+		monsters[k] = "a "..v
+	end
+	if IsUnderground() then return end --/>
+	
+	local count = Get_Cfg_Num32(system_ini(), "stalker_names_stalker", "last_name_cnt", 0)
+	for i = 0, count do
+		table.insert(names, game.translate_string("lname_stalker_"..i))
+	end
+	count = Get_Cfg_Num32(system_ini(), "stalker_names_stalker", "name_cnt", 0)
+	for i = 0, count do
+		table.insert(surnames, game.translate_string("name_stalker_"..i))
+	end
+	local time, msg = time_global()
+	for _,v in ipairs({"rumors", "fakes", "stories", "spam", "jokes"}) do
+		count = Get_Cfg_Num32(db.lost_alpha_cfg, "stalker_network", v.."_count", 0)
+		for i = 1, count do
+			table.insert(news, "stalker_network_"..v.."_"..i)
+		end
+	end
+	--table.print(news, sModule..":news|") --/#~#
+	event("npc_hit"):register(on_npc_hit)
+	event("actor_info"):register(process_infoporton) --/ reserve
+	this.enable_network()
+end
+
+function enable_network()
+	if next(news) and not get_timer(sTimerName) then
+		local t = start_quick_timer((math.random(10)+msg_timeout)*60, this.OnTimer, nil, sTimerName)
+		--log("enable_network: %s news=[%d]", tostring(t), table.size(news)) --/#~#
+	end
+end
+
+function disable_network()
+	--log("disable_network:") --/#~#
+	local t = get_timer(sTimerName)
+	if t then t:remove() end
+end
+
+function OnTimer(t)
+	t:restart((math.random(10)+msg_timeout)*60, this.OnTimer)
+	--log("OnTimer: %s news=[%d]", tostring(t), table.size(news)) --/#~#
+	if next(news) and db.actor:object("device_pda") then
+		local message = table.remove(news, math.random(#news))
+		local sender = names[math.random(#names)].." "..surnames[math.random(#surnames)]
+		news_manager.send_tip_hud(sender, message, nil, 10, "news")
+--		log("update: news=[%s]", table.size(news), "") --/#~#
+	end
+end
+
+function set_random_name()
+	local sender = names[math.random(#names)].." "..surnames[math.random(#surnames)]
+	return sender
+end
+
+function process_infoporton(e)
+	if e.info == "cutscene_started" then
+		this.disable_network()
+	elseif e.info == "cutscene_completed" then
+		this.enable_network()
+	else
+		local msg = messages[e.info] --/#?# таблица то пуста! (а кто заполн€ть будет?)
+		if msg then
+			table.insert(news, msg)
+		end
+	end
+end
+
+function on_npc_hit(e)
+	if e.amount > 0 and e.who:id() == idActor then
+		if e.victim.health > 0.0 and not db.actor:see(e.victim) and
+			 db.actor:position():distance_to(e.victim:position()) > 40 and
+			 e.victim:relation(db.actor) ~= game_object.enemy
+			then
+			process_help_request(e.victim, db.actor)
+		end
+	end
+end
+
+function process_help_request(npc, enemy)
+	if msg_threshold > math.random() or db.storage[npc:id()].help_request_sent[enemy:id()] then
+		return
+	end
+	local enemy_name = nil
+	if IsStalker(enemy) then
+		enemy_name = "a " .. game.translate_string(enemy:character_community())
+	elseif IsMonster(enemy) then
+		enemy_name = monsters[get_clsid(enemy)]
+	else
+		return
+	end
+	log("process_help_request: [%s] attacked by [%s]", npc:name(), enemy:name())
+	level.map_add_object_spot(npc:id(), "blue_location", "Help request of: " .. npc:character_name())
+	news_manager.send_tip_hud(npc:character_name(), string.format(help_requests[math.random(#help_requests)], enemy_name), nil, 10, "sos")
+	db.storage[npc:id()].help_request_sent[enemy:id()] = true
+end
+
+function process_corpse(npc, corpse)
+	if not IsUnderground() and npc:relation(db.actor) ~= game_object.enemy and corpse:relation(db.actor) ~= game_object.enemy then
+		if corpse:character_rank() > 900 and corpse:character_rank() > npc:character_rank() and (math.random() > 0.5 or corpse:story_id() < 4294967295) then
+			news_manager.send_tip_hud(npc:character_name(), string.format(corpse_found[math.random(#corpse_found)], corpse:character_name()), nil, 10, "news")
+		end
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

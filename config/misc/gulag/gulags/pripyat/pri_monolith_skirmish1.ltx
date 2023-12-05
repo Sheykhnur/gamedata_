@@ -1,0 +1,260 @@
+;***********************state 0*********************************
+
+[logic@pri_monolith_skirmish1_attack_off1]
+active = walker@pri_monolith_skirmish1_attack_off1
+
+[walker@pri_monolith_skirmish1_attack_off1]
+path_walk = idle1
+path_look = idle1_look
+
+[logic@pri_monolith_skirmish1_attack_off2]
+active = walker@pri_monolith_skirmish1_attack_off2
+
+[walker@pri_monolith_skirmish1_attack_off2]
+path_walk = idle2
+path_look = idle2_look
+
+[logic@pri_monolith_skirmish1_attack_off3]
+active = walker@pri_monolith_skirmish1_attack_off3
+
+[walker@pri_monolith_skirmish1_attack_off3]
+path_walk = idle3
+path_look = idle3_look
+
+[logic@pri_monolith_skirmish1_attack_off4]
+active = walker@pri_monolith_skirmish1_attack_off4
+
+[walker@pri_monolith_skirmish1_attack_off4]
+path_walk = idle4
+path_look = idle4_look
+
+[logic@pri_monolith_skirmish1_attack_off5]
+active = walker@pri_monolith_skirmish1_attack_off5
+
+[walker@pri_monolith_skirmish1_attack_off5]
+path_walk = idle5
+path_look = idle5_look
+
+[logic@pri_monolith_skirmish1_attack_off6]
+active = walker@pri_monolith_skirmish1_attack_off6
+
+[walker@pri_monolith_skirmish1_attack_off6]
+path_walk = idle6
+path_look = idle6_look
+
+[logic@pri_monolith_skirmish1_attack_off7]
+active = walker@pri_monolith_skirmish1_attack_off7
+
+[walker@pri_monolith_skirmish1_attack_off7]
+path_walk = idle7
+path_look = idle7_look
+
+[logic@pri_monolith_skirmish1_attack_off8]
+active = walker@pri_monolith_skirmish1_attack_off8
+
+[walker@pri_monolith_skirmish1_attack_off8]
+path_walk = idle8
+path_look = idle8_look
+
+;*****************************state 1*******************************
+
+[death@pri_monolith_skirmish1]
+on_info = %+pri_monolith_skirmish1_dead1%
+
+[death@pri_monolith_skirmish2]
+on_info = %+pri_monolith_skirmish1_dead2%
+
+[death@pri_monolith_skirmish3]
+on_info = %+pri_monolith_skirmish1_dead3%
+
+[death@pri_monolith_skirmish4]
+on_info = %+pri_monolith_skirmish1_dead4%
+
+[death@pri_monolith_skirmish5]
+on_info = %+pri_monolith_skirmish1_dead5%
+
+[death@pri_monolith_skirmish6]
+on_info = %+pri_monolith_skirmish1_dead6%
+
+[death@pri_monolith_skirmish7]
+on_info = %+pri_monolith_skirmish1_dead7%
+
+[death@pri_monolith_skirmish8]
+on_info = %+pri_monolith_skirmish1_dead8%
+
+[hit@pri_monolith_skirmish1]
+on_info = {=hit_by_actor} %+pri_skirmish1_actor_helped%
+
+[danger@pri_monolith_skirmish1]
+;ignore_types  = grenade, corpse, sound
+;ignore_distance  = 0
+
+[combat_ignore@pri_monlith_skirmish1]
+
+[logic@pri_monolith_skirmish1_attack1]
+active = walker@pri_monolith_skirmish1_attack1
+on_death = death@pri_monolith_skirmish1
+on_hit = hit@pri_monolith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack1]
+path_walk = attack1
+danger = danger@pri_monolith_skirmish1
+
+[logic@pri_monolith_skirmish1_attack2]
+active = walker@pri_monolith_skirmish1_attack2
+on_death = death@pri_monolith_skirmish2
+on_hit = hit@pri_monolith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack2]
+path_walk = attack2
+danger = danger@pri_monolith_skirmish1
+
+[logic@pri_monolith_skirmish1_attack3]
+active = walker@pri_monolith_skirmish1_attack3
+on_death = death@pri_monolith_skirmish3
+on_hit = hit@pri_monolith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack3]
+path_walk = attack3
+danger = danger@pri_monolith_skirmish1
+
+[logic@pri_monolith_skirmish1_attack4]
+active = walker@pri_monolith_skirmish1_attack4
+on_death = death@pri_monolith_skirmish4
+on_hit = hit@pri_monolith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack4]
+path_walk = attack4
+danger = danger@pri_monolith_skirmish1
+
+[logic@pri_monolith_skirmish1_attack5]
+active = walker@pri_monolith_skirmish1_attack5
+on_death = death@pri_monolith_skirmish5
+on_hit = hit@pri_monolith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack5]
+path_walk = attack5
+danger = danger@pri_monolith_skirmish1
+
+[logic@pri_monolith_skirmish1_attack6]
+active = walker@pri_monolith_skirmish1_attack6
+on_death = death@pri_monolith_skirmish6
+on_hit = hit@pri_monolith_skirmish1
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack6]
+path_walk = idle6
+combat_ignore_cond = {=dist_to_actor_ge(90)}
+danger = danger@pri_monolith_skirmish1
+
+[logic@pri_monolith_skirmish1_attack7]
+active = walker@pri_monolith_skirmish1_attack7
+on_death = death@pri_monolith_skirmish7
+on_hit = hit@pri_monolith_skirmish1
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack7]
+path_walk = idle7
+combat_ignore_cond = {=dist_to_actor_ge(90)}
+danger = danger@pri_monolith_skirmish1
+
+[logic@pri_monolith_skirmish1_attack8]
+active = walker@pri_monolith_skirmish1_attack8
+on_death = death@pri_monolith_skirmish8
+on_hit = hit@pri_monolith_skirmish1
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+danger = danger@pri_monolith_skirmish1
+
+[walker@pri_monolith_skirmish1_attack8]
+path_walk = idle8
+combat_ignore_cond = {=dist_to_actor_ge(90)}
+danger = danger@pri_monolith_skirmish1
+
+;*****************************state 2***********************************
+
+[logic@pri_monolith_skirmish1_trance1]
+active = walker@pri_monolith_skirmish1_trance1
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance1]
+path_walk = trance1
+path_look = trance1_look
+def_state_standing = trans_1
+combat_ignore_cond = always
+
+[logic@pri_monolith_skirmish1_trance2]
+active = walker@pri_monolith_skirmish1_trance2
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance2]
+path_walk = trance2
+path_look = trance2_look
+def_state_standing = trans_1
+combat_ignore_cond = always
+
+[logic@pri_monolith_skirmish1_trance3]
+active = walker@pri_monolith_skirmish1_trance3
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance3]
+path_walk = trance3
+path_look = trance3_look
+def_state_standing = trans_1
+combat_ignore_cond = always
+
+[logic@pri_monolith_skirmish1_trance4]
+active = walker@pri_monolith_skirmish1_trance4
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance4]
+path_walk = trance4
+path_look = trance4_look
+def_state_standing = trans_1
+combat_ignore_cond = always
+
+[logic@pri_monolith_skirmish1_trance5]
+active = walker@pri_monolith_skirmish1_trance5
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance5]
+path_walk = trance5
+path_look = trance5_look
+def_state_standing = trans_1
+combat_ignore_cond = always
+
+[logic@pri_monolith_skirmish1_trance6]
+active = walker@pri_monolith_skirmish1_trance6
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance6]
+path_walk = trance6
+path_look = trance6_look
+def_state_standing = trans_1
+combat_ignore_cond = always
+
+[logic@pri_monolith_skirmish1_trance7]
+active = walker@pri_monolith_skirmish1_trance7
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance7]
+path_walk = trance7
+path_look = trance7_look
+def_state_standing = trans_1
+combat_ignore_cond = always
+
+[logic@pri_monolith_skirmish1_trance8]
+active = walker@pri_monolith_skirmish1_trance8
+combat_ignore = combat_ignore@pri_monlith_skirmish1
+
+[walker@pri_monolith_skirmish1_trance8]
+path_walk = trance8
+path_look = trance8_look
+def_state_standing = trans_1
+combat_ignore_cond = always

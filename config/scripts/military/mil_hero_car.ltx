@@ -1,0 +1,42 @@
+;[spawner]
+;cond = {+car_scene_start}
+
+[logic]
+active = remark@start
+combat_ingore = combat_ignore
+
+[remark@start]
+no_move = true
+meet = no_meet
+on_info = {+mil_player_activate} walker@1
+combat_ignore_cond = always
+
+[walker@1]
+path_walk = mil_player_move
+path_look = mil_player_look
+combat_ignore_cond = always
+on_info = {+mil_player_going} remark@anim1
+on_signal = pl_reached | remark@anim1
+
+[remark@anim1]
+no_move = true
+meet = no_meet
+anim = wait ;chasovoy_pl
+combat_ignore_cond = always
+on_timer = 3000 | remark@anim2
+;on_signal = anim_end | remark@anim2
+;target = army_scriptcar
+
+[remark@anim2]
+no_move = true
+meet = no_meet
+anim = gop_stop_player
+combat_ignore_cond = always
+on_signal = anim_end | remark@end
+
+[remark@end]
+no_move = true
+combat_ignore_cond = always
+target = mil_zaz_walk, 15
+
+[combat_ignore]

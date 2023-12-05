@@ -1,0 +1,44 @@
+[logic@sar_sucker_off]
+active = mob_walker@surprise
+
+[mob_walker@surprise]
+path_walk = walk
+path_look = look
+braindead = true
+always_aggressive = false
+actor_friendly = true
+npc_friendly = true
+on_timer = 2000 | mob_remark@wait
+
+[mob_remark@wait]
+state = invis
+anim = idle
+braindead = true
+actor_friendly = true
+npc_friendly = true
+;target = sar_sucker_look, 0
+on_info = {+sar_scene_start} mob_remark@surprise
+
+[mob_remark@surprise]
+state = vis
+anim = surprise_0
+braindead = true
+actor_friendly = true
+npc_friendly = true
+;target = sar_sucker_look, 0
+on_info = {+sar_scene_end} mob_home@scene_bloodsucker
+
+[mob_home@scene_bloodsucker]
+path_home = walk
+braindead = false
+
+;[mob_walker@surprise]
+;path_walk = walk
+;path_look = look
+;braindead = true
+;actor_friendly = true
+;npc_friendly = true
+
+;[logic@sar_sucker_on]
+;active = mob_remark@surprise
+

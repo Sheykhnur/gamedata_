@@ -1,0 +1,222 @@
+[danger@lager]
+;ignore_distance          = 0
+;ignore_distance_grenade  = 0
+;ignore_distance_corpse   = 0
+;ignore_distance_hit      = 0
+;ignore_distance_sound    = 0
+;danger_inertion_time_grenade = 0
+;danger_inertion_time_corpse  = 0
+;danger_inertion_time_hit     = 0 
+;danger_inertion_time_sound   = 0
+
+[hit@army_killer_house]
+on_info = {=hit_by_actor} %+actor_attacks_merc_house =shut_up_all(army_killer_house) =mil_actor_attacks_first%
+
+[death@army_killer_house]
+on_info = %+actor_attacks_merc_house =mil_mercs_killed%
+
+[combat_ignore@army_killer_house]
+
+
+;sergei logic
+
+[logic@army_killer_house_sergey_off]
+active = walker@army_killer_house_sergey0_off
+
+[walker@army_killer_house_sergey0_off]
+path_look = kampfire0000
+path_walk = sergey
+
+[logic@army_killer_house_sergey]
+active = walker@army_killer_house_sergey0
+on_hit = hit@army_killer_house
+on_death = death@army_killer_house
+combat_ignore = combat_ignore@army_killer_house
+
+[walker@army_killer_house_sergey0]
+path_look = kampfire0000
+path_walk = sergey
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_info = {+mil_mercs_dialog_starts -actor_attacks_merc_house} remark@0
+
+[remark@0]
+anim = stalker_3_2
+on_info = {+mil_merc_talk_1} remark@1
+on_info2 = {+actor_attacks_merc_house} walker@army_killer_house_sergey1
+combat_ignore_cond = {-actor_attacks_merc_house}
+;danger = danger@lager
+target = army_killer_house_kampfire0000, 0
+
+[remark@1]
+anim = stalker_3_s_1
+snd = mil_mercs_dialog2
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_sergey1
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_signal = action_end | %+mil_merc_talk_2% remark@anim_synch 
+;danger = danger@lager
+target = army_killer_house_kampfire0000, 0
+
+[remark@anim_synch]
+anim = stalker_3_2
+combat_ignore_cond = {-actor_attacks_merc_house}
+;danger = danger@lager
+on_info = {+mil_merc_talk_5} walker@army_killer_house_sergey
+on_info2 = {+actor_attacks_merc_house} walker@army_killer_house_sergey1
+target = army_killer_house_kampfire0000, 0
+
+[walker@army_killer_house_sergey]
+path_walk = sergey_walk
+path_look = sergey_look
+combat_ignore_cond = {-actor_attacks_merc_house}
+meet = no_meet
+on_signal = reached | remark@army_killer_house_sergey1
+
+[remark@army_killer_house_sergey1]
+anim = looking
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_sergey1
+combat_ignore_cond = {-actor_attacks_merc_house}
+target = actor
+on_signal = anim_end | walker@army_killer_house_sergey1
+
+[walker@army_killer_house_sergey1]
+path_walk = sergey_walk1
+path_look = sergey_look1
+combat_ignore_cond = {-actor_attacks_merc_house}
+meet = no_meet
+on_signal = reached | %+actor_attacks_merc_house%
+
+
+;merc1 logic
+[logic@army_killer_house_off_merc1]
+active = walker@army_killer_house_merc1_off
+
+[walker@army_killer_house_merc1_off]
+path_look = kampfire0001
+path_walk = merc1
+
+[logic@army_killer_house_merc1]
+active = walker@army_killer_house_merc1
+on_hit = hit@army_killer_house
+combat_ignore = combat_ignore@army_killer_house
+on_death = death@army_killer_house
+
+[walker@army_killer_house_merc1]
+path_look = kampfire0001
+path_walk = merc1
+meet = no_meet
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_signal = ready | {-actor_attacks_merc_house} remark@army_killer_house_merc1_0
+
+[remark@army_killer_house_merc1_0]
+anim = stalker_1_2
+on_info = {+mil_merc_talk_2} remark@army_killer_house_merc1_1
+on_info2 = {+actor_attacks_merc_house} walker@army_killer_house_merc1
+combat_ignore_cond = {-actor_attacks_merc_house}
+target = army_killer_house_kampfire0001, 0
+
+[remark@army_killer_house_merc1_1]
+anim = stalker_1_s_1
+snd = mil_mercs_dialog3
+snd_anim_sync = true
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_merc1
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_timer = 4000 | remark@army_killer_house_merc1_2
+;danger = danger@lager
+target = army_killer_house_kampfire0001, 0
+
+[remark@army_killer_house_merc1_2]
+anim = stalker_1_s_2
+snd = mil_mercs_dialog4
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_merc1
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_signal = sound_end | remark@army_killer_house_merc1_anim_synth
+;danger = danger@lager
+target = army_killer_house_kampfire0001, 0
+
+[remark@army_killer_house_merc1_anim_synth]
+anim = stalker_1_2_spec
+on_info2 = {+actor_attacks_merc_house} walker@army_killer_house_merc1
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_timer = 1100 | %+mil_merc_talk_3%
+;danger = danger@lager
+on_info = {+mil_merc_talk_4} remark@army_killer_house_merc1_3
+target = army_killer_house_kampfire0001, 0
+
+[remark@army_killer_house_merc1_3]
+anim = stalker_1_s_3
+snd = mil_mercs_dialog6
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_merc1
+combat_ignore_cond = {-actor_attacks_merc_house}
+;danger = danger@lager
+on_signal = sound_end | remark@army_killer_house_merc1_4 %+mil_merc_talk_5%
+target = army_killer_house_kampfire0001, 0
+
+[remark@army_killer_house_merc1_4]
+anim = stalker_1_2_spec
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_merc1
+combat_ignore_cond = {-actor_attacks_merc_house}
+;danger = danger@lager
+target = army_killer_house_kampfire0001, 0
+
+;merc2 logic start of scene
+[logic@army_killer_house_off_merc2]
+active = walker@army_killer_house_merc2_off
+
+[walker@army_killer_house_merc2_off]
+path_look = kampfire0002
+path_walk = merc2
+
+[logic@army_killer_house_merc2]
+active = walker@army_killer_house_merc2
+on_hit = hit@army_killer_house
+combat_ignore = combat_ignore@army_killer_house
+on_death = death@army_killer_house
+
+[walker@army_killer_house_merc2]
+path_look = kampfire0002
+path_walk = merc2
+meet = no_meet
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_signal = ready | {-actor_attacks_merc_house} remark@army_killer_house_merc2_0
+
+[remark@army_killer_house_merc2_0]
+anim = stalker_2_1
+on_info2 = {+actor_attacks_merc_house} walker@army_killer_house_merc2
+combat_ignore_cond = {-actor_attacks_merc_house}
+;danger = danger@lager
+on_info = {+mil_mercs_dialog_starts} remark@army_killer_house_merc2_1 %=shut_up_all(army_killer_house)%
+target = army_killer_house_kampfire0002, 0
+
+[remark@army_killer_house_merc2_1]
+anim = stalker_2_s_1
+snd = mil_mercs_dialog1
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_merc2
+combat_ignore_cond = {-actor_attacks_merc_house}
+;danger = danger@lager
+on_signal = action_end | remark@army_killer_house_merc2_anim_synth
+target = army_killer_house_kampfire0002, 0
+
+[remark@army_killer_house_merc2_anim_synth]
+anim = stalker_2_1
+on_info = {+mil_merc_talk_3} remark@army_killer_house_merc2_2
+on_info2 = {+actor_attacks_merc_house} walker@army_killer_house_merc2
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_timer = 1400 | %+mil_merc_talk_1%
+;danger = danger@lager
+target = army_killer_house_kampfire0002, 0
+
+[remark@army_killer_house_merc2_2]
+anim = stalker_2_s_2
+snd = mil_mercs_dialog5
+;danger = danger@lager
+on_signal = sound_end | remark@army_killer_house_merc2_3
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_merc2
+combat_ignore_cond = {-actor_attacks_merc_house}
+target = army_killer_house_kampfire0002, 0
+
+[remark@army_killer_house_merc2_3]
+anim = stalker_2_1
+on_info = {+actor_attacks_merc_house} walker@army_killer_house_merc2
+combat_ignore_cond = {-actor_attacks_merc_house}
+on_timer = 2100 | %+mil_merc_talk_4% 
+target = army_killer_house_kampfire0002, 0

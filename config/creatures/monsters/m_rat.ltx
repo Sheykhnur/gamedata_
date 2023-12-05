@@ -1,0 +1,391 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[m_ratkano_attack_params]
+;---------------------------------------------------------------------------------------------------------------------------------------------
+;	anim			| time[0..1] | hit_power | impulse | impulse_dir (x,y,z)  |	Field of hit_test  (left,right, bottom, top ) |	Test Dist
+;---------------------------------------------------------------------------------------------------------------------------------------------
+stand_attack_0                      = 0.25,		0.01,		    5,        0.0, 1.0, 0.0,		 -1.2, 1.2, -1.6, 1.6,							  1.0
+stand_attack_1                      = 0.25,		0.01,		    7,        0.0, 1.0, 0.0,		 -1.2, 1.2, -1.6, 1.6,							  1.0
+stand_attack_2                      = 0.25,		0.01,		    7,        0.0, 1.0, 0.0,		 -1.2, 1.2, -1.6, 1.6,							  1.0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[m_ratkano_step_params]
+;---------------------------------------------------------------------------
+;	anim			| Cycles | time1 | power1 | time2 | power2 |
+;---------------------------------------------------------------------------
+stand_walk_fwd_0                    = 1,	   0.2,     0.5,     0.7,    1,
+stand_walk_fwd_1                    = 1,	   0.2,     0.5,     0.7,    1,
+stand_run_0                         = 1,	   0.25,     1,	    0.25,    1,
+stand_run_1                         = 1,	   0.25,     1,	    0.25,    1,
+stand_look_around_0                 = 1,	   0.5		0.5,	0.8,	 1,
+
+
+;===========================================================================
+; IMMUNITIES
+;===========================================================================
+
+[rat_k_immunities]
+burn_immunity                       = 0.0
+strike_immunity                     = 2.0
+shock_immunity                      = 0.0
+wound_immunity                      = 2.0
+wound_2_immunity                    = 2.0
+radiation_immunity                  = 0.0
+telepatic_immunity                  = 3.0
+chemical_burn_immunity              = 0.0
+explosion_immunity                  = 3.0
+fire_wound_immunity                 = 2.0
+
+
+
+[m_ratkano_e]:monster_base
+
+;---GROUP SECTIONS----------------------------------------------------
+GroupControlSection                 = spawn_group
+SpaceRestrictionSection             = space_restrictor, zone_zharka_static, zone_witches_galantine, zone_radioactive, zone_ameba, zone_burning_fuzz1, zone_mincer, zone_gravi_zone, zone_mosquito_bald, zone_buzz
+
+
+;---LEVEL EDITOR------------------------------------------------------
+$npc                                = on						; option for Level Editor
+$prefetch                           = 128
+cform                               = skeleton					; collision class
+class                               = SM_RAT ;SM_TUSHK					; AI class
+Scheduled                           = on						; option for ALife Simulator
+Human                               = off						; option for ALife Simulator
+Health                              = 10						; option for ALife Simulator
+MinSpeed                            = 0.5						; option for ALife Simulator
+MaxSpeed                            = 1.5						; option for ALife Simulator
+going_speed                         = 0.8                        ; option for ALife Simulator
+current_level_going_speed           = 0.6 ;2			; option for ALife Simulator
+search_speed                        = 1.0                      ; option for ALife Simulator
+icon                                = ui_npc_monster_rat ;--ui_npc_monster_tushkano
+MaxHealthValue                      = 10						; range [0..200]
+
+material                            = creatures\small
+
+carbody_name                        = Rat
+
+Friend_Community_Overrides          = actor, actor_dolg, actor_freedom
+
+smart_terrain_choose_interval       = 00:15:00
+
+
+;---INVENTORY ITEM----------------------------------------------------
+cost                                = 10
+inv_name                            = Rat
+inv_name_short                      = Rat
+inv_weight                          = 0.3
+
+Spawn_Inventory_Item_Section        = rat_meat
+Spawn_Inventory_Item_Class			= rat
+Spawn_Inventory_Item_Probability    = 0.4
+character_use						= dead_meat_use
+
+
+;---MEMORY------------------------------------------------------------
+DynamicObjectsCount                 = 32
+DynamicSoundsCount                  = 32
+DynamicHitCount                     = 32
+
+;---EVALUATION FUNCTIONS----------------------------------------------
+ef_creature_type                    = 2						; option for evaluation functions
+ef_weapon_type                      = 2
+ef_detector_type                    = 1
+panic_threshold                     = 0.2
+
+bone_torso                          = bip01_spine1 			; bone name
+bone_head                           = bip01_head				; bone name
+bone_fire                           = bip01_head				; bone name
+weapon_usage                        = 0						; boolean
+
+ph_box0_center                      = 0.0,   0.11, -0.22 ;0.05
+ph_box0_size                        = 0.085, 0.11, 0.525 ;0.05
+ph_box1_center                      = 0.0,   0.11, -0.22 ;0.05
+ph_box1_size                        = 0.085, 0.11, 0.525 ;0.05
+ph_crash_speed_min                  = 10
+ph_crash_speed_max                  = 30
+ph_collision_damage_factor          = 0.1
+ph_mass                             = 1
+actor_restrictor                    = medium_monster ;medium_monster,stalker,none
+
+destroyed_vis_name                  = physics\Dead_Body\trupik_crash
+
+script_binding                      = bind_monster.bind
+
+;---------------------------------------------------------------------
+ph_skeleton_airr_lin_factor         = 0.1 ;550.0 (cçelííî cç-çr nîaî, ÷nî óádríî äîeíîclícl eîýôôcöclín 0.002 cç eîär)
+ph_skeleton_airr_ang_factor         = 0.0 ;0.0 (cçelííî cç-çr nîaî, ÷nî óádríî äîeíîclícl ír eîýôôcöclín 0.3 cç eîär (0.0*0.3=0.0))
+ph_skeleton_hinger_factor1          = 1.0 ;1.0 (cçelííî cç-çr nîaî, ÷nî óádríî äîeíîclícl ír eîýôôcöclín 5.0 cç eîär)
+ph_skeleton_ddelay                  = 15.0 ;Âdle? cçelílíc? çír÷líc? ndlíc? â nónnrâl n eîelínr nîçäríc? rlëër, nle
+
+; ph_skel_fatal_impulse_factor        = 3.0
+;---------------------------------------------------------------------
+
+SoundThreshold                      = 0.06             ; range [0..1]
+
+max_hear_dist                       = 20
+
+hit_power                           = 10 ;5
+hit_type                            = wound
+
+ImpulseMin                          = 20.0
+ImpulseMax                          = 35.0
+
+; speed factors						linear | angular_real | angular_path | min |  max
+Velocity_Stand                      = 0,		3.5,			3.5,		1,		1
+Velocity_WalkFwdNormal              = 1.0,		7.5,			7.5,		0.02,	1.8
+Velocity_RunFwdNormal               = 4.0,		4.5,			4.5,		0.3,	1
+Velocity_WalkFwdDamaged             = 1.0,		4.5,			4.5,		0.2,	1.8
+Velocity_RunFwdDamaged              = 2.0,  	3.0,			3.0,		0.5,	1
+Velocity_Drag                       = 1.0,		3.0,			3.0,		1,		1
+Velocity_Steal                      = 1.5,		3.0,			3.0,		1,		1
+
+; acceleration
+Accel_Generic                       = 1.5
+Accel_Calm                          = 1.2
+Accel_Aggressive                    = 2.0
+
+;attack parameters
+MinAttackDist                       = 0.5	;0.5
+MaxAttackDist                       = 1.6	;3.8
+
+as_min_dist                         = 0.25
+as_step                             = 0.25
+
+DayTime_Begin                       = 20
+DayTime_End                         = 5
+Min_Satiety                         = 0.1
+Max_Satiety                         = 0.6
+
+distance_to_corpse                  = 0.6
+
+
+eye_fov                             = 90
+eye_range                           = 30
+
+min_view_distance                   = 0.4				; eîýôôcöclín, eînîdué eíîccnn? ír eye_range, â çrâcnceînnc în óaër
+max_view_distance                   = 0.8				; eîýôôcöclín, eînîdué eíîccnn? ír eye_range, â çrâcnceînnc în óaër
+visibility_threshold                = 100.0				; çír÷lícl, ddc äînncclícc nóeeîé eînîdîaî îáúlen n÷cnrlnn? âcäceue
+always_visible_distance             = 0.4
+time_quant                          = 0.001
+decrease_value                      = 0.01				; çír÷lícl, ír eînîdîl óelíürrlnn? âln, lnëc îáúlen dîdrë â ôdónnóe, íî înn¸en? dî erece-nî ddc÷círe
+velocity_factor                     = 0.5
+luminocity_factor                   = 0.5 				; ôrenîd înâlulíc? (nîëüeî äë? Ren¸dr)
+transparency_threshold              = 0.25
+
+
+;---ENTITY CONDITION---------------------------------------------------------------
+satiety_v                           = 0.00001					;neîdînnü óelíürlíc? nunînnc nî âdlelíle
+radiation_v                         = 0.00001				;neîdînnü óelíürlíc? dräcröcc
+satiety_power_v                     = 0.005					;óâlëc÷lícl ncëu ddc óelíürlícc nunînnc
+satiety_health_v                    = 0.0001				;óâlëc÷lícl çäîdîâü? ddc óelíürlícc nunînnc
+satiety_critical                    = -1.0					;edcnc÷lneîl çír÷líc? nunînnc (â ddîölínro în 0..1) eîaär çäîdîâül ír÷crírln óelíürrnün?
+satiety_threshold                   = 0.5					; below this value monster fill hunger
+radiation_health_v                  = 0.01					;óelíürlícl çäîdîâü? ddc âîçälénnâcc dräcröcc
+morale_v                            = 0.01					;neîdînnü âînnnríîâëlíc? eîdrëc
+health_hit_part                     = 2.4					;ddîölín ocnr, óoîä?ucé ír înícerícl çäîdîâü?
+power_hit_part                      = 1.0					;ddîölín ocnr, óoîä?ucé ír înícerícl ncëu
+psy_health_v                        = 0.1					;neîdînnü âînnnríîâëlíc? psy-çäîdîâü?
+
+bleeding_v                          = 0.02					;dînld? edîâc ddc íîecírëüíîé dríl â nleóíäó
+wound_incarnation_v                 = 0.00				;edóncçír edcâîé çrccâëlíc? (ereîé ddîölín dríu înnrílnn? dînël çrccâëlíc? â cadîâót nleóíäó)
+min_wound_size                      = 0.1
+
+sleep_health                        = 1.0		;1.5
+sleep_power                         = 1.0		;1.5
+sleep_satiety                       = 1.0		;0.8
+sleep_radiation                     = 1.0	;1.1
+sleep_psy_health                    = 1.0
+
+eat_freq                            = 5.0
+eat_slice                           = 0.01
+eat_slice_weight                    = 10.0
+
+
+; Morale
+Morale_Hit_Quant                    = 0.1
+Morale_Attack_Success_Quant         = 0.1
+Morale_Take_Heart_Speed             = 0.1
+Morale_Despondent_Speed             = 0.1
+Morale_Stable_Speed                 = 0.05
+Morale_Despondent_Threashold        = 0.5
+
+;---ONLINE-OFFLINE ALIFE-----------------------------------------------------------
+terrain                             = ratkano_terrain
+
+
+;---SOUND PARAMETERS---------------------------------------------------------------
+sound_idle                          = monsters\rat\idle_
+sound_eat                           = monsters\rat\eat_
+sound_aggressive                    = monsters\rat\agressive_
+sound_attack_hit                    = monsters\rat\attack_
+sound_take_damage                   = monsters\rat\hit_
+sound_die                           = monsters\rat\death_
+sound_threaten                      = monsters\rat\hit_
+sound_landing                       = monsters\rat\hit_
+sound_steal                         = monsters\rat\idle_
+sound_panic                         = monsters\rat\voice_
+sound_growling                      = monsters\rat\idle_
+sound_die_in_anomaly                = monsters\rat\death_
+
+killer_clsids                       = Z_MINCER,Z_GALANT,ZS_BFUZZ,ZS_MBALD,ZS_GALAN,ZS_MINCE
+
+idle_sound_delay                    = 80000
+eat_sound_delay                     = 4000
+attack_sound_delay                  = 8000
+
+sound_distant_idle                  = monsters\rat\idle_
+distant_idle_sound_delay            = 80000
+distant_idle_sound_range            = 30.0
+
+DamagedThreshold                    = 0.4
+critical_wound_threshold            = 0.3
+critical_wound_decrease_quant       = 0.
+
+
+squad_attack_algorithm              = 1
+attack_effector                     = small_monster_attack_effector
+
+LegsCount                           = 2
+; foot_bones                          = rat_k_foot_bones
+
+attack_params                       = m_ratkano_attack_params
+step_params                         = m_ratkano_step_params
+damage                              = m_ratkano_damage
+immunities_sect                     = rat_k_immunities
+
+;species of monster
+species                             = rat
+spec_rank                           = normal
+community                           = rat
+rank                                = 3
+
+vision_free_section                 = rat_vision_free
+vision_danger_section               = rat_vision_danger
+
+[rat_vision_free]
+min_view_distance                   = 0.4				; eîýôôcöclín, eînîdué eíîccnn? ír eye_range, â çrâcnceînnc în óaër
+max_view_distance                   = 0.8				; eîýôôcöclín, eînîdué eíîccnn? ír eye_range, â çrâcnceînnc în óaër
+visibility_threshold                = 100.0				; çír÷lícl, ddc äînncclícc nóeeîé eînîdîaî îáúlen n÷cnrlnn? âcäceue
+always_visible_distance             = 0.4
+time_quant                          = 0.001
+decrease_value                      = 0.01				; çír÷lícl, ír eînîdîl óelíürrlnn? âln, lnëc îáúlen dîdrë â ôdónnóe, íî înn¸en? dî erece-nî ddc÷círe
+velocity_factor                     = 0.5
+luminocity_factor                   = 0.5 				; ôrenîd înâlulíc? (nîëüeî äë? Ren¸dr)
+transparency_threshold              = 0.25
+
+[rat_vision_danger]
+min_view_distance                   = 0.4				; eîýôôcöclín, eînîdué eíîccnn? ír eye_range, â çrâcnceînnc în óaër
+max_view_distance                   = 0.8				; eîýôôcöclín, eînîdué eíîccnn? ír eye_range, â çrâcnceînnc în óaër
+visibility_threshold                = 100.0				; çír÷lícl, ddc äînncclícc nóeeîé eînîdîaî îáúlen n÷cnrlnn? âcäceue
+always_visible_distance             = 0.4
+time_quant                          = 0.001
+decrease_value                      = 0.01				; çír÷lícl, ír eînîdîl óelíürrlnn? âln, lnëc îáúlen dîdrë â ôdónnóe, íî înn¸en? dî erece-nî ddc÷círe
+velocity_factor                     = 0.5
+luminocity_factor                   = 0.5 				; ôrenîd înâlulíc? (nîëüeî äë? Ren¸dr)
+transparency_threshold              = 0.25
+
+[m_ratkano_damage]
+; bone_name                           = <hit_scale>,-1,<wound_scale>
+;<hit_scale>	- eîýôô. cçelílíc? ocnr (óelíürlíc? çäîdîâü?)
+;<wound_scale>	- eîýôô. cçelílíc? âlëc÷cíu înedunîé dríu
+
+default                             = 1.0, -1, 0.3
+
+bip01_pelvis                        = 1.0, -1, 0.5
+bip01_spine                         = 1.0, -1, 0.5
+bip01_spine1                        = 1.0, -1, 0.5
+bip01_neck                          = 2.0, -1, 1.5
+bip01_head                          = 2.0, -1, 0.5, 10
+
+;[rat_k_foot_bones]
+; front_left                          = bip01_l_forearm
+; front_right                         = bip01_r_forearm
+; rear_left                           = bip01_l_toe0
+; rear_right                          = bip01_r_toe0
+
+
+[ratkano_terrain]
+255,255,255,255
+
+;OLD remove after update
+ChangeActiveStateProbability        = 1.0 			; range [0..1]
+ActiveCountPercent                  = 16				; percents
+StandingCountPercent                = 16				; percents
+PassiveScheduleMin                  = 100				; microseconds
+PassiveScheduleMax                  = 1000				; microseconds
+
+LostMemoryTime                      = 20000			; milliseconds
+LostRecoilTime                      = 2000			; milliseconds
+UnderFireDistance                   = 100			; meters
+RetreatTime                         = 10000			; milliseconds
+RetreatDistance                     = 100			; meters
+AttackStraightDistance              = 10			; meters
+StableDistance                      = 5			; meters
+WallMinTurnValue                    = 90 			; degrees
+WallMaxTurnValue                    = 270			; degrees
+
+AngleSpeed                          = 0.2	            ; degrees per second
+GoalChangeDelta                     = 10.0				; seconds
+GoalVariation                       = 10.0, 0.0, 20.0	; each coordinate in meters
+AngularStandSpeed                   = 360				; degrees
+AngularMinSpeed                     = 360				; degrees
+AngularMaxSpeed                     = 30				; degrees
+AngularAttackSpeed                  = 10				; degrees
+
+MoraleDeathDistance                 = 50				; meters
+SoundThreshold                      = 0.06             ; range [0..1]
+
+ActionRefreshRate                   = 500			; milliseconds
+MaxHealthValue                      = 15			; range [0..200]
+
+EatMemberCorpses                    = 1			; range {0,1}
+Cannibalism                         = 1			; range {0,1}
+EatCorpseInterval                   = 600000		; milliseconds
+
+
+;*********************************************************************************
+; WEAK PROFILE
+;*********************************************************************************
+[rat_weak]:m_ratkano_e,weak_profile_base
+$spawn                              = "monsters\rats\rat_01_weak"
+
+visual                              = monsters\rat\rat_1
+corpse_visual                       = monsters\rat\rat_1
+
+health_hit_part                     = 2.4
+
+
+;*********************************************************************************
+; NORMAL PROFILE
+;*********************************************************************************
+[rat_normal]:m_ratkano_e,normal_profile_base
+$spawn                              = "monsters\rats\rat_02_normal"
+
+visual                              = monsters\rat\rat_2
+corpse_visual                       = monsters\rat\rat_2
+
+health_hit_part                     = 2.0
+
+
+;*********************************************************************************
+; STRONG PROFILE
+;*********************************************************************************
+[rat_strong_1]:m_ratkano_e,middle_strong_profile_base
+$spawn                              = "monsters\rats\rat_03_strong_1"
+
+visual                              = monsters\rat\rat_3
+corpse_visual                       = monsters\rat\rat_3
+
+health_hit_part                     = 1.8
+
+
+;*********************************************************************************
+; STRONG PROFILE
+;*********************************************************************************
+[rat_strong_2]:m_ratkano_e,strong_profile_base
+$spawn                              = "monsters\rats\rat_03_strong_2"
+
+visual                              = monsters\rat\rat_4
+corpse_visual                       = monsters\rat\rat_4
+
+health_hit_part                     = 1.8

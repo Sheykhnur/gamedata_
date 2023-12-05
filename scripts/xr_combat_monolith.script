@@ -1,0 +1,282 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_combat_monolith.script
+ Description: Batle scheme of stalkers "Monolith" group
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : gr1ph00n
+ Last edit  : 27.03.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Base = xr_evaluators_id.combat_monolith_base
+local iEvl_Enable = iEvl_Base +0
+local iEvl_See    = iEvl_Base +1
+local iEvl_Close  = iEvl_Base +2
+local iEvl_OnPos  = iEvl_Base +3
+
+local iAct_Base = xr_actions_id.combat_monolith_base
+local iAct_FightClose = iAct_Base +0
+local iAct_FightFar   = iAct_Base +1
+local iAct_LookAround = iAct_Base +2
+local iAct_GoToPos    = iAct_Base +3
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_combat_monolith" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_combat_monolith:__init( name, glob_storage ) super ( nil, name )
+	self.g_st = glob_storage
+end
+
+function evaluator_combat_monolith:evaluate()
+--	log("ev_combat_monolith:NPC=[%s],Comm=[%s]", self.object:name(), self.object:character_community(), "") --/#~#
+	return self.g_st ~= nil and self.g_st.script_combat_type == "monolith" --/>
+end
+
+--/ -----------------------------------------------------------------
+class "evaluator_see" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_see:__init( name, storage ) super ( nil, name )
+	self.st = storage
+end
+
+function evaluator_see:evaluate()
+	if self.object:alive() then
+--		log("ev_see:NPC=[%s],Comm=[%s]", self.object:name(), self.object:character_community(), "") --/#~#
+		local oBestEnemy = self.object:best_enemy()
+		if oBestEnemy and self.object:see( oBestEnemy ) then
+			self.st.last_seen_vert_id = oBestEnemy:level_vertex_id()
+			return true --/>
+		end
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------
+class "evaluator_close" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_close:__init( name, st ) super ( nil, name )
+	self.st = st
+	self.close_dist_sqr = Random.I(20^2,35^2)
+end
+
+function evaluator_close:evaluate()
+	local oBestEnemy = self.object:best_enemy()
+--	log("ev_close:NPC=[%s],Comm=[%s]", self.object:name(), self.object:character_community(), "") --/#~#
+	return oBestEnemy ~= nil and self.object:position():distance_to_sqr( oBestEnemy:position() ) < self.close_dist_sqr --/>
+end
+
+--/ -----------------------------------------------------------------
+class "evaluator_on_pos" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_on_pos:__init( name, st ) super ( nil, name )
+	self.st = st
+end
+
+function evaluator_on_pos:evaluate()
+--	log("ev_on_pos:NPC=[%s],Comm=[%s]", self.object:name(), self.object:character_community(), "") --/#~#
+	return self.st.last_seen_vert_id ~= nil and self.st.last_seen_vert_id == self.object:level_vertex_id() --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_fight_close" ( action_base )
+--/ -----------------------------------------------------------------
+function action_fight_close:__init( action_name, st )  super ( nil, action_name )
+	self.st = st
+end
+
+function action_fight_close:initialize()
+	action_base.initialize( self )
+	state_mgr.set_state( self.object, "hide_fire", nil, nil, { look_object = self.object:best_enemy() } )
+end
+
+function action_fight_close:execute()
+	action_base.execute( self )
+end
+
+function action_fight_close:finalize()
+	action_base.finalize( self )
+end
+
+--/ Attention: called in all actions
+function action_fight_close:hit_callback( oObj, iAmount, vLocalDirection, oWho, iBoneIndex )
+	if oWho and self.object then
+		local oBestEnemy = self.object:best_enemy()
+		--/ if we got hit from enemy, we know where is he
+		if oBestEnemy and oBestEnemy:id() == oWho:id() then
+			self.st.last_seen_vert_id = oBestEnemy:level_vertex_id()
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------
+class "action_fight_far" ( action_base )
+--/ -----------------------------------------------------------------
+function action_fight_far:__init( action_name, st )  super ( nil, action_name )
+	self.st = st
+end
+
+function action_fight_far:initialize()
+	action_base.initialize( self )
+	local oNPC = self.object
+	oNPC:set_desired_direction()
+	oNPC:set_desired_position()
+	oNPC:set_detail_path_type( move.line )
+	oNPC:set_path_type( game_object.level_path )
+	state_mgr.set_state( oNPC, "assault_fire", nil, nil, { look_object = oNPC:best_enemy() } )
+end
+
+function action_fight_far:execute()
+	action_base.execute( self )
+	local oBestEnemy = self.object:best_enemy()
+	if oBestEnemy then
+		utils.send_to_nearest_accessible_vertex( self.object, oBestEnemy:level_vertex_id() )
+	end
+end
+
+function action_fight_far:finalize()
+	action_base.finalize( self )
+end
+
+--/ -----------------------------------------------------------------
+class "action_look_around" ( action_base )
+--/ -----------------------------------------------------------------
+function action_look_around:__init( action_name, st )  super ( nil, action_name )
+	self.st = st
+end
+
+function action_look_around:initialize()
+	action_base.initialize( self )
+	self.forget_time = time_global() + 30000
+	self.change_dir_time = 0
+end
+
+function action_look_around:execute()
+	action_base.execute( self )
+	if self.forget_time < time_global() then
+		self.object:enable_memory_object( self.object:best_enemy(), false )
+		self.st.last_seen_vert_id = nil
+	elseif self.change_dir_time < time_global() then
+		self.change_dir_time = time_global() + Random.I( 1000, 2000 )
+		local iAng = math.rad( Random.I(0,359) )
+		local vPos = self.object:position():add( vector():set( math.cos(iAng), 0, math.sin(iAng) ) )
+		state_mgr.set_state( self.object, "hide", nil, nil, { look_position = vPos } )
+	end
+end
+
+function action_look_around:finalize()
+	action_base.finalize( self )
+end
+
+--/ -----------------------------------------------------------------
+class "action_go_to_pos" ( action_base )
+--/ -----------------------------------------------------------------
+function action_go_to_pos:__init( action_name, st )  super ( nil, action_name )
+	self.st = st
+	self.t  = {}
+end
+
+function action_go_to_pos:initialize()
+	action_base.initialize( self )
+	local oNPC = self.object
+	oNPC:set_desired_direction()
+	oNPC:set_desired_position()
+	oNPC:set_detail_path_type( move.line )
+	oNPC:set_path_type( game_object.level_path )
+	state_mgr.set_state( oNPC, "assault" )
+	self.cached_id = -1
+	if not self.st.last_seen_vert_id then
+		local oEnemy = oNPC:best_enemy()
+		if oEnemy then
+			self.st.last_seen_vert_id = oEnemy:level_vertex_id()
+		end
+	end
+end
+
+function action_go_to_pos:execute()
+	action_base.execute( self )
+	if not self.st.last_seen_vert_id or self.st.last_seen_vert_id ~= self.cached_id then
+		self.cached_id = self.st.last_seen_vert_id
+		self.st.last_seen_vert_id = utils.send_to_nearest_accessible_vertex( self.object, self.cached_id )
+	end
+end
+
+function action_go_to_pos:finalize()
+	action_base.finalize( self )
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder( oNPC, ini, st, oPlanner )
+--	log("add_to_binder:NPC=[%s],Comm=[%s]:[%s]", oNPC:name(), oNPC:character_community(), ">") --/#~#
+	--/ Evaluators
+	oPlanner:add_evaluator( iEvl_Enable, this.evaluator_combat_monolith( "combat_monolith",        db.storage[oNPC:id()] ) )
+	oPlanner:add_evaluator( iEvl_See,    this.evaluator_see            ( "combat_monolith_see",    st ) )
+	oPlanner:add_evaluator( iEvl_Close,  this.evaluator_close          ( "combat_monolith_close",  st ) )
+	oPlanner:add_evaluator( iEvl_OnPos,  this.evaluator_on_pos         ( "combat_monolith_on_pos", st ) )
+	--/ New Action(1)
+	local oNewAction = this.action_fight_close( "combat_monolith_fight_close", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_alive,     true  ) )
+	oNewAction:add_precondition( world_property( stalker_ids.property_enemy,     true  ) )
+	oNewAction:add_precondition( world_property( stalker_ids.property_anomaly,   false ) )
+	oNewAction:add_precondition( world_property( xr_evaluators_id.script_combat, true  ) )
+	oNewAction:add_precondition( world_property( iEvl_Enable,                    true  ) )
+	oNewAction:add_precondition( world_property( iEvl_See,                       true  ) )
+	oNewAction:add_precondition( world_property( iEvl_Close,                     true  ) )
+	oNewAction:add_effect( world_property( stalker_ids.property_enemy, false ) )
+	oPlanner:add_action( iAct_FightClose, oNewAction )
+	--/ subscribing on hit callbacks: (one, works in all!)
+	xr_logic.subscribe_action_for_events( oNPC, st, oNewAction )
+	--/ New Action(2)
+	oNewAction = this.action_fight_far( "combat_monolith_fight_far", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_anomaly, false ) )
+	oNewAction:add_precondition( world_property( iEvl_Close,                   false ) )
+	oNewAction:add_precondition( world_property( iEvl_See,                     true  ) )
+	oNewAction:add_effect( world_property( iEvl_Close, true  ) )
+	oPlanner:add_action( iAct_FightFar, oNewAction )
+	--/ New Action(3)
+	oNewAction = this.action_look_around( "combat_monolith_look_around", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_anomaly, false ) )
+	oNewAction:add_precondition( world_property( iEvl_OnPos,                   true  ) )
+	oNewAction:add_precondition( world_property( iEvl_See,                     false ) )
+	oNewAction:add_effect( world_property( iEvl_See, true  ) )
+	oPlanner:add_action( iAct_LookAround, oNewAction )
+	--/ New Action(4)
+	oNewAction = this.action_go_to_pos( "combat_monolith_go_to_pos", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_anomaly, false ) )
+	oNewAction:add_precondition( world_property( iEvl_OnPos,                   false ) )
+	oNewAction:add_effect( world_property( iEvl_OnPos, true  ) )
+	oPlanner:add_action( iAct_GoToPos, oNewAction )
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+--/ Called only at the begining of logic reading, creates actions, evaluators and make a first set.
+function set_scheme(oNPC, ini, st, oPlanner)
+	this.add_to_binder(oNPC, ini, st, oPlanner)
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+--/ Called when switching to new section. Creates subtraction of settings from current section.
+function disable_scheme(oNPC, sScheme)
+	local st = db.storage[oNPC:id()][sScheme]
+	if st and st.action then
+		--/ unsubscribing from hit callback:
+		xr_logic.unsubscribe_action_from_events(oNPC, st, st.action)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

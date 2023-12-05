@@ -1,0 +1,34 @@
+[smart_terrains]
+none = true
+
+[combat_ignore@dolg_guide]
+
+[danger@dolg_guide]
+ignore_distance = 0
+
+[actor_dialogs@dolg_guide]
+id = bar_dolg_guide_talk
+
+[logic]
+active = walker@dolg_guide
+combat_ignore = combat_ignore@dolg_guide
+;actor_dialogs = actor_dialogs@dolg_guide
+
+[walker@dolg_guide]
+path_walk = dolg_guide_walk
+path_look = dolg_guide_look
+danger = danger@dolg_guide
+soundgroup = bar_dolg_base_guard1
+meet = meet@dolg_guide
+combat_ignore_cond = always
+
+[meet@dolg_guide]
+abuse = false
+use = true
+use_wpn = true
+victim 			=  10 | actor
+victim_wpn 		= 10 | actor
+meet_dialog = bar_dolg_guide_talk
+meet_state = 10|guard
+meet_state_wpn = 10|guard
+precond			= visibility

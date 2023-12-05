@@ -1,0 +1,999 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_info.script
+ Description: Giving information (histories) to stalkers.
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Last edit  : 22.06.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tInfoByCommunity = {
+	stalker = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_deadcity",
+		"encyclopedy_zone_locations_swamps",
+		"encyclopedy_zone_locations_pripiat",
+		"encyclopedy_zone_locations_stancia",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_zone_locations_lost_factory",
+		"encyclopedy_zone_locations_outskirts",
+		"encyclopedy_zone_locations_country",
+		"encyclopedy_zone_locations_forgotten",
+		"encyclopedy_zone_locations_forest",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners",
+		"stalker_story_10",
+		"stalker_story_14"
+	},
+	monolith = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_deadcity",
+		"encyclopedy_zone_locations_swamps",
+		"encyclopedy_zone_locations_radar",
+		"encyclopedy_zone_locations_pripiat",
+		"encyclopedy_zone_locations_stancia",
+		"encyclopedy_zone_locations_generators",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_zone_locations_lost_factory",
+		"encyclopedy_zone_locations_outskirts",
+		"encyclopedy_zone_locations_country",
+		"encyclopedy_zone_locations_forgotten",
+		"encyclopedy_zone_locations_forest",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners",
+		"stalker_story_16",
+		"stalker_story_17",
+		"stalker_story_18",
+		"stalker_story_19",
+		"stalker_story_20"
+	},
+	military = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_deadcity",
+		"encyclopedy_zone_locations_swamps",
+		"encyclopedy_zone_locations_pripiat",
+		"encyclopedy_zone_locations_stancia",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_zone_locations_lost_factory",
+		"encyclopedy_zone_locations_country",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners",
+		"stalker_story_10"
+	},
+	killer = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_deadcity",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_zone_locations_lost_factory",
+		"encyclopedy_zone_locations_forgotten",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners",
+		"stalker_story_7"
+	},
+	ecolog = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_radar",
+		"encyclopedy_zone_locations_pripiat",
+		"encyclopedy_zone_locations_stancia",
+		"encyclopedy_zone_locations_generators",
+		"encyclopedy_zone_locations_lost_factory",
+		"encyclopedy_zone_locations_country",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners"
+	},
+	dolg = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_stancia",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_zone_locations_outskirts",
+		"encyclopedy_zone_locations_forgotten",
+		"encyclopedy_zone_locations_forest",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners",
+		"stalker_story_2",
+		"stalker_story_6",
+		"stalker_story_10",
+		"stalker_story_13"
+	},
+	freedom = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_deadcity",
+		"encyclopedy_zone_locations_swamps",
+		"encyclopedy_zone_locations_pripiat",
+		"encyclopedy_zone_locations_stancia",
+		"encyclopedy_zone_locations_outskirts",
+		"encyclopedy_zone_locations_country",
+		"encyclopedy_zone_locations_forest",
+		"encyclopedy_zone_locations_oldroad",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners",
+		"stalker_story_3",
+		"stalker_story_9",
+		"stalker_story_10"
+	},
+	bandit = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-fuzz-kolobok",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_artifact_af-ameba-mica",
+		"encyclopedy_zone_artifact_af-dummy-glassbeads",
+		"encyclopedy_zone_artifact_af-dummy-pellicle",
+		"encyclopedy_zone_artifact_af-dummy-battery",
+		"encyclopedy_zone_artifact_af-dummy-dummy",
+		"encyclopedy_zone_artifact_af-dummy-spring",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_zharka",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_swamps",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_country",
+		"encyclopedy_zone_locations_forgotten",
+		"encyclopedy_zone_locations_forest",
+		"encyclopedy_zone_locations_oldroad",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_stalker-clans_bandits",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_loners",
+		"stalker_story_11"
+	}
+}
+
+local tInfoByRank = {
+	novice = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_zone-story_story-2006",
+		"encyclopedy_zone_anomalies_bald",
+		"encyclopedy_zone_anomalies_gravi",
+		"encyclopedy_zone_anomalies_meat",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_mutant_crow_general",
+		"encyclopedy_mutant_rat_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_bandits"
+	},
+	stalker = {
+		"encyclopedy_zone_artifact_af-medusa",
+		"encyclopedy_zone_artifact_af-cristall-flower",
+		"encyclopedy_zone_artifact_af-night-star",
+		"encyclopedy_zone_artifact_af-vyvert",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_zone-story_story-2008",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_escape",
+		"encyclopedy_zone_locations_garbage",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_deadcity",
+		"encyclopedy_zone_locations_swamps",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_zone_locations_forgotten",
+		"encyclopedy_zone_locations_forest",
+		"encyclopedy_mutant_tushkano",
+		"encyclopedy_mutant_pseudodog_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_flesh_general",
+		"encyclopedy_mutant_blind_general",
+		"encyclopedy_mutant_boar_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"encyclopedy_social_military_army",
+		"encyclopedy_social_stalker-clans_duty",
+		"encyclopedy_social_stalker-clans_bandits",
+		"stalker_story_2",
+		"stalker_story_3",
+		"stalker_story_7",
+		"stalker_story_11",
+		"stalker_story_12",
+		"stalker_story_16",
+		"stalker_story_17",
+		"stalker_story_18",
+		"stalker_story_19",
+		"stalker_story_20"
+	},
+	veteran = {
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-gravi",
+		"encyclopedy_zone_artifact_af-gold-fish",
+		"encyclopedy_zone_artifact_af-blood",
+		"encyclopedy_zone_artifact_af-mincer-meat",
+		"encyclopedy_zone_artifact_af-soul",
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-ameba-slime",
+		"encyclopedy_zone_artifact_af-ameba-slug",
+		"encyclopedy_zone_zone-story_story-2010",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_agroprom",
+		"encyclopedy_zone_locations_darkdolina",
+		"encyclopedy_zone_locations_bar",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_military-loc",
+		"encyclopedy_zone_locations_deadcity",
+		"encyclopedy_zone_locations_swamps",
+		"encyclopedy_zone_locations_radar",
+		"encyclopedy_zone_locations_rostok",
+		"encyclopedy_zone_locations_darkscape",
+		"encyclopedy_zone_locations_outskirts",
+		"encyclopedy_zone_locations_forgotten",
+		"encyclopedy_zone_locations_forest",
+		"encyclopedy_zone_locations_oldroad",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_mutant_bloodsucker_general",
+		"encyclopedy_mutant_burer_general",
+		"encyclopedy_mutant_snork_general",
+		"encyclopedy_mutant_cat_general", --/#+#
+		"encyclopedy_mutant_chimera_general", --/#+#
+		"encyclopedy_mutant_fracture_general", --/#+#
+		"encyclopedy_mutant_zombie_general", --/#+#
+		"encyclopedy_social_stalker-clans_loners",
+		"encyclopedy_social_military_milstalkers",
+		"encyclopedy_social_stalker-clans_freedom",
+		"encyclopedy_social_stalker-clans_monolith",
+		"encyclopedy_social_stalker-clans_killers",
+		"encyclopedy_social_stalker-clans_zomstalkers",
+		"encyclopedy_social_scientists_mobile-labs",
+		"stalker_story_2",
+		"stalker_story_3",
+		"stalker_story_7",
+		"stalker_story_10",
+		"stalker_story_11",
+		"stalker_story_12",
+		"stalker_story_13",
+		"stalker_story_14",
+		"stalker_story_16",
+		"stalker_story_17",
+		"stalker_story_18",
+		"stalker_story_19",
+		"stalker_story_20"
+	},
+	master = {
+		"encyclopedy_zone_artifact_af-electra-sparkler",
+		"encyclopedy_zone_artifact_af-electra-flash",
+		"encyclopedy_zone_artifact_af-electra-moonlight",
+		"encyclopedy_zone_artifact_af-rusty-thorn",
+		"encyclopedy_zone_artifact_af-rusty-kristall",
+		"encyclopedy_zone_artifact_af-rusty-sea-urchin",
+		"encyclopedy_zone_artifact_af-drops",
+		"encyclopedy_zone_artifact_af-fireball",
+		"encyclopedy_zone_artifact_af-cristall",
+		"encyclopedy_zone_zone-story_story-raid",
+		"encyclopedy_zone_anomalies_fuzz",
+		"encyclopedy_zone_anomalies_radioactive",
+		"encyclopedy_zone_anomalies_electra",
+		"encyclopedy_zone_anomalies_ameba",
+		"encyclopedy_zone_locations_yantar",
+		"encyclopedy_zone_locations_radar",
+		"encyclopedy_zone_locations_pripiat",
+		"encyclopedy_zone_locations_stancia",
+		"encyclopedy_zone_locations_generators",
+		"encyclopedy_zone_locations_lost_factory",
+		"encyclopedy_zone_locations_country",
+		"encyclopedy_zone_locations_oldroad",
+		"encyclopedy_mutant_pseudogiant_general",
+		"encyclopedy_mutant_poltergeist_general",
+		"encyclopedy_mutant_controller_general",
+		"encyclopedy_social_stalker-clans_loners",
+		"encyclopedy_social_military_milstalkers",
+		"stalker_story_6",
+		"stalker_story_9",
+		"stalker_story_10",
+		"stalker_story_13",
+		"stalker_story_14",
+		"stalker_story_16",
+		"stalker_story_17",
+		"stalker_story_18",
+		"stalker_story_19",
+		"stalker_story_20"
+	}
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/------------------------------------------------------------------
+--/ Process
+--/------------------------------------------------------------------
+function loadInfo(npc, char_ini)
+	--/ Load from custom data
+	if char_ini and char_ini:section_exist("known_info") then
+		local iCnt = char_ini:line_count("known_info")
+		local result,idx,value = 0,"",""
+		for i=0, iCnt-1 do
+			result,idx,value = char_ini:r_line("known_info",i,"","")
+			this.give_npc_info(npc, idx)
+		end
+	end
+	--/ Load from generator
+	local sCommunity = (npc and npc:character_community()) or ""
+	local tInfoCommunity = tInfoByCommunity[sCommunity]
+	if not tInfoCommunity then
+		return --/>
+	end
+	
+	local sRank = ranks.get_obj_rank_name(npc)
+	local tInfoRank = tInfoByRank[sRank]
+	if not tInfoRank then
+		return --/>
+	end
+	
+	local tInfo = {}
+	--/ leaving infoportions which are there and there
+	for _,v in pairs(tInfoCommunity) do
+		for _,vv in pairs(tInfoRank) do
+			if vv == v then
+				table.insert(tInfo, v) --/ adding to list of avaliable knowledges
+				break
+			end
+		end
+	end
+	
+	local iSize = #tInfo
+	if iSize > 1 then
+		for i=1,math.min(3,iSize) do
+			if math.random() >= 0.6 then
+				local sInfo = tInfo[math.random(iSize)]
+				this.give_npc_info(npc, sInfo)
+			end
+		end
+	else
+		printf("loadInfo:NPC=[%s],Size=[%s]~?:<%s>", npc and npc:name(), iSize, "Warning!") --/#~#
+	end
+end
+
+--/--------------------------
+--/ Giving infoportion to NPC
+--/--------------------------
+function give_npc_info(npc, sInfo)
+--	log("give_npc_info:NPC=[%s],Info=[%s]:[%s]", npc and npc:name(), sInfo, ">") --/#~#
+	if npc and sInfo then
+--		log("give_npc_info:NPC=[%s],Info=[%s]", npc:name(), sInfo, "") --/#~#
+		npc:give_info_portion(sInfo)
+		--/ Checking if there is voiced history on that infoportion, and if there is, add it too
+		if sound_theme.theme[sInfo] then
+			local tStoryStor = db.story_by_id[npc:id()]
+			if not tStoryStor then
+				tStoryStor = {}
+				db.story_by_id[npc:id()] = tStoryStor
+			end
+			table.insert(tStoryStor, sInfo)
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+--/ Action
+--/ -----------------------------------------------------------------------------------------------
+class "action_process_info"
+--/ ---------------------------------------------
+function action_process_info:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	st.action = this.action_process_info(npc, st)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ SET SCHEME (moved from stalker_generic.script)
+--/ -----------------------------------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+--	log("set_npc_info:NPC=[%s],section=[%s]:(%s)", npc:name(), section, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	
+	for _,info_section in ipairs("in","out") do
+		local str = Get_Cfg_String(ini, section, info_section)
+		if str then
+			local infolist,condlist = {},{}
+			for field in str:gmatch("(%|*[^%|]+%|*)%p*") do
+				condlist = field and xr_logic.parse_condlist(npc, info_section, field, field)
+				if condlist then
+					table.insert(infolist, xr_logic.pick_section_from_condlist(db.actor, npc, condlist))
+				end
+			end
+			for _,v in ipairs(infolist) do
+				if info_section == "in" then
+					npc:give_info_portion(v)
+				else
+					npc:disable_info_portion(v)
+				end
+--				log("set_npc_info:NPC=[%s],info=[%s]:(%s/%s)", npc:name(), v, section, info_section, "") --/#~#
+			end
+		end
+	end
+	--/ fot debug:
+	if st.log then log("set_scheme: NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------------------------------------

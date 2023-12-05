@@ -1,0 +1,189 @@
+; Израильский автомат IMI Galil
+;---------------------------------------------------
+; калибр							7.62х51
+; длина ствола 						535 мм
+; магазин							25
+; вес с пустым магазином			4.30 кг
+; максимальная дальность стрельбы	3660 м
+; эффективная дальность стрельбы	400 м
+; прицельная дальность				500 м
+; дульная скорость пули				837 м/с
+; темп стрельбы						650 в/м
+;---------------------------------------------------
+[wpn_galil_762]:weapon_base,weapon_7.62x51,weapon_m209
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\galil"
+animation_slot                          = 2
+class                                   = WP_AK74
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+repair_compatibility                    = galil
+scheduled                               = off
+single_handed                           = 0
+weapon_class                            = assault_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 6
+inv_grid_y                              = 32
+silencer_x                              = 231
+silencer_y                              = 16
+
+; Text
+inv_name                                = st_wpn_galil
+inv_name_short                          = st_wpn_galil
+description                             = st_wpn_galil_descr
+
+; Visual
+hud                                     = wpn_galil_hud
+position                                = -0.026,-0.175,0
+orientation                             = 0,0,0
+strap_position                          = -0.26, -0.11, 0.25
+strap_orientation                       = -15,-9,110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_galil\wpn_galil.ogf
+
+; Effects
+fire_point                              = 0,0.218,0.656
+fire_point2                             = 0,0.161,0.583
+shell_point                             = 0,0.216,0.174
+shell_dir                               = 0,0,0.4
+light_disabled                          = false
+light_color                             = 0.6,0.5,0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6,0.5,0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\galil\draw
+snd_empty                               = weapons\galil\empty,		0.7
+snd_holster                             = weapons\galil\holster
+snd_reload                              = weapons\galil\reload
+snd_shoot                               = weapons\galil\shoot
+snd_silncer_shot                        = weapons\galil\shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 300
+upgr_icon_y                             = 700
+upgr_icon_width                         = 300
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 65250
+inv_weight                              = 4.3
+ph_mass                                 = 4
+
+; Ammo
+ammo_elapsed                            = 20
+ammo_mag_size                           = 20
+
+; Features
+fire_modes                              = 1, -1
+scopes_sect                             = scope_galil, scope_live_var_galil, scope_night_var_galil
+scope_status                            = 2
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 0.94
+
+; Ballistics
+fire_dispersion_base                    = 0.35
+
+; Performance
+rpm                                     = 600
+
+; Reliability
+condition_shot_dec                      = 0.00022
+condition_queue_shot_dec                = 0.00025
+
+; Handling
+control_inertion_factor                 = 1.55f
+PDM_disp_base                           = 3.5
+PDM_disp_vel_factor                     = 1.7
+PDM_disp_accel_factor                   = 1.7
+
+; Recoil
+cam_relax_speed                         = 5.5
+cam_dispersion                          = 2.5
+cam_dispersion_inc                      = 0.6
+cam_dispersion_frac                     = 0.5
+cam_step_angle_horz                     = 4.5
+zoom_cam_dispersion                     = 1.5
+zoom_cam_dispersion_inc                 = 0.6
+zoom_cam_step_angle_horz                = 3.0
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_10plus3
+upgrades                                = up_gr_firstab_galil, up_gr_seconab_galil, up_gr_thirdab_galil, up_gr_thirdcd_galil, up_gr_thirdef_galil
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 50
+
+
+[wpn_galil_hud]:hud_base
+aim_hud_offset_pos                      = -0.10715,0.0889,-0.15
+aim_hud_offset_pos_16x9					= -0.108650,0.079400,-0.150000
+aim_hud_offset_rot                      = 0.04715,0.00865,-0.0075
+aim_hud_offset_rot_16x9					= 0.039650,0.008650,-0.007500
+anim_bore                               = lancew_galil_no_reload
+anim_hide                               = lancew_galil_holster,,2.0
+anim_idle                               = lancew_galil_idle
+anim_idle_aim                           = lancew_galil_idle_aim, idle_aim
+anim_idle_moving                        = lancew_galil_moving
+anim_idle_sprint                        = lancew_galil_sprint
+anim_reload                             = lancew_galil_reload, reload
+anim_shots                              = lancew_galil_shoot, shoot
+anim_show                               = lancew_galil_draw
+attach_place_idx                        = 0
+fire_bone                               = wpn_body
+fire_bone2                              = wpn_body
+fire_point                              = -0.011,0.051639,0.953686
+fire_point2                             = 0,-0.011,0.553
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_pos_16x9                  = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+gl_hud_offset_rot_16x9                  = 0,0,0
+hands_orientation                       = 0.55,2.4,0.15
+hands_orientation_16x9                  = 0.55,2.4,0.15
+hands_position                          = -0.044,-0.18,0.1355
+hands_position_16x9                     = -0.044,-0.18,0.1355
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_galil\wpn_galil_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_dir                               = 0,1,0
+shell_point                             = 0.017,0.054,0.17
+zoom_hide_crosshair                     = true
+
+
+[scope_galil_base]
+scope_x                                 = 47
+scope_y                                 = 1
+
+[scope_galil]:scope_galil_base
+scope_name                              = wpn_addon_scope_galil
+
+[scope_live_var_galil]:scope_galil_base
+scope_name                              = wpn_addon_scope_galil_live_var
+
+[scope_night_var_galil]:scope_galil_base
+scope_name                              = wpn_addon_scope_galil_night_var

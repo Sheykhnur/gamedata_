@@ -1,0 +1,40 @@
+[combat_ignore@sci45]
+
+[danger@sar_sci4_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sci_4_1
+combat_ignore = combat_ignore@sci45
+danger = danger@sar_sci4_sc4
+
+[remark@sci_4_1]
+anim = sci_panel_full
+target = sar_scene_4_sci2_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_3} remark@sci_4_2
+
+[remark@sci_4_2]
+anim = sar_panel_special
+;snd = sar_replics3
+target = sar_scene_4_sci2_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 3000 | remark@sci_4_synth %+sar_scene4_info_4%
+
+[remark@sci_4_synth]
+anim = sci_panel_full
+target = sar_scene_4_sci2_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_29} remark@sci_4_3
+
+[remark@sci_4_3]
+anim = hide
+snd = sar_replics29
+target = sar_scene_4_sci4_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_30} %=release%

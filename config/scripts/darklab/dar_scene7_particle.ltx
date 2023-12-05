@@ -1,0 +1,19 @@
+[logic]
+active = sr_particle@bones_static
+
+[sr_particle@bones_static]
+name = explosions\gas_light
+path = dar_sc7_eff
+mode = 2
+looped = true
+on_actor_inside = %+dar_sci_cutscene7 =rad_psy_basic_clear =dar_clear_bones =play_snd(characters_voice\scenario\dar\dar_evil_laugh)% sr_particle@bones
+
+[sr_particle@bones]
+name = anomaly2\body_tear_01
+path = dar_sc7_eff
+mode = 2
+looped = false
+on_timer = 2000 | %+sc7_blow_timer% sr_idle@2 
+
+[sr_idle@2]
+on_info = {+sc7_lamps_end} nil %=spawn_object(controller_underground_normal:darklab_giant_home1)%

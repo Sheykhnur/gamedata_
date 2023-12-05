@@ -1,0 +1,393 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_pripyat.script
+ Description: Gulags Pripyat
+ Copyright  : 2013 © LA-team
+ Author     : vintar
+ Editors    : vintar, loxotron(23.02.2013)
+ Last edit  : 05.04.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	pri_military_base       = {comm = {"military"}},
+	pri_military_skirmish1  = {comm = {"military"}},
+	pri_monolith_hq         = {comm = {"monolith"}},
+	pri_monolith_skirmish1  = {comm = {"monolith"}},
+	pri_sniper_terrain      = {comm = {"monolith"}},
+	pri_sniper_terrain2     = {comm = {"monolith"}},
+	pri_military_attache    = {comm = {"military"}},
+	pri_eco_protectors      = {comm = {"military"}},
+	pri_secret_terrain      = {comm = {"stalker", "trader"}},
+	pri_mono_sniper_terrain = {comm = {"monolith"}},
+	--/ for monsters ------------------------------
+	pri_bloodsucker_terrain1  = {comm = {"bloodsucker"}},
+	pri_bloodsucker_lair      = {comm = {"bloodsucker"}},
+	pri_burer_terrain1        = {comm = {"burer"}},
+	pri_dog_terrain1          = {comm = {"dog"}},
+	pri_dog_terrain2          = {comm = {"dog"}},
+	pri_dog_terrain3          = {comm = {"dog"}},
+	pri_dog_terrain4          = {comm = {"dog"}},
+	pri_dog_terrain5          = {comm = {"dog"}},
+	pri_dog_terrain6          = {comm = {"dog"}},
+	pri_flesh_terrain1        = {comm = {"flesh"}},
+	pri_rat_terrain1          = {comm = {"rat","tushkano"}},
+	pri_rat_terrain2          = {comm = {"rat","tushkano"}},
+	pri_rat_terrain3          = {comm = {"rat","tushkano"}},
+	pri_rat_terrain4          = {comm = {"rat","tushkano"}},
+	pri_rat_terrain5          = {comm = {"rat","tushkano"}},
+	pri_zombie_terrain1       = {comm = {"zombie"}},
+	pri_stadium_boar_terrain  = {comm = {"boar"}},
+	pri_zombied_terrain1      = {comm = {"zombied"}},
+	pri_station_burer_terrain = {comm = {"burer"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local is_online = "{=xr_gulag.actor_on_gulag_level()}"
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ military base
+--/ ---------------------------------------------
+gulags.pri_military_base.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("kamp1_kamper" .. i, 0, 5, {0}, squad, groups[1], "pri_secret_trader_restrictor", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("guard" .. i,        0, 5, {0}, squad, groups[1], "pri_secret_trader_restrictor", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i,       0, 5, {0}, squad, groups[1], "pri_secret_trader_restrictor", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("sniper" .. i,       0, 5, {0}, squad, groups[1], "pri_secret_trader_restrictor", "", is_online, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i,      0, 5, {0}, squad, groups[1], "pri_secret_trader_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ pri_monolith_hq
+--/ ---------------------------------------------
+gulags.pri_monolith_hq.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("kamp1_kamper" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("kamp2_kamper" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i,       0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("trance" .. i,       0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ pri_monolith_skirmish1
+--/ ---------------------------------------------
+gulags.pri_monolith_skirmish1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("attack_off" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("attack" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.pri_monolith_skirmish1.state = function(gulag)
+	if has_info("dam_found_pripyat_entrance") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ pri_sniper_terrain
+--/ ---------------------------------------------
+gulags.pri_sniper_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("sniper" .. i, 0, 5, {0}, squad, groups[1], "", "", is_online, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ pri_sniper_terrain2
+--/ ---------------------------------------------
+gulags.pri_sniper_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("sniper" .. i, 0, 5, {0}, squad, groups[1], "", "", is_online, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ pri_military_skirmish1
+--/ ---------------------------------------------
+gulags.pri_military_skirmish1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("attack_off" .. i, 0, 5, {0}, squad, groups[1], "pri_secret_trader_restrictor", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("attack" .. i,     0, 5, {1}, squad, groups[1], "pri_secret_trader_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.pri_military_skirmish1.state = function(gulag)
+	if has_info("pri_skirmish1_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ pri_eco_protectors
+--/ ---------------------------------------------
+gulags.pri_eco_protectors.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i,  0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ pri_secret_terrain
+--/ ---------------------------------------------
+gulags.pri_secret_terrain.trader_pred = function(info) return info.name ==  "pri_secret_terrain_trader" end
+gulags.pri_secret_terrain.guard_pred  = function(info) return info.name ==  "pri_secret_terrain_guard" end
+
+gulags.pri_secret_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off_trader", 0, 7, {0}, squad, groups[1], "", "", false, type, gulags.pri_secret_terrain.trader_pred))
+	table.insert(sj, gulag_tasks.getJob("trader",     0, 7, {1}, squad, groups[1], "", "",   nil, type, gulags.pri_secret_terrain.trader_pred))
+	table.insert(sj, gulag_tasks.getJob("off_guard",  0, 6, {0}, squad, groups[1], "", "", false, type, gulags.pri_secret_terrain.guard_pred))
+	table.insert(sj, gulag_tasks.getJob("guard",      0, 6, {1}, squad, groups[1], "", "",   nil, type, gulags.pri_secret_terrain.guard_pred))
+end
+
+gulags.pri_secret_terrain.state = function(gulag)
+	if has_info("has_freeplay_info") then
+		return 1
+	elseif has_info("pri_secret_trader_spawn") then
+		return 1
+	end
+	local sobj = alife():story_object(6806) --alife():object("pri_secret_terrain_trader")
+	if sobj then
+		local obj = level.object_by_id(sobj.id)
+		if obj then
+			if obj:is_talking() or distance_between(db.actor, obj) <= 6 then
+				return 1
+			end
+		end
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ pri_mono_sniper_terrain
+--/ ---------------------------------------------
+
+gulags.pri_mono_sniper_terrain.sniper_pred = function(info) return info.name ==  "pri_mono_building_sniper3" or info.name ==  "pri_mono_building_sniper4" end
+
+gulags.pri_mono_sniper_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("mono" .. i, 0, 5, {0}, squad, groups[1], "", "pri_mono_sniper_restrictor", nil, type, on_level_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("mono_off" .. i, 0, 5, {1}, squad, groups[1], "", "pri_mono_sniper_restrictor", false, type, on_level_pred))
+	end
+end
+
+gulags.pri_mono_sniper_terrain.state = function(gulag)
+	if has_info("pri_measurements_taken") and not has_info("pri_measurements_returned") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.pri_dog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_dog_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "pri_ecolog_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_dog_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "pri_ecolog_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_dog_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("offdog" .. i, 0, 5, {0}, squad, groups[1], "pri_ecolog_restrictor", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("dog" .. i,    0, 5, {1}, squad, groups[1], "pri_ecolog_restrictor", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.pri_dog_terrain4.state = function(gulag)
+	if has_info("pri_field_agent_start_walk") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.pri_dog_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_dog_terrain6.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "pri_ecolog_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ bloodsuckers
+--/ ---------------------------------------------
+gulags.pri_bloodsucker_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i,     0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+
+--/ ---------------------------------------------
+--/ stadium boars
+--/ ---------------------------------------------
+gulags.pri_stadium_boar_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "pri_stadium_sniper_restrictor,pri_sniper_terrain2_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ burers
+--/ ---------------------------------------------
+gulags.pri_burer_terrain1.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("burer1", 0, 5, {0}, squad, groups[1], "", "pri_burer_restrictor", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ fleshes
+--/ ---------------------------------------------
+gulags.pri_flesh_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("flesh" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.pri_rat_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_rat_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_rat_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_rat_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.pri_rat_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 7 do
+		table.insert(sj, gulag_tasks.getJob("offrat" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("rat" .. i,    0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.pri_rat_terrain5.state = function(gulag)
+	if has_info("pri_field_agent_start_walk") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.pri_zombie_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ bloodsuckers lair
+--/ ---------------------------------------------
+gulags.pri_bloodsucker_lair.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("off_bloodsucker" .. i,      0, 5, {0}, squad, groups[1], "", "pri_bloodsucker_lair_outrestrictor", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i,          0, 5, {1}, squad, groups[1], "", "pri_bloodsucker_lair_outrestrictor",   nil, type, on_level_pred))
+	end
+end
+
+gulags.pri_bloodsucker_lair.state = function(gulag)
+	if has_info("pri_bloodsucker_lair_wake") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ zombieds
+--/ ---------------------------------------------
+gulags.pri_zombied_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("offzombied" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("zombied" .. i,    0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.pri_zombied_terrain1.state = function(gulag)
+	if has_info("pri_spawn_zombied") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ station burers
+--/ ---------------------------------------------
+gulags.pri_station_burer_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("offburer", 0, 5, {0}, squad, groups[1], "", "pri_bus_terminal_psyzone", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("burer",    0, 5, {1}, squad, groups[1], "", "pri_bus_terminal_psyzone",   nil, type, on_level_pred))
+end
+
+gulags.pri_station_burer_terrain.state = function(gulag)
+	if has_info("pri_field_agent_start_walk") then
+		return 1
+	end
+	return 0
+end
+--/ ------------------------------------------------------------------------------------------------

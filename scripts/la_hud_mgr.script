@@ -1,0 +1,232 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_hud_mgr.script
+ Description: ...
+ Copyright  : 2009 © LA-team
+ Author     : barin (2009-09-16)
+ Editors    : Gr1ph00n(21.08.2012) (moved part of the ui directly in engine, adding effects code)
+ Last edit  : 30.04.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local ui_infoportions = {
+	"ui_pda", --/ pda window displayed
+	"ui_inventory", --/ backpack window displayed
+	"ui_car_body", --/ stash/corpse window displayed
+	"la_ui_custom_wnd_show", --/ for all la custom windows (la_input.script)
+	"cutscene_started", --/ for cutscenes
+}
+local DYNAMIC_HUD  = false --/ false|true
+--/ --------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end --/>
+	event("presets"):register(PreSets)
+	bInit = true
+end
+
+function PreSets(e)
+	DYNAMIC_HUD = Get_Cfg_Bool(db.lost_alpha_cfg, "lost_alpha_cfg", "dynamic_huds", DYNAMIC_HUD)
+	--/ TODO:
+	--/ SkyLoader: I disabled it - somebody should fix it, if we need it
+	--/ This is the reason for the error (CDialogHolder::OnFrame() - 209 line)
+	--[[
+	this.add_custom_hud()
+	event("actor_destroy"):register(remove_custom_hud)
+	--]]
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+function get_progress(value)
+	if value > 100 then
+		value = 100
+	elseif value < 0 then
+		value = 0
+	end
+	return value
+end
+
+function can_display_ui_window()
+	if level.present() and db.actor and db.actor:alive() then
+		if la_actor_sleep and la_actor_sleep.is_sleep_active() then
+			return false
+		end
+		if db.actor:is_talking() then
+			return false
+		end
+		if get_console():is_active() then
+			return false
+		end
+		for k,v in pairs(ui_infoportions) do
+			if has_info(v) then
+				return false
+			end
+		end
+		return true
+	end
+	return false
+end
+
+function custom_ui_usage(sAction, script_name)
+	if sAction == "show" then
+		if not has_info("la_ui_custom_wnd_show") then
+--			log("custom_ui_usage: %s :show%s", script_name, "") --/#~#
+			give_info("la_ui_custom_wnd_show")
+		end
+	elseif sAction == "hide" then
+		if not has_info("la_ui_custom_wnd_hide") then
+--			log("custom_ui_usage: %s :hide", script_name, "") --/#~#
+			give_info("la_ui_custom_wnd_hide")
+		end
+	end
+end
+
+--/ hack to hide all ui windows
+function hide_ui_window()
+	custom_ui_usage("hide", nil)
+	xr_effects.disable_ui()
+	xr_effects.enable_ui()
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "HudItems" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -------------------------
+function HudItems:__init() super()
+	self.is_hidden      = false
+	self.current_effect = nil
+	self.time_to_show   = 0
+	self.started_time   = 0
+	self.pulsing_texts  = {nil, nil}
+	self:InitControls()
+end
+
+function HudItems:__finalize()
+end
+
+function HudItems:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.xml = CScriptXmlInit()
+	self.xml:ParseFile("ui_wnd\\ui_hud_mgr.xml")
+end
+
+function HudItems:Update()
+	CUIScriptWnd.Update(self)
+	
+	if not can_display_ui_window() then
+		if not self.is_hidden then
+			self:Invalidate(false)
+			self.is_hidden = true
+		end
+	elseif self.is_hidden then
+		self:Invalidate(true)
+		self.is_hidden = false
+	end
+	
+	self:UpdateEffect()
+	this.add_dynamic_hud()
+end
+
+function HudItems:Invalidate(bFlg)
+	if self.current_effect then
+		self.current_effect:Show(bFlg)
+	end
+end
+
+function HudItems:StartEffect(effect_name, time_to_show)
+	if not self.current_effect then
+		self.current_effect = self.xml:InitStatic("hud_effects:" .. effect_name, self)
+		self.time_to_show = time_to_show
+		self.started_time = time_global()
+	end
+end
+
+function HudItems:UpdateEffect()
+	if not self.current_effect then
+		return
+	end
+	local p = (time_global() - self.started_time) / self.time_to_show
+	if p < 2.0 then
+		local dev = device()
+		local w,h = dev.width,dev.width
+		local x1 = (w / 2) - ((w / 2) * p)
+		local y1 = (h / 2) - ((h / 2) * p)
+		local x2 = (w / 2) + ((w / 2) * p)
+		local y2 = (h / 2) + ((h / 2) * p)
+--		log("%d %d %d %d %f", x1, y1, x2 - x1, y2 - y1, p)
+		local normalizeX = function(x) return (x * 1024)/ w end
+		local normalizeY = function(y) return (y * 768) / h end
+		self.current_effect:SetWndRect(normalizeX(x1), normalizeY(y1), normalizeX(x2 - x1), normalizeY(y2 - y1))
+	else
+		self:DetachChild(self.current_effect)
+		self.started_time = 0
+		self.time_to_show = 0
+		self.current_effect = nil
+	end	
+end
+
+function HudItems:ShowPulsingText(state, text)
+	self.pulsing_texts[1] = self.xml:InitStatic("pulsing_texts:text1", self)
+	self.pulsing_texts[2] = self.xml:InitStatic("pulsing_texts:text2", self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------------------------------------
+local hud_mgr = nil
+
+function add_custom_hud()
+	if not hud_mgr then
+		hud_mgr = HudItems()
+		get_hud():AddDialogToRender(hud_mgr)
+	end
+end
+
+function remove_custom_hud()
+	if hud_mgr then
+		get_hud():RemoveDialogToRender(hud_mgr)
+		hud_mgr = nil
+	end
+end
+
+function AddEffect(effect_name, time_to_show)
+	if hud_mgr then
+		hud_mgr:StartEffect(effect_name, time_to_show)
+	end
+end
+--/ ---------------------------------------------
+local outfit_hud = nil
+
+function add_dynamic_hud()
+	if DYNAMIC_HUD then
+		local outfit = db.actor:get_current_outfit()
+		local item = db.actor:active_item()
+		if outfit and db.actor.health > 0.0 and not (item and item:section() == "wpn_binoc" and device().fov < 50) then
+			local hud = Get_Cfg_String(system_ini(), outfit:section(), "hud", nil)
+			if outfit_hud ~= hud then
+				if outfit_hud then
+					get_hud():RemoveCustomStatic(outfit_hud)
+				end
+				if hud then
+					get_hud():AddCustomStatic(hud, true)
+				end
+				outfit_hud = hud
+			end
+		elseif outfit_hud then
+			get_hud():RemoveCustomStatic(outfit_hud)
+			outfit_hud = nil
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

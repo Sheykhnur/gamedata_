@@ -1,0 +1,67 @@
+[combat_ignore@gen_freedom_lager]
+
+[danger@gen_freedom_lager]
+ignore_distance  = 30
+
+[logic@gen_freedom_lager_patrol]
+active = walker@gen_freedom_lager_zone
+combat_ignore = combat_ignore@gen_freedom_lager
+
+[walker@gen_freedom_lager_zone]path_walk = patrol
+danger = danger@gen_freedom_lager
+combat_ignore_cond = {=fighting_dist_ge(60)}
+
+[logic@gen_freedom_lager_kamp1]
+active = kamper@gen_freedom_lager_zone1
+combat_ignore = combat_ignore@gen_freedom_lager
+
+[kamper@gen_freedom_lager_zone1]
+path_walk = kamp
+path_look = kamp_look
+kamp_name = kamp1
+danger = danger@gen_freedom_lager
+combat_ignore_cond = {=fighting_dist_ge(60)}
+
+[logic@gen_freedom_lager_kamp2]
+active = kamper@gen_freedom_lager_zone2
+combat_ignore = combat_ignore@gen_freedom_lager
+
+[kamper@gen_freedom_lager_zone2]
+path_walk = kamp2
+path_look = kamp2_look
+kamp_name = kamp1
+danger = danger@gen_freedom_lager
+combat_ignore_cond = {=fighting_dist_ge(60)}
+
+[logic@gen_freedom_lager_volchkov]
+active = walker@gen_freedom_lager_volchkov
+combat_ignore = combat_ignore@gen_freedom_lager
+
+[walker@gen_freedom_lager_volchkov]
+path_walk = walk
+def_state_standing = guard
+danger = danger@gen_freedom_lager
+meet = meet@gen_freedom_lager_volchkov
+combat_ignore_cond = {=fighting_dist_ge(60)}
+
+[meet@gen_freedom_lager_volchkov]
+use = true
+use_wpn = false
+abuse = false
+precond = visibility
+meet_talk_enabled = true
+meet_state = 10|guard|3|ward
+meet_state_wpn = 10|guard|3|ward
+victim = 10|actor
+victim_wpn = 10|actor
+meet_dialog	= gen_freedom_quest
+
+[logic@gen_freedom_lager_sleep]
+active = sleeper@gen_freedom_lager_zone
+combat_ignore = combat_ignore@gen_freedom_lager
+
+[sleeper@gen_freedom_lager_zone]
+path_main = sleep
+wakeable = true
+danger = danger@gen_freedom_lager
+combat_ignore_cond = {=fighting_dist_ge(60)}

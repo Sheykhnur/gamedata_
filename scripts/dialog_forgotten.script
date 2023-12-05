@@ -1,0 +1,48 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_forgotten.script
+ Description: Dialog & InfoPortions function for Forgotten
+ Copyright  : 2010 © LA
+ Author     : vintar
+ Editors    : vintar, lox
+ Last edit  : 28.07.2012 (by vintar)
+--]] -----------------------------------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function give_tools()
+	dialogs.lost_items("forg_nuts")
+	dialogs.lost_items("forg_transistors")
+end
+
+function forg_dolg_wounded_precond()
+	if has_info("forg_helped_wounded_one") and has_info("forg_helped_wounded_two") then
+		give_info("forg_both_talked_healed")
+	end
+end
+
+function forg_wounded_dead()
+	return has_info("forg_wounded1_dead") and has_info("forg_wounded2_dead")
+end
+
+function forg_wounded_alive()
+	return not has_info("forg_wounded1_dead") or not has_info("forg_wounded2_dead")
+end
+
+function forg_wounded_dialog_cond() --/#?#
+	return has_info("forg_zuver_talked") and has_info("forg_dolg_wounded_group_helped") or 
+			has_info("forg_zuver_talked") and has_info("forg_wounded1_dead") and has_info("forg_wounded2_dead")
+end
+
+function give_tools_money(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(db.actor, 2500, "in")
+end
+
+function give_fuel_money(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(db.actor, 7500, "in")
+end
+
+function spawn_gauss_box(oSpeaker1, oSpeaker2)
+	xr_effects.spawn_object_random_pos(oSpeaker1, oSpeaker2, {"gauss_box","radar_gauss_box_point",5})
+end
+--/ -----------------------------------------------------------------------------------------------

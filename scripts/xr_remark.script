@@ -1,0 +1,373 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_remark.script
+ Description: Scheme: "Remark" - used for synchronization/connection with other schemes.
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey) af@svitonline.com (changes: Didenko Ruslan)
+ Editors    : gr1ph00n(26.09.2012),  Kolmogor(11.02.2013)
+ Last edit  : 09.09.2013 [vintar]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ TODO: scheme remark need a fix for rotation of npc in last point of way, it can be done with 2 ways or both:
+--/ 1. create condition no_rotate = true for scheme, which will disable subductions and bad rotations of npc in last point of any path:
+--/ 2. fix targeting itself when swithing from remark to walker and reversa.
+--/ TODO: sound should play in remark scheme only after target rotation completed, not during it
+
+--[[ NOTE:
+1. If you don't want to fill all.spawn with extra ways: you can send as 'target' coordinates of required position where "to look".
+Note: coordinates you can take from log if they relevant 'point in front object' when scheme initialized.
+Example:
+[remark@]
+anim = my_anim
+target = 89.626, 3.873, -93.865
+
+2. Added evaluator, which forbid to distract from engine gathering...
+a) Prohibition of engine gathering working while active setted animation/sound (before signal 'action_end');
+b) You can set in logic config permanent (during time of activity of scheme section) forbidden on gathering:
+[remark@]
+anim = my_anim
+no_gather_items = false ;--/ allowed, (by default forbidden)
+--]]
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iState_initial   = 0
+local iState_animation = 1
+local iState_sound     = 2
+local iState_finish    = 3
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Remark = xr_evaluators_id.zmey_remark_base +1
+local iAct_Remark = xr_actions_id.zmey_remark_base +1
+local tBindEvls = {
+	[1] = { xr_evaluators_id.stohe_meet_base +1,      false }  --/ no talk
+} --/ array of 'external' conditions for scheme activation
+
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+	--/ add.conditions for tBindEvls world_property(v.id, v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout  and xr_blowout.get_ai_evl(0), flg = false}, --/ don't see a blowout
+		[2] = {id = xr_evaluators_id.chugai_heli_hunter_base,    flg = false}, --/#?# don't see helicopters
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_need_remark" (property_evaluator)
+--/ -----------------------------------------------------------------
+function evaluator_need_remark:__init(name, st) super(nil, name)
+	self.st = st
+end
+
+function evaluator_need_remark:evaluate()
+	return xr_logic.is_active(self.object, self.st) --/> scheme active
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTION
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_remark_activity" (action_base)
+--/ -----------------------------------------------------------------
+function action_remark_activity:__init (action_name, st) super(nil, action_name)
+	self.st  = st
+	self.log = st.log
+end
+
+function action_remark_activity:initialize()
+	action_base.initialize(self) 
+	if self.log then log("ac:initialize:NPC=[%s]", self.object:name(), "") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	xr_sound.set_sound(self.object, nil)
+	
+	self:activate_scheme()
+end
+
+function action_remark_activity:activate_scheme()
+	if self.log then log("ac:activate_scheme:NPC=[%s]", self.object:name(), "") end --/#~#
+	self.st.signals = {}
+	self.action_end_signalled = false
+	self.sound_end_signalled  = false
+	self.anim_end_signalled   = false
+	--/ should we play animation/rotate to object.
+	self.anim_scheduled = true
+	--/ should we play sound separately after rotation.
+	self.snd_scheduled = self.st.snd_anim_sync == false and self.st.snd ~= nil
+	self.snd_started = false
+	self.tips_sound = nil
+	--/ let's set initial condition
+	self.state = iState_initial
+end
+
+function action_remark_activity:execute()
+	action_base.execute(self)
+	if not xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		self:update()
+	end
+end
+
+function action_remark_activity:finalize()
+	if self.log then log("ac:finalize:NPC=[%s]", self.object:name(), "") end --/#~#
+	if self.tips_sound then
+		self.tips_sound:stop()
+	end
+	action_base.finalize(self)
+end
+
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function action_remark_activity:get_target()
+	--/ If target not inilialized, then run initializer.
+	if not self.st.target_init then
+		self.st.target_position, self.st.target_id, self.st.target_init = this.initialize_target(self.object, self.st.target)
+		if not self.st.target_init then
+			if self.st.anim ~= "wait" then --/ look 'in front of ourselves'
+				local pos = vector():set(self.object:position():add(self.object:direction():mul(0.5)))
+				--log("ac:get_target: NPC=[%s] anim=[%s] ~wrong target in section=[%s] => pos=[%s]:<%s>", self.object:name(), self.st.anim, db.storage[self.object:id()].active_section, pos, "Warning!") --/#~#
+				return { look_position = pos } --/>
+			end
+			return nil --/>
+		end
+	end
+	
+	if self.st.target_actor then
+		return { look_object = db.actor } --/>
+	elseif self.st.target_id then
+		return { look_object = level.object_by_id(self.st.target_id) } --/>
+	elseif self.st.target_position then
+		return { look_position = self.st.target_position } --/>
+	end
+	return {} --/>
+end
+
+function action_remark_activity:update()
+	if self.log then log("ac:update:NPC=[%s],state=[%s],anim=[%s],snd=[%s]", self.object:name(), self.state, self.st.anim, self.st.snd, "") end --/#~#
+	--/ 1. We need to rotate to object.
+	if self.state == iState_initial then
+		local synsound = nil
+		if self.st.snd_anim_sync == true then
+			self.snd_started = true
+			synsound = self.st.snd
+		end
+		local target = self:get_target()
+		if target then
+			--local cb = { obj = self, func = self.time_callback, turn_end_func = self.turn_end_callback }
+			local cb = { obj = self, func = self.time_callback }
+			state_mgr.set_state(self.object, self.st.anim, cb, 0, target, { animation = self.st.anim_reset }, synsound)
+			self.state = iState_animation
+		end
+		if self.log then log("ac:update:NPC=[%s],state=[%s],target=(%s),s=(%s):(%s)", self.object:name(), self.state, type(target), self.snd_started, "1") end --/#~#
+	--/ waiting callback from statemanager
+	elseif self.state == iState_animation then
+	--/ 2. We need to play phase.
+	elseif self.state == iState_sound then
+		--/ need to give signal anim_end
+		if self.anim_end_signalled == false then
+			self.anim_end_signalled = true
+			self.st.signals["anim_end"] = true
+		end
+		
+		if self.snd_scheduled == true then
+			self.snd_started = true
+			xr_sound.set_sound_play(self.object, self.st.snd, self.st.snd_delay)
+	--		log("ac:update:NPC=[%s] snd[%s] plays", self.object:name(), self.st.snd)
+		end
+		--/ need to give related tips.
+		if self.st.tips_id then
+			self.tips_sound = news_manager.send_tip_nosound(db.actor, self.st.tips_id, self.st.sender)
+			if self.tips_sound then
+				self.tips_sound:play(db.actor, 0, sound_object.s2d) --/ playing story sound
+			end
+		end
+			self.state = iState_finish
+		if self.log then log("ac:update:NPC=[%s],state=[%s],a=(%s),s=(%s):(%s)", self.object:name(), self.state, self.anim_end_signalled, self.snd_started, "2") end --/#~#
+	--/ 3. We need to give signal about ending of action
+	--/ need to give signal action_end
+	--/ need to give signal sound_end
+	elseif self.state == iState_finish then
+		--/ check if sound already launched:
+		if self.snd_started == true then
+			if self.object:active_sound_count() ~= 0 then
+				self.snd_started = false
+			end
+		end
+		
+		if self.snd_started == false and self.object:active_sound_count() == 0 then
+			if self.sound_end_signalled == false then
+				self.st.signals["sound_end"] = true
+				self.sound_end_signalled = true
+				self.object:set_sound_mask(sound_theme.sound_mask)
+				self.object:set_sound_mask(0)
+			end
+		end
+		
+		if self.sound_end_signalled == true and self.anim_end_signalled == true then
+			if self.action_end_signalled == false then
+				self.st.signals["action_end"] = true
+				self.action_end_signalled = true
+			end
+		end
+		if self.log then log("ac:update:NPC=[%s],state=[%s],a=(%s),s=(%s)=>(%s):(%s)", self.object:name(), self.state, self.action_end_signalled, self.snd_started, self.sound_end_signalled, "3") end --/#~#
+	end
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs FUNCTIONs
+--/------------------------------------------------------------------
+function action_remark_activity:time_callback() --/ from state_mgr_animation.script (a:callback_process())
+	if self.log then log("ac:time_callback:NPC=[%s]", self.object:name(), "") end --/#~#
+	self.state = iState_sound
+	self:update()
+end
+
+function action_remark_activity:turn_end_callback() --/< from state_mgr_direction.script (eva_state_mgr_direction:callback())
+	if self.log then log("ac:turn_end_callback:NPC=[%s]", self.object:name(), "") end --/#~#
+	--self.state = iState_sound
+	--self:update()
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:add_evaluator(iEvl_Remark +0, this.evaluator_need_remark("ev_need_remark", st))
+	--/ NewAction -----------------------------------------------------
+	local oNewAction = this.action_remark_activity("ac_remark_activity", st)
+	xr_motivator.addMainPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition( world_property(iEvl_Remark, true ))
+	oNewAction:add_effect( world_property(iEvl_Remark, false))
+	oPlanner:add_action( iAct_Remark, oNewAction )
+	st.action = oNewAction --/ for registering from resets
+	
+	--/ Actions (additional preconditions for some standard operators)
+	local oAction = oPlanner:action(xr_actions_id.alife)
+	oAction:add_precondition(world_property(iEvl_Remark, false))
+	--/#+?# disabling engine gathering:
+	if not db.no_gather_items then --/ if NOT disabled by cmd
+		oAction = oPlanner:action(stalker_ids.action_gather_items) --/ action of gathering (taking items)
+		oAction:add_precondition(world_property(iEvl_Remark, false)) --/ allowed if evaluator of scheme not active
+	end
+	--/
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+--	log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ registration of action, to call method 'reset_scheme' during changing of scheme settings:
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	
+	st.snd             = Get_Cfg_String(ini, section, "snd")
+	st.anim            = Get_Cfg_String(ini, section, "anim", "wait")
+	st.anim_reset      = Get_Cfg_Bool  (ini, section, "anim_reset",    true)
+	st.snd_anim_sync   = Get_Cfg_Bool  (ini, section, "snd_anim_sync", false)
+	st.snd_delay	   = Get_Cfg_Number(ini, section, "snd_delay", 50)
+	st.no_gather_items = Get_Cfg_Bool  (ini, section, "no_gather_items", true) --/#+?#
+	st.tips_id         = Get_Cfg_String(ini, section, "tips")
+	if st.tips_id then
+		st.sender = Get_Cfg_String(ini, section, "tips_sender")
+	end
+	if st.anim == "idle" then
+		abort("%s:set_scheme:NPC=[%s],section=[%s],anim field cannot be [idle]:<%s>", sModule, npc:name(), section, "Error!")
+	end
+	st.target = Get_Cfg_String(ini, section, "target", "nil")
+	st.target_id       = nil
+	st.target_position = nil
+	if st.target and st.target ~= "nil" then
+		st.target_actor = st.target == "actor"
+		if st.target_actor then
+			st.target_init  = true
+		else
+			local iSid = tonumber(st.target)
+			if iSid then
+				st.target_id = id_by_sid(iSid)
+				st.target_init = st.target_id ~= nil
+				if not st.target_id then
+					abort("%s:set_scheme:NPC=[%s],sid=[%s],section=[%s] ~ wrong 'target'=[%s]:<%s>", sModule, npc:name(), iSid, section, st.target, "Error!")
+				end
+			else
+				st.target_position, st.target_id, st.target_init = this.initialize_target(npc, st.target)
+				if not st.target_init then
+					abort("set_scheme:NPC=[%s],section=[%s] ~ wrong 'target'=[%s]:<%s>", npc:name(), section, st.target, "Error!")
+				elseif st.log then
+					log("set_scheme:NPC=[%s],section=[%s],trg_pos=[%s],trg_id=[%s]", npc:name(), section, st.target_position, st.target_id, "") --/#~#
+				end
+			end
+		end
+	end
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s],target=[%s]", npc:name(), scheme, section, gulag_name, st.target_position or st.target_id or st.target, "") end
+end
+--/------------------------------------------------------------------
+--/ HELPERs
+--/------------------------------------------------------------------
+function parse_target(str) --/ rudiment
+	local p1,p2 = str:match('^%s*([^, ]*),*(.*)') --/ ïî ','
+	if p1 then --log("parse_target:=[%s], p1=[%s], p2=[%s]", str, p1, p2, "") --/#~#
+		return p1,(p2 ~= '' and p2) or nil --/>
+	end
+	return str, nil --/>
+end
+
+function initialize_target(npc, str)
+	--/Possible options:
+	--/ 1. was recieved a job of man in gulag (string: logic@...)
+	--/ 2. was recieved a job and indentificator of gulag (string+string: job_name, gulag_name)
+	--/ 3. was recieved patrol way and number of waypoint (string+number: path, 0)
+	--/ 4. were recieved coordinates of position (number x 3: x, y, z)
+	--/ On quit we need to give: 'target_id' or 'target_position' or flag 'target_init'
+	local t = string.split(str,",",false) --/ parsing by divider(,) and translating into numbers(if possible)
+	local gulag = nil
+	if t[3] then --/ if setted 3rd parameter, then its definetly coordinates of position. 
+		if type(t[1]) == 'number' and type(t[2]) == 'number' and type(t[3]) == 'number' then
+			return vector():set(t[1],t[2],t[3]), nil, true --/> target_position
+		end
+		log("initialize_target:=[%s],x=[%s],y=[%s],z=[%s] :<%s>", str, t[1], t[2], t[3], "Error!")
+	elseif t[2] then
+		if type(t[2]) == 'number' then --/ if as 2nd parameter we recieved number(point_index), then it's definetly patrol way.
+			local oPatrol = get_patrol(t[1])
+			if oPatrol and oPatrol:count() >= t[2] then
+				return oPatrol:point(t[2]), nil, true --/> target_position
+			end
+			log("initialize_target:=[%s],path=[%s],point=[%s] :<%s>", str, t[1], t[2], "Error!")
+		else
+			gulag = xr_gulag.get_gulag_by_name(t[2])
+		end
+	else
+		gulag = xr_gulag.get_npc_gulag(npc)
+	end
+	if gulag and t[1] then
+		return nil, gulag:npc_idOnJob(t[1]), true --/> target_id
+	end
+	return nil, nil, false --/>
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,103 @@
+[threshold@dol_mil]
+ignore_monster = 5
+
+[danger@dol_mil]
+ignore_distance = 15
+
+[hit@dol_mil]
+on_info = {=hit_by_actor} %+dol_mil_hit%
+
+[combat_ignore@dol_mil]
+
+;*************************************************** state 0 *******************************************************************
+[logic@dol_mil_terrain_off_military1]
+active = walker@dol_mil_terrain_off_walk1
+
+[walker@dol_mil_terrain_off_walk1]
+path_walk = walk1
+path_look = look1
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+
+[logic@dol_mil_terrain_off_military2]
+active = walker@dol_mil_terrain_off_walk2
+
+[walker@dol_mil_terrain_off_walk2]
+path_walk = walk2
+path_look = look2
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+
+[logic@dol_mil_terrain_off_leader]
+active = walker@dol_mil_terrain_off_leader
+
+[walker@dol_mil_terrain_off_leader]
+path_walk = walk3
+path_look = look3
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+
+;******************************************************** state 1 ********************************************************************
+
+[logic@dol_mil_terrain_military1]
+active = walker@dol_mil_terrain_walk1
+combat_ignore = combat_ignore@dol_mil
+on_hit = hit@dol_mil
+
+[walker@dol_mil_terrain_walk1]
+path_walk = walk1
+path_look = look1
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+on_info = {+dol_mil_bandit_task_complete} kamper@dol_mil_terrain_kamper1
+combat_ignore_cond = {=fighting_actor -dol_mil_hit}
+
+[kamper@dol_mil_terrain_kamper1]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+combat_ignore_cond = {=fighting_actor -dol_mil_hit}
+
+[logic@dol_mil_terrain_military2]
+active = walker@dol_mil_terrain_walk2
+combat_ignore = combat_ignore@dol_mil
+on_hit = hit@dol_mil
+
+[walker@dol_mil_terrain_walk2]
+path_walk = walk2
+path_look = look2
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+on_info = {+dol_mil_bandit_task_complete} kamper@dol_mil_terrain_kamper2
+combat_ignore_cond = {=fighting_actor -dol_mil_hit}
+
+[kamper@dol_mil_terrain_kamper2]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp1
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+combat_ignore_cond = {=fighting_actor -dol_mil_hit}
+
+[logic@dol_mil_terrain_leader]
+active = walker@dol_mil_terrain_leader
+combat_ignore = combat_ignore@dol_mil
+on_hit = hit@dol_mil
+
+[walker@dol_mil_terrain_leader]
+path_walk = walk3
+path_look = look3
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+on_info = {+dol_mil_bandit_task_complete} kamper@dol_mil_terrain_leader
+combat_ignore_cond = {=fighting_actor -dol_mil_hit}
+
+[kamper@dol_mil_terrain_leader]
+path_walk = kamp3_walk
+path_look = kamp3_look
+kamp_name = kamp1
+threshold = threshold@dol_mil
+danger = dange@dol_mil
+combat_ignore_cond = {=fighting_actor -dol_mil_hit}

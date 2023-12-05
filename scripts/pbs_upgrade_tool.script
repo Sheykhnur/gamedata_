@@ -1,0 +1,484 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : pbs_upgrade_tool.script
+ Description: Tool for generating weapon upgrade sections based on current weapon stats
+ Author     : phobos2077
+--]] ----------------------------------------------------------------------------------------------
+
+local generate_enabled = true
+local outputDir = "gamedata\\config\\weapons\\upgrades\\"
+local indentLen = 36
+
+local weapons = {
+	-- weapon section = params
+	wpn_colt1911 = {
+		-- upgrade type = table of upgrade amounts for each level of upgrade (1-3)
+		-- pass 0 to skip generating section for given upgrade level
+		rpm_semi = {20, 0, 30},
+		recoil = {0, -20},
+		reliab = {0, 25},
+		speed = {0, 30},
+		disp = {15, 0, 30},
+		inert = {0, 30},
+	},
+	wpn_bm16_long = {
+		disp = {0, 0, 30},
+		reliab = {15, 0, 30},
+		recoil = {0, -20},
+		inert = {0, 25},
+		speed = {0, 20, 40},
+	},
+	wpn_bm16 = {
+		reliab = {20},
+		recoil = {0, -20},
+		disp = {0, 25},
+		inert = {0, 20},
+	},
+	wpn_abakan = {
+		disp = {0, 20, 30},
+		inert = {0, 15, 25},
+		recoil = {-15, 0, -30},
+		reliab = {20, 30},
+		rpm = {0, 15, 20},
+		speed = {15, 0, 25},
+	},
+	wpn_ak74 = {
+		calibre = {100},
+		disp = {0, 20, 30},
+		inert = {0, 15, 25},
+		recoil = {-15, 0, -25},
+		reliab = {25, 40},
+		rpm = {0, 10, 15},
+		speed = {0, 20},
+	},
+	wpn_ak74u = {
+		disp = {0, 20},
+		inert = {0, 0, 25},
+		recoil = {-10, 0, -20},
+		reliab = {0, 20},
+		rpm = {10, 0, 15},
+		speed = {15},
+	},
+	--[[
+	wpn_akm = {
+		disp = {0, 20, 30},
+		inert = {0, 15, 25},
+		recoil = {-15, 0, -25},
+		reliab = {25, 40},
+		rpm = {0, 10, 15},
+		speed = {0, 15, 20},
+	},]]
+	wpn_beretta = {
+		calibre = {100},
+		disp = {20},
+		inert = {0, 30},
+		recoil = {0, -25},
+		reliab = {15, 25},
+		rpm_semi = {15, 0, 25},
+		speed = {0, 30},
+	},
+	wpn_desert_eagle = {
+		disp = {20, 0, 40},
+		inert = {0, 40},
+		recoil = {0, -15, -20},
+		reliab = {0, 25},
+		rpm_semi = {20, 0, 30},
+		speed = {15, 0, 25},
+	},
+	wpn_fn2000 = {
+		disp = {0, 20, 50}, -- last upg need flashdrive
+		inert = {0, 0, 30},
+		recoil = {-15, 0, -30},
+		reliab = {20, 30},
+		rpm = {0, 15},
+		speed = {15, 20},
+	},
+	wpn_fort = {
+		calibre = {100},
+		disp = {0, 20, 30},
+		inert = {0, 20},
+		recoil = {0, -20},
+		reliab = {0, 30},
+		rpm_semi = {15, 30},
+		speed = {20},
+	},
+	wpn_g36 = {
+		disp = {15, 20, 25, 40}, -- unique fourth accuracy upgrade, makes 100% accurate
+		inert = {0, 20, 30},
+		recoil = {-15, -20},
+		reliab = {20, 0, 30},
+		rpm = {},
+		speed = {0, 0, 30},
+	},
+	wpn_gauss = {
+		disp = {},
+		inert = {30},
+		recoil = {},
+		reliab = {},
+		rpm = {},
+		speed = {},
+	},
+	wpn_groza = {
+		disp = {0, 20, 25},
+		inert = {25},
+		recoil = {-10, -15, -20},
+		reliab = {0, 20, 30},
+		rpm = {10, 0, 20},
+		speed = {0, 15, 20},
+	},
+	wpn_hpsa = {
+		calibre = {100},
+		disp = {20},
+		inert = {0, 20, 40},
+		recoil = {0, -20, -30},
+		reliab = {0, 25},
+		rpm_semi = {15, 0, 20},
+		speed = {15, 30},
+	},
+	wpn_l85 = {
+		disp = {20, 0, 30},
+		inert = {0, 30},
+		recoil = {0, -25},
+		reliab = {15, 20, 25},
+		rpm = {},
+		speed = {10, 0, 20},
+	},
+	wpn_lr300 = {
+		disp = {0, 20},
+		inert = {15, 25},
+		recoil = {-15, 0, -30},
+		reliab = {15, 0, 20},
+		rpm = {0, 10, 20},
+		speed = {0, 15, 25},
+	},
+	wpn_mp5 = {
+		calibre = {100},
+		disp = {0, 20, 30},
+		inert = {0, 20, 30},
+		recoil = {-15, 0, -30},
+		reliab = {15, 20, 25},
+		rpm = {10, 0, 20},
+		speed = {0, 0, 30},
+	},
+	wpn_pb = {
+		disp = {15, 20, 30},
+		inert = {30},
+		recoil = {-15, -25},
+		reliab = {30},
+		rpm_semi = {30},
+		speed = {0, 0, 30},
+	},
+	--[[
+	wpn_pkm = {
+		disp = {10, 0, 30},
+		inert = {0, 25},
+		recoil = {-10, -15, -20},
+		reliab = {20, 30},
+		rpm = {0, 10, 15},
+		speed = {0, 20},
+	},]]
+	--[[
+	wpn_pm = {
+		calibre = {100},
+		disp = {25},
+		inert = {30},
+		recoil = {-20},
+		reliab = {30},
+		rpm_semi = {20, 0, 30},
+		speed = {20},
+	},]]--
+	wpn_protecta = {
+		disp = {0, 0, 40},
+		inert = {0, 30},
+		recoil = {-10, -15, -25},
+		reliab = {20, 30},
+		rpm_semi = {0, 30},
+		speed = {0, 30},
+	},
+	--[[
+	wpn_bull_magnum = {
+		disp = {25},
+		inert = {0, 25},
+		recoil = {0, -15, -20},
+		reliab = {0, 30},
+		rpm = {},
+		speed = {15, 0, 30},
+	},]]
+	wpn_rpg7 = {
+		disp = {},
+		inert = {30},
+		recoil = {},
+		reliab = {},
+		rpm = {},
+		launch_speed = {30, 60},
+	},
+	wpn_sig220 = {
+		disp = {20},
+		inert = {0, 25, 30},
+		recoil = {0, -30},
+		reliab = {0, 25},
+		rpm_semi = {15, 0, 30},
+		speed = {15, 20, 25},
+	},
+	wpn_sig550 = {
+		disp = {0, 20, 30},
+		inert = {0, 25, 30},
+		recoil = {-15, -20, -25},
+		reliab = {15, 25, 30},
+		rpm = {10},
+		speed = {0, 15, 25},
+	},
+	wpn_spas12 = {
+		disp = {0, 20, 30},
+		inert = {30},
+		recoil = {0, -20, -30},
+		reliab = {20, 25, 30},
+		rpm_semi = {20, 40},
+		speed = {30},
+	},
+	wpn_svd = {
+		disp = {0, 25},
+		inert = {20, 25},
+		recoil = {-15, -20, -25},
+		reliab = {25},
+		rpm_semi_abs = {0, 0, 30}, -- +30 rpm
+		speed = {0, 0, 30},
+	},
+	wpn_svu = {
+		disp = {20, 0, 40},
+		inert = {40},
+		recoil = {-20, -30},
+		reliab = {15, 20},
+		rpm_semi_abs = {0, 0, 45}, -- +45 rpm
+		speed = {0, 0, 30},
+	},
+	--[[
+	wpn_toz34 = {
+		disp = {0, 0, 40},
+		inert = {0, 25},
+		recoil = {0, -20},
+		reliab = {15, 0, 30},
+		speed = {0, 20, 30},
+	},]]
+	wpn_usp = {
+		recoil = {-20, -30},
+		reliab = {20},
+		speed = {20},
+		rpm_semi = {0, 20, 30},
+		inert = {0, 40},
+		disp = {20, 0, 40},
+	},
+	wpn_val = {
+		disp = {0, 20, 25},
+		inert = {0, 20, 30},
+		recoil = {-10, -15, -20},
+		reliab = {15, 20},
+		rpm = {10, 0, 15},
+		speed = {15, 20, 30},
+	},
+	wpn_vintorez = {
+		disp = {0, 20, 30},
+		inert = {0, 20, 40},
+		recoil = {-15, -20, -25},
+		reliab = {20, 25, 30},
+		rpm = {},
+		speed = {15, 20, 25},
+	},
+	wpn_walther = {
+		recoil = {-25},
+		speed = {15, 20},
+		reliab = {20},
+		rpm_semi = {15, 0, 30},
+		inert = {0, 30},
+		disp = {25},
+	},
+	--[[
+	wpn_wincheaster1300 = {
+		disp = {0, 20, 30},
+		inert = {0, 30},
+		recoil = {0, -20, -30},
+		reliab = {15, 20, 30},
+		rpm_semi = {100},
+		speed = {0, 30},
+	},
+	]]
+}
+
+local upgradeTypes = {
+	-- upgrady type = params
+	
+	-- Настильность
+	speed = {
+		-- weapon param = multiplier
+		bullet_speed = 1,
+		hit_impulse = 0.6,
+		air_resistance_factor = -0.5
+	},
+	launch_speed = {
+		_name = "speed",
+		launch_speed = 1,
+		hit_impulse = 1,
+	},
+	-- Скорострельность
+	rpm = {
+		rpm = 1,
+	},
+	rpm_semi = {
+		_name = "rpm",
+		rpm_semi = 1,
+	},
+	-- Скорострельность (in absolute RPM value, not in %)
+	rpm_semi_abs = {
+		_name = "rpm",
+		_value = function(upValue, ltx, section)
+			local baseRpm = ltx:r_float(section, "rpm_semi")
+			return 100 * upValue / baseRpm
+		end,
+		rpm_semi = 1,
+	},
+	-- Смена калибра
+	calibre = {
+		condition_queue_shot_dec	= 0.5, -- deterioration per shot in autofire
+		condition_shot_dec      	= 0.5, -- normal deterioration
+	},
+	-- Отдача
+	recoil = {
+		cam_dispersion          = 1,
+		cam_dispersion_inc		= 1,
+		cam_step_angle_horz		= 1,
+		cam_relax_speed			= -1,
+		zoom_cam_dispersion     = 1,
+		zoom_cam_dispersion_inc	= 1,
+		zoom_cam_step_angle_horz= 1,
+		zoom_cam_relax_speed	= -1,
+	},
+	-- Точность
+	disp = {
+		PDM_disp_base 			= -0.5,
+		fire_dispersion_base	= -1,
+		fire_dispersion_condition_factor = -0.5,
+	},
+	-- Надежность
+	reliab = {
+		condition_queue_shot_dec	= -1,
+		condition_shot_dec      	= -1,
+		fire_dispersion_condition_factor = -0.5,
+	},
+	-- Удобство
+	inert = {
+		crosshair_inertion			= -1,
+		control_inertion_factor		= function(base, upMult)
+			-- usually between 1.0 (normal mouse movement) and 3.0 (slow)
+			-- only reduce the part above 1, so it's never dropped below
+			if base > 1 then
+				return (1 - base) * upMult * 1.3
+			else
+				return nil
+			end
+		end,
+		-- zoom_inertion_factor		= -0.5, -- directly affects weapon sway
+		PDM_disp_base 				= -0.5, -- affects both sway and hipfire accuracy
+		PDM_disp_vel_factor 		= -1,
+		PDM_disp_accel_factor 		= -1,
+		-- increase crouch values because they actually reduce dispersion
+		PDM_disp_crouch         	= 1,
+		PDM_disp_crouch_no_acc  	= 1,
+	}
+}
+
+--/ Generate LTX files for every weapon described in weapons table
+--/ WARNING!!! Backup your "gamedata\config\weapons\upgrades\new" folder before running this!
+function run()
+	if generate_enabled then
+		log("PBS TOOL GENERATE ALL")
+		for k, _ in pairs(weapons) do
+			generate(k)
+		end
+	end
+end
+
+function debug()
+	local n = system_ini():line_count("up_sect_speed_base")
+	for i = 0, n - 1 do
+		log("%s: %s = %s", system_ini():r_line("up_sect_speed_base", i, "", ""))
+	end
+end
+
+--/ Generates LTX file with upgrade sections (only modified weapon properties)
+function generate(section)
+	local ltx = system_ini()
+	local upSchemeName = string.match(ltx:r_string(section, "upgrade_scheme"), "upgrade_scheme_([%w_]+)")
+	local weaponInfo = weapons[section] or abort("No settings for weapon section " .. section)
+
+	local sectionsToWrite = {}
+	for upType, upValues in pairs(weaponInfo) do
+		local upInfo = upgradeTypes[upType] or abort("Unknown upgrade type " .. upType)
+		local upName = upInfo._name or upType
+		for i, upValue in ipairs(upValues) do
+			if upValue ~= 0 then
+				if type(upInfo._value) == "function" then
+					upValue = upInfo._value(upValue, ltx, section)
+				end
+				local data = {
+					value = math.floor(upValue)
+				}
+				for param, mult in pairs(upInfo) do
+					if string.sub(param, 1, 1) ~= "_" and ltx:line_exist(section, param) then
+						local baseValue = ltx:r_float(section, param)
+						if type(mult) == "function" then
+							data[param] = mult(baseValue, upValue / 100)
+						else
+							data[param] = baseValue * mult * upValue / 100
+						end
+					end
+				end
+				table.insert(sectionsToWrite, {
+					name = string.format("up_sect_%s_%s_%d", upSchemeName, upName, i),
+					data = data
+				})
+			end
+		end
+	end
+	generateFile(upSchemeName, sectionsToWrite)
+end
+
+--/ Generate file by upgrade scheme name and array of sections
+function generateFile(upSchemeName, sections)
+	local outFileName = outputDir .. "\\w_" .. upSchemeName .. "_up_sect.ltx"
+	local outFile = io.open(outFileName, "w+")
+	if io.type(outFile) == "file" then
+		outFile:write("; This file was generated by script, DO NOT EDIT BY HAND\n;\n")
+		outFile:write("; Upgrade sections for " .. upSchemeName .. "\n\n")
+
+		for _, section in ipairs(sections) do
+			writeSection(outFile, section.name, section.data)
+		end
+
+		outFile:flush()
+		outFile:close()
+	else
+		log("ERROR: cannot open file " .. outFileName)
+	end
+end
+
+--/ Writes section with given name and data
+function writeSection(f, name, data)
+	f:write(string.format("[%s]", name), "\n")
+	if data.value ~= nil then
+		writeKey(f, "value", data.value)
+		data.value = nil
+	end
+	local sortedKeys = {}
+	for k in pairs(data) do
+		table.insert(sortedKeys, k)
+	end
+	table.sort(sortedKeys)
+	for _, k in ipairs(sortedKeys) do
+		writeKey(f, k, string.format("%.6f", data[k]))
+	end
+	f:write("\n")
+end
+
+--/ Write one property to LTX
+function writeKey(f, k, v)
+	f:write(string.format("%s%s= %s", k, string.rep(" ", indentLen - string.len(k)), v), "\n")
+end

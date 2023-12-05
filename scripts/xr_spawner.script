@@ -1,0 +1,73 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : xr_spawner.script
+ Description: Checking with spawn conditions possibility of changes online<->offline
+ Copyright  : 2004 © GSC Game World
+ Author     : author: Didenko Ruslan (Stohe)
+ Editors    : barin(12.08.2010), gr1ph00n, SkyLoader
+ Last edit  : 30.04.2013 [...]
+--]] -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local spawn_list = {}
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function check_spawn(se_obj, can_switch_offline)
+	local obj_id = se_obj and se_obj.id
+	if obj_id then
+		if not spawn_list[obj_id] then --/ if we didn't read yet:
+			--/ reading (and remembering) table of conditions of object spawn
+			spawn_list[obj_id] = { cond = xr_logic.cfg_get_condlist(se_obj:spawn_ini(), "spawner", "cond", se_obj) }
+		end
+		if db.actor then
+			if spawn_list[obj_id].cond then --/ if there is a table of spawn conditions:
+				--/ checking of having object in online (if still not known):
+				if not spawn_list[obj_id].obj then
+					spawn_list[obj_id].obj = level.object_by_id(obj_id) --/ remembering online object
+				end
+				if can_switch_offline then --/#+# gr1ph00n: check for to_offline:
+					if xr_logic.pick_section_from_condlist(db.actor, spawn_list[obj_id].obj, spawn_list[obj_id].cond.condlist) == nil then
+						spawn_list[obj_id].obj = nil --/ 'forgetting'
+						spawn_list[obj_id].online = nil --/ clear
+						spawn_list[obj_id].timer = nil --/ clear
+						return true --/> allowed to_offline
+					end
+					if not spawn_list[obj_id].timer then
+						spawn_list[obj_id].obj = nil --/ 'forgetting'
+						spawn_list[obj_id].online = nil --/ clear
+						--/ launching timer of waiting appearance of object in online
+						spawn_list[obj_id].timer = start_quick_timer(0.1, this.get_obj_online, { id = obj_id }) --/ ~0.1 real-sec
+					end
+					return spawn_list[obj_id].online ~= nil --/> to_offline
+				elseif xr_logic.pick_section_from_condlist(db.actor, spawn_list[obj_id].obj, spawn_list[obj_id].cond.condlist) == nil then
+					spawn_list[obj_id].obj = nil --/ 'forgetting'
+					spawn_list[obj_id].online = nil --/ clear
+					spawn_list[obj_id].timer = nil --/ clear
+					return false --/> off<~>on forbidden
+				end
+			end
+			return true --/> off<~>on allowed
+		end
+		if spawn_list[obj_id] then
+			spawn_list[obj_id].obj = nil --/ clear
+			spawn_list[obj_id].online = nil --/ clear
+		end
+	end
+	return false --/> off<~>on forbidden
+end
+--/ -----------------------------------------------------------------
+--/ Check of having and getting of online-object
+--/ -----------------------------------------------------------------
+function get_obj_online(t)
+	if t.id and spawn_list[t.id] then
+		spawn_list[t.id].online = (level.object_by_id(t.id) ~= nil)
+		spawn_list[t.id].timer = nil --/ clear
+--		log("get_obj_online: id=[%s], online=(%s)", t.id, spawn_list[t.id].online, "") --/#~#
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

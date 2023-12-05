@@ -1,0 +1,44 @@
+[combat_ignore@dar_scene]
+
+[danger@dar_scene]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_scene]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = remark@darklab_sci_scene_ds2
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_ds2_on]
+path_walk = darklab_sci_scene_walk3_on
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+on_info = {+dar_cutscene_activate} remark@darklab_sci_scene_ds2
+
+[remark@darklab_sci_scene_ds2]
+anim = ward
+on_info = {+dar_sci_info_3} remark@darklab_sci_scene_ds2_2
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_dark_look, 0
+
+[remark@darklab_sci_scene_ds2_2]
+anim = incapsulation
+on_info = {+dar_sci_info_5} remark@darklab_sci_scene_ds2_3
+;on_info = {+dar_sci_info_5 -dar_tele_sin_ds2} %=teleport_npc(dar_tele_ds2_loc:dar_tele_sin_ds2)% remark@darklab_sci_scene_ds2_3
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_dark_look, 0
+
+[remark@darklab_sci_scene_ds2_3]
+anim = incapsulation_trans
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_dark_look, 0
+;target = darklab_sci_scene_walk1_look, 0
+on_info = {+dar_sci_info_7} %=release +dar_transformation%

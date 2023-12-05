@@ -1,0 +1,1330 @@
+function have_psy_artefact(actor, npc) 
+if db.actor ~= nil then 
+if db.actor:object("af_psy_zone_heart1") then
+db.actor:give_info_portion("psy_art_have")
+return true 
+end 
+end 
+return false 
+end 
+
+
+function actor_takes_detector()	
+	if not db.actor:has_info("esc_return_to_trader") then
+		dialogs.relocate_item_section(second_speaker, "detector_af_bad", "in")
+		db.actor:give_info_portion("esc_return_to_trader")
+	end
+end
+
+function karlik_pda_spawn()
+local obj=alife():create("wpn_fort_quest",vector():set(1102.601074,-4.04,234.23),2822862,6667)
+end 
+
+function case_1_have(actor, trader)
+	return db.actor:object("case_1") ~= nil
+end
+
+function major_fort_have(actor, trader)
+	return db.actor:object("wpn_fort_quest") ~= nil
+end
+
+function esc_on_talk_pr() 
+local npc = level_object_by_sid(10000) 
+db.actor:run_talk_dialog(npc) 
+end 
+
+
+function reputation_up_15(npc, actor) 
+db.actor:change_character_reputation(db.actor:character_reputation() + 15) 
+end 
+
+function reputation_down_15(npc, actor) 
+db.actor:change_character_reputation(db.actor:character_reputation() - 15) 
+end 
+
+function have_artefact_and_pda(actor, npc) 
+if  db.actor ~= nil then 
+if  db.actor:object("af_gold_beads_task")
+and db.actor:object("karlik_pda") then 
+return true 
+end 
+end 
+return false 
+end 
+
+function have_karlik_pda(actor, trader)
+	return db.actor:object("karlik_pda") ~= nil
+end
+
+function have_karlik_af(actor, trader)
+	return db.actor:object("af_gold_beads_task") ~= nil
+end
+
+function major_nagrada(first_speaker, second_speaker) 
+db.actor:change_character_reputation(db.actor:character_reputation() + 1)
+dialogs.relocate_money(first_speaker, 1500, "in")
+end
+
+function major_nagrada0(first_speaker, second_speaker) 
+db.actor:change_character_reputation(db.actor:character_reputation() + 1) 
+dialogs.relocate_item_section(second_speaker, "wpn_fort_quest", "out") 
+dialogs.relocate_money(first_speaker, 4500, "in")
+end
+
+function major_nagradaa(first_speaker, second_speaker)
+db.actor:change_character_reputation(db.actor:character_reputation() + 2)
+dialogs.relocate_item_section(second_speaker, "wpn_fort_quest", "out")
+--dialogs.relocate_item_section(second_speaker, "karlik_pda", "out")
+dialogs.relocate_money(first_speaker, 5000, "in")
+end 
+
+function major_nagradab(first_speaker, second_speaker)
+db.actor:change_character_reputation(db.actor:character_reputation() + 15)
+dialogs.relocate_item_section(second_speaker, "af_gold_beads_task", "out")
+dialogs.relocate_item_section(second_speaker, "wpn_fort_quest", "out")
+dialogs.relocate_money(first_speaker, 25000, "in")
+end
+
+function major_nagradac(first_speaker, second_speaker)
+db.actor:change_character_reputation(db.actor:character_reputation() + 15)
+dialogs.relocate_item_section(second_speaker, "af_gold_beads_task", "out")
+dialogs.relocate_item_section(second_speaker, "wpn_fort_quest", "out")
+dialogs.relocate_money(first_speaker, 25000, "in")
+end
+
+function maj_job_have(actor, npc)
+if db.actor ~= nil then 
+if db.actor:has_info("country_major_job_art")
+or db.actor:has_info("country_major_job_personal")
+or db.actor:has_info("country_major_job_mutant") then
+return true 
+end 
+end 
+return false 
+end
+
+function wave_fail() 
+if db.actor:has_info("country_soldier_major_dead") 
+or db.actor:has_info("country_major_third_mutant_quest_outside") then 
+return true
+end
+return false
+end
+
+function have_compass(actor, trader)
+	return db.actor:object("af_compass") ~= nil
+end
+
+function give_compass(first_speaker, second_speaker) 
+db.actor:change_character_reputation(db.actor:character_reputation() + 10) 
+dialogs.relocate_item_section(second_speaker, "af_compass", "out") 
+dialogs.relocate_money(first_speaker, 25000, "in")
+end 
+
+function have_ice(actor, trader)
+	return db.actor:object("af_ice") ~= nil
+end
+
+function give_ice(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_ice", "out")
+dialogs.relocate_money(first_speaker, 15000, "in")
+end
+
+function have_baloon(actor, trader)
+	return db.actor:object("af_baloon") ~= nil
+end
+
+function give_baloon(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_baloon", "out")
+dialogs.relocate_money(first_speaker, 15000, "in")
+end
+
+function have_liver(actor, trader)
+	return db.actor:object("af_liver") ~= nil
+end
+
+function give_liver(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_liver", "out")
+dialogs.relocate_money(first_speaker, 10000, "in")
+end 
+
+function have_fungus(actor, trader)
+	return db.actor:object("af_fungus") ~= nil
+end
+
+function give_fungus(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_fungus", "out") 
+dialogs.relocate_money(first_speaker, 20000, "in")
+end
+
+function have_jewel(actor, trader)
+	return db.actor:object("af_jewel") ~= nil
+end
+
+function give_jewel(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_jewel", "out")
+dialogs.relocate_money(first_speaker, 10000, "in")
+end
+
+function have_burn_fuzz(actor, trader)
+if  db.actor:object("af_fuzz_bagel")
+and db.actor:object("af_fuzz_cupcake")
+and db.actor:object("af_fuzz_kolobok") then 
+return true 
+end
+return false
+end
+
+function give_burn_fuzz(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_fuzz_bagel", "out")
+dialogs.relocate_item_section(second_speaker, "af_fuzz_cupcake", "out")
+dialogs.relocate_item_section(second_speaker, "af_fuzz_kolobok", "out")
+dialogs.relocate_money(first_speaker, 30500, "in")
+end
+
+function have_blue_parasite(actor, npc, p)
+	return db.actor:object("af_supernova") ~= nil
+end
+
+function have_green_parasite(actor, npc, p)
+	return db.actor:object("af_supernova") ~= nil
+end
+
+function have_parasites(actor, npc)
+	return this.have_blue_parasite and this.have_green_parasite
+end
+
+function have_supernova(actor, trader)
+	return db.actor:object("af_supernova") ~= nil
+end
+
+function give_supernova(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_supernova", "out")
+dialogs.relocate_money(first_speaker, 18000, "in")
+end
+
+function have_psy_fish(actor, trader)
+	return db.actor:object("af_psy_fish") ~= nil
+end
+
+function give_psy_fish(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "af_psy_fish", "out")
+dialogs.relocate_money(first_speaker, 15000, "in")
+end
+
+function give_purple_beeds(first_speaker, second_speaker)
+dialogs.relocate_item_section(second_speaker, "have_purple_beeds", "out", 3)
+dialogs.relocate_money(first_speaker, 5500, "in")
+end
+
+function is_night()
+if not xr_conditions.is_day() then
+return true
+end
+return false
+end
+
+function ammo1(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "wpn_wincheaster1300", "in")
+	dialogs.relocate_item_section(second_speaker, "ammo_12x70_buck", "in", 4)
+end
+
+function ammo2(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "military_light_outfit", "in")
+	dialogs.relocate_item_section(second_speaker, "ammo_12x70_buck", "in", 3)
+	dialogs.relocate_item_section(second_speaker, "grenade_rgd5", "in", 3)
+end
+
+function ammo3(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "ammo_12x70_buck", "in", 2)
+	dialogs.relocate_item_section(second_speaker, "grenade_f1", "in")
+end
+
+function ammo4(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "ammo_12x70_buck", "in", 3)
+	dialogs.relocate_item_section(second_speaker, "grenade_f1", "in")
+end
+
+function ammo5(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "ammo_12x70_buck", "in", 4)
+	dialogs.relocate_item_section(second_speaker, "ammo_7.62x39_s", "in", 10)
+	if has_info("country_major_first_quest_done_af") then
+		dialogs.relocate_item_section(second_speaker, "wpn_rpk", "in")
+	else
+		dialogs.relocate_item_section(second_speaker, "wpn_akm", "in")
+	end
+end
+
+function artefact_case_take(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "case_af", "in")
+end
+
+function artefact_case_give(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "case_af", "out")
+end
+
+function mutnagrada2(first_speaker, second_speaker)
+dialogs.relocate_money(first_speaker, 7000, "in")
+end
+
+function fore_killer_spawn()
+news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("fore_killer_tip1"), "merc")
+end
+
+function atack_tp()
+news_manager.send_tip_hud(game.translate_string("major_message_header"), game.translate_string("count_major_poka"), "grib")
+end
+
+function fore_killer_talk() 
+local npc = level_object_by_sid(10014) 
+db.actor:run_talk_dialog(npc) 
+end 
+
+function count_major_talk_s() 
+local npc = level_object_by_sid(10005) 
+db.actor:run_talk_dialog(npc) 
+end 
+
+function fore_killer_gasite()
+news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("fore_killer_tip2"), "merc")
+end
+
+function fore_sniper_dead() 
+if db.actor:has_info("forest_mine_bandits_camper1_dead") 
+and db.actor:has_info("forest_mine_bandits_camper2_dead") then 
+return true
+end
+return false
+end
+
+function fore_penny_dead() 
+if db.actor:has_info("forest_mine_bandits_guard1_dead") 
+and db.actor:has_info("forest_mine_bandits_guard2_dead")
+and db.actor:has_info("forest_mine_bandits_dig1_dead")
+and db.actor:has_info("forest_mine_bandits_dig2_dead")
+and db.actor:has_info("forest_mine_bandits_kamper1_dead")
+and db.actor:has_info("forest_mine_bandits_kamper2_dead") then 
+return true
+end
+return false
+end
+
+function fore_have_all_pda(actor, npc) 
+if  db.actor ~= nil then 
+if  db.actor:object("fore_bandit_flash")
+and db.actor:object("fore_bandit_notebook")
+and db.actor:object("fore_bandit_pda") then 
+return true 
+end 
+end 
+return false 
+end 
+
+function fore_give_all_pda(actor, npc)
+dialogs.relocate_item_section(second_speaker, "fore_bandit_flash", "out") 
+dialogs.relocate_item_section(second_speaker, "fore_bandit_notebook", "out") 
+dialogs.relocate_item_section(second_speaker, "fore_bandit_pda", "out") 
+end 
+
+function reloc_pda(actor, npc)
+dialogs.relocate_item_section(second_speaker, "karlik_pda", "out")
+end 
+
+function esc_on_talk_mil() 
+local npc = level_object_by_sid(10018) 
+db.actor:run_talk_dialog(npc) 
+end
+
+function esc_on_talk_nim() 
+local npc = level_object_by_sid(10017) 
+db.actor:run_talk_dialog(npc) 
+end
+
+function esc_case_fail_func() 
+if db.actor:has_info("cordon_case_task_fail") 
+or db.actor:has_info("cordon_military_hostile") then 
+return true
+end
+return false
+end
+
+function af_case_nagrada1(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "wpn_vintorez", "in")
+	dialogs.relocate_item_section(second_speaker, "ammo_9x39_sp5", "in", 5)
+	dialogs.relocate_money(first_speaker, 5000, "in")	
+end
+
+function af_case_nagrada2(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "military_heavy_outfit", "in")
+	dialogs.relocate_money(first_speaker, 2000, "in")	
+end
+
+function af_case_nagrada3(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "wpn_svd", "in")
+	dialogs.relocate_item_section(second_speaker, "ammo_7.62x54_7h14", "in", 5)
+	dialogs.relocate_money(first_speaker, 8000, "in")	
+end
+
+function af_case_nagrada4(first_speaker, second_speaker)
+	dialogs.relocate_money(first_speaker, 25000, "in")	
+end
+
+function af_case_nagrada5(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "wpn_rpg7", "in")
+	dialogs.relocate_item_section(second_speaker, "ammo_og-7b", "in", 5)
+	dialogs.relocate_money(first_speaker, 8000, "in")	
+end
+
+function loos_art_take(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "af_rusty_kristall", "in")
+end
+
+function forest_looser_done_reward(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "af_liver", "in")
+	dialogs.relocate_money(first_speaker, 4000, "in")
+end
+
+function fore_bandit_reward(first_speaker, second_speaker)
+	dialogs.relocate_money(first_speaker, 12000, "in")	
+end
+
+function fore_bandit_reward_bad(first_speaker, second_speaker)
+	dialogs.relocate_money(first_speaker, 2000, "in")	
+end
+
+function esc_give_doc_case(first_speaker, second_speaker)
+	dialogs.relocate_item_section(second_speaker, "case_1", "out")
+	dialogs.relocate_money(first_speaker, 9800, "in")
+end
+
+function esc_nimble_reward(first_speaker, second_speaker)
+	dialogs.relocate_money(first_speaker, 6500, "in")
+end
+
+function groza_m2_have(actor, trader)
+	return db.actor:object("wpn_groza_m2") ~= nil
+end
+
+function magnum_m1_have(actor, trader)
+	return db.actor:object("wpn_colt_m2") ~= nil
+end
+
+function ecolog_black_have(actor, trader)
+	return db.actor:object("ecolog_outfit_black") ~= nil
+end
+
+function agro_docs_havenot(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part1")
+or db.actor:object("agr_docs_part2")
+or db.actor:object("agr_docs_part3")
+or db.actor:object("agr_docs_part4")
+or db.actor:object("agr_docs_part5")
+or db.actor:object("agr_docs_part6")
+or db.actor:object("agr_docs_part7") then 
+return false 
+end 
+end 
+return true 
+end
+
+function agro_docs_have(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part1")
+or db.actor:object("agr_docs_part2")
+or db.actor:object("agr_docs_part3")
+or db.actor:object("agr_docs_part4")
+or db.actor:object("agr_docs_part5")
+or db.actor:object("agr_docs_part6")
+or db.actor:object("agr_docs_part7") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_have1(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part1") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_have2(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part2") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_have3(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part3") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_have4(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part4") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_have5(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part5") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_have6(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part6") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_have7(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part7") then 
+return true 
+end 
+end 
+return false 
+end
+
+function all_agro_docs_have(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("agr_docs_part1")
+and db.actor:object("agr_docs_part2")
+and db.actor:object("agr_docs_part3")
+and db.actor:object("agr_docs_part4")
+and db.actor:object("agr_docs_part5")
+and db.actor:object("agr_docs_part6")
+and db.actor:object("agr_docs_part7") then 
+return true 
+end 
+end 
+return false 
+end
+
+function agro_docs_not_all()
+if not mega_cherv.all_agro_docs_have() and mega_cherv.agro_docs_have() then
+return true
+end
+return false
+end
+
+function give_agro_docs(actor, trader)
+if  db.actor:object("agr_docs_part1") then
+dialogs.relocate_item_section(actor, "agr_docs_part1", "out")
+end
+if  db.actor:object("agr_docs_part2") then
+dialogs.relocate_item_section(actor, "agr_docs_part2", "out")
+end
+if  db.actor:object("agr_docs_part3") then
+dialogs.relocate_item_section(actor, "agr_docs_part3", "out")
+end
+if  db.actor:object("agr_docs_part4") then
+dialogs.relocate_item_section(actor, "agr_docs_part4", "out")
+end
+if  db.actor:object("agr_docs_part5") then
+dialogs.relocate_item_section(actor, "agr_docs_part5", "out")
+end
+if  db.actor:object("agr_docs_part6") then
+dialogs.relocate_item_section(actor, "agr_docs_part6", "out")
+end
+if  db.actor:object("agr_docs_part7") then
+dialogs.relocate_item_section(actor, "agr_docs_part7", "out")
+end
+end
+
+function have_major_outfits(actor, trader)
+if  db.actor ~= nil then 
+if  db.actor:object("scientific_outfit")
+and db.actor:object("protection_outfit") then 
+return true 
+end 
+end 
+return false 
+end
+
+function have_exo(actor, trader)
+	return db.actor:object("exo_outfit") ~= nil
+end
+
+function give_2_outfits(actor, trader)
+dialogs.relocate_item_section(actor, "scientific_outfit", "out")
+dialogs.relocate_item_section(actor, "protection_outfit", "out")
+dialogs.relocate_money(first_speaker, 32000, "in")	
+end
+
+function give_exo(actor, trader)
+dialogs.relocate_item_section(actor, "exo_outfit", "out")
+dialogs.relocate_money(first_speaker, 32000, "in")	
+end
+
+function give_reward_kotnr(actor, trader)
+db.actor:change_character_reputation(db.actor:character_reputation() + 50)
+dialogs.relocate_money(first_speaker, 23000, "in")
+end
+
+function yan_docs_have(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("yan_docs_part1")
+or db.actor:object("yan_docs_part2")
+or db.actor:object("yan_docs_part3")
+or db.actor:object("yan_docs_part4")
+or db.actor:object("yan_docs_part5")
+or db.actor:object("yan_docs_part6")
+or db.actor:object("yan_docs_part7")
+or db.actor:object("yan_docs_part8")
+or db.actor:object("yan_docs_part9") then 
+return true 
+end 
+end 
+return false 
+end
+
+function all_yan_docs_have(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("yan_docs_part1")
+and db.actor:object("yan_docs_part2")
+and db.actor:object("yan_docs_part3")
+and db.actor:object("yan_docs_part4")
+and db.actor:object("yan_docs_part5")
+and db.actor:object("yan_docs_part6")
+and db.actor:object("yan_docs_part7")
+and db.actor:object("yan_docs_part8")
+and db.actor:object("yan_docs_part9") then 
+return true 
+end 
+end 
+return false 
+end
+
+function have_yan_pribor1(actor, trader)
+	return db.actor:object("yan_pribor_3") ~= nil
+end
+
+function have_yan_pribor2(actor, trader)
+if db.actor:object("yan_pribor_1")
+and db.actor:object("yan_pribor_2")
+and db.actor:has_info("yan_pribor_task_tochka2_posmotrel") then 
+return true 
+end 
+return false
+end
+
+function have_yan_pribor2_2(actor, trader)
+if db.actor:object("yan_pribor_1")
+and db.actor:object("yan_pribor_2") then 
+return true 
+end 
+return false
+end
+
+function have_yan_pribor4(actor, trader)
+	return db.actor:object("yan_pribor_4") ~= nil
+end
+
+function have_yan_pribor3(actor, trader)
+	return db.actor:object("yan_pribor_5") ~= nil
+end
+
+function have_yan_pribor3_4(actor, trader)
+	if db.actor:object("yan_pribor_4")
+		and db.actor:object("yan_pribor_5") then 
+		return true
+	end
+return false
+end
+
+function not_have_yan_pribor3_4(actor, trader)
+	if db.actor:object("yan_pribor_4")
+		and db.actor:object("yan_pribor_5") then 
+		return false
+		else
+		return true		
+	end 
+end
+
+function groza_m2_give(actor, trader)
+	dialogs.lost_items("wpn_groza_m2")
+end
+
+function groza_m2_reward(actor, trader)
+dialogs.relocate_money(first_speaker, 10000, "in")	
+end
+
+function magnum_m1_give(actor, trader)
+	dialogs.lost_items("wpn_colt_m2")
+end
+
+function magnum_m1_reward(actor, trader)
+dialogs.relocate_money(first_speaker, 11000, "in")	
+end
+
+function ecolog_outfit_give(actor, trader)
+	dialogs.lost_items("ecolog_outfit_black")
+end
+
+function ecolog_outfit_reward(actor, trader)
+dialogs.relocate_money(first_speaker, 30000, "in")	
+end
+
+function have_dummy_art(actor, npc) 
+if  db.actor ~= nil then 
+if  db.actor:object("af_dummy_spring")
+and db.actor:object("af_dummy_dummy")
+and db.actor:object("af_dummy_battery") then 
+return true 
+end 
+end 
+return false 
+end
+
+function give_dummy_art(actor, npc)
+	dialogs.lost_items("af_dummy_spring")
+	dialogs.lost_items("af_dummy_dummy")
+	dialogs.lost_items("af_dummy_battery")
+end
+
+function reward_dummy_art_a(actor, npc)
+	dialogs.relocate_item_section(second_speaker, "ammo_5.45x39_ap", "in", 12)
+end
+function reward_dummy_art_b(actor, npc)
+	dialogs.relocate_item_section(second_speaker, "ammo_5.56x45_ap", "in", 12)
+end
+function reward_dummy_art_c(actor, npc)
+	dialogs.relocate_item_section(second_speaker, "ammo_9x39_ap", "in", 12)
+end
+function reward_dummy_art_d(actor, npc)
+	dialogs.relocate_item_section(second_speaker, "ammo_7.62x54_ap", "in", 15)
+end
+function reward_dummy_art_e(actor, npc)
+dialogs.relocate_money(first_speaker, 24000, "in")	
+end
+
+function yan_docs_fail(actor, npc)
+	--this.yan_docs_fail_massage
+	return has_info("yan_kalmyk_dead") or has_info("yan_pirozhenko_dead") or has_info("yan_kulesh_dead")
+end
+
+function not_yan_docs_fail(actor, npc)
+	return check_info_portions( {["yan_kalmyk_dead"]=false,["yan_pirozhenko_dead"]=false,["yan_kulesh_dead"]=false} ) 
+end
+
+--function yan_docs_fail_massage(actor, npc)
+	--news_manager.send_tip_hud(nil, "yan_docs_fail_tip")
+--end
+
+function take_yan_doc9(actor, npc)
+	dialogs.relocate_item_section(second_speaker, "yan_docs_part9", "in")
+end
+
+function yan_give_pribor1(actor, npc)
+	if db.actor:object("yan_pribor_3") then 
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_3", "out")
+	dialogs.relocate_money(first_speaker, 5500, "in")
+	end
+end
+
+function yan_give_pribor2(actor, npc)
+	if db.actor:object("yan_pribor_3") and db.actor:object("yan_pribor_1") and db.actor:object("yan_pribor_2") then 
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_3", "out")
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_1", "out")
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_2", "out")
+	dialogs.relocate_money(first_speaker, 14000, "in")
+	end
+end
+
+function yan_give_pribor3(actor, npc)
+	if db.actor:object("yan_pribor_3") and db.actor:object("yan_pribor_1") and db.actor:object("yan_pribor_2") and db.actor:object("yan_pribor_4") and db.actor:object("yan_pribor_5") then 
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_3", "out")
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_1", "out")
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_2", "out")
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_4", "out")
+	dialogs.relocate_item_section(second_speaker, "yan_pribor_5", "out")
+	dialogs.relocate_item_section(second_speaker, "yan_docs_part9", "in")
+	dialogs.relocate_money(first_speaker, 7000, "in")	
+	end
+end
+
+function tochka3_done_reward(actor, npc)
+	dialogs.relocate_money(first_speaker, 6000, "in")
+end
+
+function fore_docs_havenot(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part2")
+or db.actor:object("fore_docs_part3")
+or db.actor:object("fore_docs_part4")
+or db.actor:object("fore_docs_part5")
+or db.actor:object("fore_docs_part6") then 
+return false 
+end 
+end 
+return true 
+end
+
+function fore_docs_have(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part2")
+or db.actor:object("fore_docs_part3")
+or db.actor:object("fore_docs_part4")
+or db.actor:object("fore_docs_part5")
+or db.actor:object("fore_docs_part6") then 
+return true 
+end 
+end 
+return false 
+end
+
+function fore_docs_have1(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part2") then 
+return true 
+end 
+end 
+return false 
+end
+
+function fore_docs_have2(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part3") then 
+return true 
+end 
+end 
+return false 
+end
+
+function fore_docs_have3(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part4") then 
+return true 
+end 
+end 
+return false 
+end
+
+function fore_docs_have4(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part5") then 
+return true 
+end 
+end 
+return false 
+end
+
+function fore_docs_have5(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part6") then 
+return true 
+end 
+end 
+return false 
+end
+
+function fore_docs_notall(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part2")
+and db.actor:object("fore_docs_part3")
+and db.actor:object("fore_docs_part4")
+and db.actor:object("fore_docs_part5")
+and db.actor:object("fore_docs_part6") then 
+return false 
+end 
+end 
+return true 
+end
+
+function all_fore_docs_have(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part2")
+and db.actor:object("fore_docs_part3")
+and db.actor:object("fore_docs_part4")
+and db.actor:object("fore_docs_part5")
+and db.actor:object("fore_docs_part6") then 
+return true 
+end 
+end 
+return false 
+end
+
+function td_docs_have(actor, trader)
+	return db.actor:object("fore_docs_part1") ~= nil
+end
+
+function td_docs_havenot(actor, trader)
+if db.actor ~= nil then 
+if db.actor:object("fore_docs_part1") then 
+return false 
+end 
+end 
+return true 
+end
+
+function give_fore_docs(actor, trader)
+if  db.actor:object("fore_docs_part1") then
+dialogs.relocate_item_section(actor, "fore_docs_part1", "out")
+end
+if  db.actor:object("fore_docs_part2") then
+dialogs.relocate_item_section(actor, "fore_docs_part2", "out")
+end
+if  db.actor:object("fore_docs_part3") then
+dialogs.relocate_item_section(actor, "fore_docs_part3", "out")
+end
+if  db.actor:object("fore_docs_part4") then
+dialogs.relocate_item_section(actor, "fore_docs_part4", "out")
+end
+if  db.actor:object("fore_docs_part5") then
+dialogs.relocate_item_section(actor, "fore_docs_part5", "out")
+end
+if  db.actor:object("fore_docs_part6") then
+dialogs.relocate_item_section(actor, "fore_docs_part6", "out")
+end
+end
+
+function fore_docs_rewarda(actor, npc)
+dialogs.relocate_money(first_speaker, 9000, "in")
+end
+function fore_docs_rewardb(actor, npc)
+dialogs.relocate_money(first_speaker, 15000, "in")
+end
+function fore_docs_rewardc(actor, npc)
+dialogs.relocate_money(first_speaker, 3000, "in")
+end
+function fore_docs_rewardd(actor, npc)
+dialogs.relocate_money(first_speaker, 3000, "in")
+end
+
+
+function pirozh_immotral() 
+local npc1 = level_object_by_sid(10021)
+if npc1 then npc1.health = 1 end
+end
+
+function esc_proverb_task1() 
+if db.actor:has_info("esc_flash_dead1") 
+and db.actor:has_info("esc_flash_dead2")
+and db.actor:has_info("esc_flash_dead3") then 
+return true
+end
+return false
+end
+
+function esc_proverb_task2() 
+if db.actor:has_info("esc_boar_dead1") 
+and db.actor:has_info("esc_boar_dead2")
+and db.actor:has_info("esc_boar_dead3")
+and db.actor:has_info("esc_boar_dead4")
+and db.actor:has_info("esc_boar_dead5") then 
+return true
+end
+return false
+end
+
+function esc_proverb_give_shotgun(actor, npc)
+	if not db.actor:has_info("esc_proverb_give_shotgun") then
+	dialogs.relocate_item_section(actor, "wpn_bm16", "in")
+	dialogs.relocate_item_section(actor, "ammo_12x70_buck", "in", 2)
+		give_info("esc_proverb_give_shotgun")
+	end
+end
+
+function esc_shustriy_about_talk_infos() 
+if db.actor:has_info("esc_shustriy_about_talk_2a") 
+and db.actor:has_info("esc_shustriy_about_talk_2b")
+and db.actor:has_info("esc_shustriy_about_talk_2c")
+and db.actor:has_info("esc_shustriy_about_talk_2d")
+and db.actor:has_info("esc_shustriy_about_talk_2f") then 
+return false
+else
+return true
+end
+end
+
+function fore_has_pda_0(actor, trader)
+if not db.actor:object("fore_fake_pda") then
+return true
+end
+return false
+end
+
+function fore_has_pda_1(actor, trader)
+if not db.actor:object("fore_fake_pda2") and
+db.actor:object("fore_fake_pda") then
+return true
+end
+return false
+end
+
+function fore_has_pda_2(actor, trader)
+if db.actor:object("fore_fake_pda2") and
+db.actor:object("fore_fake_pda") then
+return true
+end
+return false
+end
+
+function esc_fox_has_7500(actor, trader)
+	return db.actor:money() >= 7500
+end
+
+function esc_fox_gives_7500(actor, trader)
+dialogs.relocate_money(first_speaker, 7500, "out")	
+end
+
+function esc_fox_has_5750(actor, trader)
+	return db.actor:money() >= 5750
+end
+
+function esc_fox_gives_5750(actor, trader)
+dialogs.relocate_money(first_speaker, 5750, "out")	
+end
+
+function actor_has_27500(actor, trader)
+	return db.actor:money() >= 27500
+end
+
+function actor_gives_27500(actor, trader)
+dialogs.relocate_money(first_speaker, 27500, "out")	
+end
+
+function actor_has_50000(actor, trader)
+	return db.actor:money() >= 50000
+end
+
+function actor_gives_50000(actor, trader)
+dialogs.relocate_money(first_speaker, 50000, "out")	
+end
+
+function has_20000()
+	return db.actor:money() >= 20000
+end
+
+function lost_20000(actor, trader)
+dialogs.relocate_money(first_speaker, 20000, "out")	
+end
+
+function gar_mutant_dead(actor, npc)
+if db.actor:has_info("gar_task_to_pass_kill_1")
+and db.actor:has_info("gar_task_to_pass_kill_2") then
+return true
+end
+return false
+end
+
+function forg_mill_gauss_have()
+		return db.actor:object("wpn_gauss_m1") ~= nil
+end
+
+function give_mill_gauss(oSpeaker1, oSpeaker2)
+		dialogs.relocate_item_section(oSpeaker1, "wpn_gauss_m1", "out")
+		dialogs.relocate_money(oSpeaker1, 10000, "in")
+        relation_registry.set_community_goodwill("killer", idActor, 50)
+end
+
+function forg_gauss_box_have()
+		return db.actor:object("gauss_box") ~= nil
+end
+
+function give_mill_gauss_box(oSpeaker1, oSpeaker2)
+		dialogs.relocate_item_section(oSpeaker1, "gauss_box", "out")
+		dialogs.relocate_money(oSpeaker2, 15000, "in")
+        relation_registry.set_community_goodwill("killer", idActor, 60)
+end
+
+function tutorial_reward_from_proverb(actor, trader)
+	if not db.actor:object("wpn_binoc") then
+		dialogs.relocate_item_section(actor, "wpn_binoc", "in")
+	end
+end
+
+function fox_tools(actor, npc)
+if db.actor:has_info("esc_fox_instrument_2_brought")
+and db.actor:has_info("esc_fox_instrument_3_brought") then
+return true
+end
+return false
+end
+
+function fox_order(actor, npc)
+if db.actor:has_info("esc_fox_instrument_2_order")
+and db.actor:has_info("esc_fox_instrument_3_order") then
+return true
+end
+return false
+end
+
+function fox_order_2(actor, npc)
+if db.actor:has_info("esc_fox_instrument_2_order")
+or db.actor:has_info("esc_fox_instrument_2_brought") then
+return true
+end
+return false
+end
+
+function fox_order_3(actor, npc)
+if db.actor:has_info("esc_fox_instrument_3_order")
+or db.actor:has_info("esc_fox_instrument_3_brought") then
+return true
+end
+return false
+end
+
+function fox_order_4(actor, npc)
+if db.actor:has_info("esc_fox_instrument_3_order")
+and db.actor:has_info("esc_fox_instrument_2_brought") then
+return true
+end
+if db.actor:has_info("esc_fox_instrument_2_order")
+and db.actor:has_info("esc_fox_instrument_3_brought") then
+return true
+end
+return false
+end
+
+function fox_main_rep(actor, npc)
+if db.actor:has_info("esc_fox_instrument_3_order")
+or db.actor:has_info("esc_fox_instrument_3_brought") and
+db.actor:has_info("esc_fox_instrument_2_order")
+or db.actor:has_info("esc_fox_instrument_2_brought") and
+db.actor:has_info("esc_fox_repair_main_weapons") and
+db.actor:has_info("esc_fox_repair_main_outfits") then
+return true
+end
+return false
+end
+
+function actor_has_tools_1()
+		return db.actor:object("toolkit_1") ~= nil
+end
+
+function actor_has_tools_2()
+		return db.actor:object("toolkit_2") ~= nil
+end
+
+function actor_has_tools_3()
+		return db.actor:object("toolkit_3") ~= nil
+end
+
+function actor_gives_tools_1(actor, trader)
+		dialogs.relocate_item_section(oSpeaker1, "toolkit_1", "out")
+end
+
+function actor_gives_tools_2(actor, trader)
+		dialogs.relocate_item_section(oSpeaker1, "toolkit_2", "out")
+end
+
+function actor_gives_tools_3(actor, trader)
+		dialogs.relocate_item_section(oSpeaker1, "toolkit_3", "out")
+end
+
+function fox_main_infos(actor, npc)
+if db.actor:has_info("general_info_soldier_upg")
+and not db.actor:has_info("esc_fox_soldier_upg_brought") then
+return true
+elseif db.actor:has_info("general_info_military_upg")
+and not db.actor:has_info("esc_fox_military_upg_brought") then
+return true
+elseif db.actor:has_info("general_info_scientific_upg")
+and not db.actor:has_info("esc_fox_scientific_upg_brought") then
+return true
+elseif db.actor:has_info("general_info_exo_upg")
+and not db.actor:has_info("esc_fox_exo_upg_brought") then
+return true
+elseif db.actor:has_info("general_info_abakan_upg")
+and not db.actor:has_info("esc_fox_abakan_upg_brought") then
+return true
+elseif db.actor:has_info("general_info_nato_upg")
+and not db.actor:has_info("esc_fox_nato_upg_brought") then
+return true
+elseif db.actor:has_info("general_info_gauss_upg")
+and not db.actor:has_info("esc_fox_gauss_upg_brought") then
+return true
+else
+return false
+end
+end
+
+function agro_brought_all_tools(actor, npc)
+if db.actor:has_info("agro_new_fixer_instrument_1_brought") 
+and db.actor:has_info("agro_new_fixer_instrument_2_brought") 
+and db.actor:has_info("agro_new_fixer_instrument_3_brought") then
+return true
+else
+return false
+end
+end
+
+function actor_has_tools(actor, trader)
+if  db.actor:object("toolkit_1")
+or  db.actor:object("toolkit_2")
+or  db.actor:object("toolkit_3") then
+return true
+else
+return false
+end
+end
+
+function has_agro_key()
+		return db.actor:object("agro_door_key") ~= nil
+end
+
+function get_psi_device(actor, trader)
+	if not db.actor:object("wave_registrator_detector") then
+		dialogs.relocate_item_section(actor, "wave_registrator_detector", "in")
+	end
+	if not db.actor:object("wave_blockator") then
+		dialogs.relocate_item_section(actor, "wave_blockator", "in")
+	end
+end
+
+function ecolog_key_give(actor, trader)
+	if not db.actor:object("yan_ecolog_key") then
+		dialogs.relocate_item_section(actor, "yan_ecolog_key", "in")
+	end
+end
+
+function has_psi_device(actor, trader)
+	if db.actor:object("wave_registrator_detector") then
+		return true
+	end
+	return false
+end
+
+function leave_dscape(actor, npc)
+	return not level.name() == LA15_Darkscape
+end
+
+function hasnt_mask()
+		return not db.actor:object("helm_gasmask") ~= nil
+end
+
+function some_yan_docs_have(actor, npc)
+if  db.actor ~= nil then 
+if  db.actor:object("yan_docs_part1")
+or db.actor:object("yan_docs_part2")
+or db.actor:object("yan_docs_part3")
+or db.actor:object("yan_docs_part4")
+or db.actor:object("yan_docs_part5")
+or db.actor:object("yan_docs_part6")
+or db.actor:object("yan_docs_part7")
+or db.actor:object("yan_docs_part8")
+or db.actor:object("yan_docs_part9") then 
+return true 
+end 
+end 
+return false 
+end
+
+function all_yan_docs_have(actor, npc)
+if  db.actor ~= nil then 
+if  db.actor:object("yan_docs_part1")
+and db.actor:object("yan_docs_part2")
+and db.actor:object("yan_docs_part3")
+and db.actor:object("yan_docs_part4")
+and db.actor:object("yan_docs_part5")
+and db.actor:object("yan_docs_part6")
+and db.actor:object("yan_docs_part7")
+and db.actor:object("yan_docs_part8")
+and db.actor:object("yan_docs_part9") then 
+return true 
+end 
+end 
+return false 
+end
+
+function give_yan_docs(actor, trader)
+if  db.actor:object("yan_docs_part1") then
+dialogs.relocate_item_section(actor, "yan_docs_part1", "out")
+end
+if  db.actor:object("yan_docs_part2") then
+dialogs.relocate_item_section(actor, "yan_docs_part2", "out")
+end
+if  db.actor:object("yan_docs_part3") then
+dialogs.relocate_item_section(actor, "yan_docs_part3", "out")
+end
+if  db.actor:object("yan_docs_part4") then
+dialogs.relocate_item_section(actor, "yan_docs_part4", "out")
+end
+if  db.actor:object("yan_docs_part5") then
+dialogs.relocate_item_section(actor, "yan_docs_part5", "out")
+end
+if  db.actor:object("yan_docs_part6") then
+dialogs.relocate_item_section(actor, "yan_docs_part6", "out")
+end
+if  db.actor:object("yan_docs_part7") then
+dialogs.relocate_item_section(actor, "yan_docs_part7", "out")
+end
+if  db.actor:object("yan_docs_part8") then
+dialogs.relocate_item_section(actor, "yan_docs_part8", "out")
+end
+if  db.actor:object("yan_docs_part9") then
+dialogs.relocate_item_section(actor, "yan_docs_part9", "out")
+end
+end
+
+function yan_docs_nagrada1(actor, npc)
+db.actor:change_character_reputation(db.actor:character_reputation() + 20)
+	dialogs.relocate_money(actor, 12700, "in")
+end
+
+function yan_docs_nagrada2(actor, npc)
+db.actor:change_character_reputation(db.actor:character_reputation() + 5)
+	dialogs.relocate_money(actor, 6200, "in")
+end
+
+function yan_docs_nagrada3(actor, npc)
+	dialogs.relocate_money(actor, 1500, "in")	
+end
+
+function x18_docs_reward(actor, npc)
+	dialogs.relocate_item_section(actor, "medkit_army", "in", 2)
+	dialogs.relocate_money(actor, 7000, "in")	
+end
+
+function yan_rifle_dude_fail()	
+	if  db.actor:has_info("yan_bloodsucker_den_refuse") or
+		db.actor:has_info("yan_bloodsucker_den_fail")  then
+		return true
+	end
+		return false
+end
+
+function yan_rifle_dude_has()
+		return db.actor:object("yan_rifle") ~= nil
+end
+
+function mutnagrada3(first_speaker, second_speaker)
+dialogs.relocate_money(first_speaker, 9500, "in")
+end
+
+function mutnagrada4(first_speaker, second_speaker)
+dialogs.relocate_money(first_speaker, 12750, "in")
+end
+
+function mut4_dead()
+	local obj = alife():object("ladc_bcr__chimera_strong_0006")
+	if not obj:alive() and obj:name() == "ladc_bcr__chimera_strong_0006" then
+		return true
+	elseif db.actor:has_info("country_major_job_mutant_chimera") then
+		return true
+	end
+	return false
+end

@@ -1,0 +1,31 @@
+[logic]
+active = sr_idle@scene_final
+
+[sr_idle@scene_final]
+on_info = {+gen2_cutscene_good_ending -gen2_ghost_walk} sr_idle@cutscene_ending_good %=tasks_generators.gen_disable_snd()%
+
+[sr_idle@cutscene_ending_good]
+on_actor_inside = sr_idle@gen_start_final_wait %=play_snd(characters_voice\scenario\gen2\birds_nature2) =add_happy_effects =tasks_generators.start_scale()%
+
+[sr_idle@gen_start_final_wait]
+on_info = {+gen2_after_scaling} sr_cutscene@gen_start_final %=add_happy_effects%
+on_timer = 1000| %=add_happy_effects%
+
+[sr_cutscene@gen_start_final]
+point = gen2_teleport_final
+look = gen2_teleport_final_look
+cam_effector = gen_final1, gen_final2, gen_final3, gen_final4, gen_final8, gen_final5, gen_final6, gen_final7, gen_final9
+pp_effector = sar_out
+;on_timer = 8000 | %+gen2_ghost_walk%
+on_timer = 50500 | %+gen_paradise% ;123485 ;100 seconds
+;on_signal = cameff_end | %=tasks_generators.gen_ghost_finale()%
+
+;on_signal = cameff_end | sr_cutscene@gen_start_paradise %+gen_paradise%
+;on_info = {+gen2_ghost_arrived} sr_cutscene@gen_start_paradise %+gen_paradise%
+
+[sr_cutscene@gen_start_paradise]
+point = gen2_teleport_final
+look = gen2_teleport_final_look
+cam_effector = gen_final6, gen_final7
+pp_effector = nil
+on_signal = cameff_end | nil %=tasks_generators.gen_ghost_finale()%

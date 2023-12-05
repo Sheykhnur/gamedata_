@@ -1,0 +1,32 @@
+[danger_condition@agr_road_patrol2]
+danger_inertion_time =  9000
+
+[logic@agr_road_patrol2_patrol1]
+active = walker@agr_road_patrol2_patrol1
+
+[walker@agr_road_patrol2_patrol1]
+path_walk = walk1_1
+path_look = look1_1
+danger = danger_condition@agr_road_patrol2
+on_signal = end1_1 |walker@agr_road_patrol2_patrol1_2
+
+[walker@agr_road_patrol2_patrol1_2]
+path_walk = walk1_2
+path_look = look1_2
+danger = danger_condition@agr_road_patrol2
+on_signal = end1_2 |walker@agr_road_patrol2_patrol1
+
+[logic@agr_road_patrol2_patrol2]
+active = walker@agr_road_patrol2_patrol2
+
+[walker@agr_road_patrol2_patrol2]
+path_walk = walk2_1
+path_look = look2_1
+danger = danger_condition@agr_road_patrol2
+on_signal = end2_1 |walker@agr_road_patrol2_patrol2_2
+
+[walker@agr_road_patrol2_patrol2_2]
+path_walk = walk2_2
+path_look = look2_2
+danger = danger_condition@agr_road_patrol2
+on_signal = end2_2 |walker@agr_road_patrol2_patrol2

@@ -1,0 +1,18 @@
+[logic]
+active = sr_idle@check
+
+[sr_idle@check]
+on_actor_inside = sr_idle@in
+on_actor_outside = sr_idle@out
+
+[sr_idle@out]
+on_actor_inside = {!check_for_enemy(7)} sr_idle@in %=enable_save =set_safe_zone(in) =send_tip_hud(actor:hmm:st_partly_safe_zone_no_enemy:15)%
+on_actor_inside2 = {=check_for_enemy(7)} sr_idle@in_check %=set_safe_zone(in) =send_tip_hud(actor:hmm:st_partly_safe_zone_enemy:15)%
+
+[sr_idle@in_check]
+on_actor_outside = sr_idle@out %=enable_save =set_safe_zone(in)%
+on_info = {!check_for_enemy(7)} sr_idle@in %=enable_save =send_tip_hud(actor:hmm:st_partly_safe_zone_no_enemy_in:15)%
+
+[sr_idle@in]
+on_info = {=check_for_enemy(7)} sr_idle@in_check %=disable_save =send_tip_hud(actor:hmm:st_partly_safe_zone_enemy_in:15)%
+on_actor_outside = sr_idle@out %=enable_save =set_safe_zone(in)%

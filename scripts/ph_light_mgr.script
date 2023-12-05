@@ -1,0 +1,275 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ph_light_mgr.script
+ Description: scheme: "..."
+ Copyright  : 2008 © LA-team
+ Author     : barin (2008-08-19)
+ Editors    : gr1ph00n
+ Last edit  : 16.12.2013 [vintar]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local BLINK_PERIOD  = 600
+local BLOWOUT_FORCE = 50
+
+local LIGHTS_ON_BLOW = {"blink", "on", "off"}
+local BLOW_BULB_SND  = "material\\glass\\glass_fall04hl"
+
+local PARTICLES = {
+	"destroy_fx\\destroy_el_box",
+	"hit_fx\\hit_glass_01",
+	"hit_fx\\hit_glass_01a"
+}
+local OSC_DATA =  {
+	joint  = "provod",
+	period = 500,
+	force  = 1.5,
+	angle  = 0
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/------------------------------------------------------------------------------------------------
+class "action_lights_handler"
+--/------------------------------------------------------------------------------------------------
+function action_lights_handler:__init(obj, st)
+	self.object  = obj
+	self.st      = st
+	self.log     = st.log
+	self.enabled = false
+	
+	self.lights_on     = nil
+	self.on_blowout    = nil
+	self.lights_status = nil
+	self.blow_timer    = nil
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_lights_handler:reset_scheme()
+--	log("reset_scheme:obj=[%s]", self.object:name(), "") --/#~#
+	self.lights_on  = self.st.lights_on
+	self.on_blowout = self.st.on_blowout
+	
+	self.lights_status = nil
+	self.blow_timer    = nil
+	
+	if self.st.oscillator then
+		self.osc_base_force = self.st.force
+		self.oscillator = ph_oscillate.action_oscillator(self.object, self.st)
+		self.oscillator:reset_scheme()
+	end
+	
+	self.enabled = true
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_lights_handler:update()
+	if not self.enabled then
+		self:reset_scheme()
+		return
+	end
+	
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	
+	if self.oscillator then
+		self.oscillator:update()
+	end
+	
+	if level_weathers.is_blowout_active() then
+		if self.oscillator ~= nil then
+			if self.st.force == self.osc_base_force then
+				self.st.force = BLOWOUT_FORCE
+				self.oscillator:reset_scheme()
+			end
+		end
+		self:handle_blowout()
+		return
+	else
+		if self.blow_timer ~= nil then
+			self.blow_timer = nil
+			if self.oscillator ~= nil then
+				self.st.force = self.osc_base_force
+				self.oscillator:reset_scheme()
+			end
+		end
+	end
+	
+	if self.lights_on == "always_off" then
+		self:switch_lights("turn_off")
+		return
+	end
+	
+	if self.lights_on == "blink" then
+		self:handle_blinking()
+		return
+	end
+	
+	if not utils.is_day() then
+		if self.lights_on == "night" then
+			self:switch_lights("turn_on")
+		elseif self.lights_on == "day" then
+			self:switch_lights("turn_off")
+		else
+			self:switch_lights("turn_on") --/ "always_on"
+		end
+	else
+		if self.lights_on == "night" then
+			self:switch_lights("turn_off")
+		elseif self.lights_on == "day" then
+			self:switch_lights("turn_on")
+		else
+			self:switch_lights("turn_on") --/ "always_on"
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function action_lights_handler:handle_blinking()
+	if math.random(1, 1000) % 2 == 0 then
+		self:switch_lights("turn_off")
+	else
+		self:switch_lights("turn_on")
+	end
+end
+
+function action_lights_handler:handle_blowout()
+	local action = true
+	if surge_manager.is_blowout_visible() or psi_storm_manager.is_blowout_visible() then
+		if surge_manager.is_blowout_finishing() or psi_storm_manager.is_blowout_finishing() then
+			action = false
+		end
+	end
+	
+	if action then
+		if self.blow_timer == nil then
+			self.blow_timer = time_global() + BLINK_PERIOD
+		end
+		if self.on_blowout == "blink" then
+			if self.blow_timer <= time_global() then
+				--if math.random() > 0.5 then
+				if math.random(1, 1000) % 2 == 0 then
+					self:switch_lights("turn_off")
+				else
+					self:switch_lights("turn_on")
+				end
+				self.blow_timer = time_global() + BLINK_PERIOD
+			end
+		elseif self.on_blowout == "off" then
+			if self.lights_status == "turn_on" then
+				if not self.lamp_part then
+					self.lamp_part = particles_object(PARTICLES[math.random(1, #PARTICLES)])
+					local pos = nil --self.object:bone_position("bone_lamp")
+					if self.object:bone_exist("bone_lamp") then
+						pos = self.object:bone_position("bone_lamp")
+					elseif self.object:bone_exist("empty_lamp") then
+						pos = self.object:bone_position("empty_lamp")
+					else
+						pos = self.object:position()
+					end
+					self.lamp_part:play_at_pos(pos)
+					xr_sound.get_safe_sound_object(BLOW_BULB_SND):play_at_pos(self.object, pos)
+					self:switch_lights("turn_off")
+				elseif not self.lamp_part:playing() then
+					self.lamp_part = nil
+				end
+			end
+		else
+			self:switch_lights("turn_on")
+		end
+	else
+		self:switch_lights("turn_off")
+	end
+end
+
+function action_lights_handler:switch_lights(action)
+	if self.lights_status == action then
+		return
+	end
+	
+	if action == "turn_on" then
+		self.object:get_hanging_lamp():turn_on()
+	else
+		self.object:get_hanging_lamp():turn_off()
+		--[[
+		local h = hit()
+		h.direction = vector():set(0, -1, 0)
+		--h:bone("bone_lamp")
+		h.draftsman = db.actor
+		h.type = hit.strike
+		h.impulse = 1
+		h.power = 1
+		self.object:hit(h)
+		--]]
+	end
+	self.lights_status = action
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function action_lights_handler:deactivate()
+end
+
+--/------------------------------------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local oNewAction = this.action_lights_handler(obj, st)
+	--/ action registration, for 'reset_scheme' method call in case of change of settings of the scheme:
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section)
+--	log("set_scheme: Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.lights_on  = Get_Cfg_String(ini, section, "lights_on",  "night")
+	st.on_blowout = Get_Cfg_String(ini, section, "on_blowout", "random")
+	st.oscillator = Get_Cfg_Bool  (ini, section, "oscillator", false)
+	
+	if st.oscillator then
+		st.joint  = Get_Cfg_String(ini, section, "joint",  OSC_DATA["joint"])
+		st.period = Get_Cfg_Num32 (ini, section, "period", OSC_DATA["period"])
+		st.force  = Get_Cfg_Number(ini, section, "force",  OSC_DATA["force"])
+		st.angle  = Get_Cfg_Number(ini, section, "angle",  OSC_DATA["angle"])
+	end
+	
+	if st.on_blowout == "random" then
+		st.on_blowout = LIGHTS_ON_BLOW[math.random(1,3)]
+	end
+	
+	if st.lights_on ~= "night" and st.lights_on ~= "day" and st.lights_on ~= "always_on" and st.lights_on ~= "always_off" and st.lights_on ~= "blink" then
+		abort("%s:set_scheme: '%s' : wrong 'lights_on' value, used '%s'!", sModule, obj:name(), tostring(st.lights_on))
+		st.lights_on = "night"
+	end
+	if st.on_blowout ~= "blink" and st.on_blowout ~= "on" and st.on_blowout ~= "off" then
+		abort("%s:set_scheme: '%s' : wrong 'on_blowout' value!", sModule, obj:name())
+		st.on_blowout = "blink"
+	end
+	--/ fot debug:
+	if st.log then log("set_scheme: Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	local st = db.storage[obj:id()][scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(obj, st, st.action)
+	end
+end
+--/------------------------------------------------------------------------------------------------

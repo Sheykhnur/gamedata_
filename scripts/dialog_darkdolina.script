@@ -1,0 +1,161 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : dialog_darkdolina.script
+ Description: Dialog & InfoPortions Function for Darkdolina
+ Copyright  : 2004 © GSC Game World
+ Author     : gr1ph00n
+ Editors    : gr1ph00n, vintar, lox
+ Last edit  : 07.05.2017 [lox]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+
+function can_meet_gusarov1()
+	return has_info("dol_meet_gusarov_start") and not has_info("dol_meet_gusarov_done")
+end
+
+function can_meet_gusarov2()
+	return has_info("dol_meet_gusarov_done") and not ((has_info("dol_asked_suit") and has_info("dol_asked_pass")) or has_info("dol_get_doc_about_x18_done"))
+end
+
+function can_meet_drunken()
+	return has_info("dol_get_password_start") and has_info("dol_get_bandit_suit_done") and not has_info("dol_drunken_found")
+end
+
+function give_vodka(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	if oActor:object("vodka") then
+		dialogs.relocate_item_section(oNPC, "vodka", "out")
+	end
+end
+
+function drink_vodka()
+	local oItem = db.actor:object("vodka")
+	if oItem then
+		db.actor:iterate_inventory(function (dummy, item) if string.find(item:section(), "vodka") then release_item = item:section() end end, nil)
+		alife():release(alife():object(db.actor:object(release_item):id()))
+		vodka_snd = sound_object("interface\\item_usage\\vodka_use")
+		vodka_snd:play(db.actor, 0, sound_object.s2d)
+		level.add_cam_effector("camera_effects\\weapon\\vodka_hands_eat_invtrans.anm",8020,false,"")
+		log("script vodka")
+	end
+end
+
+function can_meet_informer()
+	return has_info("dol_get_password_done")  and not has_info("dol_meet_mono_informer_done")
+end
+
+function has_1500_rubles()
+	return db.actor:money() >= 6000
+end
+
+function not_has_1500_rubles()
+	return not has_1500_rubles()
+end
+
+function pay_informer(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oNPC, 6000, "out")
+	give_info_portions({"dol_meet_informer_done", "dol_get_doc_about_x18_start"})
+end
+
+function mark_entrance()
+	local se_obj = alife():object("ug_marker")
+	if se_obj then 
+		Add_MapSpot(se_obj.id, "crlc_big", "val_old_entrance") 
+	end
+end
+
+function unmark_entrance()
+	local se_obj = alife():object("dolina_space_restrictor_0000")
+	if se_obj then 
+		Del_MapSpot(se_obj.id, "crlc_big") 
+	end
+end
+
+function actor_failed_bandits()
+	if has_info("dol_bandits_enemy")  and not has_info("dol_drunken_found") then
+		give_info("dol_actor_failed")
+		return true
+	end
+	return false
+end
+
+function actor_failed_monolith()
+	if has_info("dol_monolith_enemy")  and not has_info("dol_meet_informer_done") then
+		give_info("dol_actor_failed")
+		return true
+	end
+	return false
+end
+
+function give_Borziy_pda(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	if oActor:object("cit_borziy_pda") then
+		dialogs.relocate_item_section(oNPC, "cit_borziy_pda", "out")
+		dialogs.relocate_money(oActor, 7000, "in")
+		dialogs.relocate_item_section(oActor, "wpn_fort_m2", "in")
+	end
+end
+
+function killed_borziy_and_pda()
+	if (has_info("dol_mil_bandit_pda_have") and has_info("cit_bandit_leader_dead")) then
+		return true
+	end
+	return false
+end
+
+function dol_guard_20000_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oNPC, 20000, "out")
+	start_quick_timer(1, this.dol_guard_timer_portion)
+end
+
+function dol_guard_timer_portion()
+	give_info("dol_bandit_guard_timer")
+end
+
+function bandits_stash_sold()
+	return has_info("dol_guard_5000") and has_info("dol_guard_7000") and has_info("dol_guard_10000")
+end
+
+function bandit_trader_start_timer()
+	start_quick_timer(10, this.bandit_trader_end_timer)
+end
+
+function bandit_trader_end_timer()
+	give_info("dol_trader_time_to_smoke")
+end
+
+function dolina_borov_timer()
+	start_real_timer(3.5, nil, {info_id = "dol_borov_leave"}) --/ we need saving here
+end
+
+function actor_back_to_loners()
+	if not db.actor:character_community() == "actor_dolg" and not db.actor:character_community() == "actor_freedom" then
+		db.actor:set_character_community("actor", 0, 0)
+	end
+end
+
+function join_bandits()
+	db.actor:set_character_community("actor_bandit", 0, 0)
+end
+
+function give_bandit_pda()
+	dialogs.lost_items("dol_bandit_patch")
+	dialogs.lost_items("dol_bandit_pda")
+end
+
+function give_bandit_pda2(oSpeaker1, oSpeaker2)
+	dialogs.lost_items("dol_bandit_patch", 8)
+	dialogs.lost_items("dol_bandit_list")
+	dialogs.relocate_money(oSpeaker1, 7000, "in")
+end
+--/ -----------------------------------------------------------------------------------------------

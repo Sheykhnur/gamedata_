@@ -1,0 +1,102 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = crash_generic_buy
+sell_condition = crash_sell_start
+buy_supplies = {+has_freeplay_info}supplies_freeplay, {+bas_switcher_off +deactivate_radar_done}supplies_before_prip, {+yan_good_helmet_start}supplies_after_helmet, supplies_start
+discounts = discount_start
+
+buy_item_condition_factor = 0.75
+
+[discount_start]
+buy  = 0.98
+sell = 1.02
+
+[crash_generic_buy]:buy_misc_cheap,buy_artefacts_cheap,buy_ammo_high,buy_weapons_high
+
+[crash_sell_start]:sell_all_normal,sell_ammo_high
+
+
+[supplies_start]
+ammo_.44_reg                         = 8, 0.7
+ammo_.44_frag                        = 3, 0.7
+ammo_11.43x23_fmj                    = 10, 0.5
+ammo_11.43x23_hydro                  = 8, 0.4
+ammo_5.7x28_ap                       = 10, 0.7
+ammo_5.7x28_jhp                      = 10, 0.7
+ammo_5.56x45_ss190                   = 15, 0.5
+ammo_5.56x45_ap                      = 8, 0.5
+ammo_5.45x39_ap                      = 10, 0.8
+ammo_7.62x39_s						 = 8, 0.8
+ammo_9x18_pmm                        = 8, 0.6
+ammo_7.62x51_fmj                     = 8, 0.5
+ammo_7.62x54_7h1                     = 5, 0.5
+ammo_9x19_fmj                        = 10, 0.6
+ammo_9x19_pbp                        = 15, 0.6
+
+wpn_p90                              = 2, 0.85
+wpn_fn57                             = 2, 0.85
+wpn_sig220                           = 2, 0.9
+wpn_lr300                            = 2, 0.9
+wpn_beretta                          = 2, 0.7
+wpn_hpsa                             = 2, 0.8
+
+wpn_addon_scope_susat_x1.6			 = 1, 0.8
+wpn_addon_silencer_918               = 1, 0.8
+wpn_addon_silencer_545               = 1, 0.8
+wpn_addon_silencer_556               = 1, 0.8
+wpn_addon_silencer_45				 = 1, 0.8
+wpn_addon_silencer_57				 = 1, 0.8
+
+device_torch_eco                     = 1, 0.6
+
+
+[supplies_after_helmet]:supplies_start
+ammo_.44_frag                        = 20, 0.7
+ammo_11.43x23_hydro                  = 20, 0.4
+ammo_5.56x45_ap                      = 20, 0.5
+ammo_7.62x51_fmj                     = 15, 0.5
+ammo_7.62x54_7h1                     = 15, 0.5
+ammo_9x19_fmj                        = 10, 0.6
+ammo_9x19_pbp                        = 15, 0.6
+ammo_m209                            = 3, 0.7
+
+wpn_sr25                             = 2, 0.9
+wpn_usp                              = 2, 0.8
+wpn_sig550                           = 2, 0.8
+
+wpn_addon_silencer_76251             = 1, 0.8
+wpn_addon_grenade_launcher_m203      = 1, 0.8
+wpn_addon_scope                      = 1, 0.8
+wpn_addon_scope_susat                = 1, 0.8
+
+wpn_electron_binoc                   = 1, 0.8
+device_torch_adv					 = 1, 0.8
+device_torch_eco                     = 2, 0.7
+
+
+[supplies_before_prip]:supplies_after_helmet
+ammo_8.6x70_ap                       = 12, 0.7
+ammo_7.62x51_fmj                     = 15, 0.9
+ammo_7.62x51_ap                      = 12, 0.9
+ammo_556_200                       	 = 6, 0.7
+ammo_556_200_ap                   	 = 6, 0.7
+ammo_762_100                   	 	 = 6, 0.7
+
+wpn_vepr_m1                          = 2, 1.0
+wpn_barrett_m98                      = 2, 1.0
+wpn_m249                             = 2, 0.8
+wpn_m249_762                         = 2, 0.8
+wpn_galil_762                        = 2, 0.8
+wpn_g36                              = 2, 0.6
+
+wpn_addon_scope_galil                = 1, 0.8
+wpn_addon_silencer_76251             = 1, 1.0
+
+
+[supplies_freeplay]:supplies_before_prip
+ammo_7.62x51_fmj					 = 15, 0.8
+ammo_7.62x51_ap					 	 = 15, 0.8
+
+wpn_addon_scope_galil_live_var       = 1, 1.0
+wpn_addon_scope_galil_night_var      = 1, 1.0

@@ -1,0 +1,149 @@
+;-------*Основа*-------- Воронка
+[zone_gravi_zone]
+$prefetch 					= 16
+class						= ZS_GALAN
+name						= Gravi
+
+hit_power					= 0.99
+
+ef_anomaly_type				= 5
+ef_weapon_type				= 17
+
+sound						= zone_mosquito_bald
+attenuation					= 1
+period						= 1
+
+idle_particles				= anomaly2\vortex_idle_hide
+blowout_particles			= anomaly2\gravity_blast_final00 ;gravity_blast_03
+tearing_particles			= anomaly2\body_tear_00
+torn_particles     			= anomaly2\body_tear_01
+
+hit_small_particles			= hit_fx\hit_metal_02
+hit_big_particles			= anomaly2\gravity_damage_02_blood2
+idle_small_particles		= anomaly2\gravity_damage_01_smoke
+idle_big_particles			= anomaly2\gravity_damage_02_smoke
+entrance_small_particles	= anomaly2\gravi_anomaly_shield_00
+entrance_big_particles		= anomaly2\gravi_anomaly_00;
+
+tele_particles_small		= anomaly2\gravity_damage_01_smoke ;anomaly2\gravity_damage_01_smoke
+tele_particles_big			= anomaly2\gravity_damage_02_smoke	
+
+idle_sound					= anomaly\gravi_idle00					;постоянный звук
+blowout_sound				= anomaly\gravi_blowout6 				;во время выброса(удара) в центре аномалии	
+hit_sound					= anomaly\anomaly_gravy_hit1			;на персонаже, когда тот получает хит
+body_tearing_sound			= anomaly\anomaly_body_tear_1			;звук разрывания трупа
+entrance_sound				= anomaly\gravi_idle01					;при попадании объекта в аномалию
+
+hit_type					= strike
+hit_impulse_scale			= 0.1									;соотношение физического импульса и силы хита
+effective_radius			= 0.7 									;размер радиуса в процентах от оригинального, где действует зона
+
+disable_time				= 5000									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 500									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 100									;время отключения idle партиклов
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+blowout_light				= off
+idle_light					= off
+
+awaking_time				= 50
+blowout_time				= 2500	
+accamulate_time				= 4000
+
+blowout_light_time			= 2100
+blowout_explosion_time		= 2100
+
+;----------- параметры телекинеза для зоны
+throw_in_impulse			= 1000;3000;4000						;сила импульса втягивания (для тела 100кг)
+throw_out_impulse			= 4000;									;сила выбрасывания взрывом
+throw_in_impulse_alive		= 600									;сила импульса втягивания для живых
+throw_in_atten				= 1.2									;коэфф. затягивания (чем меньше, тем плавнее затягивает)
+blowout_radius_percent		= 0.6									;радиус (в процентах от всего радиуса) непосредственно выброса
+actor_blowout_radius_percent= 0.6
+
+tele_height					= 0.05;	3.5								;высота подъема телекинеза 
+time_to_tele				= 5000									;время деражания объекта в воздухе
+tele_pause					= 5000									;пауза перед тем как снова поднять упавший объект
+
+visible_by_detector 		= on
+
+blowout_wind				= on
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 1500
+blowout_wind_time_end		= 2501; 2499
+blowout_wind_power			= 0.5									;сила поднимаего ветра (от 0 до 1), в момент blowout_wind_time_peak 
+
+artefacts					= af_vyvert,4,af_gravi,2,af_twine,2,af_crescent,2,
+
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts 	= on
+artefact_spawn_probability 	= 0.04									;вероятность, что во время погибания существа в аномалии будет рожден артефакт
+artefact_spawn_particles 	= anomaly2\gravi_anomaly_shield_00		;партиклы, которые отыграются на месте рождения артефакта (опционально)
+artefact_born_sound 		= anomaly\anomaly_gravy_hit1			;звук, который отыграются на месте рождения артефакта (опционально)
+throw_out_power				= 5										;импульс с которым артефакт будет выброшен из зоны в произвольном направлении
+artefact_spawn_height		= 1										;(м) высота на центром зоны где будет рожден артефакт
+artefact_spawn_cicles		= 1									;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2
+
+;----------- рождение артефактов на старте
+art_onstart_spawn			= true
+art_onstart_spawn_prob		= 0.02
+art_onstart_spawn_cicles	= 1
+
+
+;-------*Слабая*--------
+[zone_gravi_zone_weak]:zone_gravi_zone
+$spawn 						= "zones\vortex\zone_vortex_weak"
+
+artefacts					= af_vyvert,8
+
+hit_power					= 0.59
+
+;-------Не производящая артефактов на спавне
+[zone_gravi_zone_weak_noart]:zone_gravi_zone_weak,anomaly_base_noart
+$spawn 						= "zones\vortex\zone_vortex_weak_noart"
+
+
+;-------*Средняя*--------
+[zone_gravi_zone_average]:zone_gravi_zone
+$spawn 						= "zones\vortex\zone_vortex_average"
+
+hit_power					= 0.99
+
+artefacts					= af_gravi,8,af_twine,8,af_crescent,8
+
+;-------Не производящая артефактов на спавне
+[zone_gravi_zone_average_noart]:zone_gravi_zone_average,anomaly_base_noart
+$spawn 						= "zones\vortex\zone_vortex_average_noart"
+
+
+;-------*Сильная*--------
+[zone_gravi_zone_strong]:zone_gravi_zone
+$spawn 						= "zones\vortex\zone_vortex_strong"
+
+hit_power					= 1.4
+
+artefacts					= af_soother,8
+
+;-------Не производящая артефактов на спавне
+[zone_gravi_zone_strong_noart]:zone_gravi_zone_strong,anomaly_base_noart
+$spawn 						= "zones\vortex\zone_vortex_strong_noart"
+
+
+;-------*Очень сильная*--------
+[zone_gravi_zone_very_strong]:zone_gravi_zone
+$spawn 						= "zones\vortex\zone_vortex_very_strong"
+
+hit_power					= 1.79
+
+artefacts					= af_soother,1,af_gold_fish,2,af_dummy_glassbeads,2
+
+;-------Не производящая артефактов на спавне
+[zone_gravi_zone_very_strong_noart]:zone_gravi_zone_very_strong,anomaly_base_noart
+$spawn 						= "zones\vortex\zone_vortex_very_strong_noart"
+
+
+[zone_gravi_zone_killing]:zone_gravi_zone_strong,anomaly_base_noart
+$spawn 						= ""

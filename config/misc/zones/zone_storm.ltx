@@ -1,0 +1,95 @@
+;;; ЭЛЕКТРО-Карусель (только 1 в Саркофаге и 1 в Лесу, больше нигде нет)
+[zone_galantine]
+$spawn 						= "zones\old galantine"
+$prefetch 					= 16
+class						= ZS_GALAN
+name						= Storm
+
+sound						= zone_mosquito_bald
+postprocess					= postprocess_electra
+
+idle_particles				= anomaly2\electra_idle
+blowout_particles			= anomaly2\electra2_blast
+
+hit_small_particles			= hit_fx\hit_metal_02
+hit_big_particles			= anomaly2\gravity_damage_02_blood2
+idle_small_particles		= anomaly2\electra_damage_01_smoke
+idle_big_particles			= anomaly2\electra_damage_02_smoke
+entrance_small_particles	= 
+entrance_big_particles		= anomaly2\electra_entrance_big
+
+idle_sound					= anomaly\anomaly_gravy_idle
+blowout_sound				= anomaly\electra_blast1
+hit_sound					= anomaly\electra_hit
+entrance_sound				= 
+
+blowout_light				= on
+light_color		    		= 0.8,0.9,1
+light_range		    		= 40.0
+light_time 		    		= 1;0.35
+light_height				= 1.5									;подъем источника света на высоту
+
+idle_light					= off
+
+hit_type					= shock
+hit_impulse_scale			= 0.3
+
+disable_time				= 50									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 500									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 1000									;время отключения idle партиклов
+
+awaking_time				= 1000
+blowout_time				= 300	
+accamulate_time				= 25000
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+visible_by_detector 		= on
+
+blowout_wind				= on
+
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 5900
+blowout_wind_time_end		= 10000
+blowout_wind_power			= 0.2									;сила поднимаего ветра (от 0 до 1), в момент blowout_wind_time_peak 
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+tearing_particles			= anomaly2\body_tear_00
+torn_particles      		= anomaly2\body_tear_01
+
+body_tearing_sound			= anomaly\anomaly_body_tear_1			;звук разрывания трупа
+
+hit_power					= 0.99
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= false
+art_onstart_spawn_prob		= 0.0
+art_onstart_spawn_cicles	= 3
+effective_radius			= 0.75 									;размер радиуса в процентах от оригинального, где действует зона
+
+;telekinetic settings
+throw_in_impulse			= 2000									;сила импульса втягивания (для тела 100кг)
+throw_out_impulse			= 4000									;сила выбрасывания взрывом
+throw_in_impulse_alive		= 400									;сила импульса втягивания для живых
+throw_in_atten				= 2;8									;коэфф. затягивания (чем меньше, тем плавнее затягивает)
+blowout_radius_percent		= 0.8									;радиус (в процентах от всего радиуса) непосредственно выброса
+actor_blowout_radius_percent= 0.5
+
+tele_height					= 0.05;	3.5								;высота подъема телекинеза 
+time_to_tele				= 5000									;время деражания объекта в воздухе
+tele_pause					= 5000									;пауза перед тем как снова поднять упавший объект
+
+artefacts					= af_twinkle,8,af_jewel,8,af_electra_flash,1,af_electra_moonlight,1,af_ice,1
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts 	= off
+artefact_spawn_probability  = 0.00									;вероятность, что во время погибания существа в аномалии будет рожден артефакт
+artefact_spawn_particles 	= anomaly2\electra_entrance_small		;партиклы, которые отыграются на месте рождения артефакта (опционально)
+artefact_born_sound 		= anomaly\electra_hit					;звук, который отыграются на месте рождения артефакта (опционально)
+throw_out_power 			= 5										;импульс с которым артефакт будет выброшен из зоны в произвольном направлении
+artefact_spawn_height 		= 1										;(м) высота на центром зоны где будет рожден артефакт
+artefact_spawn_cicles		= 1										;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2

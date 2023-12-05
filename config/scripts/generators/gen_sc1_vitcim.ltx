@@ -1,0 +1,25 @@
+[combat_ignore@vitcim]
+
+[logic]
+active = remark@gen_vitcim
+combat_ignore = combat_ignore@vitcim
+
+[walker@gen_vitcim]
+path_walk = gen_execution1
+on_timer = 500 | remark@gen_vitcim
+combat_ignore_cond = always
+on_info = {+gen_sc1_end} %=release%
+
+[remark@gen_vitcim]
+anim = death_no_ragdoll
+target = gen_execution1, 0
+combat_ignore_cond = always
+on_timer = 11000 | remark@gen_playback
+on_info = {+gen_sc1_end} %=release%
+
+[remark@gen_playback]
+anim = death_no_ragdoll_cycle
+target = gen_execution1, 0
+combat_ignore_cond = always
+on_timer = 5000 | remark@gen_vitcim
+on_info = {+gen_sc1_end} %=release%

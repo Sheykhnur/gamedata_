@@ -1,0 +1,175 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_bunker.script
+ Description: Gulags bunker
+ Copyright  : 2013 © LA-team
+ Author     : vintar
+ Editors    : vintar(31.10.2012), lox(23.02.2013)
+ Last edit  : 23.02.2013 (by vintarl [edited by loxotron 25.04.17]
+--]] ----------------------------------------------------------------------------------------------
+-- groups crash should be fixed now on map... -- lox
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	--/ for monsters ------------------------------
+	dam_bloodsucker_terrain1     = {comm = {"bloodsucker"}},
+	dam_snork_terrain1           = {comm = {"snork"}},
+	dam_rat_terrain              = {comm = {"rat","tushkano"}},
+	dam_station_snork_terrain    = {comm = {"snork"}},
+	dam_station_tushkano_terrain = {comm = {"tushkano"}},
+	dam_station_zombie_terrain   = {comm = {"zombie"}},
+	dam_zombie_entrance_terrain  = {comm = {"zombie"}},
+	dam_zombied_terrain			 = {comm = {"zombied"}},
+	ladc_damned_snork_terrain    = {comm = {"snork"}},
+	ladc_damned_zombie_terrain1	 = {comm = {"zombied"}},
+	ladc_damned_zombie_terrain2	 = {comm = {"zombied"}},
+	ladc_damned_zombie_terrain3	 = {comm = {"zombied"}},
+	ladc_damned_zombie_terrain4	 = {comm = {"zombied"}},
+	ladc_damned_zombie_terrain5	 = {comm = {"zombied"}},
+	ladc_damned_zombie_terrain6	 = {comm = {"zombied"}},
+	ladc_damned_civil_terrain    = {comm = {"zombie"}},
+}
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ -----------------------------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ bloodsuckers
+--/ ---------------------------------------------
+gulags.dam_bloodsucker_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("off_bloodsucker" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, nil))
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, nil))
+	end
+end
+
+gulags.dam_bloodsucker_terrain1.state = function(gulag)
+	if has_info("dam_spawn_suckers") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ snorks
+--/ ---------------------------------------------
+gulags.dam_snork_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("snork" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.dam_station_snork_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("snork" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.dam_rat_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 17 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+--/ tushkanos
+--/ ---------------------------------------------
+gulags.dam_station_tushkano_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("tushkano" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.dam_station_zombie_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.dam_zombie_entrance_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_snork_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 23 do
+		table.insert(sj, gulag_tasks.getJob("snork" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.dam_zombied_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("zombied" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_zombie_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_zombie_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_zombie_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_zombie_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_zombie_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_zombie_terrain6.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+gulags.ladc_damned_civil_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "dam_code_door_restrictor", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

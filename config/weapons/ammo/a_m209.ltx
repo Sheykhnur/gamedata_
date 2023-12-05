@@ -1,0 +1,62 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_m209]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_m209"
+can_be_unlimited            = true ;false
+cform                       = skeleton
+class                       = A_M209
+discovery_dependency        =
+fake_grenade_name           = wpn_fake_missile_m209
+GroupControlSection         = spawn_group
+kill_msg_height             = 22
+kill_msg_width              = 19
+kill_msg_x                  = 61
+kill_msg_y                  = 232
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_m209.ogf
+tracer                      = off
+wm_size                     = 0.05
+
+; Icon
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 33
+inv_grid_y         = 20
+
+; Text
+inv_name                    = ammo-m209
+inv_name_short              = ammo-m209_s
+description                 = enc_weapons1_ammo_ammo-m209
+
+; Economy
+cost                        = 1800
+inv_weight                  = .23
+box_size                    = 1
+
+; Impact
+k_hit                       = 3.0
+k_ap                        = 0.3
+k_pierce                    = 1.4
+k_impulse                   = 1
+impair                      = 1
+buck_shot                   = 0
+
+; Ballistics
+k_disp                      = 1
+k_dist                      = 1
+
+
+[weapon_m209]
+grenade_flame_particles                 = weapons\generic_weapon01
+
+snd_reload_grenade                      = weapons\m203\M203_reload
+snd_shoot_grenade                       = weapons\m203\M203_grenshoot
+snd_switch                              = weapons\m203\M203_switch
+
+grenade_class                           = ammo_m209
+
+grenade_vel                             = 76
+launch_speed                            = 76
+
+grenade_launcher_name                   = wpn_addon_grenade_launcher_m203

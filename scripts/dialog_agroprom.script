@@ -1,0 +1,60 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_agroprom.script
+ Description: Dialog & InfoPortions function for Agroprom
+ Copyright  : 2010 © LA-team
+ Author     : vintar
+ Editors    : vintar(28.07.2012)
+ Last edit  : 05.04.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function has_gravi()
+	return db.actor:object("af_gravi") ~= nil
+end
+
+function has_blood()
+	return db.actor:object("af_blood") ~= nil
+end
+
+function give_gravi(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "af_gravi")
+end
+
+function give_blood(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "af_blood")
+end
+
+function give_soul(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "af_glass_ball")
+end
+
+local artefact_table = {
+	["af_gold_fish"]        = "agr_liar_need_fish",
+	["af_rusty_sea_urchin"] = "agr_liar_need_urchin",
+	["af_rusty_kristall"]   = "agr_liar_need_kristall",
+	["af_glass_ball"]       = "agr_liar_need_soul",
+	["af_ameba_slime"]      = "agr_liar_need_slime",
+	["af_mincer_meat"]      = "agr_liar_need_chunk"
+}
+
+function has_artefact()
+	for sect,info in pairs(artefact_table) do
+		if not db.actor:object(sect) then
+			give_info(info)
+			return -->
+		end
+	end
+	give_info("agr_liar_has_all_artefacts")
+end
+--/ -----------------------------------------------------------------------------------------------

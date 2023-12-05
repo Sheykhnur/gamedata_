@@ -1,0 +1,16 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = sr_idle@delay %=rad_psy_basic_clear =set_weather(indoor_fog) =spawn_object(controller_basement_task:bas_sp1) =psy_hit(0.5)%
+
+[sr_idle@delay]
+on_timer = 3000|sr_idle@teleport1
+
+[sr_idle@teleport1]
+on_actor_inside = sr_idle@teleport2 %=teleport_actor(bas_actor_teleport_walk:bas_actor_teleport_look) =rad_psy_basic_clear =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh3) =psy_hit(0.6)%
+on_info = {+bas_switcher_off} nil %=release%
+
+[sr_idle@teleport2]
+on_actor_inside = sr_idle@teleport1 %=teleport_actor(bas_actor_teleport_walk:bas_actor_teleport_look) =rad_psy_basic_clear =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh2) =psy_hit(0.6)%
+on_info = {+bas_switcher_off} nil %=release%

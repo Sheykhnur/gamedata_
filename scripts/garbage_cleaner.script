@@ -1,0 +1,207 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : garbage_cleaner.script
+ Description: Cleans garbage objects from maps.
+	- Will only delete objects dropped by NPCs or player during gameplay.
+	- Will keep any item with "unique_item" or "quest_item" flags set in config.
+ Copyright  : 2017 © LA-team
+ Author     : phobos2077
+ Editors    : 
+ Last edit  : 07.11.2017 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+local NONE_PARENT_ID = 65535
+
+local sModule = script_name()
+
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+
+--- Limits of objects per level by category.
+local object_limits = {weapons = 10, items = 30}
+
+--- Minimum "age" of garbage (number of minutes from the moment it was thrown away) to remove it, regardless of limits
+local total_cleanup_min_age = 60
+
+--- Minimum distance to actor to allow item removal (when cleaning current level)
+local min_dist_to_actor = 50
+
+--- Table of all items that were dropped at some point (can be considered for removal).
+-- Keys hold object ID and value - number of seconds passed from starting date when object was dropped.
+local dropped_ids = {}
+
+--- True to handle item drops
+local collect_drops = false
+
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/------------------------------------------------------------------
+function init()
+	log("init")
+	--- Manual cleanup, for testing
+	--[[
+	event("main_menu_key"):register(function(info)
+		if info.ingame then
+			if info.dik == DIK_keys.DIK_C then
+				clean_garbage()
+			end
+		end
+	end)
+	]]--
+	event("presets"):register(PreSets)
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/------------------------------------------------------------------
+function PreSets(e)
+	for k in pairs(object_limits) do
+		object_limits[k] = ReadFromIni(sModule, "options", "max_" .. k, object_limits[k], "number")
+		total_cleanup_min_age = ReadFromIni(sModule, "options", "total_cleanup_min_age", total_cleanup_min_age, "number")
+		min_dist_to_actor = ReadFromIni(sModule, "options", "min_dist_to_actor", min_dist_to_actor, "number")
+	end
+
+	-- log("PreSets")
+	load()
+	event("actor_spawned"):register(function()
+		-- log("actor_spawned() ...")
+		clean_garbage()
+		collect_drops = true
+	end)
+	event("actor_destroy"):register(function()
+		-- log("actor destroyed")
+		collect_drops = false
+	end)
+	event("item_drop"):register(handle_item_drop)
+	event("item_drop_npc"):register(handle_item_drop)
+	event("item_take"):register(handle_item_take)
+	event("item_take_npc"):register(handle_item_take)
+	event("actor_save"):register(save)
+end
+
+function handle_item_drop(info)
+	if info.destroy then return end -- don't care if item is dropped because it is being destroyed
+	local by = info.npc and info.npc:name() or "player"
+	local parent = info.item:parent()
+	-- log("item dropped: %d [%s] by %s (%s)", info.item:id(), info.item:section(), by, parent and parent:name())
+	if collect_drops and isGarbage(info.item) then --  and (not info.npc or not destroyed_npcs[info.npc:id()]) 
+		-- log("Garbage - adding to table")
+		dropped_ids[info.item:id()] = Get_PastSeconds()
+	end
+end
+
+function handle_item_take(info)
+	if info.spawn then return end -- don't care if item is taken because it is being spawned
+	local by = info.npc and info.npc:name() or "player"
+	-- log("item taken: %d [%s] by %s", info.item:id(), info.item:section(), by)
+	dropped_ids[info.item:id()] = nil
+end
+
+function save()
+	-- log("saving %s ids.", table.size(dropped_ids))
+	SetVar("sav_" .. sModule, {dropped = dropped_ids})
+end
+
+function load()
+	local data = GetVar("sav_" .. sModule, {})
+	dropped_ids = data.dropped or {}
+	-- log("loaded %s ids:", table.size(dropped_ids))
+end
+
+function isGarbage(obj)
+	local sect = obj.section and obj:section() or obj:section_name()
+	return (not obj.parent_id or obj.parent_id == NONE_PARENT_ID)
+		and (isWeapon(obj) or isAmmo(obj) or isSuit(obj) or isItems(obj))
+		and not all_items.is_unique_item(sect)
+		and not all_items.is_quest_item(sect)
+end
+
+--- Gets garbage category by what the object is.
+-- @param obj Alife object.
+-- @return category name
+function get_object_category(obj)
+	if isWeapon(obj) then
+		return "weapons"
+	end
+	return "items"
+end
+
+function get_object_position(obj)
+	if obj.online then
+		local oObj = level.object_by_id(obj.id)
+		if oObj then
+			return oObj:position()
+		end
+	end
+	return obj.position
+end
+
+--- Distance from object to actor in local level coordinates.
+function get_level_distance_to_actor(obj)
+	return get_object_position(obj):distance_to(db.actor:position())
+end
+
+function remove_garbage_object(obj)
+	dropped_ids[obj.id] = nil
+	la_utils.release_object(obj)
+end
+
+function get_age_by_timestamp(timestamp)
+	return math.floor((Get_PastSeconds() - timestamp) / 60)
+end
+
+function clean_garbage()
+	local currentLevelId = alife():level_id()
+	local itemsByCategory = {weapons = {}, items = {}}
+	local numDeleted = 0
+	
+	log("Cleaning garbage based on %d ids.", table.size(dropped_ids))
+	for id, droppedAt in pairs(dropped_ids) do
+		local obj = alife():object(id)
+		if obj and isGarbage(obj) then
+			-- First, check if object is old enough so it can be removed regardless of limits.
+			local age = get_age_by_timestamp(droppedAt)
+			-- log("Checking object %d: %s [%s], age: %s", obj.id, obj:name(), obj:section_name(), age)
+			if age > total_cleanup_min_age then
+				-- log("Old enough, delete")
+				remove_garbage_object(obj)
+				numDeleted = numDeleted + 1
+			else
+				local levelId = game_graph():vertex(obj.m_game_vertex_id):level_id()
+				if levelId == currentLevelId then
+					-- For current level, place in the table for distance-based sorting.
+					local cat = get_object_category(obj)
+					local tbl = itemsByCategory[cat]
+					if not tbl then
+						abort("Invalid category: " .. cat)
+					end
+					table.insert(tbl, {obj, get_level_distance_to_actor(obj)})
+				end
+			end
+		else
+			dropped_ids[id] = nil
+		end
+	end
+	if numDeleted > 0 then
+		log("Deleted %d old objects.", numDeleted)
+		numDeleted = 0
+	end
+	for cat, tbl in pairs(itemsByCategory) do
+		-- log("Checking %s, limit: %d, actual: %d", cat, object_limits[cat], #tbl)
+		if #tbl > object_limits[cat] then
+			-- Sort ascending by distance, so the far ones will be at the end
+			table.sort(tbl, function(a, b)
+				return a[2] < b[2]
+			end)
+			for i = object_limits[cat] + 1, #tbl do
+				if tbl[i][2] >= min_dist_to_actor then
+					local obj = tbl[i][1]
+					-- log("Deleting object %d: %s [%s], distance: %s m, online: %s", obj.id, obj:name(), obj:section_name(), tbl[i][2], obj.online)
+					remove_garbage_object(obj)
+					numDeleted = numDeleted + 1
+				end
+			end
+		end
+	end
+	if numDeleted > 0 then
+		log("Deleted %d objects based on limits.", numDeleted)
+	end
+end

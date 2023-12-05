@@ -1,0 +1,1260 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : _g.script
+ Description: root functions
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin, griph00n, ...
+ Last edit  : 09.02.2017 [SkyLoader]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+
+if not editor() then
+	if jit == nil then profiler.setup_hook() end
+	
+	prefetch("lua_extension") --/#!#
+end
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+idActor = 0 --/#+# ID - game indetificator of actor (0)
+time_infinite = 100000000
+
+local dev = nil
+if not editor() then
+	dev = device()
+end
+
+local sim = nil
+--/ ---------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------------------------------------
+schemes = {} --/ correspondence schemes to modules
+stypes  = {} --/ scheme types
+--/ loads scheme (sSchemeName) from file (sFileName) on hdd and activates in motivator.
+function load_scheme(sFileName, sSchemeName, iSchemeType)
+	schemes[sSchemeName] = sFileName --/< name of file (without extension), in which scheme implemented
+	stypes[sSchemeName]  = iSchemeType --/< name of scheme and type of scheme (from modules)
+end
+
+if not time_global then
+	time_global = function() return dev:time_global() end
+end
+
+--/ ---------------------------------------------
+--/ Functions 'action' (for monsters/cars)
+--/ ---------------------------------------------
+function new_action(...)
+	local oAction = entity_action()
+	local arg = {...}
+	if next(arg) then
+		for _,v in pairs(arg) do
+			if v then
+				oAction:set_action(v)
+			end
+		end
+	end
+	return oAction --/>
+end
+
+function action_first(oObj,...)
+	local oAction = entity_action()
+	local arg = {...}
+	if oObj and next(arg) then
+--		log("action_first:Obj=[%s/%s],#arg=[%s]", oObj:name(), oObj:id(), #arg, "") --/#~#
+		for _,v in pairs(arg) do
+			if v then
+				oAction:set_action(v)
+			end
+		end
+		oObj:command(oAction,true) --/< first
+	else
+		log("action_first:Obj=[%s/%s]:<%s>", oObj and oObj:name(), oObj and oObj:id(), "Warning!") --/#~#
+	end
+	return entity_action(oAction) --/>
+end
+
+function action(oObj,...)
+	local oAction = entity_action()
+	local arg = {...}
+	if oObj and next(arg) then
+--		log("action:Obj=[%s/%s],#arg=[%s]", oObj:name(), oObj:id(), #arg, "") --/#~#
+		for _,v in pairs(arg) do
+			if v then
+				oAction:set_action(v)
+			end
+		end
+		oObj:command(oAction,false) --/< no first
+	else
+		log("action:Obj=[%s/%s]:<%s>", oObj and oObj:name(), oObj and oObj:id(), "Warning!") --/#~#
+	end
+	return entity_action(oAction) --/>
+end
+
+--/#+# object taken under script control
+function start_script_capture(oObj, bReset, sScriptName)
+	if bReset ~= nil and oObj and oObj:can_script_capture() then
+		if bReset == true then --/ with restart?
+			if oObj:get_script() then
+				oObj:script(false, oObj:get_script_name())
+			end
+			oObj:script(true, sScriptName)
+		elseif not oObj:get_script() then
+			oObj:script(true, sScriptName or script_name())
+		end
+	else
+		log("start_script_capture:Obj=[%s]/[%s]/[%s]:wrong_parameters:<%s>", oObj and oObj:name(), bReset, sScriptName, "Warning!")
+	end
+end
+--/#+# check: is any of action exectures (object in script mode)?
+function verify_script_capture(oObj)
+	return oObj ~= nil and oObj:get_script() --/>
+end
+--/#+# disablinf of script mode: object released under 'alife'
+function stop_script_capture(oObj, sScriptName)
+	if oObj and oObj:get_script() then
+		oObj:script(false, sScriptName or script_name())
+	end
+end
+--/ if in current moment exectures some kind of action, interrupt it and disable script mode
+function interrupt_action(oObj, sScriptName)
+	if oObj and oObj:get_script() then
+		oObj:script(false, oObj:get_script_name())
+	end
+end
+--/ (re)launch of script mode
+function reset_action(oObj, sScriptName)
+	if oObj and sScriptName then
+--		log("reset_action:Obj=[%s/%s],ScriptName=[%s]", oObj and oObj:name(), oObj and oObj:id(), sScriptName, "") --/#~#
+		if oObj:get_script() then
+			oObj:script(false, oObj:get_script_name())
+		end
+		oObj:script(true, sScriptName)
+	else
+		log("reset_action:Obj=[%s/%s],ScriptName=[%s]:<%s>", oObj and oObj:name(), oObj and oObj:id(), sScriptName, "Warning!")
+	end
+end
+
+function update_action(oObj, sScriptName, ...)
+	if oObj then
+--		log("update_action:Obj=[%s/%s],ScriptName=[%s]", oObj:name(), oObj:id(), sScriptName, "") --/#~#
+		local oAction = oObj:action() or entity_action()
+		local arg = {...}
+		if next(arg) then
+			for _,v in pairs(arg) do
+				if v then
+					oAction:set_action(v)
+				end
+			end
+		end
+		reset_action(oObj, sScriptName)
+		oObj:command(oAction, false)
+	else
+		log("update_action:Obj=[%s/%s],ScriptName=[%s]:<%s>", oObj and oObj:name(), oObj and oObj:id(), sScriptName, "Warning!")
+	end
+end
+
+local tLastActions = {}
+
+function perform_action(oObj, sActionName, oAction)
+--	log("perform_action:Obj=[%s/%s],Action=[%s]", oObj and oObj:name(), oObj and oObj:id(), sActionName, "") --/#~#
+	if oObj and oAction then
+		tLastActions[oObj:name()] = sActionName
+		oObj:command(oAction, false)
+	end
+end
+function last_action(oObj)
+--	log("last_action:Obj=[%s/%s],Action=[%s]", oObj and oObj:name(), oObj and oObj:id(), oObj and tLastActions[oObj:name()], "") --/#~#
+	return oObj and tLastActions[oObj:name()] --/> sActionName
+end
+
+--/ -----------------------------------------------------------------
+--/ Infoportions:
+--/ -----------------------------------------------------------------
+--/ check for infoportion, even if actor doesn't exist
+function has_alife_info(sInfoId)
+	if sim then
+		return sim:has_info(0, sInfoId) --/>
+	end
+	callstack("has_alife_info: alife=NIL") --/#~# for debug
+	return false --/>
+end
+function has_info(sInfoId)
+	if db.actor then
+		return db.actor:has_info(sInfoId) --/>
+	end
+	return has_alife_info(sInfoId) --/>
+end
+function has_info_portions(tbl_info)
+	if type(tbl_info) == 'table' then
+		for _,sInfoId in pairs(tbl_info) do
+			if not has_info(sInfoId) then
+				return false --/>
+			end
+		end
+		return true --/>
+	end
+	abort("has_info_portions: type_table="..type(tbl_info))
+end
+function has_any_info_portions(tbl_info)
+	if type(tbl_info) == 'table' then
+		for _,sInfoId in pairs(tbl_info) do
+			if has_info(sInfoId) then
+				return true --/>
+			end
+		end
+		return false --/>
+	end
+	abort("has_any_info_portions: type_table="..type(tbl_info))
+end
+--/#+#
+function give_info(sInfoId)
+	if type(sInfoId) == 'string' and db.actor then
+		if db.actor:dont_has_info(sInfoId) then
+			db.actor:give_info_portion(sInfoId)
+		end
+	else
+		abort("give_info: db.actor=["..type(db.actor).."], type_info="..type(sInfoId))
+	end
+end
+function give_info_portions(tbl_info)
+	if type(tbl_info) == 'table' and db.actor then
+		for _,sInfoId in pairs(tbl_info) do
+			if db.actor:dont_has_info(sInfoId) then
+				db.actor:give_info_portion(sInfoId)
+			end
+		end
+	else
+		abort("give_info_portions: db.actor=["..type(db.actor).."], type_table="..type(tbl_info))
+	end
+end
+--/#+#
+function disable_info(sInfoId)
+	if type(sInfoId) == 'string' and db.actor then
+		if db.actor:has_info(sInfoId) then
+			db.actor:disable_info_portion(sInfoId)
+		end
+	else
+		abort("disable_info: db.actor=["..type(db.actor).."], type_info="..type(sInfoId),true)
+	end
+end
+function disable_info_portions(tbl_info)
+	if type(tbl_info) == 'table' and db.actor then
+		for _,sInfoId in pairs(tbl_info) do
+			if db.actor:has_info(sInfoId) then
+				db.actor:disable_info_portion(sInfoId)
+			end
+		end
+	else
+		abort("disable_info_portions: db.actor=["..type(db.actor).."], type_table="..type(tbl_info))
+	end
+end
+function check_info_portions(tbl_info)
+	if type(tbl_info) ~= 'table' then return nil end --/>
+	for sInfoId,bStatus in pairs(tbl_info) do
+		if has_info(sInfoId) ~= bStatus then
+			return false --/>
+		end
+	end
+	return true --/>
+end
+
+--/ -----------------------------------------------------------------
+function switch_online(id)
+	if sim and id > 0 then
+		sim:set_switch_online(id, true)
+		sim:set_switch_offline(id, false)
+	end
+end
+
+function switch_online_tbl(tbl_names)
+	for _,p in ipairs(tbl_names) do
+		local sobj = alife():object(p)
+		if sobj then
+			sim:set_switch_online(sobj.id, true)
+			sim:set_switch_offline(sobj.id, false)
+		end
+	end
+end
+
+function switch_offline(npc)
+	if sim and npc and  npc:alive() then
+		sim:set_switch_online(npc:id(), false)
+		sim:set_switch_offline(npc:id(), true)
+	end
+end
+
+function id_by_sid(story_id)
+	if sim then
+		local se_obj = sim:story_object(story_id)
+		if se_obj then
+			return se_obj.id --/>
+		end
+	end
+	return nil --/>
+end
+
+function level_object_by_sid(story_id)
+	return level.object_by_id( id_by_sid(story_id) or -1 ) --/>
+end
+
+function is_ghost(oNPC)
+	local ghost = parser.r_bool(system_ini(), oNPC:section(), "is_ghost", false)
+	return ghost
+end
+--/ -----------------------------------------------------------------
+function distance_between(oObj1, oObj2)
+	if oObj1 and oObj2 then
+		return oObj1:position():distance_to(oObj2:position())
+	else
+		abort("missing obj in function distance_between","")
+	end
+end
+
+function distance_between_safe(oObj1, oObj2)
+	if not (oObj1 and oObj2) then return 100000 end --/>
+	return distance_between(oObj1, oObj2) --/>
+end
+--/#+#
+function distance_2d(v1,v2)
+	return math.sqrt( (v1.x - v2.x)^2 + (v1.z - v2.z)^2 ) --/>
+end
+--/#+#
+function distance_3d(v1,v2)
+	return math.sqrt( v1:distance_to_sqr(v2) ) --/>
+end
+
+function random_choice(...)
+	local arg = {...}
+	return arg[math.random(#arg)]
+end
+
+function yaw(v1, v2)
+	local tmp = (math.sqrt(v1.x * v1.x + v1.z * v1.z) * math.sqrt(v2.x * v2.x + v2.z * v2.z))
+	return math.acos(((v1.x * v2.x) + (v1.z * v2.z)) / tmp)
+end
+
+function yaw_degree(v1, v2)
+	local tmp = (math.sqrt(v1.x * v1.x + v1.z * v1.z) * math.sqrt(v2.x * v2.x + v2.z * v2.z))
+	return (math.acos(((v1.x * v2.x) + (v1.z * v2.z)) / tmp) * 57.2957)
+end
+
+function vector_cross(v1, v2)
+	return vector():set(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x)
+end
+
+function vector_rotate_y(v, angle)
+	angle = angle * 0.017453292519943295769236907684886
+	local c = math.cos(angle)
+	local s = math.sin(angle)
+	return vector():set(v.x * c - v.z * s, v.y, v.x * s + v.z * c)
+end
+
+function odd(x)
+	return math.floor(x * 0.5) * 2 == math.floor(x)
+end
+
+--/ -----------------------------------------------------------------
+function parse_names(s)
+	local tbl = {}
+	for name in string.gfind(s, "([%w_\\]+)%p*") do
+		table.insert(tbl, name)
+	end
+	return tbl
+end
+
+function parse_key_value(s)
+	if s == nil then
+		return nil
+	end
+	
+	local tbl,key,name = {}, nil, nil
+	for name in string.gfind(s, "([%w_\\%-]+)[,%s]*") do
+		if not key then
+			key = name
+		else
+			tbl[key] = name
+			key = nil
+		end
+	end
+	return tbl
+end
+
+function parse_nums(s)
+	local tbl = {}
+	for entry in string.gfind(s, "([%d%.]+)%,*") do
+		table.insert(tbl, tonumber(entry))
+	end
+	return tbl
+end
+
+--/ -----------------------------------------------------------------
+function if_then_else(cond, if_true, if_false)
+	if cond then
+		return if_true
+	end
+	return if_false
+end
+
+function clear_table(tbl)
+	while #tbl > 0 do
+		table.remove(tbl, #tbl)
+	end
+end
+
+function stop_play_sound(obj)
+	if obj then
+		obj:set_sound_mask(-1)
+		obj:set_sound_mask(0)
+	end
+end
+
+function get_texture_info(id_name, id_default)
+	if id_default == nil then
+		id_default = id_name
+	end
+	
+	local task_info = GetTextureInfo(id_name, id_default)
+	local r = task_info:get_rect()
+	
+	r.x2 = r.x2 - r.x1
+	r.y2 = r.y2 - r.y1
+	
+	return task_info:get_file_name(), r
+end
+
+function set_inactivate_input_time(delta)
+	local tStor = db.storage[idActor]
+	tStor.disable_input_time = game.get_game_time()
+	tStor.disable_input_idle = delta --/< game sec
+	level.disable_input()
+end
+
+function set_sleep_relocate(point, look, timeout)
+	local tStor = db.storage[idActor]
+	tStor.sleep_relocate_time = game.get_game_time()
+	tStor.sleep_relocate_idle = timeout * 60
+	tStor.sleep_relocate_point = point
+	tStor.sleep_relocate_look = look
+end
+
+--/ -----------------------------------------------------------------
+--/ Tutorials (from engine)
+--/ -----------------------------------------------------------------
+--/ Fatigue
+function on_actor_critical_power()
+	if has_info("esc_trader_newbie") then
+		if not has_info("encyclopedy_tutorial_weakness") then
+			game.start_tutorial("part_11_weakness")
+			give_info("encyclopedy_tutorial_weakness")
+		end
+	end
+end
+
+--/ Bleeding
+function on_actor_bleeding()
+	if has_info("esc_trader_newbie") then
+		if not has_info("encyclopedy_tutorial_wound") then
+			game.start_tutorial("part_8_wound")
+			give_info("encyclopedy_tutorial_wound")
+		end
+	end
+end
+
+--/ Radiation
+function on_actor_radiation()
+	if has_info("esc_trader_newbie") and xr_conditions.actor_not_sleep() then
+		if not has_info("encyclopedy_tutorial_radiation") then
+			game.start_tutorial("part_6_radiation")
+			give_info("encyclopedy_tutorial_radiation")
+		end
+	end
+end
+
+--/ Weapon jammed
+function on_actor_weapon_jammed()
+	if has_info("esc_trader_newbie") then
+		if not has_info("encyclopedy_tutorial_weapon") then
+			game.start_tutorial("part_9_weapon")
+			give_info("encyclopedy_tutorial_weapon")
+		end
+	end
+end
+
+--/ weight limit exceeded
+function on_actor_cant_walk_weight()
+	if has_info("esc_tut_actor_has_af") then
+		if not has_info("encyclopedy_tutorial_overload") then
+			game.start_tutorial("part_14_overload")
+			give_info("encyclopedy_tutorial_overload")
+		end
+	end
+end
+
+--/ hunger
+function on_actor_satiety()
+	if not has_info("encyclopedy_tutorial_satiety") and xr_conditions.actor_not_sleep() then
+		game.start_tutorial("part_16_satiety")
+		give_info("encyclopedy_tutorial_satiety")
+	end
+end
+--/ thirst
+function on_actor_thirsty()
+	if not has_info("encyclopedy_tutorial_thirsty") and xr_conditions.actor_not_sleep() then
+		game.start_tutorial("part_17_thirsty")
+		give_info("encyclopedy_tutorial_thirsty")
+	end
+end
+--/ psi-effect
+function on_actor_psy()
+	if has_info("esc_trader_newbie") then
+		if not has_info("encyclopedy_tutorial_psyhealth") then
+			game.start_tutorial("part_18_psyhealth")
+			give_info("encyclopedy_tutorial_psyhealth")
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+function get_patrol(way_name,...) --/#+#
+	if way_name then
+		if (la_patrols) then
+			return la_patrols.get_patrol(way_name) --/>
+		elseif level.patrol_path_exists(way_name) then
+			return patrol(way_name,...) --/>
+		end
+		log("get_patrol: way=[%s] ~not exist :<%s>", way_name, "Warning!") --/#~#
+	else
+		log("get_patrol: type way_name=(%s) :<%s>", type(way_name), "Warning!") --/#~#
+	end
+	return nil --/>
+end
+
+function validate_patrol_path(way_name,npc,flg_log) --/#+#
+	if way_name then
+		if (la_patrols) then
+			return la_patrols.Validate_PPath(way_name,npc,flg_log) --/>
+		elseif level.patrol_path_exists(way_name) then
+			return true --/>
+		end
+		if flg_log ~= false then log("validate_patrol: way=[%s] ~not valid :<%s>", way_name, "Info!") end --/#~#
+	elseif db.is_mixed_mode then
+		log("validate_patrol: way=NIL :<Info!>", "") --/#~#
+	end
+	return false --/>
+end
+
+--/ Story_ID ----------------
+function add_story_object(idObj , sStoryObjId)
+	story_objects.get_story_objects_registry():register(idObj , sStoryObjId)
+end
+
+function get_story_object(sStoryObjId)
+	local idObj = story_objects.get_story_objects_registry():get(sStoryObjId)
+	if idObj then
+		return (db.storage[idObj] and db.storage[idObj].object) or (level and level.object_by_id(idObj))
+	end
+	return nil --/>
+end
+
+function get_object_story_id(idObj)
+	return story_objects.get_story_objects_registry():get_story_id(idObj)
+end
+
+function get_story_object_id(sStoryObjId)
+	return story_objects.get_story_objects_registry():get_id(sStoryObjId)
+end
+
+function unregister_story_object_by_id(idObj)
+	story_objects.get_story_objects_registry():unregister_by_id(idObj)
+end
+
+function unregister_story_id(story_id)
+	story_objects.get_story_objects_registry():unregister_by_story_id(story_id)
+end
+
+--/ -----------------------------------------------------------------
+--/ Tables of object classes and checks.
+--/ -----------------------------------------------------------------
+local tStalkerClasses            = {}
+local tTraderClasses             = {}
+local tMonsterClasses            = {}
+local tWeaponClasses             = {} --/ only weapon (without addons and charges)
+local tWeaponStrappableClasses   = {} --/ only weapon with condition 'on shoulder'
+local tWeaponNoStrappableClasses = {} --/ only weapon 'in hand' (pistol/knife)
+local tWeaponGrenadeClasses      = {} --/ only grenades, charges, ...
+local tWeaponAddonClasses        = {} --/ only underbarrels
+local tWeaponAmmoClasses         = {} --/ only ammo and underbarrel charges
+local tSuitClasses               = {} --/ outfits/armors
+local tAnomalyClasses            = {}
+local tAnomalyFireClasses        = {} --/ fireplaces
+local tAnomalyVisClasses         = {}
+local tArtefactClasses           = {}
+
+local tMonster_Classes           = {} --/ for xr_statistic
+local tMonsterTypes              = {}
+local tWeaponTypes               = {} --/ only weapon (without addons and charges)
+local tWeaponsTypes              = {} --/ only addons, charges, ammo
+local tDetectorClasses           = {}
+local tZoneMineClass             = {}
+local tScriptZones          	 = {}
+local tScriptedCars          	 = {}
+local tScriptedHeli				 = {}
+local tScriptedPhysic            = {}
+local tItems                     = {}
+
+
+function load_tables()
+	tStalkerClasses = {
+		[clsid.script_stalker]       = true,
+		[clsid.actor]                = true
+		--[clsid.script_actor]         = true --/ STCS|SCoP
+	}
+	tTraderClasses = {
+		[clsid.script_trader]        = true --/ SHOC|STCS
+	}
+	tMonsterClasses = {
+		[clsid.bloodsucker_s]        = true,
+		[clsid.boar_s]               = true,
+		[clsid.burer_s]              = true,
+		[clsid.cat_s]                = true,
+		[clsid.chimera_s]            = true,
+		[clsid.controller_s]         = true,
+		--[clsid.crow_]                = true, --/#?#
+		[clsid.dog_s]                = true,
+		[clsid.flesh_s]              = true,
+		[clsid.fracture_s]           = true,
+		[clsid.gigant_s]             = true,
+		[clsid.poltergeist_s]        = true,
+		--[clsid.pseudo_gigant]        = true, --/#?#
+		[clsid.pseudodog_s]          = true,
+		--[clsid.psy_dog_phantom_s]    = true, --/#?#
+		[clsid.psy_dog_s]            = true,
+		[clsid.rat_s]                = true, --/#+# SM_RAT
+		[clsid.snork_s]              = true,
+		[clsid.tushkano_s]           = true,
+		[clsid.zombie_s]             = true,
+		[clsid.karlik_s]             = true,  --/#+#
+		[clsid.ghostboss_s]          = true,
+		[clsid.swampbeast_s]		 = true,   --/#+#
+		[clsid.papakarlo_s]		 	 = true    --/#+#
+	}
+	tWeaponClasses = {
+		[clsid.wpn_pm_s]             = true,
+		[clsid.wpn_hpsa_s]           = true,
+		[clsid.wpn_usp45_s]          = true,
+		[clsid.wpn_walther_s]        = true,
+		[clsid.wpn_bm16_s]           = true,
+		[clsid.wpn_shotgun_s]        = true,
+		[clsid.wpn_ak74_s]           = true,
+		[clsid.wpn_lr300_s]          = true,
+		[clsid.wpn_svd_s]            = true,
+		[clsid.wpn_svu_s]            = true,
+		[clsid.wpn_val_s]            = true,
+		[clsid.wpn_vintorez_s]       = true,
+		[clsid.wpn_groza_s]          = true,
+		[clsid.wpn_rpg7_s]           = true,
+		[clsid.wpn_rg6_s]            = true,
+		[clsid.wpn_zoom_s]           = true,
+		[clsid.wpn_knife_s]          = true,
+		[clsid.wpn_bm16_s]          = true,
+		[clsid.wpn_automatic_shotgun_s] = true,
+	}
+	tWeaponStrappableClasses = {
+		[clsid.wpn_vintorez_s]       = true,
+		[clsid.wpn_ak74_s]           = true,
+		[clsid.wpn_lr300_s]          = true,
+		[clsid.wpn_shotgun_s]        = true,
+		[clsid.wpn_bm16_s]           = true,
+		[clsid.wpn_svd_s]            = true,
+		[clsid.wpn_svu_s]            = true,
+		[clsid.wpn_val_s]            = true,
+		[clsid.wpn_groza_s]          = true,
+		[clsid.wpn_rpg7_s]           = true,
+		[clsid.wpn_rg6_s]            = true, --/#?#
+		[clsid.wpn_zoom_s]           = true  --/#+#
+	}
+	tWeaponNoStrappableClasses = {
+		[clsid.wpn_hpsa_s]           = true,
+		[clsid.wpn_pm_s]             = true,
+		[clsid.wpn_walther_s]        = true,
+		[clsid.wpn_usp45_s]          = true,
+		--[clsid.wpn_fist_s]           = true, --/#?#
+		[clsid.wpn_knife_s]          = true
+	}
+	tWeaponAddonClasses = {
+		[clsid.wpn_grenade_launcher]   = true  --/
+		--[clsid.wpn_grenade_launcher_s] = true --/#x#SCoP
+	}
+	tWeaponGrenadeClasses = {
+		[clsid.wpn_grenade_f1]       = true, --/
+		--[clsid.wpn_grenade_f1_s]     = true, --/#x#SCoP
+		[clsid.wpn_grenade_rgd5]     = true, --/
+		--[clsid.wpn_grenade_rgd5_s]   = true, --/#x#SCoP
+		[clsid.wpn_grenade_rpg7]     = true, --/
+		[clsid.wpn_grenade_fake]     = true
+	}
+	tWeaponAmmoClasses = {
+		[clsid.wpn_ammo]             = true,
+		[clsid.wpn_ammo_vog25]       = true,
+		[clsid.wpn_ammo_m209]        = true,
+		[clsid.wpn_ammo_og7b]        = true
+	}
+	tSuitClasses = {
+		[clsid.equ_exo]              = true, --/
+		[clsid.equ_military]         = true, --/ EQU_MLTR
+		[clsid.equ_scientific]       = true, --/
+		[clsid.equ_stalker]          = true, --/
+		[clsid.equ_stalker_s]        = true  --/ E_STLK
+	}
+	tAnomalyClasses = {
+		[clsid.zone_acid_fog]        = true, --/#?# not in game
+		[clsid.zone_dead]            = true, --/#?# not in game
+		--/ visual
+		[clsid.ameba_zone]           = true, --/#?# Z_AMEBA
+		[clsid.zone_rusty_hair]      = true, --/#?# Z_RUSTYH
+		[clsid.zone_bfuzz]           = true, --/#?# Z_BFUZZ
+		[clsid.zone_bfuzz_s]         = true, --/#?# ZS_BFUZZ
+		--/ pseudo
+		[clsid.zone_galantine]       = true, --/ Z_GALAN
+		[clsid.zone_mincer]          = true, --/ Z_MINCE
+		[clsid.zone_mosquito_bald]   = true, --/ Z_MBALD
+		--/ real anomalies
+		[clsid.zone_radioactive]     = true, --/ Z_RADIO
+		[clsid.zone_galant_s]        = true, --/ ZS_GALAN
+		[clsid.zone_mincer_s]        = true, --/ ZS_MINCE
+		[clsid.zone_mbald_s]         = true, --/ ZS_MBALD
+		[clsid.zone_buzz_s]          = true, --/#+# ZS_BUZZ
+		[clsid.zone_elec_s]          = true, --/#+# ZS_ELECT
+		[clsid.zone_zhar_s]          = true, --/#+# ZS_ZHARK
+		[clsid.zone_rustyhair_s]     = true, --/ ZS_RUSTY
+		[clsid.zone_nogravity_s]     = true --/ ZS_NOGRA
+		--[clsid.zone_ice_s]           = true --/#?# ZS_ICE
+	}
+	tZoneMineClass = {
+		[clsid.zone_mine_s]          = true    --/#?# Z_MINEF
+	}
+	
+	tAnomalyFireClasses = { --/#+# fireplaces
+		[clsid.zone_flame_s]         = true, --/#+# Z_FLAME
+		[clsid.zone_campfire]        = true, --/#+# Z_CFIRE
+	}
+	tAnomalyVisClasses = {
+		[clsid.ameba_zone]           = true, --/ Z_AMEBA
+		[clsid.zone_rusty_hair]      = true, --/ Z_RUSTYH
+		[clsid.zone_bfuzz]           = true, --/ Z_BFUZZ
+		[clsid.zone_bfuzz_s]         = true  --/ ZS_BFUZZ
+	}
+	tScriptZones        = {
+		[clsid.smart_terrain]            = true,
+		[clsid.respawn]           		 = true,
+		[clsid.script_restr]           	 = true,
+		[clsid.script_shelter]           = true,
+		[clsid.script_anom_zone]         = true  --/ LA_ANZNE
+	}
+	tScriptedHeli		= {
+		[clsid.script_heli]            = true
+	}
+	tScriptedCars		= {
+		[clsid.car_s]           	   = true
+	}
+	tArtefactClasses = {
+		[clsid.artefact]             = true,
+		[clsid.artefact_s]           = true,
+		[clsid.art_bast_artefact]    = true,
+		[clsid.art_black_drops]      = true,
+		[clsid.art_dummy]            = true,
+		[clsid.art_electric_ball]    = true,
+		[clsid.art_faded_ball]       = true,
+		[clsid.art_galantine]        = true,
+		[clsid.art_gravi]            = true,
+		[clsid.art_gravi_black]      = true,
+		[clsid.art_mercury_ball]     = true,
+		[clsid.art_needles]          = true,
+		[clsid.art_rusty_hair]       = true,
+		[clsid.art_thorn]            = true,
+		[clsid.art_zuda]             = true
+	}
+	tMonsterTypes = {
+		[clsid.bloodsucker]          = true,
+		[clsid.boar]                 = true,
+		[clsid.burer]                = true,
+		[clsid.cat]                  = true,
+		[clsid.chimera]              = true,
+		[clsid.controller]           = true,
+		[clsid.crow]                 = true,
+		[clsid.dog_black]            = true,
+		[clsid.dog_red]              = true,
+		[clsid.flesh]                = true,
+		[clsid.flesh_group]          = true,
+		[clsid.fracture]             = true,
+		[clsid.poltergeist]          = true,
+		[clsid.pseudo_gigant]        = true,
+		--[clsid.pseudodog]            = true, --/#x# missing
+		[clsid.psy_dog]              = true,
+		[clsid.rat_s]                = true, --/#+#
+		[clsid.tushkano]             = true,
+		[clsid.zombie]               = true,
+		[clsid.swampbeast]			 = true,  --/#+#
+		[clsid.papakarlo_s]			 = true
+	}
+	tWeaponTypes = {
+		[clsid.wpn_fn2000]           = true,
+		[clsid.wpn_ak74]             = true,
+		[clsid.wpn_lr300]            = true,
+		[clsid.wpn_hpsa]             = true,
+		[clsid.wpn_pm]               = true,
+		[clsid.wpn_fort]             = true,
+		[clsid.wpn_shotgun]          = true,
+		[clsid.wpn_svd]              = true,
+		[clsid.wpn_svu]              = true,
+		[clsid.wpn_rg6]              = true,
+		[clsid.wpn_rpg7]             = true,
+		[clsid.wpn_val]              = true,
+		[clsid.wpn_vintorez]         = true,
+		[clsid.wpn_walther]          = true,
+		[clsid.wpn_usp45]            = true,
+		[clsid.wpn_groza]            = true,
+		[clsid.wpn_knife]            = true
+	}
+	tWeaponsTypes = {
+		[clsid.wpn_scope]            = true,
+		[clsid.wpn_scope_s]          = true,
+		[clsid.wpn_silencer]         = true,
+		[clsid.wpn_grenade_launcher] = true,
+		[clsid.wpn_grenade_f1]       = true,
+		[clsid.wpn_grenade_rgd5]     = true,
+		[clsid.wpn_grenade_rpg7]     = true,
+		[clsid.wpn_grenade_fake]     = true,
+		[clsid.wpn_ammo]             = true,
+		[clsid.wpn_ammo_vog25]       = true,
+		[clsid.wpn_ammo_og7b]        = true,
+		[clsid.wpn_ammo_m209]        = true,
+		[clsid.wpn_binocular]        = true
+	}
+	tItems = {
+		[clsid.device_torch]         = true,
+		[clsid.device_torch_s]     	 = true,
+		[clsid.device_pda]           = true,
+		[clsid.attachable_s] 		 = true,
+		[clsid.obj_attachable]       = true,
+		[clsid.obj_bolt]        	 = true,
+		[clsid.obj_antirad]          = true,
+		[clsid.obj_bottle]           = true,
+		[clsid.obj_breakable]        = true,
+		[clsid.obj_document]         = true,
+		[clsid.obj_explosive]        = true,
+		[clsid.obj_food]             = true,
+		[clsid.obj_medkit]           = true,
+		[clsid.obj_physic]           = true
+	}
+	tMonster_Classes = {
+		[clsid.bloodsucker_s    ] = "bloodsucker",
+		[clsid.boar_s           ] = "boar",
+		[clsid.controller_s     ] = "controller",
+		[clsid.dog_s            ] = "dog",
+		[clsid.flesh_s          ] = "flesh",
+		[clsid.gigant_s         ] = "pseudo_gigant",
+		[clsid.poltergeist_s    ] = "poltergeist",
+		[clsid.pseudodog_s      ] = "pseudodog",
+		[clsid.psy_dog_phantom_s] = "NIL", --/ "psy_dog_phantom"
+		[clsid.psy_dog_s        ] = "psy_dog",
+		[clsid.snork_s          ] = "snork",
+		[clsid.tushkano_s       ] = "tushkano",
+		[clsid.burer_s          ] = "burer",
+		[clsid.cat_s            ] = "cat",
+		[clsid.chimera_s        ] = "chimera",
+		[clsid.fracture_s       ] = "fracture",
+		[clsid.zombie_s         ] = "zombie",
+		[clsid.rat_s            ] = "rat", --/#+# SM_RAT
+		[clsid.karlik_s         ] = "karlik",
+		[clsid.ghostboss_s      ] = "ghostboss",
+		[clsid.swampbeast_s		] = "swampbeast",
+		[clsid.papakarlo_s		] = "papakarlo",
+		[clsid.crow				] = "crow",
+	}
+	tDetectorClasses = {
+	--	[clsid.device_detector_simple	] = true,
+	--	[clsid.af_detector_simple    ]  = true,
+	--	[clsid.af_detector_adv  ]  = true,
+	--	[clsid.af_detector_elite     ]  = true
+	}
+	xr_statistic.monster_classes = table.copy(tMonster_Classes)
+end
+
+--/ Is object currently online?
+function is_object_online(idObj)
+	return (idObj and level.object_by_id(idObj)) ~= nil --/>
+end
+
+function get_clsid(obj)
+	if obj then
+		if type(obj) == 'userdata' and obj.clsid then
+			return obj:clsid() --/> iClassId
+		end
+		callstack( "get_clsid:"..type(obj) )
+	end
+	return nil --/>
+end
+
+function IsStalker(object, iClassId)
+	return tStalkerClasses[iClassId or get_clsid(object) or -1] == true
+end
+function IsMonster(object, iClassId)
+	return tMonsterClasses[iClassId or get_clsid(object) or -1] == true
+end
+function IsTrader(object, iClassId)
+	return tTraderClasses[iClassId or get_clsid(object) or -1] == true
+end
+function IsHuman(object, iClassId) --/#+#
+	local id = iClassId or get_clsid(object) or -1
+	return tStalkerClasses[id] == true or tTraderClasses[id] == true
+end
+function IsNPC(object, iClassId) --/#+#
+	local id = iClassId or get_clsid(object) or -1
+	return tMonsterClasses[id] == true or tStalkerClasses[id] == true --or tTraderClasses[id] == true
+end
+
+function isCar(object, iClassId) --/#+#
+	return clsid.car_s == (iClassId or get_clsid(object) or -1)
+end
+function isHelicopter(object, iClassId) --/#+#
+	local id = iClassId or get_clsid(object) or -1
+	return id == clsid.script_heli or id == clsid.helicopter
+end
+
+function isWeapon(object, iClassId)
+	local id = iClassId or get_clsid(object) or -1
+	return tWeaponClasses[id] == true
+		  or tWeaponGrenadeClasses[id] == true
+		  or tWeaponAddonClasses[id] == true
+end
+function isWpnStrap(object, iClassId) --/#+# weapon 'on shoulder'
+	return tWeaponStrappableClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isWpnHand(object, iClassId) --/#+# pistols/knife
+	return tWeaponNoStrappableClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isWpn(object, iClassId) --/#+# is obj a weapon (without grenades)
+	return tWeaponClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isGrenade(object, iClassId) --/#+# grenades
+	return tWeaponGrenadeClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isAmmo(object, iClassId) --/#+# ammo
+	return tWeaponAmmoClasses[iClassId or get_clsid(object) or -1] == true
+end
+
+function isSuit(object, iClassId) --/#+#
+	return tSuitClasses[iClassId or get_clsid(object) or -1] == true
+end
+
+function isArtefact(object, iClassId)
+	return tArtefactClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isAnomaly(object, iClassId)
+	return tAnomalyClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isAnomalyVis(object, iClassId)
+	return tAnomalyVisClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isZoneCFire(object,iClassId) --/#+# objects like 'fire from fireplace' (Z_CFIRE)
+	return tAnomalyFireClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isDetector(object,iClassId)
+	return tDetectorClasses[iClassId or get_clsid(object) or -1] == true
+end
+function isZoneMine(object, iClassId)
+	return tZoneMineClass[iClassId or get_clsid(object) or -1] == true
+end
+function isScriptZones(object, iClassId)
+	return tScriptZones[iClassId or get_clsid(object) or -1] == true
+end
+function isItems(object, iClassId)
+	return tItems[iClassId or get_clsid(object) or -1] == true
+end
+
+--/ obj is monster?
+function is_object_monster(object, iClassId)
+	local id = iClassId or get_clsid(object)
+	if tMonsterTypes[id] then
+		return true
+	end
+	return false
+end
+--/ is obj a weapon (firearm)
+function is_object_weapon(object, iClassId)
+	local id = iClassId or get_clsid(object)
+	if tWeaponTypes[id] then
+		return true
+	end
+	return false
+end
+--/ is obj a weapon (firearm+...)
+function is_object_weapons(object, iClassId)
+	local id = iClassId or get_clsid(object)
+	if tWeaponsTypes[id] then
+		return true
+	end
+	return false
+end
+
+function object_type(object, iClassId)
+	local sType = "none"
+	local id = iClassId or get_clsid(object)
+	if IsHuman(object, id)
+		then sType = "stalker"
+	elseif IsMonster(object, id) or is_object_monster(object, id)
+		then sType = "monstr"
+	elseif tWeaponTypes[id] == true
+		 or tWeaponsTypes[id] == true
+		 or id == clsid.obj_antirad
+		 or id == clsid.obj_attachable
+		 or id == clsid.obj_bolt
+		 or id == clsid.obj_bottle
+		 or id == clsid.obj_breakable
+		 or id == clsid.obj_document
+		 or id == clsid.obj_explosive
+		 or id == clsid.obj_food
+		 or id == clsid.obj_medkit
+		 or id == clsid.obj_physic
+		 or id == clsid.device_detector_simple
+		 or id == clsid.device_pda
+		 or id == clsid.device_torch
+		 or id == clsid.device_torch_s
+		 or id == clsid.equ_exo
+		 or id == clsid.equ_military
+		 or id == clsid.equ_scientific
+		 or id == clsid.equ_stalker
+		 or id == clsid.attachable_s
+		then sType = "item"
+	end
+	--/ checking if it's not a corpse
+	if sType == "stalker" or sType == "monstr" then
+		if object.alive then
+			if not object:alive() then
+				sType = "corpse"
+			end
+		else
+			debug_print("object_type:obj_name=["..object:name().."],cls=["..id.."],type=["..sType.."]~not_func_alive:<Warning!>") --/#~#
+		end
+	end
+	return sType --/>
+end
+--/ ----------------------------------------------
+--/ ...
+--/ ----------------------------------------------
+isVector = function(obj)
+	return type(obj) == 'userdata' and type(obj.getP) == 'function' and tonumber(obj.x) and tonumber(obj.y) and tonumber(obj.z) --/>
+end
+
+isCTime = function(obj)
+	return type(obj) == 'userdata' and type(obj.setHMSms) == 'function' --/>
+end
+
+isChunk = function(obj)
+	return type(obj) == 'userdata' and type(obj.r_eof) == 'function' --/>
+end
+
+--/ -----------------------------------------------------------------
+--/#+# Function of monitoring of volume of packets of objects in case of a read or write of saving
+--/ -----------------------------------------------------------------
+local iSizeWarn,iSizeMax = 16000,16250 --/ reference: SizeMax = 16384 - 'abstract'
+local sMarker, iMarker, iSizeTell, iSizeControl --/ variables
+local tBreakPoints = {} --/ array of break points
+
+function set_save_marker(pk, sMode, bDone, sPrefix, oObj)
+	ASSERT(type(pk) == 'userdata',"set_save_marker: Wrong net_packet: type=["..type(pk).."],mode="..tostring(sMode))
+	sMarker = sPrefix or "<error>" --/ preset of a key of a marker
+	if oObj then sMarker = sMarker..":"..tostring( (type(oObj.name) == 'function' and oObj:name()) or oObj.name ) end
+	
+	if bDone == false then --/ initial flag: beginning of reading/record of a packet
+		if sMode == "load" then --/  mode 'reading'
+			tBreakPoints[sMarker] = pk:r_tell() --/ remember an index of initial byte of reading
+		elseif sMode == "save" then --/ mode 'writing'
+			tBreakPoints[sMarker] = pk:w_tell() --/ remember an index of initial byte of record
+--			debug_print(string.format("set_save_marker:Size(w_tell)=(%05d):Mark=[%s]", tBreakPoints[sMarker], sMarker))
+		else abort("set_save_marker:[%s](%s):Incorrect Mode=[%s]", sMarker, tostring(bDone), tostring(sMode) )
+		end
+	elseif bDone == true then --/ finite flag: reading/record completion
+		iMarker, iSizeTell = tBreakPoints[sMarker], 0 --/ break point and quantity of the read/written bytes
+		if iMarker then
+			if sMode == "load" then --/ mode 'reading'
+				iSizeTell = pk:r_tell() - iMarker --/ quantity of the read bytes
+				iSizeControl = pk:r_u16() --/#!# reading a marker from a packet (control quantity of bytes)
+				if iSizeTell ~= iSizeControl then --/ doesn't correspond to the control?
+					if not db.iErrIdx then db.iErrIdx = 10 end --/ flag: error of loading of a packet
+					abort("set_save_marker:[%s]:LOAD:Size=[%d]<x>[%d]:build=[%s]", sMarker, iSizeTell, iSizeControl, tostring(GetVar("BuildSav",-1)))
+				end
+			elseif sMode == "save" then --/ mode 'writing'
+				iSizeTell = pk:w_tell() - iMarker --/ quantity of the written bytes
+				pk:w_u16(iSizeTell) --/ record of a marker in a packet
+				if iSizeTell > iSizeWarn then
+					if iSizeTell > iSizeMax then
+						db.iErrIdx = 23 --/ flag: fatal overflowing
+						abort("set_save_marker:[%s]:Size=[%s]~NET-PACKET CAN BE CORRUPTED:<Error!>", sMarker, tostring(iSizeTell))
+					else
+						if not db.iErrIdx then db.iErrIdx = 20 end --/ flag: big saved
+						debug_print("set_save_marker:["..sMarker.."]:Size=["..iSizeTell.."]~may be this is problem save point:<WARNING!>")
+					end
+					--if oObj then table.print( get_netpk(oObj):get(), "set_save_marker:NetPacket|"..sMarker ) end --/#~#
+				end
+			else abort("set_save_marker:[%s](%s):Incorrect Mode=[%s]", sMarker, tostring(bDone), tostring(sMode))
+			end
+			tBreakPoints[sMarker] = nil --/ clear
+			return iSizeTell --/> quantity of the read/written bytes
+		else abort("set_save_marker:Trying to check without marker=[%s]:mode=[%s]", sMarker, tostring(sMode))
+		end
+	else abort("set_save_marker:[%s]:Incorrect mode=[%s](%s)", sMarker, tostring(sMode), tostring(bDone))
+	end
+end
+--/------------------------------------------------------------------
+--/ Forced game breaking during fatal errors (after outputing message of error to log)
+--/------------------------------------------------------------------
+abort = function(fmt,...)
+	debug_print("ABORT ~~> "..string.rep("~",86))
+	console_print( get_abort_info(debug.getinfo(2, "nSl"), string.exformat(fmt, ...), 1) )
+	callstack("ABORT:",true)
+	debug_print("ABORT ~~< "..string.rep("~",86))
+	get_console():execute("quit _g script abort") --/x secure: interrupt game in case of fatal errors
+	--exit() --/x secure: interrupt game in case of fatal errors
+	debug_print("ABORT ~~x "..string.rep("~",86))
+end
+--/ -----------------------------------------------------------------
+ASSERT = function(assertion, fmt, ...)
+	if not assertion then
+		local caller = debug.getinfo(2, "nSl")
+		console_print( get_abort_info(caller, string.exformat(fmt, ...), 2) )
+		callstack("ASSERTION FAILED:",true)
+		debug_print("ASSERTION FAILED ~~x "..string.rep("~",86))
+		get_console():execute("quit _g script assertion failed") --/x secure: interrupt game in case of fatal errors
+		--exit() --/x secure: interrupt game in case of fatal errors
+		debug_print("ASSERTION FAILED ~~< "..string.rep("~",86))
+	end
+end
+--/ ---------------------------------------------
+function get_abort_info(caller, msg, idx)
+	if caller and caller.what == "Lua" then
+		local file_name = caller.short_src:sub(caller.short_src:find("gamedata"), caller.short_src:len())
+		local func_name = (caller.name or "<unknown>") --/.. caller.namewhat
+		local headers = { "[error]ABORT CALLED:", "[error]ASSERTION FAILED:" }
+		local str = headers[idx] or "[error]ABORT:"
+		str = string.format("%s\n[error]From: %s in function '%s' (%d)", str, file_name, func_name, caller.linedefined)
+		str = string.format("%s\n[error]Line: %d", str, caller.currentline)
+		str = string.format("%s\n[error]Description: %s", str, msg or "<none>")
+		return str --/>
+	end
+	return msg --/>
+end
+--/ ---------------------------------------------
+function console_print(str)
+	if type(str) == 'string' then
+		for s in string.gmatch(str or "", '%s*([^\n]+)%s*') do
+			if s:len() < 190 then
+				debug_print(s)
+			elseif (parser) then
+				for _,v in ipairs( parser.string_split(s,190) ) do
+					debug_print(v)
+				end
+			end
+		end
+	else
+		debug_print("console_print:NIL")
+	end
+end
+--/ ---------------------------------------------
+callstack = function(fmt,is_abort)
+	debug_print( debug.traceback(tostring(fmt), (is_abort and 3) or 2) )
+end
+--/------------------------------------------------------------------
+--/ Functions print to log (output of debug info)
+--/------------------------------------------------------------------
+
+if not editor() then
+log = function(fmt, ...)
+	if type(fmt) == 'string' and fmt ~= "" then
+		debug_print( string.exformat(fmt, ...) )
+	else
+		callstack( fmt..": not_fmt:<Warning!>" )
+	end
+end
+end
+--/ ---------------------------------------------
+to_log = function() end --/ stub: output to log disabled
+printf = function(fmt, ...) to_log( string.exformat(fmt, ...) ) end
+--/----------------------------------------------
+fmt2str = function(fmt,...) return string.gsub(string.sub(string.format(tostring(fmt),...),1,250),'%s','\160') end
+debug_log = function() end --/ stub
+debug_script_name = "" --/ name of module in debug
+debug_script_skip = {} --/ name of mudles, excluded from debug
+print_table = function(...) end --/ stub
+--/ -----------------------------------------------------------------
+--/ for StoreHouse:
+--/ -----------------------------------------------------------------
+function HasVar(variable_name)
+	ASSERT(type(variable_name) == 'string', "HasVar: wrong type_key=(%s)", type(variable_name)) --/#~# for debug
+	return db.storehouse[variable_name] ~= nil --/>
+end
+function DelVar(variable_name)
+	ASSERT(type(variable_name) == 'string', "DelVar: wrong type_key=(%s)", type(variable_name)) --/#~# for debug
+	db.storehouse[variable_name] = nil
+end
+function SetVar(variable_name, value)
+	ASSERT(type(variable_name) == 'string', "SetVar: wrong type_key=(%s)", type(variable_name)) --/#~# for debug
+	if type(value) == 'table' then
+		db.storehouse[variable_name] = table.clone(value) --/ record of table value
+	else
+		db.storehouse[variable_name] = value
+	end
+end
+function GetVar(variable_name, def_value)
+	ASSERT(type(variable_name) == 'string', "GetVar: wrong type_key=(%s)", type(variable_name)) --/#~# for debug
+	if type(db.storehouse[variable_name]) == 'table' then
+		return table.clone(db.storehouse[variable_name]) or def_value or {} --/> table
+	elseif db.storehouse[variable_name] ~= nil then
+		return db.storehouse[variable_name] --/>
+	end
+	return def_value
+end
+function GetVar_Table(variable_name, def_value) --/#?# stub (do we need it?)
+	return GetVar(variable_name, def_value or {}) --/>
+end
+--/ ----------------------------------------------
+load_store_callback = function(str)
+	db.storehouse = table.decompress(str)
+	debug_print( string.rep("~",55) ) --/#~#
+	log("load_storehouse: size=[%d]/[%d]bytes : Build=[%d]", table.size(db.storehouse), #str, db.storehouse["BuildSav"] or -1) --/#~#
+	debug_print( string.rep("~",55) ) --/#~#
+	if event then event("load_storehouse"):once(true):trigger() end --/#!#> event 'storehouse are successfully loaded'
+end
+save_store_callback = function()
+	if event and next(db.storehouse) then event("save_storehouse"):trigger() end
+	db.storehouse["BuildSav"] = db.iBuildMod or -1 --/ mark the current version of the game/mod
+	local str = table.compress(db.storehouse)
+	debug_print( string.rep("~",55) ) --/#~#
+	log("save_storehouse: size=[%d]/[%d]bytes : Build=[%d]", table.size(db.storehouse), #str, db.storehouse["BuildSav"] or -1) --/#~#
+	debug_print( string.rep("~",55) ) --/#~#
+	return str --/>
+end
+--/ ----------------------------------------------
+synchronized_callback = function() --/#?# do we need it?
+	if event then event("on_synchronized"):trigger() end
+end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--	debug_print("_G: EngineBuildId = ["..tostring( type(EngineBuildId) == 'function' and EngineBuildId() ).."]") --/#~#
+prefetch("la_helper")    --/#!# common functions helper
+prefetch("la_framework") --/#!#
+--/ -----------------------------------------------------------------
+--/ Start Game
+--/ -----------------------------------------------------------------
+function start_game_callback()
+	sim = alife()
+	load_tables()
+	xr_sound.clear_all_sound_object()
+	la_framework.OnStart_Game() --/#!# 
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,54 @@
+;****************state 0*******************************
+[threshold@out_duty_basement_terrain]
+;max_ignore_distance = 15
+
+[danger@out_duty_basement_terrain]
+;ignore_distance = 0
+
+[death@ivancov]
+on_info = {=killed_by_actor} %+out_ivancov_dead%
+on_info2 = %+out_ivancov_died%
+
+[logic@out_duty_basement_terrain_kamper1]
+active = kamper@out_duty_basement_terrain_kamper1
+threshold = threshold@out_duty_basement_terrain
+
+[kamper@out_duty_basement_terrain_kamper1]
+path_walk = walk1
+path_look = look1
+kamp_name = kamp1
+threshold = threshold@out_duty_basement_terrain
+danger = danger@out_duty_basement_terrain
+
+[logic@out_duty_basement_terrain_kamper2]
+active = kamper@out_duty_basement_terrain_kamper2
+threshold = threshold@out_duty_basement_terrain
+
+[kamper@out_duty_basement_terrain_kamper2]
+path_walk = walk2
+path_look = look2
+kamp_name = kamp1
+threshold = threshold@out_duty_basement_terrain
+danger = danger@out_duty_basement_terrain
+
+[logic@out_duty_basement_terrain_ivancov]
+active = walker@out_duty_basement_terrain_ivancov
+threshold = threshold@out_duty_basement_terrain
+on_death = death@ivancov
+
+[walker@out_duty_basement_terrain_ivancov]
+path_walk = ivancov_walk
+path_look = ivancov_look
+threshold = threshold@out_duty_basement_terrain
+danger = danger@out_duty_basement_terrain
+meet = meet@ivancov
+
+[meet@ivancov]
+meet_state		= 5|guard
+meet_state_wpn	= 5|guard
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog	= out_ivancov_talk
+

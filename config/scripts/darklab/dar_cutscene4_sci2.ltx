@@ -1,0 +1,61 @@
+[combat_ignore@dar_sc4]
+
+[danger@dar_sc4]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_sc4]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = walker@darklab_sci_dar_go
+combat_ignore = combat_ignore@dar_sc4
+threshold = threshold@dar_sc4
+
+[walker@darklab_sci_dar_go]
+path_walk = dar_sci4_go_to_talk
+combat_ignore_cond = always
+danger = danger@dar_sc4
+threshold = threshold@dar_sc4
+meet = no_meet
+on_signal = here | %+dar_sci_here% remark@darklab_sci_dar_whisp
+
+[remark@darklab_sci_dar_whisp]
+;anim = sci_whisper
+snd = dar_replics17
+combat_ignore_cond = always
+danger = danger@dar_sc4
+threshold = threshold@dar_sc4
+meet = no_meet
+target = dar_sci4_look_whisp, 0
+on_signal = sound_end | %+dar_sci4_info1%
+on_info = {+dar_sci4_info2} remark@darklab_sci_dar_talk
+
+[remark@darklab_sci_dar_talk]
+anim = sci_whisper_out
+snd = dar_replics19
+combat_ignore_cond = always
+danger = danger@dar_sc4
+threshold = threshold@dar_sc4
+meet = no_meet
+target = dar_sci4_look_whisp, 0
+on_signal = sound_end | %+dar_sci4_info3% remark@darklab_sci_return_pose
+
+[remark@darklab_sci_return_pose]
+anim = wait
+combat_ignore_cond = always
+danger = danger@dar_sc4
+threshold = threshold@dar_sc4
+meet = no_meet
+target = dar_sci4_look_whisp, 0
+on_info = {+dar_sci4_info4} remark@darklab_sci_dar_end
+
+[remark@darklab_sci_dar_end]
+anim = probe
+combat_ignore_cond = always
+danger = danger@dar_sc4
+threshold = threshold@dar_sc4
+meet = no_meet
+target = dar_sci4_look_whisp_start, 0
+on_info = {+dar_sc4_end} %=release%

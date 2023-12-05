@@ -1,0 +1,82 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ph_on_hit.script
+ Description: Схема: "Physics hit checker"
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey) af@svitonline.com
+ Last edit  : 08.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "ph_on_hit"
+--/ -----------------------------------------------------------------------------------------------
+function ph_on_hit:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function ph_on_hit:reset_scheme()
+	if self.log then log("reset_scheme:Obj=[%s]%s", self.object:name(), "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function ph_on_hit:update(delta)
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function ph_on_hit:hit_callback(oObj, iAmount, vLocalDirection, oWho, iBoneIndex)
+	if self.log then log("hit_callback:Obj=[%s],amount=[%s],Who=[%s],bone=[%s]", oObj and oObj:name(), iAmount, oWho and oWho:name(), iBoneIndex) end --/#~#
+	local tStor = db.storage[self.object:id()]
+	if tStor and tStor.active_scheme then
+		xr_logic.try_switch_to_another_section(oObj, self.st, db.actor)
+	end
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function ph_on_hit:deactivate()
+end
+
+--/ -----------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------
+function add_to_binder(oObj, ini, sScheme, sSection, st)
+--	log("add_to_binder:Obj=[%s/%s],scheme=[%s],section=[%s]:(%s)", oObj:name(), oObj:id(), sScheme, sSection, ">") --/#~#
+	st.action = this.ph_on_hit(oObj, st)
+	--/ регистрация action, для вызова метода 'hit_callback' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(oObj, st, st.action)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:(%s)", oObj:name(), sScheme, sSection, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(oObj, ini, sScheme, sSection, sGulagName)
+--	log("set_scheme:Obj=[%s/%s],scheme=[%s],section=[%s]:(%s)", oObj:name(), oObj:id(), sScheme, sSection, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(oObj, ini, sScheme, sSection)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, sSection, oObj)
+	--/ fot debug:
+	if st.log then log("set_scheme:Obj=[%s/%s],scheme=[%s],section=[%s]", oObj:name(), oObj:id(), sScheme, sSection, "") end --/#~#
+end
+
+function disable_scheme(oObj, sScheme)
+--	log("disable_scheme:Obj=[%s],scheme=[%s]:(%s)", oObj:name(), sScheme, ">") --/#~#
+	local idObj = oObj and oObj:id()
+	local st = idObj and db.storage[idObj][sScheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(oObj, st, st.action)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

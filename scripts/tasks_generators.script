@@ -1,0 +1,119 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_generators.script
+ Description: Tasks generators
+ Copyright  : 2012 © LA-team
+ Author     : lox
+ Editors    : lox(27.02.2013)
+ Last edit  : 28.04.2013 [...] 28.01.2018.cz07
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if db.sMapNow == "la13_generators" then
+		if not has_info("gen_reached") then
+			give_info("gen_reached")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "gen_mil_bunker_cleared" then
+		if not has_info("gen_ghost_teleported") then
+			local npc = level_object_by_sid(6713) --/ "gen_ghost"
+			if npc then
+				tasks_agroprom.teleport_npc_not_seen(npc, "gen_ghost_teleport_end", "gen_ghost_teleported")
+			end
+		end
+		return true --/>
+	end
+	if info_id == "gen_paradise" then
+		start_real_timer(52, sModule..".gen_final_fade")
+		return true --/>
+	end
+	if info_id == "gen2_particle_shift" then
+		start_quick_timer(0.1, this.gen_shift_snd) --/ 0.1 real-sec
+		return true --/>
+	end
+	if info_id == "gen2_shifted" then
+		start_real_timer(5.3, sModule..".gen_actor_snd")
+		return true --/>
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+--[[
+function gen_ghost_finale()
+	give_info("has_freeplay_info")
+	game.start_tutorial("mov_gens_disabled")
+	level_weathers.get_weather_manager():Active(true)
+end
+--]]
+function gen_set_pos()
+     local pos = get_patrol("gen_scene_look"):point(0)
+     db.actor:set_actor_look_at_position(pos, 0)
+     level.add_cam_effector("camera_effects\\gen_scene_main.anm", 2797, false, "")
+ end
+
+function gen_final_mus()
+	local snd = xr_sound.get_safe_sound_object("music\\gen_final_music")
+	snd:play(db.actor, 1, sound_object.s2d)
+end
+
+function gen_final_fade()
+	level.add_pp_effector("gen_final_fade.ppe", 8172, false)
+end
+
+function gen_shift_snd()
+	if not has_info("gen2_shifted") then
+		local snd = xr_sound.get_safe_sound_object("anomaly\\teleport_work_2")
+		snd:play(db.actor, 1, sound_object.s2d)
+		start_quick_timer(1, this.gen_shift_snd2) --/ 1 real-sec
+	end
+end
+
+function gen_shift_snd2()
+	if not has_info("gen2_shifted") then
+		local snd = xr_sound.get_safe_sound_object("anomaly\\teleport_work_2")
+		snd:play(db.actor, 1, sound_object.s2d)
+		start_quick_timer(1, this.gen_shift_snd) --/ 1 real-sec
+	end
+end
+
+function gen_actor_snd()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\gen2\\gen_wtf")
+	snd:play(db.actor, 1, sound_object.s2d)
+	start_quick_timer(5, this.gen_actor_snd2) --/ 5 real-sec
+end
+
+function gen_actor_snd2()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\gen2\\birds_nature1")
+	if snd and snd:playing() then snd:stop() end
+	snd:play(db.actor, 1, sound_object.s2d)
+end
+
+function gen_disable_snd()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\gen2\\birds_nature1") --/#?#
+	if snd and snd:playing() then snd:stop() end
+end
+
+function start_scale()
+	game.start_tutorial("gens2_scaling")
+end
+
+function set_time()
+	local ALIFE_TIME_FACTOR = system_ini():r_float("alife","time_factor")
+	level.set_time_factor(ALIFE_TIME_FACTOR)
+	give_info("gen2_after_scaling")
+end
+
+--/ -----------------------------------------------------------------------------------------------

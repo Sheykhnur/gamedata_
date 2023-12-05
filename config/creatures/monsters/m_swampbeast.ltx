@@ -1,0 +1,449 @@
+
+[m_swampbeast_e]:monster_base
+GroupControlSection                 = spawn_group
+SpaceRestrictionSection             = space_restrictor,zone_mosquito_bald,zone_radioactive
+$npc                                = on						; option for Level Editor
+; $prefetch                           = 16
+Scheduled                           = on						; option for ALife Simulator
+Human                               = off						; option for ALife Simulator
+Health                              = 250						; option for ALife Simulator
+MinSpeed                            = 1.0						; option for ALife Simulator
+MaxSpeed                            = 1.5						; option for ALife Simulator
+going_speed                         = 2.0                      ; option for ALife Simulator
+current_level_going_speed           = 1;2					; option for ALife Simulator
+search_speed                        = .5                       ; option for ALife Simulator
+visual                              = monsters\swampbeast\swampbeast
+corpse_visual                       = monsters\swampbeast\swampbeast
+icon                                = ui_npc_monster_poltergeist
+MaxHealthValue                      = 150			; range [0..200]
+DynamicObjectsCount                 = 32
+smart_terrain_choose_interval       = 00:15:00
+
+cform                               = skeleton					; collision class
+class                               = SM_SWAMP
+
+ef_creature_type                    = 7				; option for evaluation functions
+ef_weapon_type                      = 2
+ef_detector_type                    = 1
+panic_threshold                     = 0.0
+
+script_binding                      = bind_monster.bind
+
+bone_torso                          = bip01_spine1 			; bone name
+bone_head                           = bip01_head				; bone name
+bone_fire                           = bip01_head				; bone name
+
+weapon_usage                        = 0						; boolean
+
+carbody_name                        = Swampbeast
+
+Spawn_Inventory_Item_Section        = mutant_swampbeast_nose
+Spawn_Inventory_Item_Class			= swampbeast
+Spawn_Inventory_Item_Probability    = 0.4
+character_use						= dead_brain_use
+
+;---------------------------------------------------------------------
+; Physics
+;---------------------------------------------------------------------
+ph_box0_center                      = 0.0,  0.2,  0.0	;0.0,  0.9,  0.0
+ph_box0_size                        = 0.50, 0.4,  0.50
+ph_box1_center                      = 0.0,  0.2,  0.0
+ph_box1_size                        = 0.50, 0.4,  0.50
+ph_crash_speed_min                  = 10
+ph_crash_speed_max                  = 30
+ph_collision_damage_factor          = 0.1
+ph_mass                             = 50
+
+destroyed_vis_name                  = physics\Dead_Body\trupik_crash
+
+;---------------------------------------------------------------------
+ph_skeleton_airr_lin_factor         = 2.0 ;550.0 (изменно из-за того, что убрано домножение коэффициент 0.002 из кода)
+ph_skeleton_airr_ang_factor         = 0.0 ;0.0 (изменно из-за того, что убрано домножение на коэффициент 0.3 из кода (0.0*0.3=0.0))
+ph_skeleton_hinger_factor1          = 1.0 ;1.0 (изменно из-за того, что убрано домножение на коэффициент 5.0 из кода)
+ph_skeleton_ddelay                  = 15.0 ;Время изменения значения трения в суставе с момента создания шелла, сек
+
+; ph_skel_fatal_impulse_factor        = 3.0
+;---------------------------------------------------------------------
+
+
+;----------------------------------------------------------------------------
+; Movement::Velocities & Acceleration
+;----------------------------------------------------------------------------
+; speed factors			linear | angular_real | angular_path | min |  max
+Velocity_Stand                      = 0,		5.0,			5.0,		0.2,	0.5
+Velocity_WalkFwdNormal              = 1.7,		2.0,			2.0,		0.2,	2.0
+Velocity_WalkFwdDamaged             = 1.5,		3.0,			3.0,		0.8,	2.0
+Velocity_RunFwdNormal               = 4.0,		3.0,			3.0,		0.4,	1.0
+Velocity_RunFwdDamaged              = 2.5,  	3.2,			3.2,		0.4,	1
+Velocity_Drag                       = 0.6,		3.0,			3.0,		1,		1
+Velocity_Steal                      = 1.5,		3.0,			3.0,		1,		1
+
+; Speed factors while invisible
+Velocity_Invisible_Linear           = 5.0
+Velocity_Invisible_Angular          = 3.5
+
+; acceleration
+Accel_Generic                       = 1.5
+Accel_Calm                          = 2.5
+Accel_Aggressive                    = 3.0
+
+;--------------------------------------------------------------------------
+; Attack parameters
+;--------------------------------------------------------------------------
+;attack parameters
+MinAttackDist                       = 1.4 ;0.5	;2.1
+MaxAttackDist                       = 2.0
+
+Run_Attack_Dist                     = 5, 6 ;3.5,		4.0
+Run_Attack_Delay                    = 1000,		3000
+
+Melee_Rotation_Factor               = 1.0
+
+
+as_min_dist                         = 0.1
+as_step                             = 0.3
+
+;-------------------------------------------------------------------------
+; Entity Conditions
+;-------------------------------------------------------------------------
+DayTime_Begin                       = 0
+DayTime_End                         = 21
+Min_Satiety                         = 0.7
+Max_Satiety                         = 0.95
+
+distance_to_corpse                  = 1.8
+
+terrain                             = swampbeast_terrain
+
+hit_type                            = wound
+
+;entity condition
+
+satiety_v                           = 0.0001				;скорость уменьшения сытости со временем
+radiation_v                         = 0.00001				;скорость уменьшения радиации
+satiety_power_v                     = 0.005					;увеличение силы при уменьшении сытости
+satiety_health_v                    = 0.001					;увеличение здоровья при уменьшении сытости
+satiety_critical                    = -1.0					;критическое значения сытости (в процентах от 0..1) когда здоровье начианает уменьшаться
+radiation_health_v                  = 0.0001				;уменьшение здоровья при воздействии радиации
+morale_v                            = 0.1					;скорость восстановления морали
+health_hit_part                     = 0.31					;процент хита, уходящий на отнимание здоровья
+power_hit_part                      = 0.0					;процент хита, уходящий на отнимание силы
+psy_health_v                        = 0.1					;скорость восстановления psy-здоровья
+
+immunities_sect                     = swampbeast_immunities_normal
+
+;открытые раны
+bleeding_v                          = 0						;потеря крови при номинальной ране в секунду
+wound_incarnation_v                 = 0.3				;крутизна кривой заживления (какой процент раны останется после заживления в игровую секунду)
+min_wound_size                      = 0.01
+
+sleep_health                        = 1.0
+sleep_power                         = 1.0
+sleep_satiety                       = 1.0
+sleep_radiation                     = 1.0
+sleep_psy_health                    = 1.0
+
+eat_freq                            = 5.0
+eat_slice                           = 0.01
+eat_slice_weight                    = 10.0
+
+satiety_threshold                   = 0.5							; below this value monster fill hunger
+
+;---------------------------------------------------------
+; Sounds and sound parameters
+;---------------------------------------------------------
+Sound_Idle                          = monsters\poltergeist\tele_idle_0
+sound_eat                           = monsters\controller\controller_eat_
+sound_aggressive                    = monsters\controller\controller_idle_
+sound_attack_hit                    = monsters\controller\controller_idle_
+sound_take_damage                   = monsters\controller\controller_hit_
+sound_die                           = monsters\controller\controller_die_
+sound_threaten                      = monsters\boar\boar_threaten_
+sound_landing                       = monsters\boar\landing_
+sound_steal                         = monsters\biting\def_
+sound_panic                         = monsters\controller\controller_panic_
+sound_growling                      = monsters\biting\def_
+sound_bkgnd                         = monsters\biting\def_
+sound_die_in_anomaly                = monsters\controller\controller_die_
+
+;fuuuuuuu
+flame_sound                         = monsters\poltergeist\attack_hit_flame
+sound_tele_hold                     = monsters\burer\burer_tele_hold
+sound_tele_throw                    = monsters\burer\burer_tele_throw
+flame_scan_sound                    = monsters\burer\burer_scan_affect_0
+
+
+
+
+
+killer_clsids                       = Z_MINCER,Z_GALANT,ZS_BFUZZ,ZS_MBALD,ZS_GALAN,ZS_MINCE
+
+
+idle_sound_delay                    = 12000
+eat_sound_delay                     = 10000
+attack_sound_delay                  = 5000
+
+sound_distant_idle                  = monsters\controller\controller_idle_
+distant_idle_sound_delay            = 80000
+distant_idle_sound_range            = 100.0
+
+SoundThreshold                      = 0.06						; range [0..1]
+max_hear_dist                       = 50
+
+;-------------------------------------------------------------------------
+; Vision
+;-------------------------------------------------------------------------
+
+eye_fov                             = 110	;120
+eye_range                           = 60 ;60
+
+DynamicObjectsCount                 = 32
+
+;-------------------------------------------------------------------------
+; Morale
+;-------------------------------------------------------------------------
+Morale_Hit_Quant                    = 0.01
+Morale_Attack_Success_Quant         = 0.3
+Morale_Take_Heart_Speed             = 0.1
+Morale_Despondent_Speed             = 0.1
+Morale_Stable_Speed                 = 0.3
+Morale_Despondent_Threashold        = 0.5
+
+;-------------------------------------------------------------------------
+; Other Stuff (refactoring needed)
+;-------------------------------------------------------------------------
+DamagedThreshold                    = 0.4
+
+material                            = creatures\large	;objects\bullet
+
+
+squad_attack_algorithm              = 1
+attack_effector                     = m_swampbeast_attack_effector
+
+attack_params                       = m_swampbeast_attack_params
+step_params                         = m_swampbeast_step_params
+
+anger_hunger_threshold              = 0.1
+anger_loud_threshold                = 0.7
+
+LegsCount                           = 2
+damage                              = m_swampbeast_damage
+
+;---------------------------
+
+Invisible_Energy_Restore_Velocity   = 0.1
+Invisible_Energy_Decline_Velocity   = 0.0
+Invisible_Energy_Critical_Value     = 0.01
+Invisible_Energy_Activate_Value     = 0.99
+Invisible_Energy_Aggressive_Restore_Velocity= 0.1
+
+Particles_Damage                    = monsters\polter_damage
+Particles_Death                     = monsters\polter_death
+Particles_Idle                      = monsters\polter_idle
+Particles_Hidden                    = monsters\polter_linza
+
+;-- Delays -------------------
+
+Delay_Flame_Min                     = 30000
+Delay_Flame_Normal                  = 30001
+Delay_Flame_Aggressive              = 30001
+
+Delay_Tele_Min                      = 0   ;100
+Delay_Tele_Normal                   = 100 ;300
+Delay_Tele_Aggressive               = 10  ;200
+
+Delay_Scare_Min                     = 30000
+Delay_Scare_Normal                  = 30001
+Delay_Scare_Aggressive              = 30001
+
+;---------------------------
+
+;species of monster
+species                             = swampbeast
+rank                                = 399
+spec_rank                           = normal
+community                           = swampbeast
+
+critical_wound_threshold            = -1
+critical_wound_decrease_quant       = 0.
+
+vision_free_section                 = swampbeast_vision_free
+vision_danger_section               = swampbeast_vision_danger
+
+[swampbeast_vision_free]
+min_view_distance                   = 0.8				; коэффициент, который множится на eye_range, в зависимости от угла
+max_view_distance                   = 1.0				; коэффициент, который множится на eye_range, в зависимости от угла
+visibility_threshold                = 100.0				; значение, при достижении суммой которого объект считается видимым
+always_visible_distance             = 0.5
+time_quant                          = 0.001
+decrease_value                      = 0.01				; значение, на которое уменьшается вес, если объект попал в фрустум, но отсёкся по каким-то причинам
+velocity_factor                     = 0.5
+luminocity_factor                   = 0.5 				; фактор освещения
+transparency_threshold              = 0.25
+
+[swampbeast_vision_danger]
+min_view_distance                   = 0.8				; коэффициент, который множится на eye_range, в зависимости от угла
+max_view_distance                   = 1.0				; коэффициент, который множится на eye_range, в зависимости от угла
+visibility_threshold                = 100.0				; значение, при достижении суммой которого объект считается видимым
+always_visible_distance             = 0.5
+time_quant                          = 0.001
+decrease_value                      = 0.01				; значение, на которое уменьшается вес, если объект попал в фрустум, но отсёкся по каким-то причинам
+velocity_factor                     = 0.5
+luminocity_factor                   = 0.5 				; фактор освещения
+transparency_threshold              = 0.25
+
+
+[m_swampbeast_damage]
+; bone_name                           = <hit_scale>,-1,<wound_scale>
+;<hit_scale>	- коэфф. изменения хита (уменьшения здоровья)
+;<wound_scale>	- коэфф. изменения величины открытой раны
+
+default                             = 1.0,	-1,	0.1
+
+bip01_pelvis                        = 1.0, -1, 0.2
+bip01_spine                         = 1.0, -1, 0.2
+bip01_spine1                        = 1.0, -1, 0.2
+bip01_neck                          = 1.0, -1, 0.5
+bip01_head                          = 2.0, -1, 0.3
+
+
+[m_swampbeast_attack_params]
+;---------------------------------------------------------------------------------------------------------------------------------------------
+;	anim			| time[0..1] | hit_power | impulse | impulse_dir (x,y,z)  |	Field of hit_test  (left,right, top, bottom) |	Test Dist
+;---------------------------------------------------------------------------------------------------------------------------------------------
+;Left hand Strike
+stand_attack_0        = 0.35,		0.40,		  50,       0.0, 1.0, 1.0,		 -1.0, 1.0, -1.0, 1.0,							  2.2
+;Left hand Strike2
+stand_attack_1        = 0.35,		0.35,		  50,       0.0, 1.0, 1.0,		 -1.0, 1.0, -1.0, 1.0,							  2.2
+
+[m_swampbeast_attack_effector]
+
+duality_h                           = 0.01
+duality_v                           = 0.01
+blur                                = 0.01
+gray                                = 0.5
+noise_intensity                     = 0.0
+noise_grain                         = 1
+noise_fps                           = 30
+color_base                          = 0.65,0.15,0.1
+color_gray                          = 0.333,0.333,0.333
+color_add                           = 0,0,0
+time                                = 0.3
+time_attack                         = 0.05		; fade in
+time_release                        = 0.25		; fade out
+
+; camera effects
+ce_time                             = 0.45 ;time
+ce_amplitude                        = -15.0
+ce_period_number                    = 1.5 ;2.0
+ce_power                            = 1.5 ;0.7 ; power
+
+[m_swampbeast_step_params]                left             right            right           left
+;------------------------------------------------------------------------------------------------------------------
+;	anim					cycles |	time1 | power1 |	time2 | power2 | time3 | power3 | time4     | power4 |
+;-----------------------------------------------------------------------------------------------------------------
+stand_walk_fwd_0                    = 1,		0.1,      1,	  	0.34,    1,		 0.6,	 1,			0.84,		1
+stand_walk_fwd_dmg_0                = 1,		0.2,      1,	  	0.25,    1,		 0.5,	 1,			0.7,		1
+stand_run_0                         = 1,		0.1,      1,	  	0.3,     1,		 0.5,	 1,			0.55,		1
+stand_run_dmg_0                     = 1,		0.2,      1,	  	0.25,    1,		 0.7,	 1,			0.75,		1
+
+;===========================================================================
+; TERRAIN
+;===========================================================================
+[swampbeast_terrain]
+255,000,255,255
+
+;===========================================================================
+; *** PROFILES *************************************************************
+;===========================================================================
+
+
+;*********************************************************************************
+; WEAK PROFILE
+;*********************************************************************************
+[swampbeast_weak]:m_swampbeast_e,weak_profile_base
+$spawn                              = "monsters\swampbeasts\swampbeast_01_weak"
+
+visual                              = monsters\swampbeast\swampbeast
+
+immunities_sect                     = swampbeast_immunities_weak
+
+[swampbeast_immunities_weak]
+burn_immunity                       = 0.3
+strike_immunity                     = 0.7
+shock_immunity                      = 0.5
+wound_immunity                      = 0.4
+radiation_immunity                  = 0.0
+telepatic_immunity                  = 1.0
+chemical_burn_immunity              = 0.2
+explosion_immunity                  = 1.0
+fire_wound_immunity                 = 0.65
+
+
+;*********************************************************************************
+; NORMAL PROFILE
+;*********************************************************************************
+[swampbeast_normal]:m_swampbeast_e,normal_profile_base
+$spawn                              = "monsters\swampbeasts\swampbeast_02_normal"
+
+visual                              = monsters\swampbeast\swampbeast_02
+
+immunities_sect                     = swampbeast_immunities_normal
+
+[swampbeast_immunities_normal]
+burn_immunity                       = 0.3
+strike_immunity                     = 0.7
+shock_immunity                      = 0.5
+wound_immunity                      = 0.4
+radiation_immunity                  = 0.0
+telepatic_immunity                  = 1.0
+chemical_burn_immunity              = 0.2
+explosion_immunity                  = 0.6
+fire_wound_immunity                 = 0.45
+
+
+;*********************************************************************************
+; STRONG PROFILE
+;*********************************************************************************
+[swampbeast_strong]:m_swampbeast_e,very_strong_profile_base
+$spawn                              = "monsters\swampbeasts\swampbeast_03_strong"
+
+visual                              = monsters\swampbeast\swampbeast_03
+
+immunities_sect                     = swampbeast_immunities_strong
+attack_params                       = swampbeast_attack_params_strong
+
+[swampbeast_attack_params_strong]
+;---------------------------------------------------------------------------------------------------------------------------------------------
+;	anim			| time[0..1] | hit_power | impulse | impulse_dir (x,y,z)  |	Field of hit_test  (left,right, top, bottom) |	Test Dist
+;---------------------------------------------------------------------------------------------------------------------------------------------
+stand_attack_0        = 0.35,		0.67,		  65,       0.0, 1.0, 1.0,		 -1.0, 1.0, -1.0, 1.0,							  2.2
+stand_attack_1        = 0.35,		0.67,		  65,       0.0, 1.0, 1.0,		 -1.0, 1.0, -1.0, 1.0,							  2.2
+
+[swampbeast_immunities_strong]
+burn_immunity                       = 0.3
+strike_immunity                     = 0.3
+shock_immunity                      = 0.3
+wound_immunity                      = 0.25
+radiation_immunity                  = 0.0
+telepatic_immunity                  = 0.0
+chemical_burn_immunity              = 0.3
+explosion_immunity                  = 0.4
+fire_wound_immunity                 = 0.3
+
+
+;*********************************************************************************
+; VERY STRONG PROFILE
+;*********************************************************************************
+[swampbeast_very_strong]:m_swampbeast_e,very_strong_profile_base
+$spawn                              = "monsters\swampbeasts\swampbeast_04_very_strong"
+
+visual                              = monsters\swampbeast\swampbeast_04
+
+max_hear_dist                       = 70
+eye_fov                             = 140
+eye_range                           = 70
+
+health_hit_part                     = 0.18
+immunities_sect                     = swampbeast_immunities_strong
+attack_params                       = swampbeast_attack_params_strong

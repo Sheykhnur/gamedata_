@@ -1,0 +1,43 @@
+;***********state 0***************
+
+[death@bs1]
+on_info = %+rosf_bloodsucker1_dead%
+;on_info = {=is_gulag_population_inactive(rosf_bloodsucker_construction_terrain) =is_gulag_population_inactive(rosf_duty_bloodsucker_terrain)} %+rosf_bloodsuckers_dead%
+
+[death@bs2]
+on_info = %+rosf_bloodsucker2_dead%
+;on_info = {=is_gulag_population_inactive(rosf_bloodsucker_construction_terrain) =is_gulag_population_inactive(rosf_duty_bloodsucker_terrain)} %+rosf_bloodsuckers_dead%
+
+[logic@rosf_bloodsucker_construction_terrain_sucker1]
+active = mob_walker@rosf_construction_sucker1
+
+[mob_walker@rosf_construction_sucker1]
+path_walk = wait1
+path_look = look1
+
+[logic@rosf_bloodsucker_construction_terrain_sucker2]
+active = mob_walker@rosf_construction_sucker2
+
+[mob_walker@rosf_construction_sucker2]
+path_walk = wait2
+path_look = look2
+
+;**********state 1***************
+
+[logic@rosf_bloodsucker_construction_terrain_mob1]
+active = mob_home@rosf_construction_sucker1
+on_death = death@bs1
+
+[mob_home@rosf_construction_sucker1]
+path_home = home
+home_min_radius = 1
+home_max_radius = 5
+
+[logic@rosf_bloodsucker_construction_terrain_mob2]
+active = mob_home@rosf_construction_sucker2
+on_death = death@bs2
+
+[mob_home@rosf_construction_sucker2]
+path_home = home
+home_min_radius = 1
+home_max_radius = 5

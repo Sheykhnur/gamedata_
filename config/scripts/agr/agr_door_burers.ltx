@@ -1,0 +1,54 @@
+;UNUSED DOOR FROM THE UNDERGROUND TO ITS BOTTOM LEVEL
+[collide]
+ignore_static
+
+[logic]
+active = ph_door@open_idle
+
+[ph_door@closed_idle]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open_idle
+;on_info = {+agro_door_zone_info} ph_door@locked
+
+[ph_door@open_idle]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed_idle
+;on_info = {+agro_door_zone_info} ph_door@locked
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = metal_small_locked
+on_info = {=counter_greater(agro_door_burers:2)} ph_door@closed %=remove_counter(agro_door_burers)%
+
+[ph_door@close]
+locked = false
+closed = true
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+hit_on_bone = 1|ph_door@free|2|ph_door@free
+
+[ph_door@open]
+locked = false
+closed = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@close
+hit_on_bone = 1|ph_door@free|2|ph_door@free
+
+[ph_door@free]
+locked = false
+closed = true
+no_force = true
+on_use = ph_door@open

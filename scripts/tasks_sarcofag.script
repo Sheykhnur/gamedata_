@@ -1,0 +1,187 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_sarcofag.script
+ Description: Tasks sarcofag
+ Copyright  : 2010 © LA-team
+ Author     : lox
+ Editors    : vintar(31.01.2013)
+ Last edit  : 19.11.2017 [lox]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:name() == "sar_pda_reseacher" then
+			give_info("sar_got_pda")
+			this.play_sar_pda_snd()
+		elseif db.actor:object("sar_battery") then
+			give_info("sar_got_battery")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "sar_scene2_start" then
+		--xr_effects.sar_time_factor_down()
+		this.pistol_appearing()
+		return true --/>
+	end
+	if info_id == "sar_power_level_restored" then
+		local obj = db.actor:object("sar_battery")
+		if obj then
+			alife():release(alife():object(obj:id()), true)
+		end
+		return true
+	end
+	if info_id == "sar_got_codes" then
+		pdaDownloads.add_article{"sar_generator_codes_name", "sar_generator_codes_text"}
+		return true
+	end
+	--[[
+	if info_id == "sar_scene2_hands" then
+		this.start_hud_selfkill_anim()
+		return true --/>
+	end
+	--]]
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function actor_have_battery()
+	return has_info("sar_got_battery")
+end
+
+local old_walk_accel = 15
+local scene_walk_accel = 5.4 
+function pistol_appearing()
+	local snd = xr_sound.get_safe_sound_object("heart\\3")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 15.0)
+	old_walk_accel = db.actor:set_actor_walk_accel(scene_walk_accel)
+	local bolt = db.actor:item_in_slot(5)
+	db.actor:deactivate_slot()
+	if bolt then
+		db.actor:remove_from_inventory(bolt:id())
+	end
+	alife():create("hands_anim_pistol", vector(), 0, 0, idActor)
+	start_quick_timer(3, this.pistol_create_hands) --/ ~ 1.5sec (real-time)
+	level.hide_indicators()
+end
+
+function pistol_create_hands()
+	db.actor:restore_weapon()
+	local hands = db.actor:object("hands_anim_pistol")
+	if hands then
+		db.actor:move_to_slot(hands, false)
+	end
+	start_quick_timer(2, this.start_hud_selfkill_anim)
+end
+
+function start_hud_selfkill_anim()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\human_01\\stalker\\states\\breath\\breath_1")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	db.actor:deactivate_slot()
+	start_quick_timer(7, this.end_hud_play_anim)
+	--event("actor_hud_anim_ends"):register(this.end_hud_play_anim)
+end
+
+function end_hud_play_anim()
+	local snd = xr_sound.get_safe_sound_object("weapons\\t_beretta_shot")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	--log("now")
+	level.add_pp_effector("dark_fade.ppe", 7562, false)
+	--xr_effects.sar_time_factor_restore()
+	db.actor:deactivate_slot()
+	alife():create("bolt", vector(), 0, 0, idActor)
+	start_quick_timer(2, this.sar_restore_hud)
+	--event("actor_hud_anim_ends"):unregister(this.end_hud_play_anim)
+end
+
+function sar_restore_hud()
+	level.add_pp_effector("dark_wake.ppe", 7563, false)
+	local hands = db.actor:item_in_slot(5)
+	if hands then
+		db.actor:move_to_ruck(hands)
+		db.actor:remove_from_inventory(hands:id()) --/#?#
+	end
+	local bolt = db.actor:object("bolt")
+	if bolt then
+		db.actor:move_to_slot(bolt, true)
+	end
+	level.show_indicators()
+	start_quick_timer(2, nil, {info_id = "sar_scene2_end"})
+	db.actor:set_actor_walk_accel(old_walk_accel)
+	xr_effects.enable_ui_elements(nil, nil, {"input"})
+end
+
+function sar_voice()
+	--give_info("sar_scene2_end")
+	give_info("sar_voice")
+	level.add_cam_effector("camera_effects\\xlab_bad_day.anm", 7856, false, "")
+	start_real_timer(6, nil, {info_id = "sar_monolith_start"})
+end
+
+function play_sar_pda_snd()
+	local snd = xr_sound.get_safe_sound_object("device\\pda\\pda_objective")
+	snd:play(db.actor, 0, sound_object.s2d)
+end
+
+function sar_actor_hit_fx()
+	start_quick_timer(9.3, this.sar_actor_hit_snd)
+end
+
+function sar_actor_hit_snd()
+	local snd = xr_sound.get_safe_sound_object("actor\\bullet_hit_4")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	start_quick_timer(2.3, this.sar_actor_hit_second_snd)
+end
+
+function sar_actor_hit_second_snd()
+	local snd = xr_sound.get_safe_sound_object("actor\\bullet_hit_pain_2")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	start_quick_timer(1.8, this.sar_actor_heart_snd)
+end
+
+function sar_actor_heart_snd()
+	local snd = xr_sound.get_safe_sound_object("heart\\9")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+
+function sar_brick_fx()
+	start_quick_timer(1, this.sar_brick_snd)
+end
+
+function sar_brick_snd()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\sar\\brick_hit")
+	snd:play(db.actor, 0, sound_object.s2d)
+	give_info("sar_hit_brick")
+end
+
+function sar_death_fx()
+	start_quick_timer(1.7, this.sar_death_snd)
+end
+
+function sar_death_snd()
+	local snd = xr_sound.get_safe_sound_object("actor\\die2")
+	snd:play(db.actor, 0, sound_object.s2d)
+	start_quick_timer(35.5, this.sar_end_ppe)
+end
+
+function sar_end_ppe()
+	level.add_pp_effector("sar_fade.ppe", 12345, false)
+	xr_effects.enable_anims()
+	start_quick_timer(4, this.sar_final)
+end
+
+function sar_final()
+	xr_effects.sar_monolith_miracle()
+end
+
+--/ -----------------------------------------------------------------------------------------------

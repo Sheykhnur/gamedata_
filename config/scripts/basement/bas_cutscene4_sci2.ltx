@@ -1,0 +1,75 @@
+[combat_ignore@sc4]
+
+[danger@bas_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_sc4]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@sc4_lab_work_01
+combat_ignore = combat_ignore@sc4
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+
+[remark@sc4_lab_work_01]
+anim = probe
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_info = {+bas_cs4_info1} walker@sc4_lab_work_02
+meet = no_meet
+
+[walker@sc4_lab_work_02]
+path_walk = bas_cs4_sci2
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_signal = cs4sc2 | remark@sc4_lab_work_03
+meet = no_meet
+
+[remark@sc4_lab_work_03]
+anim = sci_giving
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_signal = anim_end | remark@sc4_lab_work_03_synth %+bas_cs4_info2%
+meet = no_meet
+target = sc4_sci1_look, 0
+
+[remark@sc4_lab_work_03_synth]
+anim = stand_wait
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+meet = no_meet
+on_timer = 3000 | walker@sc4_lab_work_03
+
+[walker@sc4_lab_work_03]
+path_walk = bas_cs4_sci2_back
+path_look = bas_cs4_sci2_back_look
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_signal = sc4back | remark@sc4_lab_work_preend
+meet = no_meet
+
+[remark@sc4_lab_work_preend]
+anim = sci_think
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+meet = no_meet
+on_info = {+bas_sc4_hey} remark@sc4_lab_work_end
+target = bas_cs4_sci2_back_look, 0
+
+[remark@sc4_lab_work_end]
+anim = wait
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+meet = no_meet
+on_info = {+bas_sc4_hey}
+target = bas_cs4_sci2_back_look, 0

@@ -1,0 +1,227 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_box.script
+ Description: Spawn scheme of items to boxes
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin(17.08.2010),gr1ph00n
+ Last edit  : 15.04.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local community_list = {
+	"def_box",
+	"small_box_generic",
+	"small_box_ussr",
+	"small_box_nato",
+	"small_box_army",
+	"small_box_science",
+	"big_box_generic",
+	"big_box_dungeons",
+	"big_box_arsenal"
+}
+local item_by_community = {}
+local mul_by_level      = {}
+local count_by_level    = {}
+local ph_box_mgr = nil
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "ph_item_box"
+--/ -----------------------------------------------------------------------------------------------
+function ph_item_box:__init()
+	local ph_box_ini = ini_file("misc\\ph_box_generic.ltx")
+	local n,result,id,value = nil,nil,nil,nil
+	
+	for _, v in pairs(community_list) do
+		item_by_community[v] = {}
+		if ph_box_ini:section_exist(v) then
+			n = ph_box_ini:line_count(v)
+			for i = 0, n - 1 do
+				result,id,value = ph_box_ini:r_line(v, i, "", "")
+				item_by_community[v][id] = 100 * (tonumber(value) or 0)
+			end
+		end
+	end
+	
+	local level_name = level.name()
+	
+	if not ph_box_ini:section_exist(level_name) then
+		level_name = "default"
+	end
+	
+	n = ph_box_ini:line_count(level_name)
+	for i = 0, n - 1 do
+		result,id,value = ph_box_ini:r_line(level_name, i, "", "")
+		mul_by_level[id] = tonumber(value) or 0
+	end
+	
+	local item_count_section = "item_count_" .. level.get_game_difficulty()
+	n = ph_box_ini:line_count(item_count_section)
+	
+	for i = 0, n - 1 do
+		result,id,value = ph_box_ini:r_line(item_count_section, i, "", "")
+		local t = parse_nums(value)
+		if not t[1] then
+			abort("Section [%s], line [%s]", item_count_section, tostring(id))
+		end
+		
+		local min = tonumber(t[1]) or 0
+		local max = tonumber(t[2]) or 0
+		
+		if min > max then
+			abort("Section [%s], line [%s]", item_count_section, tostring(id))
+			local tmp = max
+			max = min
+			min = tmp
+		end
+		
+		if not mul_by_level[id] then
+			mul_by_level[id] = 0
+		end
+		
+		min = min * mul_by_level[id]
+		max = max * mul_by_level[id]
+		
+		count_by_level[id] = {min = min, max = max}
+	end
+end
+
+function ph_item_box:spawn_items(oBox)
+	local ini = oBox:spawn_ini()
+	
+	local tItems = this.Get_Items(ini, "drop_box", "spawn")
+	if tItems then --/ Spawn of necessary items:
+		for _,v in pairs(tItems) do
+			this.Create_Obligatory_Items(oBox, v.section, v.count)
+		end
+	else --/ Random spawn of items by table dependancies:
+		--/ making list of items, which can be spawned for 'box'
+		local sCommunity = Get_Cfg_String(ini, "drop_box", "community", "def_box")
+		local tSpawnItems = item_by_community[sCommunity] or item_by_community["def_box"]
+		for k,v in pairs(tSpawnItems) do
+			--/ for each item need to get quantity
+			local iCount = math.ceil(math.random(count_by_level[k].min, count_by_level[k].max))
+			if iCount > 0 then
+				this.Create_Items(oBox, k, iCount, v)
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ HELPs
+--/ -----------------------------------------------------------------
+function get_box_mgr()
+	if not ph_box_mgr then
+		ph_box_mgr = ph_item_box()
+	end
+	return ph_box_mgr --/>
+end
+
+function SpawnItems(oBox) --/< from bind_physic_object
+	get_box_mgr():spawn_items(oBox)
+end
+--/ ------------------------------------------------------------------
+--/ Function spawn specified quantity of 'necessary' items.
+function Create_Obligatory_Items(oBox, sSection, iCount)
+	local vPosBox = oBox:position()
+	local idLv = oBox:level_vertex_id()
+	local idGv = oBox:game_vertex_id()
+	local vPos = vector():set(0,0,0)
+	local sim = alife()
+	for i=1,iCount do
+		vPos.x = vPosBox.x + math.random(-30,30)*0.01
+		vPos.y = vPosBox.y + math.random( 55,65)*0.01
+		vPos.z = vPosBox.z + math.random(-30,30)*0.01
+		local soItem = sim:create(sSection, vPos, idLv, idGv)
+	end
+end
+--/ ------------------------------------------------------------------
+--/ Function spawn soecified quantity of items/ammo with setted probability.
+function Create_Items(oBox, sSection, iCount, iRnd)
+--	log("Create_Items:Item=[%s],num=[%s],rnd=[%s]", sSection, iCount, iRnd) --/#~#
+	if not (iCount and iCount > 0) then return end --/>
+	if not iRnd then iRnd = 1 end
+	local vPosBox = oBox:position()
+	local idLv = oBox:level_vertex_id()
+	local idGv = oBox:game_vertex_id()
+	local vPos = vector():set(0,0,0)
+	if all_items.is_ammo(sSection) then --/ ammo spawning otherwise:
+		if iRnd >= math.random(100) then
+			vPos.x = vPosBox.x + math.random(-30,30)*0.01
+			vPos.y = vPosBox.y + math.random( 55,65)*0.01
+			vPos.z = vPosBox.z + math.random(-30,30)*0.01
+			local soAmmo = create_ammo(sSection, vPos, idLv, idGv, 65535, iCount)
+		end
+	else
+		local sim = alife()
+		for i=1,iCount do
+			--/ Check probability of spawn for each object separatly
+			if iRnd >= math.random(100) then
+				vPos.x = vPosBox.x + math.random(-30,30)*0.01
+				vPos.y = vPosBox.y + math.random( 55,65)*0.01
+				vPos.z = vPosBox.z + math.random(-30,30)*0.01
+				local soItem = sim:create(sSection, vPos, idLv, idGv)
+			end
+		end
+	end
+end
+--/ ------------------------------------------------------------------
+--/ parse string like "'a, b, c, ...' to table {'a','b','c', ...}
+function parse_names(sString)
+--	log("parse_names:String=[%s]:[%s]", sString, ">") --/#~#
+	local tRet = {}
+	if sString then --/#fix#
+		local sPattern,sStr = '([%w_%-.\\]+)%p*', ''
+		for sStr in sString:gmatch(sPattern) do
+			table.insert(tRet, sStr)
+		end
+	end
+	--table.print(tRet) --/#~#
+	return tRet --/>
+end
+--/ ------------------------------------------------------------------
+--/ parse string like "'a, b, c, ...' to table {'a','b','c', ...}
+function parse_names(sString)
+--	log("parse_names:String=[%s]:[%s]", sString, ">") --/#~#
+	local tRet = {}
+	if sString then --/#fix#
+		local sPattern,sStr = '([%w_%-.\\]+)%p*', ''
+		for sStr in sString:gmatch(sPattern) do
+			table.insert(tRet, sStr)
+		end
+	end
+	--table.print(tRet) --/#~#
+	return tRet --/>
+end
+
+function Get_Items(spawn_ini, sSection, sField)
+	if spawn_ini:line_exist(sSection, sField) then
+		local tItems = {}
+		--/ if default's more, then values in ini, then 'choke' missings with last value from ini 
+		local tT = this.parse_names(spawn_ini:r_string(sSection, sField))
+		local iCnt = #tT
+		local i = 1
+		while i <= iCnt do
+			local tItem = {section=tT[i], count=1}
+			i = i +1
+			if tT[i] then --/ check: this is not last record
+				local iCount = tonumber(tT[i])
+				--/ check: 2nd argument setted quantity and not other spawn section
+				if iCount then
+					tItem.count = iCount --/ value
+					i = i +1
+				end
+			end
+			table.insert(tItems, tItem)
+		end
+		return tItems --/>
+	end
+	return nil --/>
+end
+--/ ------------------------------------------------------------------------------------------------

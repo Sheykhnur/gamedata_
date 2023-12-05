@@ -1,0 +1,274 @@
+;DISABLED, use surge_manager.ltx
+;=====================================================================
+;--/ GLOBAL SETTINGS:
+;=====================================================================
+[blowout]
+enabled              = true
+interval             = 24 ;-- in game-hours
+timer_type           = timer_hud ;--hud_timer_text
+show_blowout_timer   = true
+show_blowout_warning = true
+show_hideplaces      = true
+spawn_phantoms       = true
+spawn_artefacts      = true
+spawn_mutants        = false ;--/#!# в доработке!
+kill_birds           = true
+
+;=====================================================================
+;--/ LEVEL SPECIFIC SETTINGS:
+;=====================================================================
+[ai_test]					--/ only for test
+radiation_strength = 0.1
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition		= 100
+
+[la01_escape]
+radiation_strength = 0.4
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la01_escape) +gar_seriy_give_info} 90, 0
+
+[la02_garbage]
+radiation_strength = 0.5
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la02_garbage) +gar_seriy_give_info} 90, 0
+
+[la03_agroprom]
+radiation_strength = 0.45
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la03_agroprom) +agr_gunslinger_flash_have} 90, 0
+
+[la04_darkdolina]
+radiation_strength = 0.5
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la04_darkdolina) +dol_find_white_niva} 90, 0
+
+[la04u_darklab]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la05_bar_rostok]
+radiation_strength = 0.6
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = never
+
+[la06_yantar]
+radiation_strength = 0.6
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la06_yantar) +yan_scientist_parts_have} 90, 0
+
+[la07_military]
+radiation_strength = 0.7
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la07_military) +mil_ghost_teleported} 90, 0
+
+[la08_deadcity]
+radiation_strength = 0.65
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la08_deadcity) +cit_find_your_stuff_done} 90, 0
+
+[la09_swamp]
+radiation_strength = 0.7
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la09_swamp) +swamp_scene2_end} 90, 0
+
+[la10_radar]
+radiation_strength = 0.8
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la10_radar) +deactivate_radar_done} 90, 0
+
+[la10u_bunker]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la11_pripyat]
+radiation_strength = 0.9
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la11_pripyat) +pri_ghost_teleported} 90, 0
+
+[la12_stancia]
+radiation_strength = 1.0
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la12_stancia) +aes_sarcofag_found} 90, 0
+
+[la12u_sarcofag]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la13_generators]
+radiation_strength = 1.0
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = never
+
+[la13u_oso]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la13u_warlab]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la14_rostok_factory]
+radiation_strength = 0.4
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la14_rostok_factory) +rosf_bloodsucker_duty_task_done} 90, 0
+
+[la14u_secret_lab]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la15_darkscape]
+radiation_strength = 0.4
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la15_darkscape) +ds_borov_documents_done} 90, 0
+
+[la16_lost_factory]
+radiation_strength = 0.8
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la16_lost_factory) +lost_scientist_talked} 90, 0
+
+[la16u_labx16]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la17_outskirts]
+radiation_strength = 0.8
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la17_outskirts) +out_barman_active} 90, 0
+
+[la17u_labx7]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la18_damned]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la19_country]
+radiation_strength = 0.8
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true ;-- keep it false
+condition = {=actor_on_level(la19_country) +country_found_real_entrance} 90, 0
+
+[la20_forgotten]
+radiation_strength = 0.5
+spawn_phantoms  = false
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true ;-- keep it false
+condition = {=actor_on_level(la20_forgotten)} 100, 0
+
+[la21_generators_2]
+radiation_strength = 0.0
+spawn_phantoms  = false
+spawn_artefacts = false
+spawn_mutants   = false
+kill_birds      = false ;-- keep it false
+condition = never
+
+[la22_forest]
+radiation_strength = 0.35
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la22_forest)} 90, 0
+
+[la23_oldroad]
+radiation_strength = 0.7
+spawn_phantoms  = true
+spawn_artefacts = true
+spawn_mutants   = false
+kill_birds      = true
+condition = {=actor_on_level(la23_oldroad)} 90, 0

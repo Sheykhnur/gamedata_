@@ -1,0 +1,181 @@
+[combat_ignore@pirozhenko]
+combat_ignore_cond = {=fighting_dist_ge(25)}
+
+[threshold@pirozhenko]
+max_ignore_distance = 10
+ignore_monster = 0
+
+[danger@pirozhenko]
+ignore_distance = 0
+ignore_distance_sound = 15
+danger_inertion_time_corpse = 0
+danger_inertion_time_sound = 1500
+danger_inertion_time_ricochet = 1500
+danger_inertion_time = 1500
+
+[danger_condition@pirozhenko]
+ignore_distance = 0
+ignore_distance_sound = 15
+danger_inertion_time_corpse = 500
+danger_inertion_time_sound = 500
+danger_inertion_time_ricochet = 500
+danger_inertion_time = 500
+
+[logic]
+active = {+yan_pribor_task_tochka2_done -yan_pribor_task_tochka4} walker@pirozhenko_5, {-yan_pribor_task_tochka2_done -yan_pribor_task_tochka4} walker@pirozhenko_idle, {+yan_pribor_task_tochka4} walker@pirozhenko_idle2
+combat_ignore = combat_ignore@pirozhenko
+on_death = death@pirozhenko
+team = yan_expedicia_group
+
+[death@pirozhenko]
+on_info = %+yan_pirozhenko_dead%
+
+[walker@pirozhenko_idle]
+path_walk = pirozhenko_idle_walk
+path_look = pirozhenko_idle_look
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+yan_pribor_task_start} walker@pirozhenko_00
+
+[walker@pirozhenko_00]
+path_walk = pirozhenko_walk_00
+path_look = pirozhenko_look_00
+threshold = threshold@pirozhenko
+combat_ignore_cond = always
+meet = meet@pirozhenko00
+invulnerable = true
+on_info = {+yan_pribor_task_talk00} walker@pirozhenko_0
+
+[walker@pirozhenko_0]
+path_walk = pirozhenko_walk_0
+path_look = general_look_0
+threshold = threshold@pirozhenko
+combat_ignore_cond = always
+meet = meet@pirozhenko00
+invulnerable = true
+on_info = {+yan_pribor_task_talk_pirozh0} walker@pirozhenko_1
+
+[walker@pirozhenko_1]
+path_walk = pirozhenko_walk_1
+path_look = pirozhenko_look_1
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+invulnerable = true
+on_signal = tochka1| %+yan_pribor_task_tochka1%
+on_info = {+yan_pribor_task_tochka1} walker@pirozhenko_1e
+
+[walker@pirozhenko_1e]
+path_walk = pirozhenko_walk_1
+path_look = pirozhenko_look_1
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+combat_ignore_cond = {=fighting_dist_ge(10)}
+meet = meet@pirozhenko00
+invulnerable = true
+on_info = {+yan_pribor_task_talk_kulesh1} walker@pirozhenko_2
+
+[walker@pirozhenko_2]
+path_walk = pirozhenko_walk_2
+path_look = pirozhenko_look_2
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+invulnerable = true
+on_signal = tochka1v| %+yan_pribor_task_tochka1v%
+combat_ignore_cond = {-yan_pribor_task_pribor1_has}
+on_info = {+yan_pribor_task_pribor1_has} walker@pirozhenko_3
+on_info2 = {+yan_pribor_zombie_attacked} walker@pirozhenko_3
+
+[walker@pirozhenko_3]
+path_walk = pirozhenko_walk_3
+path_look = general_look_3
+danger = danger_condition@pirozhenko
+threshold = threshold@pirozhenko
+invulnerable = true
+combat_ignore_cond = {=fighting_dist_ge(15)}
+on_info = {+yan_pribor_task_talk_pirozh2} walker@pirozhenko_4
+
+[walker@pirozhenko_4]
+path_walk = pirozhenko_walk_4
+path_look = pirozhenko_look_4
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+combat_ignore_cond = {=fighting_dist_ge(15)}
+meet = no_meet
+invulnerable = true
+on_signal = tochka2| %+yan_pribor_task_tochka2%
+on_info = {+yan_pribor_task_tochka2} walker@pirozhenko_4e
+
+[walker@pirozhenko_4e]
+path_walk = pirozhenko_stay_4
+path_look = pirozhenko_stay_look_4
+danger = danger_condition@pirozhenko
+threshold = threshold@pirozhenko
+invulnerable = true
+combat_ignore_cond = {=fighting_dist_ge(25)}
+on_info = {+yan_pribor_task_tochka2_done} walker@pirozhenko_5
+
+[walker@pirozhenko_5]
+path_walk = pirozhenko_walk_5
+path_look = pirozhenko_look_5
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+invulnerable = true
+combat_ignore_cond = {=fighting_dist_ge(30)}
+meet = no_meet
+on_signal = tochka3| %+yan_pribor_task_tochka3_0%
+on_info = {+yan_pribor_task_tochka3_0} walker@pirozhenko_5_0
+
+[walker@pirozhenko_5_0]
+path_walk = pirozhenko_walk_5
+path_look = pirozhenko_look_5
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+invulnerable = true
+combat_ignore_cond = {=fighting_dist_ge(15)}
+on_info = {+yan_pribor_task_propusk} walker@pirozhenko_6
+
+[walker@pirozhenko_6]
+path_walk = pirozhenko_walk_6
+;path_look = pirozhenko_look_6
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+combat_ignore_cond = {=fighting_dist_ge(15)}
+meet = no_meet
+invulnerable = true
+on_signal = done| %+yan_pribor_task_tochka4%
+on_info = {+yan_pribor_task_propusk -yan_pribor_task_tochka4} %=teleport_dist_far_npc_not_seen(pirozhenko_idle_walk:yan_pribor_task_tochka4)%
+on_info2 = {+yan_pribor_task_tochka4} walker@pirozhenko_idle2
+on_timer = 2000 | %+yan_pribor_task_pirozhenko_follow%
+
+
+[walker@pirozhenko_idle2]
+path_walk = pirozhenko_idle_walk
+path_look = pirozhenko_idle_look
+threshold = threshold@pirozhenko
+danger = danger_condition@pirozhenko
+combat_ignore_cond = always
+meet = pirozhenko00
+
+[meet@pirozhenko00]
+abuse = true
+use = true
+use_wpn = false
+victim 			=  20|actor|5|actor
+victim_wpn 		= nil
+meet_state = 30|hello@hail|5|guard@wait
+meet_state_wpn = 20|hello@hail|5|guard@wait
+precond = visibility
+
+[meet@no_talk]
+meet_state 		= 1 | yan_professor_wait@wait
+meet_state_wpn 	= 1 | yan_professor_wait@wait
+victim 			= 1 | actor
+victim_wpn 		= nil
+use             = false
+use_wpn         = false
+abuse = false
+precond = visibility

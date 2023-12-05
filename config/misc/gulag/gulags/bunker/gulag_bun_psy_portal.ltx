@@ -1,0 +1,236 @@
+;bun_psy_portal_circle
+
+;******************************state 0,1********************************
+
+[combat_ignore@psy_protectors]
+
+[logic@bun_psy_portal_off_teleported1]
+active = walker@bun_psy_portal_off_teleported1
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_off_teleported1]
+path_walk = spawn1
+combat_ignore_cond = always
+meet = no_meet
+
+[logic@bun_psy_portal_off_teleported2]
+active = walker@bun_psy_portal_off_teleported2
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_off_teleported2]
+path_walk = spawn2
+combat_ignore_cond = always
+meet = no_meet
+
+[logic@bun_psy_portal_off_teleported3]
+active = walker@bun_psy_portal_off_teleported3
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_off_teleported3]
+path_walk = spawn3
+combat_ignore_cond = always
+meet = no_meet
+
+[logic@bun_psy_portal_off_teleported4]
+active = walker@bun_psy_portal_off_teleported4
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_off_teleported4]
+path_walk = spawn4
+combat_ignore_cond = always
+meet = no_meet
+
+;******************************state 0********************************
+
+[logic@bun_psy_portal_stasis1]
+active = walker@bun_psy_portal_stasis1
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis1]
+path_walk = stasis1
+combat_ignore_cond = always
+meet = no_meet
+
+[logic@bun_psy_portal_stasis2]
+active = walker@bun_psy_portal_stasis2
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis2]
+path_walk = stasis2
+combat_ignore_cond = always
+meet = no_meet
+
+[logic@bun_psy_portal_stasis3]
+active = walker@bun_psy_portal_stasis3
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis3]
+path_walk = stasis3
+combat_ignore_cond = always
+meet = no_meet
+
+[logic@bun_psy_portal_stasis4]
+active = walker@bun_psy_portal_stasis4
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis4]
+path_walk = stasis4
+combat_ignore_cond = always
+meet = no_meet
+
+;******************************state 1********************************
+
+[logic@bun_psy_portal_stasis_on_1]
+active = walker@bun_psy_portal_stasis1_on
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis1_on]
+path_walk = stasis1
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 500 | remark@bun_psy_portal_stasis_on_1
+
+[remark@bun_psy_portal_stasis_on_1]
+anim = oso_flying
+target = actor
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} %=release%
+
+[logic@bun_psy_portal_stasis_on_2]
+active = walker@bun_psy_portal_stasis2_on
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis2_on]
+path_walk = stasis2
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 500 | remark@bun_psy_portal_stasis_on_2
+
+[remark@bun_psy_portal_stasis_on_2]
+anim = oso_flying
+target = actor
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} %=release%
+
+[logic@bun_psy_portal_stasis_on_3]
+active = walker@bun_psy_portal_stasis3_on
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis3_on]
+path_walk = stasis2
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 500 | remark@bun_psy_portal_stasis_on_3
+
+[remark@bun_psy_portal_stasis_on_3]
+anim = oso_flying
+target = actor
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} %=release%
+
+[logic@bun_psy_portal_stasis_on_4]
+active = walker@bun_psy_portal_stasis4_on
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_stasis4_on]
+path_walk = stasis4
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 500 | remark@bun_psy_portal_stasis_on_4
+
+[remark@bun_psy_portal_stasis_on_4]
+anim = oso_flying
+target = actor
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} %=release%
+
+
+;******************************state 2********************************
+
+[logic@bun_psy_portal_teleported1]
+active = walker@bun_psy_portal_teleported1
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_teleported1]
+path_walk = spawn1
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} walker@bun_psy_portal_transform1
+
+[walker@bun_psy_portal_transform1]
+path_walk = into1
+combat_ignore_cond = always
+on_signal = transfa | %+bun_wait1%
+on_signal2 = transformation | {-bun_levitate} %+bun_levitate%
+on_info = {+bun_levitate} %=release%
+def_state_standing = oso_flying
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+
+[logic@bun_psy_portal_teleported2]
+active = walker@bun_psy_portal_teleported2
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_teleported2]
+path_walk = spawn2
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} walker@bun_psy_portal_transform2
+
+[walker@bun_psy_portal_transform2]
+path_walk = into2
+combat_ignore_cond = always
+on_info = {+bun_levitate} %=release%
+on_signal = transfb | %+bun_wait2%
+on_signal2 = transformation | {-bun_levitate} %+bun_levitate%
+def_state_standing = oso_flying
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+
+[logic@bun_psy_portal_teleported3]
+active = walker@bun_psy_portal_teleported3
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_teleported3]
+path_walk = spawn3
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} walker@bun_psy_portal_transform3
+
+[walker@bun_psy_portal_transform3]
+path_walk = into3
+combat_ignore_cond = always
+on_info = {+bun_levitate} %=release%
+on_signal = transfc | %+bun_wait3%
+on_signal2 = transformation | {-bun_levitate} %+bun_levitate%
+def_state_standing = oso_flying
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush
+
+[logic@bun_psy_portal_teleported4]
+active = walker@bun_psy_portal_teleported4
+combat_ignore = combat_ignore@psy_protectors
+
+[walker@bun_psy_portal_teleported4]
+path_walk = spawn4
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+scary_ended} walker@bun_psy_portal_transform4
+
+[walker@bun_psy_portal_transform4]
+path_walk = into4
+combat_ignore_cond = always
+on_info = {+bun_levitate} %=release%
+on_signal = transfd | %+bun_wait4%
+on_signal2 = transformation | {-bun_levitate} %+bun_levitate%
+def_state_standing = oso_flying
+def_state_moving1 = rush
+def_state_moving2 = rush
+def_state_moving3 = rush

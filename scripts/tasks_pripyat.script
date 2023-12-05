@@ -1,0 +1,182 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_pripyat.script
+ Description: Tasks pripyat
+ Copyright  : 2010 © LA-team
+ Author     : vintar
+ Editors    : vintar
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local monolith_info_tbl = {
+	"pri_monolith_skirmish1_dead1",
+	"pri_monolith_skirmish1_dead2",
+	"pri_monolith_skirmish1_dead3",
+	"pri_monolith_skirmish1_dead4",
+	"pri_monolith_skirmish1_dead5",
+	"pri_monolith_skirmish1_dead6",
+	"pri_monolith_skirmish1_dead7",
+	"pri_monolith_skirmish1_dead8"
+}
+local military_info_tbl = {
+	"pri_military_skirmish1_dead1",
+	"pri_military_skirmish1_dead2",
+	"pri_military_skirmish1_dead3",
+	"pri_military_skirmish1_dead4",
+	"pri_military_skirmish1_dead5"
+}
+local spoke_ghost_info_tbl = {
+	"pri_spoke_ghost_met",
+	"pri_spoke_ghost_story",
+	"pri_spoke_ghost_knives"
+}
+--/---------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:section() == "kruglov_flash" then
+			give_info("pri_kruglov_flash_have")
+		end
+	end
+	if monolith_info_tbl and has_info_portions(monolith_info_tbl) then
+		monolith_info_tbl = nil --/ clear
+		give_info("pri_skirmish1_monolith_dead")
+	end
+	if military_info_tbl and has_info_portions(military_info_tbl) then
+		military_info_tbl = nil --/ clear
+		give_info("pri_skirmish1_military_dead")
+	end
+	if spoke_ghost_info_tbl and has_info_portions(spoke_ghost_info_tbl) then
+		spoke_ghost_info_tbl = nil --/ clear
+		give_info("pri_spoke_ghost_all")
+	end
+	if db.sMapNow == "la11_pripyat" and has_info("sar_got_codes") and not has_info("pri_trader_second_spawn") then
+		give_info("pri_trader_second_spawn")
+		start_real_timer(10, nil, {info_id = "pri_secret_trader_spawn"})
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "dam_found_pripyat_entrance" then
+		news_manager.send_tip_hud(game.translate_string("ghost_message_header"), game.translate_string("pripyat_under_attack"), "ghost")
+		if has_info("pri_skirmish1_military_dead") then
+			give_info("pri_heli_path1")
+			give_info("pri_give_hotel_task")
+		else
+			start_real_timer(6, nil, {tip = {game.translate_string("ecolog_message_header"), game.translate_string("pri_help_military"), "lab"}}) --/ ~ 8.5sec (real-time)
+			start_real_timer(11, nil, {info_id = "pri_help_military_task_start"}) --/ ~ 13.5sec (real-time)
+		end
+		return true --/>
+	end
+	if not info_id:match('^pri_') then
+		return false --/>
+	end
+	if info_id == "pri_spawn_decoder" then
+		local box = alife():object("pri_decoder_box")
+		if box then
+			alife():create("decoder", vector(), 0, 0, box.id)
+			give_info("pri_three_formation")
+		end
+		return true --/>
+	end
+	if info_id == "pri_help_military_task_start" then
+		tasks_stancia.set_sta_gulag_neutral_actor()
+		return true
+	end
+	if info_id == "pri_help_military_task_finished" then
+		give_info("pri_heli_path1")
+		start_real_timer( 6, nil, {tip = {game.translate_string("military_message_header"), game.translate_string("pri_mil_contacts_actor"), "military"}})
+		start_real_timer(10, nil, {info_id = "pri_meet_mil_task_start"})
+		return true --/>
+	end
+	if info_id == "pri_field_agent_dead" then
+		if has_info("pri_help_ecos") and not has_info("pri_measurements_taken") then
+			give_info("pri_measurements_fail")
+			give_info("pri_spawn_ghost")
+			start_real_timer(6.5, nil, {info_id = "pri_ghost_hotel"}) --/ ~ 6.5sec (real-time)
+		end
+		return true --/>
+	end
+	if info_id == "pri_give_hotel_task" then
+		give_info("pri_spawn_ghost")
+		give_info("pri_heli_path2")
+		start_real_timer(6.5, nil, {info_id = "pri_ghost_hotel"}) --/ ~ 6.5sec (real-time)
+		return true --/>
+	end
+	if info_id == "pri_eco_bad_rep" then
+		relation_registry.change_community_goodwill("ecolog", idActor, -200)
+		give_info("pri_spawn_ghost")
+		start_real_timer(6.5, nil, {info_id = "pri_ghost_hotel"}) --/ ~ 6.5sec (real-time)
+		return true --/>
+	end
+	if info_id == "pri_eco_met" then
+		start_real_timer(6.5, nil, {info_id = "pri_help_ecos"}) --/ ~ 6.5sec (real-time)
+		return true --/>
+	end
+	if info_id == "pri_meet_eco" then
+		start_real_timer(10, nil, {info_id = "pri_secret_trader_spawn"})
+		return true
+	end
+	if info_id == "pri_secret_trader_spawn" then
+		local sobj = alife():story_object(6806)
+		if sobj then
+			level.map_add_object_spot(sobj.id, "green_location", game.translate_string("pri_secret_trader_sp"))
+		end
+		news_manager.send_tip_hud(game.translate_string("pri_secret_trader_msg"), game.translate_string("pri_secret_trader_msg_text"), "stalker", 15, nil)
+		--start_real_timer(180, "tasks_pripyat.remove_trader")
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function dam_found_pripyat_entrance() --/#x# rudiment
+	news_manager.send_tip_hud(game.translate_string("ecolog_message_header"), game.translate_string("pri_help_military"), "lab")
+end
+
+function pri_help_military_task_finished() --/#x# rudiment
+	news_manager.send_tip_hud(game.translate_string("military_message_header"), game.translate_string("pri_mil_contacts_actor"), "military")
+end
+
+function pri_mil_helped_complete()
+	if has_info("pri_skirmish1_monolith_dead") and has_info("pri_skirmish1_actor_helped") then
+		if not has_info("pri_skirmish1_military_dead") then
+			return true
+		end
+	end
+	return false
+end
+
+function pri_mil_helped_fail()
+	if has_info("pri_help_military_task_start") then
+		if has_info("pri_skirmish1_military_dead") and not has_info("pri_skirmish1_monolith_dead") then
+			start_real_timer(6.5, nil, {info_id = "pri_ghost_hotel"}) --/ ~ 6.5sec (real-time)
+			return true
+		end
+		if has_info("pri_military_skirmish1_hit") then
+			start_real_timer(6.5, nil, {info_id = "pri_ghost_hotel"}) --/ ~ 6.5sec (real-time)
+			return true
+		end
+	end
+	return false
+end
+
+function remove_trader()
+	local sobj = alife():story_object(6806)
+	if sobj then
+		for i = 1, level.map_has_object_spot(sobj.id, "green_location") do
+			level.map_remove_object_spot(sobj.id, "green_location")
+		end
+	end
+	disable_info("pri_secret_trader_spawn")
+end
+
+--/ -----------------------------------------------------------------------------------------------

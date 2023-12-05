@@ -1,0 +1,220 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : restrictor_manager.script
+ Description: "Restrictor Manager"
+ Copyright  : © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 30.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function get_restrictor_manager(oNPC, st)
+	local tStor = st or db.storage[oNPC:id()]
+	if not tStor.restrictor_mgr then
+		tStor.restrictor_mgr = this.CRestrictor_Manager(oNPC, tStor)
+	end
+	return tStor.restrictor_mgr --/>
+end
+
+function reset_restrictions(oNPC, st, sSection, bLog)
+	local tStor = st or db.storage[oNPC:id()]
+	if tStor.restrictor_mgr then
+		tStor.restrictor_mgr:reset_restrictions(sSection, bLog)
+	end
+end
+
+--/ преобразует строку в соответствии со значением
+function get_param_string(str_src, obj)
+--	log("get_param_string: str_src=[%s],obj=[%s]", tostring(str_src), obj and obj:name(), "") --/#~#
+	local zone_name = obj and db.script_ids and db.script_ids[obj:id()]
+	local str_out, cnt = string.gsub(str_src, "%$script_id%$", tostring(zone_name))
+	return str_out, cnt > 0 --/>
+end
+--/ -----------------------------------
+--/ CLASS CONSTRUCTOR
+--/ ------------------------------------------------------------------------------------------------
+class "CRestrictor_Manager"
+--/ ------------------------------------------------------------------------------------------------
+function CRestrictor_Manager:__init(oNPC, st)
+	self.object = oNPC
+	self.npc_id = oNPC:id()
+	self.ini = st.ini
+	self.out_curr_restrictions = {}
+	self.in_curr_restrictions  = {}
+	self.out_base_restrictions = {}
+	self.in_base_restrictions  = {}
+	if IsStalker(oNPC) then
+		local out_restrs = utils.parse_names( oNPC:out_restrictions() )
+		local in_restrs  = utils.parse_names( oNPC:in_restrictions() )
+		for _,v in pairs(out_restrs) do
+			self.out_base_restrictions[v] = true
+		end
+		for _,v in pairs(in_restrs) do
+			self.in_base_restrictions[v] = true
+		end
+	--/ CRestrictedObject : cannot access class member out(in)_restrictions!
+	--else log("init: NPC=[%s], clsid=[%s] ~ cannot access class member _restrictions!", oNPC and oNPC:name(), oNPC and oNPC:clsid(), "") --/#~#
+	end
+end
+
+--/ -----------------------------------------------------------------
+--/ STALKER restrictions
+--/ -----------------------------------------------------------------
+--/ Данная функция вычитывает из логики набор рестрикторов, которые нужно проставить персонажу.
+function CRestrictor_Manager:reset_restrictions(st, sSection, bLog)
+	local oNPC = self.object
+-- if bLog then log("reset_restrictions:NPC=[%s],section=[%s]", oNPC and oNPC:name(), sSection, "") end --/#~#
+	if not oNPC then
+		return --/>
+	end
+	
+	--/ вычитываем новые 'out'-рестрикторы
+	local out_restr = sSection and Get_Cfg_String(self.ini, sSection, "out_restr", "") or "" --/ читаем из секции логики
+	local r_out = utils.parse_names( get_param_string(out_restr, oNPC) )
+	if bLog then log("reset_restr:OUT=[%s]/%s", out_restr, r_out, "") end --/#~#
+	--/ вычитываем новые 'in'-рестрикторы
+	local in_restr = sSection and Get_Cfg_String(self.ini, sSection, "in_restr", "") or "" --/ читаем из секции логики
+	local r_in = utils.parse_names( get_param_string(in_restr, oNPC) )
+	if bLog then log("reset_restr:IN=[%s]/%s", in_restr, r_in, "") end --/#~#
+	
+	--/#+# проверяем гулаговые рестрикторы
+	local gulag = xr_gulag.get_npc_gulag(oNPC,self.npc_id)
+	if gulag then
+		local tJob = gulag.ObjectJob[self.npc_id] and gulag.Job and gulag.Job[ gulag.ObjectJob[self.npc_id] ]
+		if tJob then
+			out_restr = tJob.out_rest and tJob.out_rest ~= "" and utils.parse_names( tJob.out_rest )
+			if out_restr and next(out_restr) then
+				for _,v in pairs(out_restr) do
+					table.insert(r_out, v)
+				end
+				if bLog then log("reset_restr:gulag=[%s],OUT=%s%s", gulag.name, r_out, "") end --/#~#
+			end
+			in_restr  = tJob.in_rest and tJob.in_rest ~= "" and utils.parse_names( tJob.in_rest )
+			if in_restr and next(in_restr) then
+				for _,v in pairs(in_restr) do
+					table.insert(r_in, v)
+				end
+				if bLog then log("reset_restr:gulag=[%s],IN=%s%s", gulag.name, r_in, "") end --/#~#
+			end
+			if tJob.info_rest then
+				db.info_restr[self.npc_id] = tJob.info_rest
+			end
+		end
+	end
+	if bLog and next(r_out) then log("reset_restr:gulag=[%s],OUT=[%s]%s", gulag.name, r_out, "+") end --/#~#
+	if bLog and next(r_in) then log("reset_restr:gulag=[%s],IN=[%s]%s", gulag.name, r_in, "+") end --/#~#
+	--
+	self:change_restrictions(r_out,r_in)
+end
+
+function CRestrictor_Manager:clear_restrictions()
+	self:change_restrictions({},{})
+	db.info_restr[self.npc_id] = nil
+end
+
+function CRestrictor_Manager:change_restrictions(r_out,r_in)
+	local oNPC = self.object
+-- log("change_restrictions:Obj=[%s],section=[%s]%s", oNPC and oNPC:name(), sSection, "") --/#~#
+	local del_restr = {["r_out"]={},["r_in"]={}} --/ рестрикторы, которые нужно удалить
+	local add_restr = {["r_out"]={},["r_in"]={}} --/ рестрикторы, которые нужно добавить
+	local bFlg = false --/ флаг
+	--/ существующие рестрикторы
+	local out_restr,in_restr = {},{}
+	if IsStalker(oNPC) then
+		out_restr = utils.parse_names( oNPC:out_restrictions() )
+		in_restr  = utils.parse_names( oNPC:in_restrictions() )
+	end
+	--/ ---------------------------------
+	--/ OUT-рестрикторы
+	--/ ---------------------------------
+	--/ удалять из текущих только выставленные менеджером и не 'базовые'
+	for _,v in pairs(out_restr) do
+		if self.out_curr_restrictions[v] and not self.out_base_restrictions[v] then
+			bFlg = true
+			for _,vv in pairs(r_out) do
+				if vv == v then
+					bFlg = false --/ не удалять
+					break
+				end
+			end
+			if bFlg then
+				table.insert(del_restr.r_out, v)
+				self.out_curr_restrictions[v] = nil
+			end
+		end
+	end
+	--/ добавляем если еще нет в текущих
+	for _,v in pairs(r_out) do
+		if not self.out_curr_restrictions[v] and v ~= "nil" then
+			bFlg = true
+			for _,vv in pairs(out_restr) do
+				if vv == v then
+					bFlg = false --/ уже добавлен
+					break
+				end
+			end
+			if bFlg then
+				table.insert(add_restr.r_out, v)
+				self.out_curr_restrictions[v] = true
+			end
+		end
+	end
+	--/ ---------------------------------
+	--/ IN-рестрикторы
+	--/ ---------------------------------
+	--/ удалять из текущих только выставленные менеджером и не 'базовые'
+	for _,v in pairs(in_restr) do
+		if self.in_curr_restrictions[v] and not self.in_base_restrictions[v] then --/ 'базовые' не удаляем
+			bFlg = true
+			for _,vv in pairs(r_in) do
+				if vv == v then
+					bFlg = false --/ не удалять
+					break
+				end
+			end
+			if bFlg then
+				table.insert(del_restr.r_in, v)
+				self.in_curr_restrictions[v] = nil
+			end
+		end
+	end
+	--/ добавляем если еще нет в текущих
+	for _,v in pairs(r_in) do
+		if not self.in_curr_restrictions[v] and v ~= "nil" then
+			bFlg = true
+			for _,vv in pairs(in_restr) do
+				if vv == v then
+					bFlg = false --/ уже добавлен
+					break
+				end
+			end
+			if bFlg then
+				table.insert(add_restr.r_in, v)
+				self.in_curr_restrictions[v] = true
+			end
+		end
+	end
+	--/ ---------------------------------
+	--/ Del&Add
+	--/ ---------------------------------
+	if next(del_restr.r_out) or next(del_restr.r_in) then
+		oNPC:remove_restrictions( table.concat(del_restr.r_out,','), table.concat(del_restr.r_in,',') )
+		move_mgr.init_pp_accessibility(self.npc_id) --/#!# сброс проверенных патрульных путей
+		--if next(del_restr.r_out) then log("change_restr:NPC=[%s],del_OUT=[%s]%s", oNPC:name(), table.concat(del_restr.r_out,','), "") end --/#~#
+		--if next(del_restr.r_in) then log("change_restr:NPC=[%s],del_IN=[%s]%s", oNPC:name(), table.concat(del_restr.r_in,','), "") end --/#~#
+	end
+	if next(add_restr.r_out) or next(add_restr.r_in) then
+		oNPC:add_restrictions( table.concat(add_restr.r_out,','), table.concat(add_restr.r_in,',') )
+		move_mgr.init_pp_accessibility(self.npc_id) --/#!# сброс проверенных патрульных путей
+		--if next(add_restr.r_out) then log("change_restr:NPC=[%s],add_OUT=[%s]%s", oNPC:name(), table.concat(add_restr.r_out,','), "") end --/#~#
+		--if next(add_restr.r_in) then log("change_restr:NPC=[%s],add_IN=[%s]%s", oNPC:name(), table.concat(add_restr.r_in,','), "") end --/#~#
+	end
+end
+--/------------------------------------------------------------------------------------------------

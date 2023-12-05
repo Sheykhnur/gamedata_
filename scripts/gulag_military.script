@@ -1,0 +1,349 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_military.script
+ Description: Gulags Military
+ Copyright  : 2013 © LA-team
+ Authors    : gr1phoon, loxotron
+ Editors    : gri, vintar, loxotron(23.02.2013)
+ Last edit  : 26.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	army_killer_house       = {comm = {"killer"}, out_rest = "army_killer_house_out_rest"},
+	army_killer_base        = {comm = {"killer"}, out_rest = "army_killer_base_out_rest"},
+	army_military_land      = {comm = {"military"}},
+	mil_stalkers_camp       = {comm = {"stalker", "dolg", "trader", "clear_sky"}},
+	mil_bandits_attack_camp = {comm = {"bandit"}},
+	military_crazy_smart    = {comm = {"stranger"}},
+	mil_task_controller     = {comm = {"trader"}},
+	--/ for monsters ------------------------------
+	military_fleshes_smart     = {comm = {"flesh", "boar"}},
+	military_dogs_smart        = {comm = {"pseudodog", "dog"}}, --out_rest = "military_dogs_smart_out_rest"
+	military_boars_smart       = {comm = {"flesh", "boar"}},
+	military_zombies_smart     = {comm = {"zombie"}, out_rest = "military_zombies_smart_out_rest"},
+	mil_chimeras_smart         = {comm = {"chimera"}, in_rest = "mil_chimeras_smart_in_rest", out_rest = "mil_chimeras_smart_out_rest"},
+	mil_rats_smart             = {comm = {"rat","tushkano"}},
+	military_bloodsucker_area  = {comm = {"bloodsucker"}, out_rest = "military_bloodsucker_area_out_rest"},
+	military_karlik_smart      = {comm = {"karlik"}, out_rest = "army_killer_house_out_rest"},
+	mil_task_rat_terrain       = {comm = {"rat","tushkano"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local is_online = "{=xr_gulag.actor_on_gulag_level()}"
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ military lager scene
+--/ ---------------------------------------------
+gulags.army_killer_house.is_sergey_pred = function(info) return info.profile_name == "mil_killer_sergey" end
+
+gulags.army_killer_house.pred = function(info)
+	return info.name == "army_stalker_killer_stalker_0009" or info.name == "army_stalker_killer_stalker_0011"
+end
+
+gulags.army_killer_house.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("sergey_off", 0, 8, {0}, squad, groups[1], "", gulags.army_killer_house.out_rest, false, type, gulags.army_killer_house.is_sergey_pred))
+	table.insert(sj, gulag_tasks.getJob("sergey",     0, 8, {1}, squad, groups[1], "", gulags.army_killer_house.out_rest,   nil, type, gulags.army_killer_house.is_sergey_pred))
+	for i = 1, 2 do 
+		table.insert(sj, gulag_tasks.getJob("off_merc" .. i, 0, 5, {0}, squad, groups[1], "", gulags.army_killer_house.out_rest, false, type, gulags.army_killer_house.pred))
+		table.insert(sj, gulag_tasks.getJob("merc" .. i, 0, 5, {1}, squad, groups[1], "", gulags.army_killer_house.out_rest,   nil, type, gulags.army_killer_house.pred))
+	end
+end
+
+gulags.army_killer_house.state = function(gulag)
+	if has_info("mil_actor_talked_ghost") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ military mercs base
+--/ ---------------------------------------------
+gulags.army_killer_base.is_mercs_leader_pred = function(info) return info.story_id == 6711 end
+gulags.army_killer_base.is_sniper1_pred      = function(info) return info.story_id == 6706 end
+gulags.army_killer_base.is_sniper2_pred      = function(info) return info.story_id == 6707 end
+gulags.army_killer_base.is_sniper3_pred      = function(info) return info.story_id == 6708 end
+gulags.army_killer_base.is_sniper4_pred      = function(info) return info.story_id == 6709 end
+gulags.army_killer_base.is_sniper5_pred      = function(info) return info.story_id == 6710 end
+gulags.army_killer_base.vitcim_pred          = function(info) return info.name == "army_merc_vitcim" end
+
+gulags.army_killer_base.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("mercs_leader", 0, 7, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest, nil, type, gulags.army_killer_base.is_mercs_leader_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper1",    0, 6, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest,   is_online, type, gulags.army_killer_base.is_sniper1_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper2",    0, 6, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest,   is_online, type, gulags.army_killer_base.is_sniper2_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper3",    0, 6, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest,   is_online, type, gulags.army_killer_base.is_sniper3_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper4",    0, 6, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest,   is_online, type, gulags.army_killer_base.is_sniper4_pred))
+	table.insert(sj, gulag_tasks.getJob("sniper5",    0, 6, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest,   is_online, type, gulags.army_killer_base.is_sniper5_pred))
+	table.insert(sj, gulag_tasks.getJob("vitcim",     0, 7,    {0}, squad, groups[1], "", gulags.army_killer_base.out_rest,  nil, type, gulags.army_killer_base.vitcim_pred))
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("mercs" .. i, 0, 5, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest, nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i, 0, 5, {0}, squad, groups[1], "", gulags.army_killer_base.out_rest, nil, type, on_level_pred))
+	end
+end
+
+gulags.army_killer_base.state = function(gulag)
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ military landing forces
+--/ ---------------------------------------------
+gulags.army_military_land.jobs = function(sj, gname, type, squad, groups)
+	local ltx = ""
+	for i = 1, 8 do
+		ltx = ltx .. "[logic@" .. type .. "_walker" .. i .. "]\n"
+		ltx = ltx .. "active = walker@" .. type .. "_walker" .. i .. "\n"
+		ltx = ltx .. "[walker@" .. type .. "_walker" .. i .. "]\n"
+		ltx = ltx .. "path_walk = walk" .. i .. "\n"
+	end
+	gulags.army_military_land.ltx = ltx
+	
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred)) --/yes
+	end
+end
+
+--/ ---------------------------------------------
+--/ stalkers basement camp
+--/ ---------------------------------------------
+gulags.mil_stalkers_camp.trader_pred    = function(info) return info.profile_name == "military_supplier" end
+gulags.mil_stalkers_camp.patrol_pred    = function(info) return info.name == "army_stalker_basement_patrol" end
+gulags.mil_stalkers_camp.guarding1_pred = function(info) return info.name == "army_stalker_basement_guard" end
+gulags.mil_stalkers_camp.guarding2_pred = function(info) return info.name == "army_stalker_basement_guard2" end
+gulags.mil_stalkers_camp.visitor_pred   = function(info) return info.name == "army_stalker_basement_visitor" end
+
+gulags.mil_stalkers_camp.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("kamp" .. i, 0, 6, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("sleeper_day" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 7, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("drunk1",       0,  6,    {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("drunk2",       0, 10, {0, 1}, squad, groups[1], "", "", nil, type, gulags.mil_stalkers_camp.visitor_pred))
+	--table.insert(sj, gulag_tasks.getJob("walk",       0,  5,    {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("trader",       0, 10, {0, 1}, squad, groups[1], "", "", nil, type, gulags.mil_stalkers_camp.trader_pred))
+	table.insert(sj, gulag_tasks.getJob("patrol",       0,  7, {0, 1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("guard1",       0,  6,    {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("guard2",       0, 10, {0, 1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("guard_trader", 0, 10, {0, 1}, squad, groups[1], "", "", nil, type, gulags.mil_stalkers_camp.guarding1_pred))
+end
+
+gulags.mil_stalkers_camp.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+--/ military bandits
+--/ ---------------------------------------------
+gulags.mil_bandits_attack_camp.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("off" .. i,    0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("attack" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.mil_bandits_attack_camp.state = function(gulag)
+	if has_info("mil_actor_in_zone_camp") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ military crazy stalker
+--/ ---------------------------------------------
+gulags.military_crazy_smart.crazy_pred = function(info) return info.name == "mil_crazy_stalker" end
+
+gulags.military_crazy_smart.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("walk1",  0, 5, {0}, squad, groups[1], "", "", nil, type, gulags.military_crazy_smart.crazy_pred))
+	table.insert(sj, gulag_tasks.getJob("sleep1", 0, 5, {1}, squad, groups[1], "", "", nil, type, gulags.military_crazy_smart.crazy_pred))
+end
+
+gulags.military_crazy_smart.state = function(gulag)
+	if xr_conditions.is_day() then
+		return 0
+	end
+	return 1
+end
+
+
+
+--/ ---------------------------------------------
+--/ fleshes
+--/ ---------------------------------------------
+gulags.military_fleshes_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.military_fleshes_smart.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 25)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type))
+	end
+end
+
+--/ ---------------------------------------------
+--/ boars
+--/ ---------------------------------------------
+gulags.military_boars_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.military_boars_smart.ltx = smart_dyn_ltx.add_mob_home(type, 4, 10, 25)
+	
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type))
+	end
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.military_zombies_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.military_zombies_smart.ltx = smart_dyn_ltx.add_fake_home(type, 12, 10, 32)
+	
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("fake_death" .. i, 0, 5, {0}, squad, groups[1], "", gulags.military_zombies_smart.out_rest, false, type))
+		table.insert(sj, gulag_tasks.getJob("fake_death" .. i, 0, 5, {1}, squad, groups[1], "", gulags.military_zombies_smart.out_rest,   nil, type))
+	end
+end
+
+gulags.military_zombies_smart.state = function(gulag)
+	if has_info("mil_leader_killed") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.military_dogs_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.military_dogs_smart.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 30)
+	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "military_dogs_smart_out_rest,mil_mad_guy_restrictor", nil, type))
+	end
+end
+
+--/ ---------------------------------------------
+--/ chimeras
+--/ ---------------------------------------------
+gulags.mil_chimeras_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.mil_chimeras_smart.ltx = smart_dyn_ltx.add_mob_home(type, 10, 10, 50)
+	
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], gulags.mil_chimeras_smart.in_rest, gulags.mil_chimeras_smart.out_rest, false, type))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type))
+	end
+end
+
+gulags.mil_chimeras_smart.state = function(gulag)
+	if has_info("has_freeplay_info") and not has_info("mil_task_mad_guy_done") then
+		return 0
+	end
+	if has_info("mil_crazy_lr_found") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.mil_rats_smart.jobs = function(sj, gname, type, squad, groups)
+	gulags.mil_rats_smart.ltx = smart_dyn_ltx.add_mob_home(type, 12, 8, 30)
+	
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type))
+	end
+end
+
+gulags.mil_rats_smart.state = function(gulag)
+	if has_info("mil_crazy_st_job") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.mil_task_rat_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("off_rat" .. i, 0, 5, {0}, squad, groups[1], "", "mil_task_rats_restrictor", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("rat" .. i,     0, 5, {1}, squad, groups[1], "", "mil_task_rats_restrictor",   nil, type, on_level_pred))
+	end
+end
+
+gulags.mil_task_rat_terrain.state = function(gulag)
+	if has_info("mil_task_mad_guy_spawn_rats") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ karlik
+--/ ---------------------------------------------
+gulags.military_karlik_smart.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("camp_off", 0, 5, {0}, squad, groups[1], "", gulags.military_karlik_smart.out_rest, false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("camp",     0, 5, {1}, squad, groups[1], "", gulags.military_karlik_smart.out_rest,   nil, type, on_level_pred))
+end
+
+gulags.military_karlik_smart.state = function(gulag)
+	if has_info("mil_leader_killed") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.military_bloodsucker_area.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("camp", 0, 5, {1}, squad, groups[1], "", gulags.military_bloodsucker_area.out_rest, false, type))
+		table.insert(sj, gulag_tasks.getJob("camp", 0, 5, {0}, squad, groups[1], "", gulags.military_bloodsucker_area.out_rest, nil, type))
+	end
+end
+
+gulags.military_bloodsucker_area.state = function(gulag)
+	if has_info("has_freeplay_info") and not has_info("mil_task_mad_guy_done") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ controllers
+--/ ---------------------------------------------
+gulags.mil_task_controller.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off_controller", 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("controller",     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+gulags.mil_task_controller.state = function(gulag)
+	if has_info("mil_task_mad_guy_spawn_rats") then
+		return 1
+	end
+	return 0
+end
+--/ -----------------------------------------------------------------------------------------------

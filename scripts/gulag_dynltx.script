@@ -1,0 +1,420 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_dynltx.script
+ Description: Gulags Dynamic Ltx
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 23.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ NOTE: in development, but could be already used, with replacing smart_dyn_ltx.script
+
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+local sModule = script_name()
+--/ ----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Common function
+--/ ------------------------------------------------------------------
+function waypoint_exists(way_name, flag_need_exist, scheme)
+	if flag_need_exist then
+		return type( get_patrol(way_name) ) == 'userdata' --/>
+	elseif level.patrol_path_exists(way_name) then
+		return type( get_patrol(way_name) ) == 'userdata' --/>
+	elseif la_patrols and la_patrols.get_replace_way_name(way_name) then
+		return type( get_patrol(way_name) ) == 'userdata' --/>
+	end
+	log("waypoint_exists: way=[%s] for scheme=[%s] not exists :<%s>", way_name, scheme, "Error!")
+	return false --/>
+end
+
+function get_way(way_name, scheme)
+	if level.patrol_path_exists(way_name) then
+		return get_patrol(way_name) --/>
+	elseif la_patrols and la_patrols.get_replace_way_name(way_name) then
+		return get_patrol(way_name) --/>
+	end
+	log("get_way:=[%s] for scheme=[%s] not exists :<%s>", way_name, scheme, "Error!")
+	return nil --/>
+end
+
+function get_way_name(prefix, postfix, suffix)
+	if postfix then
+		return prefix .. string.char(postfix) .. "_" .. suffix
+	end
+	return prefix .. "_" .. suffix
+end
+
+function get_first(job_idx, def_first, def_prefix)
+	if job_idx then
+		if type(job_idx) == 'number' then
+			return job_idx, def_prefix --/>
+		end
+		local prefix, num = job_idx:match('^%s*([^%d]*)([%d]*)$')
+		return num and tonumber(num) or def_first, prefix or def_prefix --/>
+	end
+	return def_first, def_prefix --/>
+end
+
+function get_job_name(prefix, suffix)
+	if suffix then
+		if tonumber(suffix) then
+			return prefix .. "_" .. suffix --/>
+		end
+		return suffix --/> string
+	end
+	return prefix --/>
+end
+--/ ------------------------------------------------------------------------------------------------
+--/ Stalkers:
+--/ ------------------------------------------------------------------------------------------------
+function add_meet(meet, job_section) --/#?#
+	if type(meet) == 'string' then
+		return "meet = meet@" .. job_section .. "_" .. meet .. "\n"
+	elseif type(meet) == 'boolean' then
+		if meet then
+			return "meet = meet@" .. job_section .. "\n"
+		end
+		return ""
+	end
+	return "meet = no_meet\n"
+end
+function add_danger(danger, job_section) --/#?#
+	if danger then
+		return "danger = danger@" .. job_section .. "\n"
+		    .. "[danger@" .. job_section .. "]\n"
+		    --.. "ignore_distance = " .. danger .. "\n" --/#?# def?
+	end
+	return "" --/>
+end
+function add_threshold(threshold, job_section) --/#?#
+	if threshold then
+		return "threshold = threshold@" .. job_section .. "\n"
+		    .. "[threshold@" .. job_section .. "]\n"
+		    --.. "max_ignore_distance = " .. threshold .. "\n" --/#?# def?
+	end
+	return "" --/>
+end
+--/ ----------------------------------
+--/ 'kamp':
+--/ args (optional): job_idx, radius, state_moving, danger, treshold
+--/ ----------------------------------
+function getLtx_kamp(gname, p, single)
+	local ltx = ""
+	local job_name = get_job_name("kamp", p.job_idx)
+	local job_section = gname .. "_" .. job_name
+	if waypoint_exists(job_section, true, "kamp") and waypoint_exists(job_section .. "_task", true, "kamp") then
+		ltx = "[logic@" .. job_section .. "]\n"
+		   .. "active = kamp@" .. job_section .. "\n"
+		   .. "[kamp@" .. job_section .. "]\n"
+		   .. "center_point = kamp\n"
+		   .. "path_walk = kamp_task\n"
+		if tonumber(p.radius) then --/ def: 2m
+			ltx = ltx .. "radius = " .. p.radius .. "\n"
+		end
+		if p.state_moving then --/ def: "walk"
+			ltx = ltx .. "def_state_moving = " .. p.state_moving .. "\n"
+		end
+		--ltx = ltx .. add_danger(danger, job_section) --/#?#
+		--ltx = ltx .. add_threshold(threshold, job_section) --/#?#
+	end
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'kamper':
+--/ args (optional): job_idx, kamp_name, meet, danger, treshold
+--/ ----------------------------------
+function getLtx_kamper(gname, p, single)
+	local ltx = ""
+	if single or not p.count then
+		local job_name = get_job_name("kamper", p.job_idx)
+		local job_section = gname .. "_" .. job_name
+		if waypoint_exists(job_section .. "_walk", true, "kamper") then
+			local kamp_name = tonumber(p.kamp_name) and "kamp" .. tostring(p.kamp_name) or p.kamp_name or "kamp" --/#?#
+			if not waypoint_exists(gname .. "_".. kamp_name, false, "kamper") then
+--			log("getLtx_kamper: way kamp_name=[%s]/[%s] ~ not exists :<%s>", gname .. "_".. kamp_name, p.kamp_name, "Warning!")
+			end
+			ltx = "[logic@" .. job_section .. "]\n"
+			   .. "active = kamper@" .. job_section .. "\n"
+			   .. "[kamper@" .. job_section .. "]\n"
+			   .. "kamp_name = " .. kamp_name .. "\n"
+			   .. "path_walk = " .. job_name .. "_walk\n"
+			if waypoint_exists(job_section .. "_look", true, "kamper") then
+				ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+			else
+				ltx = ltx .. "path_look = " .. kamp_name .. "\n"
+			end
+			--ltx = ltx .. add_meet(meet, gname) --/#?#
+			--ltx = ltx .. add_danger(danger, job_section) --/#?#
+		end
+	else --/ multipoint:
+		local first = tonumber(p.job_idx) or 1
+		local count = first + (tonumber(p.count) or 1) - 1
+		for i = first, count do
+			p.job_idx = i
+			ltx = ltx .. this.getLtx_kamper(gname, p, true) --/> recursive call
+		end
+	end
+	return ltx --/>
+end
+
+--/ ------------------------------------------------------------------------------------------------
+--/ Monsters:
+--/ ------------------------------------------------------------------------------------------------
+function add_mob_home_options(minr, maxr, aggressive, panic)
+	local str = ""
+	if minr and tonumber(minr) then
+		str = str .. "home_min_radius = " .. minr .. "\n"
+	end
+	if maxr and tonumber(maxr) then
+		str = str .. "home_max_radius = " .. maxr .. "\n"
+	end
+	if aggressive then
+		str = str .. "aggressive_home\n"
+	end
+	if panic and tonumber(panic) then
+		str = str .. "panic = ".. panic .. "\n"
+	end
+	return str --/>
+end
+
+function add_mob_home_attaked(attaked, job_section)
+	if attaked then
+		local time = type(attaked) == 'number' and attaked or Random.I(30,60) --/ real-sec
+		return "on_signal = attacked | mob_combat@" .. job_section .. "\n"
+		    .. "[mob_combat@" .. job_section .. "]\n"
+		    .. "on_timer = ".. time*1000 .." | mob_home@"..job_section.."\n"
+	end
+	return "" --/>
+end
+
+function add_hit(on_hit, gname, job_section)
+	if on_hit then
+		return "on_hit = death@" .. gname .. "\n"
+		    .. "[hit@" .. gname .. "]\n"
+		    .. "on_info = " .. on_hit .. "\n"
+	end
+	return "" --/>
+end
+
+function add_death(on_death, gname, job_section)
+	if type(on_death) == 'boolean' then
+		return "on_death = death@" .. gname .. "\n"
+	elseif type(on_death) == 'string' then
+		return "on_death = death@" .. job_section .. "\n"
+		    .. "[death@" .. job_section .. "]\n"
+		    .. "on_info = " .. on_death .. "\n"
+	end
+	return "" --/>
+end
+--/ ----------------------------------
+--/ 'mob_home': => def name: 'home'|'home_N'|
+--/ args: job_idx, count, minr, maxr, aggressive, attaked, panic, on_hit, on_death
+--/ required: having way 'home'|'home_N'
+--/ ----------------------------------
+function getLtx_mob_home(gname, p, single)
+	local ltx = ""
+	if single or not p.count then
+		local job_name = get_job_name("home", p.job_idx)
+		local job_section = gname .. "_" .. job_name
+		if waypoint_exists(job_section, true, "mob_home") then
+			ltx = "[logic@" .. job_section .. "]\n"
+			   .. "active = mob_home@" .. job_section .. "\n"
+			   .. add_hit(p.on_hit, job_section)
+			   .. add_death(p.on_death, job_section)
+			   .. "[mob_home@" .. job_section .. "]\n"
+			   .. "path_home = " .. job_name .. "\n"
+			   .. add_mob_home_options(p.minr, p.maxr, p.aggressive, p.panic)
+			   .. add_mob_home_attaked(p.attaked, job_section)
+		end --log("getLtx_mob_home:[%s]: \n%s", gname, ltx) --/#~#
+	else --/ multipoint:
+		local first = tonumber(p.job_idx) or 1
+		local count = first + (tonumber(p.count) or 1) - 1
+		for i = first, count do
+			p.job_idx = i
+			ltx = ltx .. this.getLtx_mob_home(gname, p, true) --/> recursive call
+		end
+	end
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'mob_fake_death'+'mob_home': => def name: 'home'|'home_N'|
+--/ args: job_idx, count, minr, maxr, dist, aggressive, sig_enemy, sig_attaked, panic, on_hit, on_death
+--/ required: having way 'home'|'home_N'
+--/ ----------------------------------
+function getLtx_mob_fake_death(gname, p, single)
+	local ltx = ""
+	if single or not p.count then
+		local job_fake_section = gname .. "_fake_death"
+		local job_name = "home"
+		if p.job_idx then
+			if tonumber(p.job_idx) then
+				job_name = "home_" .. p.job_idx --/ 'home_1'|'home_2'|...
+				job_fake_section = job_fake_section .. p.job_idx
+			else
+				job_name = p.job_idx
+				job_fake_section = job_fake_section .. p.job_idx
+			end
+		end
+		local job_section = gname .. "_" .. job_name
+		if waypoint_exists(job_section, true, "mob_fake_death") then
+			local dist = p.dist and tonumber(p.dist) or 10
+			if dist > 100 then
+				dist = math.max(10, dist % 100)
+			end
+			ltx = "[logic@" .. job_fake_section .. "]\n"
+			   .. "active = mob_home@" .. job_section .. "\n"
+			   .. add_hit(p.on_hit, job_section)
+			   .. add_death(p.on_death, job_section)
+			   .. "[mob_home@" .. job_section .. "]\n"
+			   .. "path_home = " .. job_name .. "\n"
+			   .. "on_actor_dist_ge_nvis = " .. dist .. " | mob_fake_death@" .. job_section .. "\n" --/ actor far - freezing
+			   .. add_mob_home_options(p.minr, p.maxr, p.aggressive, p.panic)
+			   .. add_mob_home_attaked(p.attaked, job_section)
+			   .. "[mob_fake_death@" .. job_section .. "]\n"
+			   .. "on_actor_dist_le_nvis = " .. dist .. " | mob_home@" .. job_section .. "\n" --/ actor close - come alive!
+		end --log("getLtx_mob_fake_death:[%s]: \n%s", gname, ltx) --/#~#
+	else --/ multipoint:
+		local first = tonumber(p.job_idx) or 1
+		local count = first + (tonumber(p.count) or 1) - 1
+		for i = first, count do
+			p.job_idx = i
+			ltx = ltx .. this.getLtx_mob_fake_death(gname, p, true) --/> recursive call
+		end
+	end
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'mob_walker': => def name: 'walker'|'walkerN'
+--/ args: job_idx, count, aggressive, panic, on_hit, on_death
+--/ required: having ways 'walkerN_walk'|'nameN_walk'
+--/ optional: having way 'walkerN_look'|'nameN_look'
+--/ ----------------------------------
+function getLtx_mob_walker(gname, p, single)
+	local ltx = ""
+	if single or not p.count then
+		local idx, prefix = get_first(p.job_idx, nil, p.prefix)
+		local job_name, way_name
+		if prefix then
+			job_name = prefix .. (idx or "")
+			way_name = job_name
+		else
+			job_name = "walker" .. (idx or "")
+			way_name = job_name .. "_walk"
+		end
+		local way = get_way(gname .. "_" .. way_name, "mob_walker")
+		if way then
+			local job_section = gname .. "_" .. job_name
+			ltx = "[logic@" .. job_section .. "]\n"
+			   .. "active = mob_walker@" .. job_section .. "\n"
+			   .. add_hit(p.on_hit, job_section) --/#?# gname
+			   .. add_death(p.on_death, job_section) --/#?# gname
+			   .. "[mob_walker@" .. job_section .. "]\n"
+			   .. "path_walk = " .. way_name .. "\n"
+			if way:count() > 1 then --/ dont_check_existance
+				if level.patrol_path_exists(job_section .. "_look") then
+					ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+				end
+			elseif waypoint_exists(job_section .. "_look", true, "mob_walker") then
+				ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+			end
+			if p.aggressive ~= nil then
+				ltx = ltx .. "always_aggressive = ".. tostring(p.aggressive == true) .."\n"
+			end
+			if tonumber(p.panic) then
+				ltx = ltx .. "panic = ".. p.panic .. "\n"
+			end
+		end --log("getLtx_mob_walker:[%s]: \n%s", gname, ltx) --/#~#
+	else
+		local first, prefix = get_first(p.job_idx, 1)
+		local count = first + (tonumber(p.count) or 1) - 1
+		if prefix then p.prefix = prefix end
+		for i = first, count do
+			p.job_idx = i
+			ltx = ltx .. this.getLtx_mob_walker(gname, p, true) --/> recursive call
+		end
+	end
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'mob_eluder': => def name: 'eluder'|'eluderN'
+--/ args: job_idx, count, time_cap, time_rel, mind, maxd, panic, on_hit, on_death
+--/ required: having way 'eluder'|'eluder_N'
+--/ ----------------------------------
+function getLtx_mob_eluder(gname, p, single)
+	local ltx = ""
+	if single or not p.count then
+		local job_name = get_job_name("eluder", p.job_idx)
+		local job_section = gname .. "_" .. job_name
+		if waypoint_exists(job_section, true, "mob_eluder") then
+			ltx = "[logic@" .. job_section .. "]\n"
+			   .. "active = mob_eluder@" .. job_section .. "\n"
+			   .. add_hit(p.on_hit, job_section) --/#?# gname
+			   .. add_death(p.on_death, job_section) --/#?# gname
+			   .. "[mob_eluder@" .. job_section .. "]\n"
+			   .. "path = " .. job_name .. "\n"
+			if tonumber(p.time_cap) then --/ def: 10s
+				ltx = ltx .. "time_capture = ".. p.time*1000 .."\n"
+			end
+			if tonumber(p.time_rel) then --/ def: 10s
+				ltx = ltx .. "time_release = ".. p.time*1000 .."\n"
+			end
+			if tonumber(p.mind) then --/ def: 5m
+				ltx = ltx .. "min_dist = " .. p.mind .. "\n"
+			end
+			if tonumber(p.maxd) then --/ def: 10m
+				ltx = ltx .. "max_dist = " .. p.maxd .. "\n"
+			end
+			if tonumber(p.panic) then
+				ltx = ltx .. "panic = ".. p.panic .. "\n"
+			end
+		end --log("getLtx_mob_eluder:[%s]: \n%s", gname, ltx) --/#~#
+	else
+		local first = tonumber(p.job_idx) or 1
+		local count = first + (tonumber(p.count) or 1) - 1
+		for i = first, count do
+			p.job_idx = i
+			ltx = ltx .. this.getLtx_mob_eluder(gname, p, true) --/> recursive call
+		end
+	end
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'mob_camp': => def name: 'camp'
+--/ args: job_idx, minr, maxr, time, aggressive, sig_enemy, panic, on_hit, on_death
+--/ required: having way '_look' (multipoint), and better have same '_home'
+--/ ----------------------------------
+function getLtx_mob_camp(gname, p)
+	local ltx = ""
+	local job_name = get_job_name("camp", p.job_idx)
+	local job_section = gname .. "_" .. job_name
+	if waypoint_exists(job_section .. "_look", true, "mob_camp") then
+		ltx = "[logic@" .. job_section .. "]\n"
+		   .. "active = mob_camp@" .. job_section .. "\n"
+		   .. add_hit(p.on_hit, job_section)
+		   .. add_death(p.on_death, job_section)
+		   .. "[mob_camp@" .. job_section .. "]\n"
+		   .. "path_look = " .. job_name .. "_look\n"
+		if waypoint_exists(job_section .. "_home", true, "mob_camp") then
+			ltx = ltx .. "path_home = " .. job_name .. "_home\n"
+		end
+		if tonumber(p.time) then --/ def: 10s
+			ltx = ltx .. "time_change_point = ".. p.time*1000 .."\n"
+		end
+		if tonumber(p.minr) then --/ def: 30m
+			ltx = ltx .. "home_min_radius = " .. p.minr .. "\n"
+		end
+		if tonumber(p.maxr) then --/ def: 40m
+			ltx = ltx .. "home_max_radius = " .. p.maxr .. "\n"
+		end
+		if p.sig_enemy then
+			ltx = ltx .. "skip_transfer_enemy\n"
+		end
+		if tonumber(p.panic) then
+			ltx = ltx .. "panic = ".. p.panic .. "\n"
+		end --log("getLtx_mob_camp:[%s]: \n%s", gname, ltx) --/#~#
+	end
+	return ltx --/>
+end
+--/ -----------------------------------------------------------------------------------------------

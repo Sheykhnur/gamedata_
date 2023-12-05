@@ -1,0 +1,173 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_warlab.script
+ Description: Tasks warlab
+ Copyright  : 2012 © LA-εστό
+ Author     : loxotron
+ Editors    : loxotron, gr1ph00n(23.08.2012)
+ Last edit  : 28.04.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"enlightered_docs1",
+	"enlightered_docs2",
+	"enlightered_docs3",
+	"enlightered_docs4",
+	"enlightered_docs5",
+	"enlightered_docs6",
+	"enlightered_docs7"
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:story_id() == 8686 then
+			give_info("war_got_fuel")
+		end
+	end
+	if info_tbl and has_info_portions(info_tbl) then
+		give_info("oso_got_all_docs")
+		info_tbl = nil --/ clear
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "enlightered_docs7" then
+		pdaDownloads.add_article{"oversight_enlightered_orders", "oversight_enlightered_letter_text"}
+		return true
+	end
+	if info_id == "war_got_lockdown_code" then
+		pdaDownloads.add_article{"war_lockdown_code_name", "war_lockdown_code_text"}
+		return true
+	end
+	if not info_id:match('^war_') then
+		return false --/>
+	end
+	if info_id == "war_sc3_explode" then
+		this.war_scene3_explode()
+		return true --/>
+	end
+	if info_id == "war_doors_unlocked" then
+		if not has_info("war_find_scanner") then
+			local sobj = alife():object("warlab_control_room_scanner_2")
+			if sobj then
+				level.map_add_object_spot(sobj.id, "green_location", game.translate_string("war_scanner1_hint"))
+			end
+		end
+		return true --/>
+	end
+	if info_id == "war_control_room_opened" then
+		local sobj = alife():object("warlab_control_room_scanner_2")
+		if sobj then
+			if has_info("war_control_room_opened") then
+				level.map_remove_object_spot(sobj.id, "green_location")
+			else
+				level.map_add_object_spot(sobj.id, "green_location", game.translate_string("war_scanner1_hint"))
+			end
+		end
+		return true --/>
+	end
+	if info_id == "war_find_scanner" then
+		local sobj = alife():object("warlab_control_room_scanner_2")
+		if sobj then
+			level.map_remove_object_spot(sobj.id, "green_location")
+		end
+		return true --/>
+	end
+	if info_id == "war_find_switcher" then
+		start_real_timer(2, nil, {info_id = "war_get_privilages"})
+		return true --/>
+	end
+	if info_id == "war_gen_filled" then
+		this.generator_filled()
+		return true --/>
+	end
+	if info_id == "war_got_required_privilages" then
+		pdaDownloads.add_article{"war_identification_data_name", "war_indetification_data_text"}
+		return true
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function generator_filled()
+	xr_effects.release_obj_by_id_or_name("warlab_fuel")
+--[[
+	local oItem = db.actor:object("warlab_fuel")
+	if oItem then
+		local sobj = alife():object( oItem:id() )
+		if sobj then
+			--db.actor:remove_from_inventory(sobj.id)
+			return true --/>
+		end
+	end
+	return false --/>
+--]]
+end
+
+function war_ghost_snd0()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\war\\war_thing0")
+	snd:play(db.actor, 1, sound_object.s2d)
+end
+
+function war_ghost_snd1()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\war\\war_thing1")
+	snd:play(db.actor, 1, sound_object.s2d)
+end
+
+function war_ghost_snd2()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\war\\war_thing2")
+	snd:play(db.actor, 1, sound_object.s2d)
+end
+
+function war_ghost_snd3()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\war\\war_thing3")
+	snd:play(db.actor, 1, sound_object.s2d)
+end
+
+function war_ghost_snd4()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\war\\war_thing4")
+	snd:play(db.actor, 1, sound_object.s2d)
+end
+
+function war_sc1_snd1()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\war\\war_replics11")
+	snd:play(db.actor, 1, sound_object.s2d)
+	start_real_timer(6, nil, {info_id = "war_sc1_corpses3"}) --/ ~6 real-sec
+end
+
+function war_scene4_toxic()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\war\\war_replics35c1")
+	snd:play(db.actor, 1.0, sound_object.s2d)
+	start_real_timer(3.5, nil, {info_id = "war_sc4_toxic_finished"}) --/ ~3.5 real-sec
+end
+
+function war_scene3_explode()
+	local snd = xr_sound.get_safe_sound_object("anomaly\\anomaly_body_tear_1")
+	snd:play(db.actor, 0.5, sound_object.s2d)
+end
+
+function war_release_burer_corpses()
+	local tbl = {
+		"warlab_burer_weak_0005",
+		"warlab_burer_weak_0006",
+		"warlab_burer_weak_0007",
+		"warlab_burer_weak_0008",
+		"warlab_burer_strong",
+		"warlab_burer_strong_0000",
+		"warlab_burer_strong_0001"
+	}
+	for _,v in ipairs(tbl) do
+		xr_effects.release_obj_by_id_or_name(v)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

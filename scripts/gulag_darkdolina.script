@@ -1,0 +1,456 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_darkdolina.script
+ Description: Gulags Darkdolina
+ Copyright  : 2012 © LA-team
+ Author     : gr1ph00n
+ Editors    : gr1ph00n, [26.09.2013] vintar
+ Last edit  : 26.10.2017 [lox]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	dolina_bandit_base      = {comm = {"bandit"},   in_rest = "dol_bandits_stash_restr", out_rest = "dolina_bandit_base_out_rest1"},
+	dolina_stables_lager    = {comm = {"stalker"},  out_rest = "dolina_stables_out_rest"},
+	dolina_monolith_base    = {comm = {"monolith"}, out_rest = "dolina_monolith_base_out_rest1"},
+	dolina_military_assault = {comm = {"military"}, out_rest = "dolina_monolith_base_out_rest1"},
+	dol_mil_terrain			= {comm = {"military", "milstalker"}},
+	dol_bandits_angars		= {comm = {"bandit"}},
+	--/ for monsters ------------------------------
+
+	dolina_suit_sucker_terrain = {comm = {"bloodsucker"}},
+	dol_boar_terrain1          = {comm = {"boar"}},
+	dol_dog_terrain1           = {comm = {"dog"}},
+	dol_poltergeist_terrain1   = {comm = {"poltergeist"}},	--/polter_flame
+	dol_poltergeist_terrain2   = {comm = {"poltergeist", "dog"}},	--/polter_tele_outdoor
+	dol_poltergeist_terrain3   = {comm = {"poltergeist", "dog"}},	--/polter_tele_outdoor
+	dol_poltergeist_terrain4   = {comm = {"poltergeist", "dog"}},	--/polter_flame
+	dol_flesh_terrain1         = {comm = {"flesh"}},
+	dol_bloodsucker_terrain1   = {comm = {"bloodsucker"}},
+	dol_swampbeast_terrain     = {comm = {"swampbeast"}},
+	dol_izlom_terrain          = {comm = {"fracture"}},
+	dol_cat_terrain            = {comm = {"cat"}},
+	dol_general_terrain1       = {comm = {"flesh","dog","boar"}},
+	dol_general_terrain2       = {comm = {"flesh","dog","boar"}},
+	dol_general_terrain3       = {comm = {"cat","pseudodog"}},
+	dol_general_terrain4       = {comm = {"fracture","chimera"}},
+	dol_general_terrain5       = {comm = {"flesh","dog","boar"}},
+}
+--/ ----------------------------------------------
+local is_online = "{=xr_gulag.actor_on_gulag_level()}"
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ -----------------------------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ dolina_bandit_base
+--/ ---------------------------------------------
+gulags.dolina_bandit_base.borov_pred     = function(info) return info.profile_name == "val_bandit_borov" end
+gulags.dolina_bandit_base.bodyguard_pred = function(info) return info.profile_name == "val_bandit_bodyguard" end
+gulags.dolina_bandit_base.pred1          = function(info) return info.name == "dolina_bandit_upstairs1" end
+gulags.dolina_bandit_base.pred2          = function(info) return info.name == "dolina_weapon_cleaner" end
+gulags.dolina_bandit_base.trader_pred    = function(info) return info.name == "dolina_bandit_trader" end
+gulags.dolina_bandit_base.observer_pred  = function(info) return info.name == "dolina_observer" end
+gulags.dolina_bandit_base.fraer_pred     = function(info) return info.name == "dolina_fraer" end
+
+gulags.dolina_bandit_base.pred3 = function(info) return string.match(info.name, "^dolina_bandit_entrance") ~= nil end
+gulags.dolina_bandit_base.pred4 = function(info) return string.match(info.name, "^dolina_bandit_yard1_patroler") ~= nil end
+gulags.dolina_bandit_base.pred6 = function(info) return string.match(info.name, "^dolina_kamp1_bandit") ~= nil end
+
+gulags.dolina_bandit_base.pred5      = function(info) return info.name == "dolina_bandit_guard1" end
+gulags.dolina_bandit_base.pred7      = function(info) return info.name == "dolina_bandit_guard2" end
+gulags.dolina_bandit_base.poker_pred = function(info) return info.name == "dolina_poker" end
+gulags.dolina_bandit_base.pred8      = function(info) return info.name == "dolina_bandit_yard2_patroler1" end
+gulags.dolina_bandit_base.drunk_pred = function(info) return info.name == "dolina_drunk_bandit" end
+
+gulags.dolina_bandit_base.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("borov",         0, 10, {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.borov_pred))
+	table.insert(sj, gulag_tasks.getJob("free_borov",    0, 10,    {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.borov_pred))
+	
+	table.insert(sj, gulag_tasks.getJob("bodyguard",      0, 7, {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.bodyguard_pred))
+	table.insert(sj, gulag_tasks.getJob("free_bodyguard", 0, 7,    {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.bodyguard_pred))
+	
+	table.insert(sj, gulag_tasks.getJob("upstairs1",      0, 7, {0, 1}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred1))
+	table.insert(sj, gulag_tasks.getJob("free_upstairs1", 0, 7,    {2}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred1))
+	
+	table.insert(sj, gulag_tasks.getJob("weapon_cleaner", 0, 7, 	 {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred2))
+	table.insert(sj, gulag_tasks.getJob("free_weapon_cleaner", 0, 7,    {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred2))
+	
+	table.insert(sj, gulag_tasks.getJob("trader",      0, 8,  {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.trader_pred))
+	table.insert(sj, gulag_tasks.getJob("free_trader", 0, 8,     {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.trader_pred))
+	
+	table.insert(sj, gulag_tasks.getJob("observer",    0, 7, {0,1,2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, is_online, type, gulags.dolina_bandit_base.observer_pred))
+	
+	table.insert(sj, gulag_tasks.getJob("fraer",       0, 9,  {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.fraer_pred))
+	table.insert(sj, gulag_tasks.getJob("free_fraer",  0, 9,     {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.fraer_pred))
+	
+	table.insert(sj, gulag_tasks.getJob("entrance1",   0, 7,  {0, 1}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred3))
+	table.insert(sj, gulag_tasks.getJob("free_entrance1", 0, 7,    {2}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred3))
+	
+	table.insert(sj, gulag_tasks.getJob("entrance2",      0, 7, {0, 1}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred3))
+	table.insert(sj, gulag_tasks.getJob("free_entrance2", 0, 7,    {2}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred3))
+	
+	table.insert(sj, gulag_tasks.getJob("guard2",         0, 6, {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred7))
+	table.insert(sj, gulag_tasks.getJob("free_guard2",    0, 6,    {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred7))
+	
+	table.insert(sj, gulag_tasks.getJob("poker",          0, 9, {0, 1}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.poker_pred))
+	table.insert(sj, gulag_tasks.getJob("free_poker",     0, 9,    {2}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.poker_pred))
+	
+	table.insert(sj, gulag_tasks.getJob("yard2_patroler1",      0, 6, {0, 1}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred8))
+	table.insert(sj, gulag_tasks.getJob("free_yard2_patroler1", 0, 6,    {2}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred8))
+	
+	table.insert(sj, gulag_tasks.getJob("drunk",  0, 8,  {0,1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.drunk_pred))
+	table.insert(sj, gulag_tasks.getJob("drunk_free",  0, 8,    {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.drunk_pred))
+	
+	table.insert(sj, gulag_tasks.getJob("guard1", 0, 6,   {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred5))
+	table.insert(sj, gulag_tasks.getJob("free_guard1", 0, 6, {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred5))	
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("yard1_patroler" .. i,      0, 6,   {0}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred4))
+		table.insert(sj, gulag_tasks.getJob("yard1_sleeper" .. i,       0, 6,   {1}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred4))
+		table.insert(sj, gulag_tasks.getJob("free_yard1_patroler" .. i, 0, 6,   {2}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred4))
+		table.insert(sj, gulag_tasks.getJob("kamp1" .. i,               0, 6, {0,1}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred6))
+		table.insert(sj, gulag_tasks.getJob("free_kamp1" .. i,          0, 6,   {2}, squad, groups[1], gulags.dolina_bandit_base.in_rest, gulags.dolina_bandit_base.out_rest, nil, type, gulags.dolina_bandit_base.pred6))
+	end
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("bandit" .. i,      0, 6, {0, 1}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("free_bandit" .. i, 0, 6, {2}, squad, groups[1], "", gulags.dolina_bandit_base.out_rest, nil, type, on_level_pred))
+	end
+end
+
+gulags.dolina_bandit_base.state = function(gulag)
+	if has_info("dol_bandits_enemy") then
+		return 2
+	elseif xr_conditions.is_day() then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+--/ dolina_stables_lager
+--/ ---------------------------------------------
+local predicate_dolina_stables_lager = function(info) return info.story_id == 6409 end
+
+gulags.dolina_stables_lager.jobs = function(sj, gname, type, squad, groups)
+	local ltx = "[meet@dolina_stables_lager_gusarov]\n"
+	ltx = ltx .. "use = true\nuse_wpn = true\nmeet_talk_enabled = true\nmeet_state = guard\n"
+	--ltx = ltx .. "meet_dialog = {+dol_meet_gusarov_start -dol_meet_gusarov_done} dolina_gusarov_dialog, {+dol_meet_gusarov_done -dol_get_password_done} dolina_gusarov_about\n"
+	ltx = ltx .. smart_dyn_ltx.add_ignore_distance(type, 10)
+	ltx = ltx .. smart_dyn_ltx.add_walker_section(type, 1, true, false, true, 1, "gusarov")
+	ltx = ltx .. smart_dyn_ltx.add_kamp_section(type, true, 3, "walk", true, 3)
+	gulags.dolina_stables_lager.ltx = ltx
+	
+	table.insert(sj, gulag_tasks.getJob("walker1", 0, 6, {0}, squad, groups[1], "", gulags.dolina_stables_lager.out_rest, nil, type, predicate_dolina_stables_lager))
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("kamp" .. i, 0, 5, {0}, squad, groups[1], "", gulags.dolina_stables_lager.out_rest, nil, type))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dolina_monolith_base
+--/ ---------------------------------------------
+gulags.dolina_monolith_base.leader_pred   = function(info) return info.profile_name == "val_monolith_leader" end
+gulags.dolina_monolith_base.pred_informer = function(info) return info.story_id == 6412 end
+gulags.dolina_monolith_base.pred_sniper1  = function(info) return info.name == "dolina_stalker_monolith_sniper1" end
+--gulags.dolina_monolith_base.pred_sniper2  = function(info) return info.name == "dolina_stalker_monolith_sniper2" end
+gulags.dolina_monolith_base.pred_guard	  = function(info) return info.name:match("dolina_monolith_guard") end
+
+gulags.dolina_monolith_base.pred2 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "outside") end
+gulags.dolina_monolith_base.pred1 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "building1")end
+gulags.dolina_monolith_base.pred3 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "building2") end
+gulags.dolina_monolith_base.pred4 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "building3") end
+
+gulags.dolina_monolith_base.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader",   0, 11, {0,1}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("informer", 0, 10, {0,1}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.pred_informer))
+	table.insert(sj, gulag_tasks.getJob("sniper1",  0, 7, {0,1}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, is_online, type, gulags.dolina_monolith_base.pred_sniper1))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i, 0, 9, {0,1}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.pred_guard))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("leader_guard" .. i, 0, 8, {0,1}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.pred3))
+	end
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("mono" .. i, 0, 7, {0}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.pred1))
+		table.insert(sj, gulag_tasks.getJob("out_mono" .. i, 0, 6, {1}, squad, groups[1], "", "", nil, type, gulags.dolina_monolith_base.pred1))
+	end
+	for i = 5, 10 do
+		table.insert(sj, gulag_tasks.getJob("mono" .. i, 0, 7, {0}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.pred2))
+		table.insert(sj, gulag_tasks.getJob("out_mono" .. i, 0, 6, {1}, squad, groups[1], "", "", nil, type, gulags.dolina_monolith_base.pred2))
+	end
+	for i = 11, 13 do
+		table.insert(sj, gulag_tasks.getJob("mono" .. i, 0, 7, {0}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.pred3))
+		table.insert(sj, gulag_tasks.getJob("out_mono" .. i, 0, 6, {1}, squad, groups[1], "", "", nil, type, gulags.dolina_monolith_base.pred3))
+	end
+	for i = 16, 24 do
+		table.insert(sj, gulag_tasks.getJob("mono" .. i, 0, 7, {0}, squad, groups[1], "", gulags.dolina_monolith_base.out_rest, nil, type, gulags.dolina_monolith_base.pred4))
+		table.insert(sj, gulag_tasks.getJob("out_mono" .. i, 0, 6, {1}, squad, groups[1], "", "", nil, type, gulags.dolina_monolith_base.pred4))
+	end
+end
+
+gulags.dolina_monolith_base.state = function(gulag)
+	if not has_info("dol_monolith_enemy") and not has_info("dol_get_doc_about_x18_done") and not has_info("dol_monolith_base_attacked") then
+		return 0
+	end
+	return 1
+end
+
+--/ ---------------------------------------------
+--/ dolina_military_assault
+--/ ---------------------------------------------
+gulags.dolina_military_assault.pred1 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "outside") end
+gulags.dolina_military_assault.pred2 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "building1") end
+gulags.dolina_military_assault.pred3 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "building2") end
+gulags.dolina_military_assault.pred4 = function(info) return parser.section_exists(info.se_obj:spawn_ini(), "outside") end
+
+gulags.dolina_military_assault.jobs = function(sj, gname, type, squad, groups)
+	local ltx = smart_dyn_ltx.add_def_danger_sect(type, 0)
+	ltx = ltx .. smart_dyn_ltx.add_raid_kamp(type, 1, 3, 2, "assault")
+	ltx = ltx .. smart_dyn_ltx.add_raid_kamp(type, 2, 7, 2, "assault")
+	ltx = ltx .. smart_dyn_ltx.add_raid_kamp(type, 3, 8, 2, "assault")
+	ltx = ltx .. smart_dyn_ltx.add_raid_kamp(type, 4, 3, 2, "assault")
+	ltx = ltx .. smart_dyn_ltx.add_raid_kamp(type, 5, 7, 2, "assault")
+	ltx = ltx .. smart_dyn_ltx.add_raid_kamp(type, 6, 8, 2, "assault")
+	gulags.dolina_military_assault.ltx = ltx
+
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("state_1_kamper" .. i, 0, 5, {0}, squad, groups[1], "", gulags.dolina_military_assault.out_rest, false, type, gulags.dolina_military_assault.pred1))
+		table.insert(sj, gulag_tasks.getJob("state_4_kamper" .. i, 0, 5, {1}, squad, groups[1], "", gulags.dolina_military_assault.out_rest,   nil, type, gulags.dolina_military_assault.pred1))
+	end
+	for i = 1, 7 do
+		table.insert(sj, gulag_tasks.getJob("state_2_kamper" .. i, 0, 5, {0}, squad, groups[2], "", gulags.dolina_military_assault.out_rest, false, type, gulags.dolina_military_assault.pred2))
+		table.insert(sj, gulag_tasks.getJob("state_5_kamper" .. i, 0, 5, {1}, squad, groups[2], "", gulags.dolina_military_assault.out_rest,   nil, type, gulags.dolina_military_assault.pred2))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("state_3_kamper" .. i, 0, 5, {0}, squad, groups[3], "", gulags.dolina_military_assault.out_rest, false, type, gulags.dolina_military_assault.pred3))
+		table.insert(sj, gulag_tasks.getJob("state_6_kamper" .. i, 0, 5, {1}, squad, groups[3], "", gulags.dolina_military_assault.out_rest,   nil, type, gulags.dolina_military_assault.pred3))
+	end
+	for i = 6, 8 do
+		table.insert(sj, gulag_tasks.getJob("state_3_kamper" .. i, 0, 5, {0}, squad, groups[4], "", "", false, type, gulags.dolina_military_assault.pred4))
+		table.insert(sj, gulag_tasks.getJob("state_6_kamper" .. i, 0, 5, {1}, squad, groups[4], "", "",   nil, type, gulags.dolina_military_assault.pred4))
+	end
+end
+
+gulags.dolina_military_assault.state = function(gulag)
+	if has_info("dol_start_mil_assault") then
+		return 1
+	end
+	return 0
+end
+
+
+
+--/ ---------------------------------------------
+--/ boars
+--/ ---------------------------------------------
+gulags.dol_boar_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i , 0, 5, {0}, squad, groups[1], "dolina_monolith_base_out_rest1,dolina_bandit_base_mobs_rest", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ poltergeists
+--/ ---------------------------------------------
+gulags.dol_poltergeist_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("poltergeist" .. i ,     0, 5, {0}, squad, groups[1], "dolina_monolith_base_out_rest1,dolina_bandit_base_mobs_rest", "",   nil, type, on_level_pred))
+	end
+end
+
+
+--/ ---------------------------------------------
+gulags.dol_poltergeist_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("poltergeist" .. i ,     0, 5, {0}, squad, groups[1], "dolina_monolith_base_out_rest1,dolina_bandit_base_mobs_rest", "",   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.dol_poltergeist_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("poltergeist" .. i , 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.dol_poltergeist_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("poltergeist" .. i , 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.dol_swampbeast_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("swampbeast" .. i , 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.dol_dog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i , 0, 5, {0}, squad, groups[1], "dolina_monolith_base_out_rest1,dolina_bandit_base_mobs_rest", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ fleshes
+--/ ---------------------------------------------
+gulags.dol_flesh_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("flesh" .. i , 0, 5, {0}, squad, groups[1], "dolina_monolith_base_out_rest1,dolina_bandit_base_mobs_rest", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ bloodsuckers
+--/ ---------------------------------------------
+gulags.dol_bloodsucker_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i , 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.dolina_suit_sucker_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off_sucker1", 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("sucker1",     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+gulags.dolina_suit_sucker_terrain.state = function(gulag)
+	if has_info("dolina_spawn_sucker") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ izloms
+--/ ---------------------------------------------
+gulags.dol_izlom_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("izlom" .. i , 0, 5, {0}, squad, groups[1], "dolina_bandit_base_mobs_rest,dolina_stables_out_rest,dolina_monolith_base_out_rest1", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ cats
+--/ ---------------------------------------------
+gulags.dol_cat_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("cat" .. i , 0, 5, {0}, squad, groups[1], "dolina_bandit_base_mobs_rest,dolina_stables_out_rest,dolina_monolith_base_out_rest1", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ general1
+--/ ---------------------------------------------
+gulags.dol_general_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("mob" .. i , 0, 5, {0}, squad, groups[1], "dolina_bandit_base_mobs_rest,dolina_stables_out_rest,dolina_monolith_base_out_rest1", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ general2
+--/ ---------------------------------------------
+gulags.dol_general_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("mob" .. i , 0, 5, {0}, squad, groups[1], "dolina_bandit_base_mobs_rest,dolina_stables_out_rest,dolina_monolith_base_out_rest1", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ general3
+--/ ---------------------------------------------
+gulags.dol_general_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("mob" .. i , 0, 5, {0}, squad, groups[1], "dolina_bandit_base_mobs_rest,dolina_stables_out_rest,dolina_monolith_base_out_rest1", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ general4
+--/ ---------------------------------------------
+gulags.dol_general_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("mob" .. i , 0, 5, {0}, squad, groups[1], "dolina_bandit_base_mobs_rest,dolina_stables_out_rest,dolina_monolith_base_out_rest1", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ general5
+--/ ---------------------------------------------
+gulags.dol_general_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("mob" .. i , 0, 5, {0}, squad, groups[1], "dolina_bandit_base_mobs_rest,dolina_stables_out_rest,dolina_monolith_base_out_rest1", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dol_mil_terrain
+--/ ---------------------------------------------
+gulags.dol_mil_terrain.leader_pred = function(info) return info.story_id == 6431 end
+gulags.dol_mil_terrain.gen_pred = function(info) return info.name:match("dol_mil_mil") end
+
+gulags.dol_mil_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("off_leader", 0, 5, {0}, squad, groups[1], "", "", false, type, gulags.dol_mil_terrain.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("leader", 0, 5, {1}, squad, groups[1], "", "", nil, type, gulags.dol_mil_terrain.leader_pred))
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("off_military" .. i , 0, 5, {0}, squad, groups[1], "", "", false, type, gulags.dol_mil_terrain.gen_pred))
+		table.insert(sj, gulag_tasks.getJob("military" .. i , 0, 5, {1}, squad, groups[1], "", "", nil, type, gulags.dol_mil_terrain.gen_pred))
+	end
+end
+
+gulags.dol_mil_terrain.state = function(gulag)
+	if has_info("yan_good_helmet_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ dol_bandits_angars
+--/ ---------------------------------------------
+
+gulags.dol_bandits_angars.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("off_camp_" .. i , 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("camp_" .. i , 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("off_patrol_" .. i , 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("patrol_" .. i , 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.dol_bandits_angars.state = function(gulag)
+	if has_info("dol_gusarov_bandit_task_bandits") then
+		return 1
+	end
+	return 0
+end
+
+
+--/ ------------------------------------------------------------------------------------------------

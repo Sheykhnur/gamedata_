@@ -1,0 +1,60 @@
+[logic]
+active = sr_idle@start
+
+[sr_idle@start]
+on_actor_inside = {-cordon_military_hostile -cordon_military_restrictor_been} sr_tip %+cordon_actor_in_military_space%,{-cordon_military_hostile +cordon_military_restrictor_been} sr_tip@been %+cordon_actor_in_military_space%,{+cordon_military_hostile} nil, {=gulag_population_active_le(esc_blockpost:1)} sr_idle@gulag_empty,{=check_community_goodwill(military:1000) -cordon_military_hostile} sr_idle@goodwill
+
+[sr_tip]
+header = military_message_header
+name = rosf_military_blokpost_warning
+sender = military
+showtime = 10000
+single = true
+on_signal = tip_sended | sr_idle@wait %+cordon_military_restrictor_been%
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+
+[sr_tip@been]
+header = military_message_header
+name = rosf_military_blokpost_warning_been
+sender = military
+showtime = 5000
+single = true
+on_signal = tip_sended | sr_idle@wait
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+
+[sr_idle@wait]
+on_timer = 10000 | sr_idle@inside1
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info2 = {=actor_in_zone(cordon_blokpost_road_restrictor)} sr_idle@inside1
+
+[sr_idle@inside1]
+on_info = {+cordon_military_hostile} sr_idle@reset
+on_info2 = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info3 = {!actor_in_zone(cordon_blokpost_road_restrictor) !gulag_population_active_le(esc_blockpost:1)} sr_tip@fight
+on_actor_outside = {-cordon_military_hostile} sr_idle@end
+
+[sr_tip@fight]
+header = military_message_header
+name = rosf_military_blokpost_fight
+sender = military
+showtime = 5000
+single = true
+on_signal = tip_sended | %+cordon_military_hostile% sr_idle@reset
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+
+[sr_idle@end]
+on_info = %=play_rosf_mil_end% sr_idle@start
+on_info2 = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+
+[sr_idle@gulag_empty]
+on_info = {!gulag_population_active_le(esc_blockpost:1)} sr_idle@start
+on_info2 = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+
+[sr_idle@goodwill]
+on_info = {!check_community_goodwill(military:1000)} sr_idle@start
+
+[sr_idle@reset]
+on_info = {=gulag_population_active_le(esc_blockpost:1)} sr_idle@reset_wait
+
+[sr_idle@reset_wait]
+on_timer = 5000 | %-cordon_military_hostile% sr_idle@start

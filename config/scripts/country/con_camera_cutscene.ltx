@@ -1,0 +1,14 @@
+[logic]
+active = sr_idle@wait
+
+[sr_idle@wait]
+on_actor_inside = {-country_spawn_fake_actor} sr_cutscene@cam %+country_spawn_fake_actor%
+
+[sr_cutscene@cam]
+point = country_cam_point
+look = country_cam_look
+cam_effector = con_actor_scene
+on_signal = cameff_end | sr_idle@timer %=release_obj(con_actor) +country_cutscene_finished +country_find_entrance_start =enable_ui%
+
+[sr_idle@timer]
+on_timer = 5000| nil

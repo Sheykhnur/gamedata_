@@ -1,0 +1,34 @@
+[logic]
+active = ph_light_mgr
+
+[ph_light_mgr]
+lights_on = always_off
+on_blowout = blink
+osciallator = true
+on_info = {+bas_sc6_lamps2} ph_light_mgr@2 %=play_snd(ambient\switch_2)%
+
+[ph_light_mgr@2]
+lights_on = always_on
+on_blowout = blink
+osciallator = true
+on_timer = 1200 | %+bas_sc6_lamps_finished%
+on_info = {+bas_sc6_finale} ph_light_mgr@blink1
+
+[ph_light_mgr@blink1]
+lights_on = always_off
+on_blowout = blink
+osciallator = true
+on_timer = 600 | ph_light_mgr@blink2
+on_info = {+bas_blinking_finished} ph_light_mgr@end
+
+[ph_light_mgr@blink2]
+lights_on = always_on
+on_blowout = blink
+osciallator = true
+on_timer = 400 | ph_light_mgr@blink1
+on_info = {+bas_blinking_finished} ph_light_mgr@end
+
+[ph_light_mgr@end]
+lights_on = always_off
+on_blowout = blink
+osciallator = true

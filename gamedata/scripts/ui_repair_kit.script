@@ -1,0 +1,432 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_repair_kit.script
+ Description: Repair Kit
+ Author     : Gr1ph00n
+ Editors    : Gr1ph00n, ghost(24.09.2012)
+ Last edit  : 22.12.2017 [DAN_07] [07]2020
+--]] ----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local MIN_COND = 0 -- min condition to be able to repair
+local MAX_COND = 0.99 -- max condition for items list
+local MAX_REPAIRED_COND = 1 -- max condition after repair
+local REPAIR_STRENGTH = 0.05   -- how much condition of the original weapon is "transfered" to the repaired one
+local REPAIR_KIT = 0.05
+local unupgradable_wpns = parser.read_section("lost_alpha\\lost_alpha_cfg.ltx", "unupgradable_wpns", "parse_bool")
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+
+local spawned_repkit_id = nil
+--/ -----------------------------------------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------------------------------------
+function PreSets(e)
+	--event("actor_trade"):register(on_kit_trade) --/ reserve
+	event("item_take"):register(on_item_take)
+end
+
+--/ Workaround to reset a repkit if we didn't use it
+--/ TODO: tweak engine to avoid this kludge: allow manual control over item usage
+function on_item_take(e)
+	if e.item:id() == spawned_repkit_id then
+		e.item:set_portions_num(1)
+		spawned_repkit_id = nil
+	end
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/------------------------------------------------------------------------------------------------
+class "ListViewItem" (CUIListItemEx)
+--/------------------------------------------------------------------------------------------------
+function ListViewItem:__init(section, parts, cond, id) super()
+	self:SetWndRect(0, 0, 395, 22)
+	
+	self.section = section
+	self.cond = cond
+	self.id = id
+	self.parts = {}
+	self.item_weight = system_ini():r_float(section, "inv_weight")
+	self.item_cost = system_ini():r_u32(section, "cost")
+	self.inv_name = game.translate_string(system_ini():r_string(section, "inv_name"))
+	self.inv_desc = game.translate_string(system_ini():r_string(section, "description"))
+	self.icon_pos = { w = system_ini():r_u32(section, "inv_grid_width"),
+		h = system_ini():r_u32(section, "inv_grid_height") }
+		
+	for k, v in pairs(parts) do
+		if v.id ~= self.id then
+			v.name = game.translate_string(system_ini():r_string(v.sect, "inv_name"))
+			self.parts[v.id] = v
+		end
+	end
+
+	self.item_name = CUIStatic()
+	self.item_name:SetAutoDelete(true)
+	self:AttachChild(self.item_name)
+	self.item_name:SetWndRect(18, 0, 377, 22)
+	self.item_name:SetText(string.format("%s", self.inv_name))
+	self.item_name:SetFont(pcTextViewer.get_font("letterica16"))
+	self.item_name:SetTextColor(255, 255, 255, 255)
+	if cond >= 0.9 then
+		self.item_name:SetTextColor(pcTextViewer.get_colour("green"))
+	elseif cond < 0.9 and cond >= 0.4 then
+		self.item_name:SetTextColor(pcTextViewer.get_colour("orange"))
+	else 
+		self.item_name:SetTextColor(pcTextViewer.get_colour("red"))
+	end
+end
+
+
+-- ************************************************
+
+class "ListView" (CUIListItemEx)
+
+function ListView:__init(inv_name, cond, id) super()
+	self:SetWndRect(0, 0, 395, 22)
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetWndRect(18, 0, 377, 22)
+	self.inv_name = inv_name
+	self.id = id
+	self.cond = cond
+	self.text:SetText(string.format("%s : %d%%", inv_name, math.modf(cond / 0.01)))
+	self.text:SetFont(GetFontLetterica18Russian())
+	if cond >= 0.9 then
+		self.text:SetTextColor(pcTextViewer.get_colour("green"))
+	elseif cond < 0.9 and cond >= 0.4 then
+		self.text:SetTextColor(pcTextViewer.get_colour("orange"))
+	else 
+		self.text:SetTextColor(pcTextViewer.get_colour("red"))
+	end
+end
+
+
+function calc_new_condition(cond, partCond)
+	local max_cond = MAX_REPAIRED_COND
+	local inc = partCond * REPAIR_STRENGTH
+	if (cond + inc) > max_cond then
+		return max_cond
+	else
+		return cond + inc
+	end
+end
+
+-- ************************************************
+
+class "uiRepairKit" (CUIScriptWnd)
+
+function uiRepairKit:__init(item) super()
+
+	self.removed = {}
+	self.fix_performed = false
+	self.selected_item = nil
+	self.repkit_item = item
+	self.repkit_section = item:section()
+	self.usages_left = item:get_portions_num()
+	self:InitControls()
+	self:InitCallBacks()
+	self:CheckItems()
+	la_utils.custom_ui_usage("show", script_name())
+end
+
+function uiRepairKit:__finalize()
+
+end
+
+function uiRepairKit:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiRepairKit:InitControls()
+
+	self:Init(0, 0, device().width, device().height)
+	
+	local xml = CScriptXmlInit()
+	local dlg = nil
+	xml:ParseFile("ui_repair_kit.xml")
+	
+	xml:InitStatic("background", self)
+	xml:InitStatic("upper_line", self)
+	xml:InitStatic("bottom_line", self)
+	
+	self:Register(xml:Init3tButton("btn_quit", self), "btn_quit")
+	
+	xml:InitStatic("caption", self)
+	
+	self:Register(xml:InitList("list", self), "list")
+
+	self:Register(xml:InitList("list2", self), "list2")
+	self:GetListWnd("list2"):ShowSelectedItem(true)
+	
+	self.item_info = xml:InitStatic("item_info", self)
+	dlg = xml:InitStatic("item_info:item_icon", self.item_info)
+	dlg:Show(false)
+	dlg:SetStretchTexture(true)
+	self:Register(dlg, "item_info_icon")
+	self:Register(xml:InitStatic("item_info:item_name", self.item_info), "item_info_name")
+	self:Register(xml:InitStatic("item_info:item_weight", self.item_info), "item_info_weight")
+	self:Register(xml:InitStatic("item_info:item_cost", self.item_info), "item_info_cost")
+	self:Register(xml:InitStatic("item_info:item_cond", self.item_info), "item_info_conditon")
+	dlg = xml:InitList("item_info:item_description", self.item_info)
+	dlg:ShowSelectedItem(true)
+	self:Register(dlg, "item_info_description")
+	
+	self:Register(xml:InitList("list3", self), "list3")
+	self:GetListWnd("list3"):ShowSelectedItem(true)
+	
+	self.btn_fix = xml:InitButton("btn_fix", self)
+	self:Register(self.btn_fix, "btn_fix")
+	
+	self.message_box = CUIMessageBoxEx()
+	self.message_box:Init("message_box_error")
+	
+end
+
+function uiRepairKit:CheckItems() 
+	local list = self:GetListWnd("list")
+	local actor_objs = {}
+	local obj = nil
+	local ltx = system_ini()
+	list:ShowSelectedItem(true)
+	for index = 0, db.actor:object_count() - 1 do
+		obj = db.actor:object(index)
+		local sect = obj:section()
+		if not self.removed[obj:id()] and not unupgradable_wpns[sect] and not sect ~= "wpn_knife" then
+		if (self.repkit_section == "repair_kit" and la_utils.IsOutfit(sect)) or (self.repkit_section == "gunsmith_kit" and la_utils.IsWeapon(sect)) then
+			-- phobos2077: repair compatibility groups
+			local key = ltx:line_exist(sect, "repair_compatibility") and ltx:r_string(sect, "repair_compatibility") or sect
+			if actor_objs[key] == nil then
+				actor_objs[key] = {}
+			end
+			table.insert(actor_objs[key],
+				{
+					id = obj:id(),
+					sect = obj:section(),
+					cond = obj:condition()
+				}
+			)
+		end
+	end
+	end
+	for k, v in pairs(actor_objs) do
+		for kk, vv in pairs(v) do
+			if vv.cond <= MAX_COND then
+				--log("adding items [%s] with cond [%s] and id [%s]", k,tostring(vv.cond),tostring(vv.id))
+				list:AddItem(ListViewItem(vv.sect, v, vv.cond, vv.id))
+			end	
+		end
+	end
+end
+
+
+
+function uiRepairKit:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnQuit()
+			return true
+		end
+	end
+
+	return true
+end
+
+function uiRepairKit:OnListClicked()
+	local list = self:GetListWnd("list")
+	list:ShowSelectedItem(true)
+	if list:GetSize() ~= 0 then
+		if list:GetSelectedItem() ~= -1 then
+			self.selected_item = list:GetItem(list:GetSelectedItem())
+			self:DisplayItemInfo()
+		end
+	end
+end
+
+function uiRepairKit:DisplayItemInfo()
+	if not self.selected_item then
+		return
+	end
+	local w, h = self.selected_item.icon_pos.w * 40, self.selected_item.icon_pos.h * 40
+	--log("uiRepairKit:DisplayItemInfo: %s", self.selected_item.section, "") --/#~#
+	icon = self:GetStatic("item_info_icon")
+	icon:Show(true)
+	local sect = self.selected_item.section
+	if string.find(sect, "_upg_") then
+		sect = ui_repair_wnd.GetBaseSection(self.selected_item.section) .. "_upg_base"
+	end
+	icon:InitTexture("ui_icons_equipment")
+	icon:SetTextureRect(af_merger_wnd.get_item_icon_rect(sect))
+	icon:SetWndPos((280 - w)/2, if_then_else(h < 120, (120 - h)/2, 0)) 
+	icon:SetWidth(w)
+	icon:SetHeight(h)
+	if icon:GetWidth() > (280 - w)/2 then
+		icon:SetStretchTexture(true)
+	end
+	self:GetStatic("item_info_name"):SetText(string.format("%s", self.selected_item.inv_name))
+	self:GetListWnd("item_info_description"):RemoveAll()
+	self:GetListWnd("item_info_description"):ShowSelectedItem(false)
+	pcTextViewer.AddText(self:GetListWnd("item_info_description"), 50, self.selected_item.inv_desc, false, "letterica16", "full_white")
+	self:GetStatic("item_info_weight"):SetText(string.format("%s: %.2f kg", game.translate_string("st_weight"), self.selected_item.item_weight))
+	self:GetStatic("item_info_cost"):SetText(string.format("%s: %d RU", game.translate_string("st_base_cost"), self.selected_item.item_cost))
+	self:GetStatic("item_info_conditon"):SetText(string.format("%s: %d%%", game.translate_string("st_condition"), math.modf(self.selected_item.cond / 0.01)))
+	self:GetListWnd("list2"):RemoveAll()
+	self:GetListWnd("list3"):RemoveAll()
+	for id, p in pairs(self.selected_item.parts) do
+		self:GetListWnd("list2"):AddItem(ListView(p.name, p.cond, id))
+	end
+end
+
+
+function uiRepairKit:OnFix()
+	if not self.selected_item then
+		--self.message_box:SetTextST("no_selected_weapons_to_repair")
+		self.message_box:Init("no_selected_weapons_to_repair")
+		level.start_stop_menu(self.message_box, true)
+		return
+	end	
+	inventory_upgrades.move_outfit_to_inv(self.selected_item.id)	
+	local obj = level.object_by_id(self.selected_item.id)	
+	if obj:condition() < MIN_COND then
+		--self.message_box:SetTextST("st_no_repair_tip_2")
+		self.message_box:Init("st_no_repair_tip_2")
+		level.start_stop_menu(self.message_box, true)
+		return
+	elseif obj:condition() >= MAX_REPAIRED_COND - 0.001 then
+		--self.message_box:SetTextST("ui_up_repair_not_needed")
+		self.message_box:Init("ui_up_repair_not_needed")
+		level.start_stop_menu(self.message_box, true)
+		return
+	end
+	local list2 = self:GetListWnd("list2")
+	local list3 = self:GetListWnd("list3")
+	local size2 = list2:GetSize()
+	local size3 = list3:GetSize()
+	if size2 == 0 and size3 == 0 then
+		obj:set_condition(calc_new_condition(obj:condition(), (REPAIR_KIT / REPAIR_STRENGTH) ))
+		self.fix_performed = true
+		self:OnQuit()
+		return
+	end
+	if size2 > 0 and size3 == 0 then
+		obj:set_condition(calc_new_condition(obj:condition(), (REPAIR_KIT / REPAIR_STRENGTH) ))
+		self.fix_performed = true
+		self:OnQuit()
+		return
+	end
+	inventory_upgrades.move_outfit_to_inv(self.selected_item.id)
+	local obj = level.object_by_id(self.selected_item.id)
+	local item = nil
+	for i = 0, list3:GetSize() - 1 do
+		item = list3:GetItem(i)
+		obj:set_condition(calc_new_condition(obj:condition(), item.cond))
+		self.removed[item.id] = true --/ That's need because client object will be delete on the next update, so we will fake fake weapon :(
+		Release_Obj(nil,item.id)
+		--log("uiRepairKit:OnFix: %d %0.2f", item.id, item.cond, "") --/#~#
+	end
+
+--!!	self.fix_performed = false
+	self.fix_performed = true
+	self:OnQuit()
+end
+
+function uiRepairKit:Reset()
+	self:GetListWnd("list"):RemoveAll()
+	self:GetListWnd("list2"):RemoveAll()
+	self:GetListWnd("list3"):RemoveAll()
+	self:GetStatic("item_info_name"):SetText("")
+	self:GetListWnd("item_info_description"):RemoveAll()
+	self:GetStatic("item_info_icon"):Show(false)
+	self:GetStatic("item_info_weight"):SetText("")
+	self:GetStatic("item_info_cost"):SetText("")
+	self:GetStatic("item_info_conditon"):SetText("")
+	self:CheckItems(self.removed)
+end
+
+function uiRepairKit:OnList2DbClick()
+	local list2 = self:GetListWnd("list2")
+	if list2:GetSize() > 0 then
+		local list3 = self:GetListWnd("list3")
+		local obj = list2:GetItem(list2:GetSelectedItem())
+		if obj then
+			list2:RemoveItem(list2:GetItemPos(obj))
+			list3:AddItem(ListView(obj.inv_name, obj.cond, obj.id))
+			list3:ScrollToBegin()
+		end
+	end
+end
+
+function uiRepairKit:OnList3DbClick()
+	local list3 = self:GetListWnd("list3")
+	if list3:GetSize() > 0 then
+		local list2 = self:GetListWnd("list2")
+		local obj = list3:GetItem(list3:GetSelectedItem())
+		if obj then
+			list3:RemoveItem(list3:GetItemPos(obj))
+			list2:AddItem(ListView(obj.inv_name, obj.cond, obj.id))
+			list2:ScrollToBegin()
+		end
+	end
+end
+
+function uiRepairKit:InitCallBacks()
+	self:AddCallback("btn_quit", ui_events.BUTTON_CLICKED, self.OnQuit, self)
+	self:AddCallback("btn_fix", ui_events.BUTTON_CLICKED, self.OnFix, self)
+	self:AddCallback("list", ui_events.LIST_ITEM_CLICKED, self.OnListClicked, self)
+	self:AddCallback("list2", ui_events.WINDOW_LBUTTON_DB_CLICK, self.OnList2DbClick, self)
+	self:AddCallback("list3", ui_events.WINDOW_LBUTTON_DB_CLICK, self.OnList3DbClick, self)
+end
+
+function uiRepairKit:OnQuit()
+	self:GetHolder():start_stop_menu(self, true)
+	if not self.fix_performed then
+		self:AddPortion()
+	end
+	self.removed = nil
+	la_utils.custom_ui_usage("hide", script_name())
+end
+
+function uiRepairKit:AddPortion()
+		if self.usages_left == 0 then
+		local sObj = la_utils.spawn_object_parent(self.repkit_section, db.actor)
+			spawned_repkit_id = sObj.id
+		else
+			self.repkit_item:set_portions_num(self.usages_left + 1)
+		end
+end
+
+-- ***************************************************************** 
+
+
+function init_menu(item)
+	level.start_stop_menu(uiRepairKit(item), true)
+end
+
+
+function isRepairable(id)
+	return false
+end
+
+
+
+function repair(id)
+	log("repair(%d)",id)
+	dlg = uiRepairKitSmall(id)
+	level.start_stop_menu(dlg, true)
+end
+
+
+function getIconRect(section)
+	return {
+		x = system_ini():r_u32(section,"inv_grid_x")*50,
+		y = system_ini():r_u32(section,"inv_grid_y")*50,
+		w = system_ini():r_u32(section,"inv_grid_width")*50,
+		h = system_ini():r_u32(section,"inv_grid_height")*50
+	}
+	
+end

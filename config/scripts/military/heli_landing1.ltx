@@ -1,0 +1,24 @@
+[logic]
+active = heli_move@idle
+combat_ignore = combat_ignore@heli1
+
+[heli_move@idle]
+path_move = heli1_idle_way
+invulnerable = true
+immortal = true
+combat_ignore = always
+engine_sound = false
+on_info = {+mil_base_down} heli_move@landing %=play_snd(characters_voice\scenario\pri\heli_phrase1)%
+combat_safe_altitude = -10
+
+[heli_move@landing]
+path_move = heli1_landing_way
+on_signal = responce | %+responce_info%
+on_signal2 = drop1 | %+landing_heli1%
+on_signal3 = rlz1 | %=release%
+combat_ignore = always
+invulnerable = true
+immortal = true
+engine_sound = true
+
+[combat_ignore@heli1]

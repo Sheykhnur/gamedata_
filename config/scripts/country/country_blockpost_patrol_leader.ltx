@@ -1,0 +1,57 @@
+[smart_terrains]
+none = true
+
+[hit@country_blockpost_patrol_leader]
+on_info = {=hit_by_actor} %+country_military_hostile%
+
+[logic]
+active = patrol@country_blockpost_patrol_leader
+combat_ignore = combat_ignore
+on_hit = hit@country_blockpost_patrol_leader
+threshold = threshold@country_blockpost_patrol_leader
+ 
+[threshold@country_blockpost_patrol_leader]
+max_ignore_distance = 25
+ignore_monster = 0
+
+[patrol@country_blockpost_patrol_leader]
+path_walk = country_blockpost_patrol_leader_walk
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_info = {+country_major_third_mutant_quest_start00} camper@country_blockpost_patrol_leader
+
+[camper@country_blockpost_patrol_leader]
+path_walk = patrol1_atack_stay_walk
+path_look = country_blockpost_atack_look
+team = count_blokpost
+wounded = wounded@country_blockpost
+soundgroup = country_blockpost
+def_state_moving = rush
+def_state_moving_fire = sneak_fire
+meet = no_meet
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_patrol_leader
+
+[remark@country_blockpost_patrol_leader]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} remark@country_blockpost_patrol_leader2
+
+[remark@country_blockpost_patrol_leader2]
+anim = ispug
+combat_ignore_cond = always
+on_signal = anim_end | patrol@country_blockpost_patrol_leader2
+
+[patrol@country_blockpost_patrol_leader2]
+path_walk = country_blockpost_patrol_leader_walk
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+
+[wounded@country_blockpost]
+hp_state= 10|help_me@help|2|wounded_heavy@help_heavy
+hp_state_see = 10|wounded@help_see|2|wounded_heavy@help_heavy
+hp_victim = 10|nil
+hp_cover = 10|true|2|false
+hp_fight = 10|true|2|false
+syndata = wounded@help
+help_dialog = actor_help_wounded

@@ -1,0 +1,255 @@
+[wpn_aek971]:weapon_base,weapon_5.45x39,weapon_gp25
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\aek-971"
+animation_slot                          = 8
+class                                   = WP_AK74
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+hand_dependence                         = 1
+scheduled                               = off
+slot                                    = 2
+repair_compatibility                    = aek
+weapon_class                            = assault_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 6
+inv_grid_y                              = 28
+grenade_launcher_x                      = 124
+grenade_launcher_y                      = 23
+silencer_x                              = 217
+silencer_y                              = 12
+
+; Text
+inv_name                                = st_wpn_aek971
+inv_name_short                          = st_wpn_aek971
+description                             = st_wpn_aek971_descr
+
+; Visual
+hud                                     = wpn_aek971_hud
+position                                = -0.026, -0.175, 0
+orientation                             = 0, 0, 0
+strap_position                          = -0.18, -0.45, 0.2
+strap_orientation                       = -10, -5, 10
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_aek971\wpn_aek971.ogf
+
+; Effects
+fire_point                              = 0, 0.218, 0.656
+fire_point2                             = 0, 0.161, 0.583
+shell_point                             = 0, 0.216, 0.174
+shell_dir                               = 0, 0, 0.4
+light_disabled                          = false
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\ak\ak_draw
+snd_empty                               = weapons\ak_empty, 0.7
+snd_holster                             = weapons\rifle_holster
+snd_reload                              = weapons\aek971\aek971_reload
+snd_shoot                               = weapons\aek971\aek971_shoot
+snd_shoot1                              = weapons\aek971\aek971_shoot1
+snd_shoot2                              = weapons\aek971\aek971_shoot2
+snd_shoot3                              = weapons\aek971\aek971_shoot3
+snd_shoot4                              = weapons\aek971\aek971_shoot4
+snd_shoot5                              = weapons\aek971\aek971_shoot5
+snd_silncer_shot                        = weapons\ak74\ak74_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 0
+upgr_icon_y                             = 0
+upgr_icon_width                         = 300
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 40000
+inv_weight                              = 3.45
+ph_mass                                 = 4
+
+; Ammo
+ammo_elapsed                            = 30
+ammo_mag_size                           = 30
+
+; Features
+fire_modes                              = 1, 3, -1
+scopes_sect                             = scope_aek971, scope_x2.7_aek971, scope_live_detector_aek971, scope_night_aek971, scope_var_aek971
+scope_status                            = 2
+silencer_status                         = 2
+grenade_launcher_status                 = 2
+
+; Impact
+hit_power                               = 1.0
+
+; Ballistics
+fire_dispersion_base                    = 0.5
+
+; Performance
+rpm                                     = 900
+
+; Reliability
+misfire_start_prob                      = 0.01   ; misfire probability for every shot when condition == misfire_start_condition (value interpolates between this and misfire_end_prob)
+misfire_end_prob                        = 0.1    ; misfire probability for every shot when condition is below misfire_end_condition
+condition_shot_dec                      = 0.0002 ; weapon deterioration for every shot
+condition_queue_shot_dec                = 0.0002 ; weapon deterioration for every shot in automatic mode
+
+; Handling
+control_inertion_factor                 = 1.35f    ; how much the mouse look slows down when looking around with this weapon
+PDM_disp_base                           = 3.1     ; base actor dispersion koefficient when not aiming down the sights (firing from the hip)
+PDM_disp_vel_factor                     = 1.3     ; actor hip fire dispersion multiplied by current speed
+PDM_disp_accel_factor                   = 1.3     ; actor hip fire dispersion multiplied by current speed (when running)
+
+; Recoil - VERY controllable, due to AEK mechanics
+cam_dispersion                          = 1.0
+cam_dispersion_inc                      = 0.15
+cam_dispersion_frac                     = 1.0
+cam_max_angle                           = 10.0
+cam_step_angle_horz                     = 0.8
+zoom_cam_dispersion                     = 0.5
+zoom_cam_dispersion_inc                 = 0.07
+zoom_cam_step_angle_horz                = 0.5
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_10plus3
+upgrades                                = up_gr_firstab_aek971, up_gr_seconab_aek971, up_gr_thirdab_aek971, up_gr_thirdcd_aek971
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 100
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 0.7
+
+
+[scope_aek971]
+scope_name                              = wpn_addon_scope
+scope_x                                 = 35
+scope_y                                 = 0
+
+[scope_x2.7_aek971]:scope_aek971
+scope_name                              = wpn_addon_scope_x2.7
+
+[scope_live_detector_aek971]:scope_aek971
+scope_name                              = wpn_addon_scope_detector
+
+[scope_night_aek971]:scope_aek971
+scope_name                              = wpn_addon_scope_night
+
+[scope_var_aek971]:scope_aek971
+scope_name                              = wpn_addon_scope_var
+
+
+
+[wpn_aek971_hud]:hud_base
+aim_hud_offset_pos                      = -0.09069,0.05311,-0.242
+aim_hud_offset_pos_16x9                 = -0.09069,0.05311,-0.242
+aim_hud_offset_rot                      = 0.00629,-0.0015,0
+aim_hud_offset_rot_16x9                 = 0.00629,-0.0015,0
+anim_bore                               = aek_aim
+anim_bore                               = aek_aim
+anim_bore_g                             = aek_aim_w_gl
+anim_bore_w_gl                          = aek_aim_w_gl
+anim_hide                               = aek_holster,,2.0
+anim_hide_g                             = aek_holster_w_gl,,2.0
+anim_hide_w_gl                          = aek_holster_w_gl,,2.0
+anim_idle                               = aek_idle
+anim_idle_aim                           = aek_aim
+anim_idle_g                             = aek_idle_w_gl
+anim_idle_g_aim                         = aek_aim_w_gl
+anim_idle_moving                        = aek_move
+anim_idle_moving_g                      = aek_move_w_gl
+anim_idle_moving_w_gl                   = aek_move_w_gl
+anim_idle_sprint                        = aek_sprint
+anim_idle_sprint_g                      = aek_sprint_w_gl
+anim_idle_sprint_w_gl                   = aek_sprint_w_gl
+anim_idle_w_gl                          = aek_idle_w_gl
+anim_idle_w_gl_aim                      = aek_aim_w_gl
+anim_reload                             = aek_reload, reload
+anim_reload_g                           = aek_reload_g, reload_g
+anim_reload_w_gl                        = aek_reload_w_gl, reload
+anim_shots                              = aek_shoot, shoot
+anim_shots_g                            = aek_shoot_g, shoot_g
+anim_shots_w_gl                         = aek_shoot_w_gl, shoot
+anim_show                               = aek_draw
+anim_show_g                             = aek_draw_w_gl
+anim_show_w_gl                          = aek_draw_w_gl
+anim_switch                             = aek_aim_w_gl
+anim_switch_g                           = aek_aim_w_gl
+
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = wpn_body
+fire_point                              = 0,0,0
+fire_point2                             = 0,-0.029,0.575
+gl_hud_offset_pos                       = -0.049,0.012,-0.1
+gl_hud_offset_pos_16x9                  = -0.049,0.012,-0.1
+gl_hud_offset_rot                       = -0.0865,-0.0055,0
+gl_hud_offset_rot_16x9                  = -0.0865,-0.0055,0
+hands_orientation                       = 0,2,0
+hands_orientation_16x9                  = 0,2,0
+hands_position                          = -0.06,-0.18,0.18
+hands_position_16x9                     = -0.06,-0.18,0.18
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_aek971\wpn_aek971_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+[wpn_aek973]:wpn_aek971,weapon_7.62x39
+$spawn                                  = "weapons\aek-973"
+
+; Inventory icon
+inv_grid_x                              = 6
+inv_grid_y                              = 30
+silencer_x                              = 208
+silencer_y                              = 14
+
+; Text
+inv_name                                = st_wpn_aek973
+inv_name_short                          = st_wpn_aek973
+description                             = st_wpn_aek973_descr
+
+; Impact
+hit_power                               = 1.0
+
+; Visual
+hud                                     = wpn_aek973_hud
+visual                                  = dynamics\weapons\wpn_aek971\wpn_aek973.ogf
+
+; Ballistics
+fire_dispersion_base                    = 0.53
+
+; Recoil - More due to larger caliber
+cam_dispersion                          = 1.4
+cam_dispersion_inc                      = 0.14
+cam_step_angle_horz                     = 1.4
+zoom_cam_dispersion                     = 0.7
+zoom_cam_dispersion_inc                 = 0.11
+zoom_cam_step_angle_horz                = 0.7
+
+; Upgrades
+upgrades                                = up_gr_firstab_aek971, up_gr_seconab_aek971, up_gr_thirdab_aek971 ; Only normal upgrades, no caliber and magazine upgrade
+
+[wpn_aek973_hud]:wpn_aek971_hud
+item_visual                             = dynamics\weapons\wpn_aek971\wpn_aek973_hud.ogf

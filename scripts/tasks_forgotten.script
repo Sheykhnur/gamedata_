@@ -1,0 +1,53 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_forgotten.script
+ Description: Tasks forgotten
+ Copyright  : 2011 © LA
+ Author     : vintar
+ Editors    : vintar
+ Last edit  : 04.02.2014 (by vintar)
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, event)
+	if event == "item_take" then
+		if obj:name() == "ds_task_rpg" then
+			give_info("forg_has_ds_task_rpg")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+
+function forg_nuts_has(actor, npc)
+	if db.actor:object("forg_nuts") and db.actor:object("forg_transistors") then
+		return true
+	end
+	return false
+end
+
+function forg_has_key(actor, npc)
+	if db.actor:object("forg_key") then
+		return true
+	end
+	return false
+end
+
+function forg_key_day_check(actor, npc)
+	if xr_conditions.is_day() then
+		give_info("forg_merc_unfriendly")
+	end
+end
+
+
+--/ -----------------------------------------------------------------------------------------------

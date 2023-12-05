@@ -1,0 +1,167 @@
+[wpn_bizon]:weapon_base,weapon_9x18
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\bizon"
+animation_slot                          = 8
+cform                                   = skeleton
+class                                   = WP_LR300
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+GroupControlSection                     = spawn_group
+hand_dependence                         = 1
+repair_compatibility                    = ak
+scheduled                               = off
+single_handed                           = 0
+slot                                    = 2
+weapon_class                            = assault_rifle
+weapon_rank                             = 1
+
+; Inventory icon
+inv_grid_width                          = 4
+inv_grid_height                         = 2
+inv_grid_x                              = 11
+inv_grid_y                              = 24
+silencer_x                              = 170
+silencer_y                              = 14
+
+; Text
+inv_name                                = st_wpn_bizon
+inv_name_short                          = st_wpn_bizon
+description                             = st_wpn_bizon_descr
+
+; Visual
+hud                                     = wpn_bizon_hud
+position                                = -0.026, -0.175, 0
+orientation                             = 0, 0, 0
+strap_position                          = -0.16, -0.36, 0.15
+strap_orientation                       = -10, -5, 10
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_bizon\wpn_bizon.ogf
+
+; Effects
+fire_point                              = 0, 0.218, 0.380
+fire_point2                             = 0, 0.161, 0.380
+shell_point                             = 0, 0.188, 0.082
+shell_dir                               = 0, 1, 0
+light_disabled                          = false
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\bizon\bizon_draw
+snd_empty                               = weapons\bizon\bizon_empty
+snd_holster                             = weapons\bizon\bizon_holster
+snd_reload                              = weapons\bizon\bizon_reload
+snd_shoot                               = weapons\bizon\bizon_shoot
+snd_silncer_shot                        = weapons\bizon\bizon_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 300
+upgr_icon_y                             = 100
+upgr_icon_width                         = 250
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 3800
+inv_weight                              = 2.70
+ph_mass                                 = 3
+
+; Ammo
+ammo_elapsed                            = 64
+ammo_mag_size                           = 64
+
+; Features
+fire_modes                              = 1, -1
+; scopes_sect                             = scope_bizon, scope_x2.7_bizon, scope_live_detector_bizon, scope_night_bizon
+scope_status                            = 0
+silencer_status                         = 2
+grenade_launcher_status                 = 0
+
+; Ballistics
+fire_distance                           = 300
+fire_dispersion_base                    = 0.65
+
+; Performance
+rpm                                     = 640
+
+; Reliability
+condition_shot_dec                      = 0.0003333  ; weapon deterioration for every shot
+condition_queue_shot_dec                = 0.0003333  ; weapon deterioration for every shot in automatic mode
+
+; Handling
+control_inertion_factor                 = 1.f
+PDM_disp_base                           = 3.0
+PDM_disp_vel_factor                     = 1.2
+PDM_disp_accel_factor                   = 1.2
+
+; Recoil
+cam_dispersion                          = 1.0     ; for every shot in a burst, camera jumps up by degree = cam_dispersion + (cam_dispersion_inc * shot_num)
+cam_dispersion_inc                      = 0.3
+cam_dispersion_frac                     = 0.7     ; controls the randomness of camera jumps, 0 - total randomness (from 0 degrees to full jump), 1 - no randomness (always full jump)
+cam_max_angle                           = 10.0
+cam_max_angle_horz                      = 5.0
+cam_step_angle_horz		                = 2.0
+zoom_cam_dispersion                     = 0.5     ; base cam recoil amount per shot when aiming
+zoom_cam_dispersion_inc                 = 0.2
+zoom_cam_step_angle_horz                = 2.0     ; horizontal recoil amount when aiming
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 0.9
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_10plus3
+upgrades                                = up_gr_firstab_bizon, up_gr_seconab_bizon, up_gr_thirdab_bizon, up_gr_thirdcd_bizon
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 40
+
+
+[wpn_bizon_hud]
+aim_hud_offset_pos                      = -0.1299,0.0512,-0.15
+aim_hud_offset_pos_16x9                 = -0.1299,0.0512,-0.15
+aim_hud_offset_rot                      = 0.012,0.0302,0.02
+aim_hud_offset_rot_16x9                 = 0.012,0.0302,0.02
+anim_bore                               = lancew_bizon_no_reload
+anim_hide                               = lancew_bizon_holster,,2.0
+anim_idle                               = lancew_bizon_idle
+anim_idle_aim                           = lancew_bizon_idle_aim, idle_aim
+anim_idle_moving                        = lancew_bizon_moving
+anim_idle_sprint                        = lancew_bizon_sprint
+anim_reload                             = lancew_bizon_reload, reload
+anim_shots                              = lancew_bizon_shoot, shoot
+anim_show                               = lancew_bizon_draw
+attach_place_idx                        = 0
+fire_bone                               = wpn_body
+fire_bone2                              = wpn_body
+fire_point                              = 0,0.053507,0.422361
+fire_point2                             = 0,0.1,0.1
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_pos_16x9                  = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+gl_hud_offset_rot_16x9                  = 0,0,0
+hands_orientation                       = 0.55,1.5,0.15
+hands_orientation_16x9                  = 0.55,1.5,0.15
+hands_position                          = -0.042,-0.16,0.1955
+hands_position_16x9                     = -0.042,-0.16,0.1955
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_bizon\wpn_bizon_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_dir                               = 0,1,0
+shell_point                             = 0.028,0.078,0.113
+zoom_hide_crosshair                     = true

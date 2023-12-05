@@ -1,0 +1,16 @@
+[logic]
+active = sr_idle@1
+
+[sr_idle@1]
+on_actor_inside = {=gulag_population_active(esc_bridge_blockpost) +esc_talked_with_wolf} sr_idle@talked_wolf %+actor_inside_bridge%, {=gulag_population_active(esc_bridge_blockpost) -esc_talked_with_wolf} sr_idle@not_talked_wolf %+actor_inside_bridge +actor_snd_commander%, sr_idle@wait
+
+[sr_idle@talked_wolf]
+on_info = {-wolf_message_sent} %=send_msg(wolf:wolf_message_header:esc_wolf_tip) +wolf_message_sent%, sr_idle@wait
+on_actor_outside = sr_idle@1 %-actor_inside_bridge%
+
+[sr_idle@not_talked_wolf]
+on_info = {-esc_trader_msg_sent} %=send_msg(sid:trader_message_header:esc_trader_tip) +esc_trader_msg_sent%, sr_idle@wait
+on_actor_outside = {-actor_attacked_bridge} sr_idle@1 %-actor_inside_bridge -actor_snd_commander%
+
+[sr_idle@wait]
+on_actor_outside = {-actor_attacked_bridge} sr_idle@1 %-actor_inside_bridge -actor_snd_commander%

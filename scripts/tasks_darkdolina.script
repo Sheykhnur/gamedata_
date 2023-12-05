@@ -1,0 +1,157 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_darkdolina.script
+ Description: Tasks darkdolina
+ Copyright  : 2012 © LA-team
+ Author     : gr1ph00n
+ Editors    : SkyLoader, vintar, lox(09.02.2013), 08.08.2013 [vintar]
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if has_info("dol_get_password_start") and not has_info("dol_get_bandit_suit_done") then
+		local suit = db.actor:get_current_outfit()
+		local is_bandit_outfit = suit and (suit:section():match("bandit_outfit") or suit:section():match("bandit_heavy_outfit") or suit:section():match("outfit_bandit_m1") or suit:section():match("outfit_bandit_m2") or suit:section():match("bandit_cloak_outfit"))
+		if is_bandit_outfit and not has_info("dol_bandits_enemy") then
+			give_info("dol_get_bandit_suit_done")
+		end
+	end
+	if sEvent == "item_take" then
+		if obj:story_id() == 6411 then
+			give_info("dol_get_doc_about_x18_done")
+		elseif obj:section() == "borov_docs" then
+			give_info("ds_borov_documents_have")
+			if not has_info("dol_give_borov_code") then
+				give_info("dol_borov_enemy")
+			end
+		elseif obj:name() == "val_prison_key" and not has_info("dol_has_prison_key") then
+			give_info("dol_has_prison_key")
+			local npc = xr_effects.get_level_object("dolina_bandit_trader")
+				if npc and npc:alive() then
+					if xr_conditions.dist_to_player_le(db.actor, npc, 5) and not has_info("dol_trader_close") then
+						give_info("dol_trader_close")
+						give_info("dol_bandits_enemy")
+					end
+				end
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^dol_') then
+		return false --/>
+	end
+	if info_id == "dol_guard_re_rob" then
+		news_manager.send_tip_hud(game.translate_string("dol_bandit_header"), game.translate_string("dol_actor_re_rob"), "bandit2")
+		return true --/>
+	end
+	if info_id == "dol_bandits_enemy" and not has_info("dol_borov_enemy") then
+		news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("dol_actor_attacked_guard"), "bandit2")
+		return true --/>
+	end
+	if info_id == "dol_trader_close" then
+		if not has_info("dol_trader_meal_steal") then
+			news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("dol_actor_key_stole"), "bandit")
+		else
+			news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("dol_actor_key_stole1"), "bandit")
+		end
+		return true --/>
+	end
+	if info_id == "dol_trader_stolen_other" then
+		news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("dol_actor_trader_stole_items"), "bandit")
+		give_info("dol_trader_meal_steal")
+		give_info("dol_bandits_enemy")
+		return true --/>
+	end
+	if info_id == "dol_trader_bastards" then
+		news_manager.send_tip_hud(game.translate_string("hijacked_message"), game.translate_string("dol_trader_bastards_steal"), "bandit")
+		return true --/>
+	end
+	if info_id == "dol_get_password_done" then
+        if has_info("dol_drunk_dead") then
+            news_manager.send_tip_hud(game.translate_string("dol_drunken_dead_key_header"), game.translate_string("dol_drunken_dead_key"), "bandit2")
+			start_real_timer(4, nil, {info_id = "dol_meet_mono_informer_start", tip = {game.translate_string("dol_gusarov_message_header"), game.translate_string("dol_gusarov_message"), "gusarov", 7}})
+			return false
+        else
+		start_real_timer(4, nil, {info_id = "dol_meet_mono_informer_start", tip = {game.translate_string("dol_gusarov_message_header"), game.translate_string("dol_gusarov_message"), "gusarov", 7}})
+		return true --/>
+		end
+	end
+	if info_id == "dol_get_doc_about_x18_done" then
+		if not has_info("dol_reach_x18_start") then
+			start_real_timer(2, "tasks_darkdolina.gusarov_news")
+			start_real_timer(4, nil, {info_id = "dol_reach_x18_start"})
+			if has_info("dol_meet_gusarov_done") then
+				start_real_timer(8, nil, {info_id = "dol_start_mil_assault"})
+			else
+				give_info("dol_meet_gusarov_done")
+				start_real_timer(8, nil, {info_id = "dol_start_mil_assault"})
+			end
+		end
+		give_info("dol_monolith_enemy")
+		db.actor:set_character_community("actor", 0, 0)
+		return true --/>
+	end
+	if info_id == "dol_give_borov_code" and not has_info("ds_borov_documents_have") then
+		news_manager.send_tip_hud(game.translate_string("hmm"), game.translate_string("dol_borov_code"), "safe")
+		return true --/>
+	end
+	if info_id == "dol_get_password_start" then
+		start_real_timer(10, nil, {info_id = "dol_get_password_start_delay"})
+		return true
+	end
+	if info_id == "dol_prisoner_delay" then
+		news_manager.send_tip_hud(game.translate_string("petrenko_message_header"), game.translate_string("dol_prisoner_message"), "petrenko")
+		start_real_timer(6, nil, {info_id = "dol_save_prisoner"})
+		return true
+	end
+	if info_id == "dol_actor_failed" then
+		if not has_info("ds_borov_documents_have") and not has_info("dol_get_doc_about_x18_done") then
+			start_real_timer(5, nil, {info_id = "dol_get_doc_about_x18_start", tip = {game.translate_string("dol_gusarov_message_header"), game.translate_string("dol_gusarov_message_fail"), "gusarov", 8}})
+		end
+		return true
+	end
+	if info_id == "dol_reach_dscape_start" then
+		if not has_info("dol_reach_dscape_done") then
+			start_real_timer(5, nil, {tip = {game.translate_string("dol_gusarov_message_header"), game.translate_string("dol_dscape_gus_msg"), "gusarov", 8}})
+		end
+		return true
+	end
+	if info_id == "dol_gusarov_bandit_task_bandits" then
+		news_manager.send_tip_hud(game.translate_string("hmm"), game.translate_string("dol_gusarov_bandit_task_msg2"), "actor")
+		return true --/>
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function gusarov_news()
+	news_manager.send_tip_hud(game.translate_string("dol_gusarov_message_header"), game.translate_string("dol_army_gus_msg"), "gusarov")
+end
+
+function gusarov_news_2()
+	news_manager.send_tip_hud(game.translate_string("dol_gusarov_message_header"), game.translate_string("dol_dscape_gus_msg"), "gusarov")
+end
+
+function actor_thief()
+	relation_registry.set_community_goodwill("monolith", idActor, -5000)
+end
+
+function has_bandit_patch()
+	return db.actor:object("dol_bandit_patch") ~= nil
+end
+
+function has_bandit_patch_all()
+	return (xr_conditions.actor_has_item_count(db.actor, npc, {"dol_bandit_patch",8}) and db.actor:object("dol_bandit_list") ~= nil)
+end
+--/ -----------------------------------------------------------------------------------------------

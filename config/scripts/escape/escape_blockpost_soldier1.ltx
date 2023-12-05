@@ -1,0 +1,34 @@
+[smart_terrains]
+none = true
+
+[hit@blockpost_soldier1]
+on_info = {=hit_by_actor} %+cordon_military_hostile%
+
+[death@blockpost_soldier1]
+on_info = {=killed_by_actor} %+cordon_military_hostile%
+
+[logic]
+active = follower@escape_blockpost_soldier1
+combat_ignore = combat_ignore
+on_hit = hit@blockpost_soldier1
+on_death = death@blockpost_soldier1
+
+[follower@escape_blockpost_soldier1]
+formation_line = true
+leader = 6029
+distance = 2
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+on_info = {!is_day} sleeper@escape_blockpost_sleeper1
+on_info2 = {+cordon_military_hostile} follower@escape_blockpost_soldier1_1
+
+[sleeper@escape_blockpost_sleeper1]
+path_main = escape_blockpost_sleep1_main
+wakeable = false
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+on_info = {=is_day} follower@escape_blockpost_soldier1
+on_info2 = {+cordon_military_hostile} follower@escape_blockpost_soldier1_1
+
+[follower@escape_blockpost_soldier1_1]
+formation_line = true
+leader = 6029
+distance = 2

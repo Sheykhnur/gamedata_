@@ -1,0 +1,20 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+sar_voice} sr_sound_act %=set_only_hands(false)%
+
+[sr_sound_act]
+theme = sar_monolith_call
+delay = 8000
+delay_max = 12000
+stereo = true
+on_info = {+sar_scene3_start -sar_sc3_end} sr_idle@wait
+on_info2 = {+sar_scene4_start -sar_scene4_zombies} sr_idle@wait2
+on_info5 = {+sar_fake_finale} nil %=release%
+
+[sr_idle@wait]
+on_info = {+sar_sc3_end} sr_sound_act
+
+[sr_idle@wait2]
+on_info = {+sar_scene4_zombies} sr_sound_act

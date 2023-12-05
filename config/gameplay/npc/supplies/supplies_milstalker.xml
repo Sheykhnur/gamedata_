@@ -1,0 +1,159 @@
+	<!-- Supply templates for Milstalkers -->
+
+	<template id="milstalker_common">
+
+		<item s="mineral_water" 		prob="0.5"		cond="1.0"/>
+
+		<!-- Meds -->
+		<item s="bandage" 				prob="0.35"		cond="1.0"/>
+		<item s="antirad" 				prob="0.35"		cond="1.0"/>
+
+		<item s="device_torch_eco" 		prob="0.3"		cond="1.0"/>
+	</template>
+
+	<template id="milstalker_regular_common">
+		<include id="milstalker_common"/>
+		<include id="food_med"/>
+		<include id="boosters_low"/>
+		<item s="medkit_army"   	prob="0.3"		cond="1.0"/>
+		<item s="grenade_rgd5" 		prob="0.3"		cond="1.0"/>
+	</template>
+	<template id="milstalker_veteran_common">
+		<include id="milstalker_common"/>
+		<include id="food_high"/>
+		<include id="boosters_high"/>
+		<item s="medkit_army"   	prob="0.5"		cond="1.0"/>
+		<item s="grenade_rgd5" 		prob="0.7"		cond="1.0"/>
+		<item s="grenade_f1" 		prob="0.3"		cond="1.0"/>
+	</template>
+	<template id="milstalker_master_common">
+		<include id="milstalker_common"/>
+		<include id="food_high"/>
+		<include id="boosters_high"/>
+		<item s="medkit_army"   	prob="0.3"		cond="1.0"/>
+		<item s="medkit_scientic"   prob="0.3"		cond="1.0"/>
+		<item s="grenade_f1" 		prob="0.6"		cond="1.0"/>
+	</template>
+	<template id="milstalker_common_sidearm">
+			<include id="weapon_fort"/>
+	</template>
+	<template id="milstalker_sniper_sidearm">
+			<include id="weapon_pb"/>
+	</template>
+	<template id="milstalker_master_sidearm">
+		<random_select>
+			<opt w="2"><item s="wpn_aps" w_ammo="1"/></opt>
+		</random_select>
+	</template>
+
+
+<!-- Tier 2 -->
+	<template id="milstalker_t2_regular">
+		<random_select>
+			<opt w="3"><include id="milstalker_t2_regular_auto"/></opt>
+			<opt w="1"><include id="milstalker_t2_regular_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="milstalker_t2_regular_auto">
+		<random_select>
+			<opt w="2"><include id="weapon_ak74"/></opt>
+			<opt w="1"><include id="weapon_akm"/></opt>
+		</random_select>
+		<include id="milstalker_common_sidearm"/>
+		<include id="milstalker_regular_common"/>
+	</template>
+	<template id="milstalker_t2_regular_shotgun">
+		<random_select>
+			<opt w="2"><include id="weapon_wincheaster1300"/></opt>
+			<opt w="1"><include id="weapon_wincheaster1300_slug"/></opt>
+		</random_select>
+		<include id="weapon_fort"/>
+		<include id="milstalker_regular_common"/>
+	</template>
+
+	<!-- Veteran -->
+	<template id="milstalker_t2_veteran">
+		<random_select>
+			<opt w="1"><include id="weapon_groza_sp5"/></opt>
+			<opt w="1"><include id="weapon_akm_ap"/></opt>
+		</random_select>
+		<include id="milstalker_common_sidearm"/>
+		<include id="milstalker_veteran_common"/>
+	</template>
+
+	<!-- Master -->
+	<template id="milstalker_t2_master">
+		<random_select>
+			<opt w="3"><include id="weapon_akm_scope"/></opt>
+			<opt w="3"><include id="weapon_groza_scope"/></opt>
+		</random_select>
+		<include id="milstalker_common_sidearm"/>
+		<include id="milstalker_master_common"/>
+	</template>
+
+	<template id="milstalker_t2_sniper">
+		<include id="weapon_svd"/>
+		<include id="milstalker_sniper_sidearm"/>
+		<include id="milstalker_veteran_common"/>
+	</template>
+
+<!-- Tier 3 -->
+	<!-- Veteran -->
+	<template id="milstalker_t3_regular">
+		<random_select>
+			<opt w="3"><include id="milstalker_t3_regular_auto"/></opt>
+			<opt w="1"><include id="milstalker_t3_regular_shotgun"/></opt>
+		</random_select>
+	<include id="milstalker_regular_common"/>
+	</template>
+	<template id="milstalker_t3_regular_auto">
+		<random_select>
+			<opt w="6"><include id="weapon_rpk"/></opt>
+			<opt w="4"><include id="weapon_aek971"/></opt>
+			<opt w="2"><include id="weapon_aek973"/></opt>
+			<opt w="3"><include id="weapon_val"/></opt>
+		</random_select>
+	</template>
+	<template id="milstalker_t3_regular_shotgun">
+		<random_select>
+			<opt w="4"><include id="weapon_vepr"/></opt>
+			<opt w="3"><include id="weapon_ks23_ap"/></opt>
+			<opt w="2"><include id="weapon_vepr_dart"/></opt>
+		</random_select>
+	</template>
+
+	<template id="milstalker_t3_sniper">
+		<include id="weapon_svu_upg"/>
+		<include id="milstalker_veteran_common"/>
+	</template>
+
+	<!-- Master -->
+	<template id="milstalker_t3_master">
+		<random_select>
+			<opt w="3"><include id="milstalker_t3_master_auto"/></opt>
+			<opt w="1"><include id="milstalker_t3_master_shotgun"/></opt>
+		</random_select>
+	<include id="milstalker_master_common"/>
+	</template>
+	<template id="milstalker_t3_master_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_rpk_upg_ap"/></opt>
+			<opt w="6"><include id="weapon_rpk74m_upg_ap"/></opt>
+			<opt w="3"><include id="weapon_aek971_scope"/></opt>
+			<opt w="1"><include id="weapon_aek973_scope"/></opt>
+			<opt w="3"><include id="weapon_val_scope"/></opt>
+		</random_select>
+	</template>
+	<template id="milstalker_t3_master_shotgun">
+		<random_select>
+			<opt w="4"><include id="weapon_vepr"/></opt>
+			<opt w="3"><include id="weapon_ks23_ap"/></opt>
+			<opt w="1"><include id="weapon_ks23_slug"/></opt>
+		</random_select>
+	</template>
+
+<!-- Tier 4 -->
+	<template id="milstalker_t4_master">
+		<include id="weapon_pkm"/>
+		<include id="milstalker_master_common"/>
+	</template>

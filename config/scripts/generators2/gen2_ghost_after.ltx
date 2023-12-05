@@ -1,0 +1,60 @@
+[danger@gen_ghost_after]
+ignore_distance = 0
+
+[threshold@gen_ghost_after]
+max_ignore_distance = 0
+ignore_monster      = 0
+
+[logic]
+active = walker@gen_ghost_game_finale
+combat_ignore = true
+
+[walker@gen_ghost_game_finale]
+path_walk = gen2_ghost_meet
+combat_ignore_cond = {=hit_by_actor}
+meet = meet@gen_ghost_game_finale
+threshold = threshold@gen_ghost_after
+on_info = {+gen2_ghost_walk} walker@gen_ghost_game_finale_paradise
+
+[meet@gen_ghost_game_finale]
+use = true
+use_wpn = true
+abuse = false
+precond = visibility
+meet_talk_enabled = true
+meet_state = 5|hello|3|wait
+meet_state_wpn = 5|hello_wpn|3|wait
+victim = 5|actor
+victim_wpn = 5|actor
+meet_dialog	= gen_la_finale_dialog
+
+[walker@gen_ghost_game_finale_paradise]
+path_walk = gen2_ghost_walk
+path_look = gen2_ghost_look
+combat_ignore_cond = always
+meet = no_meet
+danger = danger@gen_ghost_after
+threshold = threshold@gen_ghost_after
+def_state_standing = guard
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_signal = ghoswalk1 | %+gen2_ghost_arrived% 
+on_info = {+gen_paradise} walker@gen_ghost_game_paradise
+
+[walker@gen_ghost_game_paradise]
+path_walk = gen2_ghost_walk2
+path_look = gen2_ghost_look2
+combat_ignore_cond = always
+meet = no_meet
+danger = danger@gen_ghost_after
+threshold = threshold@gen_ghost_after
+on_signal = ghostreached | remark@gen_ghost_game_paradise %+gen2_ghost_actor%
+
+[remark@gen_ghost_game_paradise]
+anim = gen_ghost_final_action
+combat_ignore_cond = always
+target = gen2_ghost_target, 0
+danger = danger@gen_ghost_after
+meet = no_meet
+on_info = {+has_freeplay_info} %=release%

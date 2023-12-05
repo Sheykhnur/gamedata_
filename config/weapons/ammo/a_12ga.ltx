@@ -1,0 +1,190 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_12x70_cart]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_12x70_cart"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_12x70_buck.ogf
+tracer                      = off
+wm_size                     = 0.03
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 37
+inv_grid_y                  = 24
+
+; Text
+inv_name                    = ammo-12x70-cart
+inv_name_short              = ammo-12x70-cart_s
+description                 = enc_weapons1_ammo_ammo-12x70-cart
+
+; Economy
+cost                        = 300
+inv_weight                  = .68
+box_size                    = 14
+
+; Impact
+k_hit                       = 0.4; 0.4*9 = 3.60
+k_ap                        = 0.16 ; Armor piercing koefficient
+k_pierce                    = 0.16 ; [NOT USED]
+k_impulse                   = 0.12 ; 0.012*9 ~= 1.1 ; Physical impact impulse koefficient
+allow_ricochet              = false
+impair                      = 1    ; Weapon condition decrease koefficient
+buck_shot                   = 9    ; Number of pellets in every shot [LA DC]: pellets spread is only affected by weapon base dispersion, not by actor
+
+; Ballistics
+k_air_resistance            = 2.6   ; Air resistance during bullet flight
+k_disp                      = 6.0  ; Bullet dispersion koef
+k_dist                      = 0.5  ; Bullet max distance koef
+k_speed                     = 0.8  ; [NEW FOR LA DC] Bullet initial (max) speed koef
+
+
+[ammo_12x70_buck]:ammo_12x70_cart
+$spawn                      = "weapons\ammo\ammo_12x70_buck"
+
+; Appearance
+wm_size                     = 0.01
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 31
+inv_grid_y                  = 24
+
+; Text
+inv_name                    = ammo-12x70-buck
+inv_name_short              = ammo-12x70-buck_s
+description                 = enc_weapons1_ammo_ammo-12x70-buck
+
+; Economy
+cost                        = 380
+inv_weight                  = .7
+
+; Impact
+k_hit                       = 0.24 ; 0.24*20 = 4.80
+k_ap                        = 0.08 ; Armor piercing koefficient
+k_pierce                    = 0.08 ; [NOT USED]
+k_impulse                   = 0.05 ; 0.012*9 ~= 1.1 ; Physical impact impulse koefficient
+buck_shot                   = 20   ; Number of pellets in every shot
+
+; Ballistics
+k_air_resistance            = 3.8 ; Air resistance during bullet flight
+k_disp                      = 12 ; Bullet dispersion koef
+k_dist                      = 0.35  ; Bullet max distance koef
+k_speed                     = 0.7
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_12x76_dart]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_12x76_dart"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_12x76_dart.ogf
+explosive                   = on
+wm_size                     = 0.10
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 35
+inv_grid_y                  = 24
+
+; Text
+inv_name                    = ammo-12x76-dart
+inv_name_short              = ammo-12x76-dart_s
+description                 = enc_weapons1_ammo_ammo-12x76-dart
+
+; Economy
+cost                        = 320
+inv_weight                  = .60
+box_size                    = 14
+
+; Impact
+k_hit                       = 2.45
+k_ap                        = 0.3
+k_pierce                    = 0.3
+k_impulse                   = 1.0
+impair                      = 0.9
+
+; Ballistics
+k_air_resistance            = 1.10
+k_disp                      = 0.7
+k_dist                      = 2.5
+k_speed                     = 1.0
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_12x76_zhekan]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_12x76_zhekan"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_12x76_zhekan.ogf
+explosive                   = on
+wm_size                     = 0.11
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 33
+inv_grid_y                  = 24
+
+; Text
+inv_name                    = ammo-12x76-zhekan
+inv_name_short              = ammo-12x76-zhekan_s
+description                 = enc_weapons1_ammo_ammo-12x76-zhekan
+
+; Economy
+cost                        = 360
+inv_weight                  = .75
+box_size                    = 14
+
+; Impact
+k_hit                       = 3.6
+k_ap                        = 0.2
+k_pierce                    = 0.2
+k_impulse                   = 1.0
+allow_ricochet              = false
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 2
+k_disp                      = 1.15
+k_dist                      = 1.2
+k_speed                     = 0.7
+
+
+[weapon_12ga]
+; Effects
+shell_particles             = amik\weapons\12x70_r_1
+flame_particles             = weapons\generic_weapon06
+smoke_particles             = amik\weapons\smoke_particles\smoke_particles_pump_00
+
+; Ammo
+ammo_class                  = ammo_12x70_cart, ammo_12x70_buck, ammo_12x76_zhekan, ammo_12x76_dart
+ammo_limit                  = 60
+
+; Features
+silencer_name               =
+
+; Ballistics
+bullet_speed                = 360
+fire_distance               = 300
+fire_dispersion_condition_factor = 3
+
+; Impact
+hit_impulse                 = 400

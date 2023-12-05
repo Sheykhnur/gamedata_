@@ -1,0 +1,34 @@
+[logic]
+active = mob_remark@1
+
+[mob_remark@1]
+braindead = true
+anim = stand_idle_0
+friendly = true
+actor_friendly = true
+npc_friendly = true
+target = actor
+on_info = {+chim_test_anim} mob_walker@1
+
+[mob_walker@1]
+braindead = true
+friendly = true
+actor_friendly = true
+npc_friendly = true
+path_walk = chimera_walk_test
+on_signal = action_end|mob_remark@2
+
+[mob_remark@2]
+braindead = true
+anim = stand_upper_0, stand_up_threaten_0, stand_up_to_down_0
+target = actor
+on_signal = action_end|mob_remark@3
+
+[mob_remark@3]
+braindead = true
+anim = stand_upper_0, stand_up_threaten_0, stand_up_to_down_0
+friendly = true
+actor_friendly = true
+npc_friendly = true
+target = actor
+on_signal = action_end|nil

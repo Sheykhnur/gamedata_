@@ -1,0 +1,147 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : pcConsole.script
+ Description: 
+ Copyright  : 2008 © LA
+ Author     : barin (2008-12-17)
+ Editors    : barin(2009-09-09)
+ Last edit  : 18.06.2012 (by ...)
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "TextLine" (CUIListItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function TextLine:__init(str, font, colour) super()
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetText(str)	
+	self.text:SetFont(pcTextViewer.get_font(font))
+	self.text:SetTextColor(pcTextViewer.get_colour(colour))
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "uiConsole" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiConsole:__init(parent, x, y) super()
+	self:SetWindowName("uiConsole")
+	self.owner = parent
+	
+	self.con_line = 0
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 500
+	self.wnd_height = 400
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+end
+
+function uiConsole:__finalize()
+end
+
+function uiConsole:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiConsole:AddHeader(user_name)
+	local d = self:GetListWnd("console_list")
+	local tmp, a_name, b_name = nil, nil, nil
+	
+	tmp = game.translate_string("ui_pc_console_version")
+	d:AddItem(TextLine("[000] ~~~ " .. tmp, "letterica16", "green"))
+	
+	tmp = game.translate_string("ui_pc_console_modules")
+	d:AddItem(TextLine("[001] ~~~ " .. tmp, "letterica16", "full_white"))
+	
+	tmp = game.translate_string("ui_pc_console_net_error")
+	d:AddItem(TextLine("[002] ~~~ " .. tmp, "letterica16", "red"))
+	
+	tmp = game.translate_string("ui_pc_console_file_system")
+	d:AddItem(TextLine("[003] ~~~ " .. tmp, "letterica16", "full_white"))
+	
+	if user_name then
+		a_name = string.format("'%s'", game.translate_string(user_name))
+		b_name = a_name
+	else
+		a_name = "$USER_UNKNOWN$"
+		b_name = "$USER_GUEST$"
+	end
+	
+	tmp = game.translate_string("ui_pc_console_log1")
+	tmp = tmp:gsub("%$PC_CONSOLE%$", a_name)
+	d:AddItem(TextLine("[004] ~~~ " .. tmp, "letterica16", "full_white"))
+	
+	tmp = game.translate_string("ui_pc_console_log2")
+	tmp = tmp:gsub("%$PC_CONSOLE%$", b_name)
+	d:AddItem(TextLine("[005] ~~~ " .. tmp, "letterica16", "full_white"))
+	
+	local log_t = game.get_game_time():timeToString(game.CTime.TimeToMinutes)
+	local log_d = game.get_game_time():dateToString(game.CTime.DateToDay)
+	
+	tmp = game.translate_string("ui_pc_console_log3")
+	tmp = tmp:gsub("%$PC_CONSOLE%$", b_name)
+	tmp = tmp:gsub("%$PC_LOG_TIME%$", string.format("%s %s", log_t, log_d))
+	d:AddItem(TextLine("[006] ~~~ " .. tmp, "letterica16", "full_white"))
+	
+	tmp = game.translate_string("ui_pc_console_trace_user")
+	d:AddItem(TextLine("[007] ~~~ " .. tmp, "letterica16", "full_white"))
+	
+	tmp = game.translate_string("ui_pc_console_user_hello")
+	tmp = tmp:gsub("%$PC_CONSOLE%$", b_name)
+	d:AddItem(TextLine("[008] ~~~ " .. tmp, "letterica16", "full_white"))
+	
+	self.con_line = 9
+end
+
+function uiConsole:reset()
+end
+
+function uiConsole:OnChildDialogExit(child_name)
+end
+
+function uiConsole:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_console"))
+	self.wnd_frame:Show(true)
+	
+	local dlg = self.owner.xml:InitList("console_viewer:console_list", self)
+	dlg:SetWndPos(self.wnd_x + 10, self.wnd_y + 35)
+	dlg:ShowSelectedItem(false)
+	self:Register(dlg, "console_list")
+end
+
+function uiConsole:Log(cmd_type)
+	local t = game.translate_string("ui_pc_console_" .. cmd_type)
+	t = string.format("[%03d] ~~~ %s", self.con_line, t)
+	self:GetListWnd("console_list"):AddItem(TextLine(t, "letterica16", "full_white"))
+	self.con_line = self.con_line + 1
+end
+
+function uiConsole:InitCallBacks()
+end
+
+function uiConsole:OnExit()
+	self.owner:OnChildDialogExit(self:WindowName())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiConsole:OnKeyboard(dik, keyboard_action) --/#~# 20.06.2012
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+
+	return true
+end
+--/ -----------------------------------------------------------------------------------------------

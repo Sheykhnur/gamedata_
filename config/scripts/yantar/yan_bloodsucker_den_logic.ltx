@@ -1,0 +1,23 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {=actor_on_level(la06_yantar)} sr_idle@in %+yan_bloodsucker_den_wake%, {=actor_on_level(la11_pripyat)} sr_idle@in %+pri_bloodsucker_lair_wake%
+
+[sr_idle@in]
+on_info = {=actor_on_level(la06_yantar) !is_wearing_pheremone} sr_idle@inside %-yan_bloodsucker_den_friendly%
+on_info2 = {=actor_on_level(la06_yantar) =is_wearing_pheremone -yan_bloodsucker_den_hit} sr_idle@inside %+yan_bloodsucker_den_friendly =smart_terrain_force_update(yan_bloodsucker_den)%
+on_info3 = {=actor_on_level(la11_pripyat) !is_wearing_pheremone} sr_idle@inside %-pri_bloodsucker_lair_friendly%
+on_info4 = {=actor_on_level(la11_pripyat) =is_wearing_pheremone -pri_bloodsucker_den_hit} sr_idle@inside %+pri_bloodsucker_lair_friendly =smart_terrain_force_update(pri_bloodsucker_lair)%
+on_info5 = {=actor_on_level(la06_yantar) +yan_bloodsucker_den_hit} nil
+on_info6 = {=actor_on_level(la11_pripyat) +pri_bloodsucker_den_hit} nil
+on_actor_outside = {=actor_on_level(la06_yantar)} sr_idle %-yan_bloodsucker_den_wake%, {=actor_on_level(la11_pripyat)} sr_idle %-pri_bloodsucker_lair_wake%
+
+[sr_idle@inside]
+on_info = {=actor_on_level(la06_yantar) !is_wearing_pheremone} sr_idle %-yan_bloodsucker_den_friendly%
+on_info2 = {=actor_on_level(la06_yantar) =is_wearing_pheremone -yan_bloodsucker_den_hit} sr_idle %+yan_bloodsucker_den_friendly =smart_terrain_force_update(yan_bloodsucker_den)%
+on_info3 = {=actor_on_level(la11_pripyat) !is_wearing_pheremone} sr_idle %-pri_bloodsucker_lair_friendly%
+on_info4 = {=actor_on_level(la11_pripyat) =is_wearing_pheremone -pri_bloodsucker_den_hit} sr_idle %+pri_bloodsucker_lair_friendly =smart_terrain_force_update(pri_bloodsucker_lair)%
+on_info5 = {=actor_on_level(la06_yantar) +yan_bloodsucker_den_hit} nil
+on_info6 = {=actor_on_level(la11_pripyat) +pri_bloodsucker_den_hit} nil
+on_actor_outside = {=actor_on_level(la06_yantar)} sr_idle %-yan_bloodsucker_den_wake%, {=actor_on_level(la11_pripyat)} sr_idle %-pri_bloodsucker_lair_wake%

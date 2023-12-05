@@ -1,0 +1,46 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_dynamic.script
+ Description: Tasks dynamic
+ Copyright  : 2011 © LA-team
+ Author     : vintar
+ Editors    : vintar(05.11.2012)
+ Last edit  : 98.06.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ NOTE: Script NOT used with other modules and engine!
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+function add_task_objective(task_name, info_complete, title, sid, map_desc, location_type)
+	local _task = CGameTask()
+	_task:load(task_name)
+	log("task_loaded") --/#~#
+	local count = _task:get_objectives_cnt() + 1
+	local objective = load_objective(_task, count, info_complete, title, sid, map_desc, location_type)
+	_task:add_objective(objective)
+	db.actor:set_task_state(task.in_progress, task_name, count)
+end
+
+function load_objective(task, count, info_complete, title, sid, map_desc, location_type)
+	local objective = SGameTaskObjective(task, count)
+	log("objective_loaded") --/#~#
+	objective:add_complete_info(info_complete)
+	objective:set_description(title)
+	log("info_comp_end_desc_ok") --/#~#
+	if sid ~= "" then
+		objective:set_object_id(sid)
+		objective:set_map_hint(map_desc)
+		objective:set_map_location(location_type)
+	end
+	log("sid_map_desc_type_is_ok") --/#~#
+	return objective
+end
+--/ -----------------------------------------------------------------------------------------------

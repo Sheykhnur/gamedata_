@@ -1,0 +1,119 @@
+***********************************state 0***************************************
+
+[danger@ros_duty_lager2]
+;ignore_distance = 0
+
+[threshold@ros_bar_lager2]
+ignore_monster = 0
+
+[combat_ignore@ros_duty_lager2]
+
+[logic@ros_duty_lager2_yard_patroler]
+active = walker@ros_duty_lager2_yard_patroler
+combat_ignore = combat_ignore@ros_duty_lager2
+threshold = threshold@ros_bar_lager2
+
+[walker@ros_duty_lager2_yard_patroler]
+path_walk = yard_patrol_walk
+danger = danger@ros_duty_lager2
+on_info = {+bar_arena_start} walker@ros_duty_lager2_yard_patroler_guard
+threshold = threshold@ros_bar_lager2
+
+[walker@ros_duty_lager2_yard_patroler_guard]
+path_walk = yard_patrol_guard
+path_look = yard_patrol_guard_look
+danger = danger@ros_duty_lager2
+def_state_standing = guard
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+bar_arena_reset} walker@ros_duty_lager2_yard_patroler_guard
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@ros_bar_lager2
+
+[logic@ros_duty_lager2_dutier1]
+active = walker@ros_duty_lager2_dutier1
+combat_ignore = combat_ignore@ros_duty_lager2
+threshold = threshold@ros_bar_lager2
+
+[walker@ros_duty_lager2_dutier1]
+path_walk = walk1
+path_look = walk2
+danger = danger@ros_duty_lager2
+;meet = meet@ros_duty_lager2_dutier1
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@ros_bar_lager2
+
+[meet@ros_duty_lager2_dutier1]
+use = true
+use_wpn = true
+victim 	= 5| actor
+victim_wpn = 5| actor
+meet_state = 5|{~75} guard, {~25} ward@bar_dolg_hangar_bridge_hello|3|ward
+meet_state_wpn = 5|{~75} guard, {~25} ward@bar_dolg_hangar_bridge_hello|3|ward
+
+[logic@ros_duty_lager2_dutier2]
+active = walker@ros_duty_lager2_dutier2
+combat_ignore = combat_ignore@ros_duty_lager2
+threshold = threshold@ros_bar_lager2
+
+[walker@ros_duty_lager2_dutier2]
+path_walk = walk2
+path_look = walk1
+danger = danger@ros_duty_lager2
+meet = no_meet
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@ros_bar_lager2
+
+[logic@ros_duty_lager2_manager]
+active = walker@ros_duty_lager2_manager
+combat_ignore = combat_ignore@ros_duty_lager2
+threshold = threshold@ros_bar_lager2
+
+[walker@ros_duty_lager2_manager]
+path_walk = manager_walk
+path_look = manager_look
+danger = danger@ros_duty_lager2
+meet = meet@ros_duty_lager2_manager
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@ros_bar_lager2
+
+[meet@ros_duty_lager2_manager]
+use = true
+use_wpn = false
+victim 	= 5|actor
+victim_wpn = 5|actor
+meet_state = 5|ward
+meet_state_wpn = 5|ward
+meet_dialog = {+bar_arena_manager_welcome} bar_arena_manager_start
+;meet_dialog_enabled = true
+
+
+******************************************state 1*****************************************
+
+[logic@ros_duty_lager2_off_yard_patroler]
+active = walker@ros_duty_lager2_off_yard_patroler
+
+[walker@ros_duty_lager2_off_yard_patroler]
+path_walk = yard_patrol_walk
+
+[logic@ros_duty_lager2_off_dutier1]
+active = walker@ros_duty_lager2_off_dutier1
+
+[walker@ros_duty_lager2_off_dutier1]
+path_walk = walk1
+path_look = walk2
+
+[logic@ros_duty_lager2_off_dutier2]
+active = walker@ros_duty_lager2_off_dutier2
+
+[walker@ros_duty_lager2_off_dutier2]
+path_walk = walk1
+path_look = walk2
+
+[logic@ros_duty_lager2_off_manager]
+active = walker@ros_duty_lager2_off_manager
+
+[walker@ros_duty_lager2_off_manager]
+path_walk = manager_walk
+path_look = manager_look

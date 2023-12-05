@@ -1,0 +1,24 @@
+[combat_ignore@bas_holo_ghosts]
+
+[danger@bas_holo_ghosts]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_bas_holo_ghosts]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@scene_ghost
+combat_ignore = combat_ignore@bas_holo_ghosts
+danger = danger@bas_holo_ghosts
+threshold = threshold@bas_holo_ghosts
+
+[remark@scene_ghost]
+anim = probe
+combat_ignore_cond = always
+danger = danger@bas_holo_ghosts
+threshold = threshold@bas_holo_ghosts
+meet = no_meet
+target = bas_ghost_melk3, 0
+on_timer = 5000 | %=release%

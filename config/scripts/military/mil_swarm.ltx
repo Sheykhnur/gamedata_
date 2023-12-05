@@ -1,0 +1,35 @@
+
+;-- killer_base_attack
+
+[logic]  
+active = mob_walker@mil_base_run_0
+
+;[mob_walker@waiting_for_infop]
+;braindead = true
+;path_walk = mil_monster_wait_for_infop
+;on_info = {+mil_monster_attack_start} | mob_walker@mil_base_run_0
+  
+[mob_walker@mil_base_run_0]  
+braindead = true
+path_walk = mil_monster_swarm_hill
+on_signal = goto1 | mob_walker@mil_base_run_1
+on_info = {+mil_mob_here} mob_walker@mil_base_attack
+
+[mob_walker@mil_base_run_1]  
+braindead = true
+path_walk = mil_monster_swarm_near_base
+on_signal = goto2 | mob_walker@mil_base_run_2 %+mil_mob_here%
+
+[mob_walker@mil_base_run_2]  
+braindead = true
+path_walk = mil_monster_swarm_base_entrance
+on_signal = goto3 | mob_walker@mil_base_arrive
+ 
+[mob_walker@mil_base_arrive]  
+braindead = true
+path_walk = mil_monster_attack_braindead_way
+on_signal = braindead_end | mob_walker@mil_base_attack
+
+[mob_walker@mil_base_attack]
+braindead = false
+path_walk = mil_monster_attack_no_braindead_way

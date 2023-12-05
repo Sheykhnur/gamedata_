@@ -1,0 +1,62 @@
+;********************* state 0 *******************************
+
+[combat_ignore@lost_ecolog_terrain]
+
+[threshold@lost_ecolog_terrain1]max_ignore_distance = 50
+[danger@lost_ecolog_terrain1_inner]ignore_distance = 0
+
+[danger@lost_ecolog_terrain1_out]ignore_distance = 90
+
+[logic@lost_ecolog_terrain1_ecolog1]
+active = patrol@lost_ecolog_terrain1_ecolog1
+combat_ignore = combat_ignore@lost_ecolog_terrain
+threshold = threshold@lost_ecolog_terrain1
+
+[patrol@lost_ecolog_terrain1_ecolog1]
+path_walk = patrol_walk1
+path_look = patrol_look1
+threshold = threshold@lost_ecolog_terrain1
+danger = danger@lost_ecolog_terrain1_out
+
+[logic@lost_ecolog_terrain1_ecolog2]
+active = patrol@lost_ecolog_terrain1_ecolog2
+combat_ignore = combat_ignore@lost_ecolog_terrain
+threshold = threshold@lost_ecolog_terrain1
+
+[patrol@lost_ecolog_terrain1_ecolog2]
+path_walk = patrol_walk2
+threshold = threshold@lost_ecolog_terrain1
+danger = danger@lost_ecolog_terrain1_out
+
+[logic@lost_ecolog_terrain1_ecolog3]
+active = walker@lost_ecolog_terrain1_ecolog3
+combat_ignore = combat_ignore@lost_ecolog_terrain
+threshold = threshold@lost_ecolog_terrain1
+
+[walker@lost_ecolog_terrain1_ecolog3]
+path_walk = walk3
+path_look = look3
+threshold = threshold@lost_ecolog_terrain1
+danger = danger@lost_ecolog_terrain1_out
+
+[logic@lost_ecolog_terrain1_ecolog4]
+active = walker@lost_ecolog_terrain1_ecolog4
+combat_ignore = combat_ignore@lost_ecolog_terrain
+threshold = threshold@lost_ecolog_terrain1
+
+[walker@lost_ecolog_terrain1_ecolog4]
+path_walk = walk4
+path_look = look4
+threshold = threshold@lost_ecolog_terrain1
+danger = danger@lost_ecolog_terrain1_inner
+
+[logic@lost_ecolog_terrain1_ecolog5]
+active = walker@lost_ecolog_terrain1_ecolog5
+combat_ignore = combat_ignore@lost_ecolog_terrain
+threshold = threshold@lost_ecolog_terrain1
+
+[walker@lost_ecolog_terrain1_ecolog5]
+path_walk = walk5
+;path_look = look5
+threshold = threshold@lost_ecolog_terrain1
+danger = danger@lost_ecolog_terrain1_out

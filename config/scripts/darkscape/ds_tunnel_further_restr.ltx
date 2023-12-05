@@ -1,0 +1,22 @@
+[logic]
+active = sr_idle@1
+
+[sr_idle@1]
+on_actor_inside = {+dol_reach_dscape_done -ds_sin_blackout} sr_idle@timer1 %+ds_heli_stop%
+on_info = {+ds_sin_blackout} nil %=release%
+
+[sr_idle@timer1]
+on_timer = 1500 | sr_tip
+
+[sr_tip]
+name = ds_not_safe
+type = tips
+single = true
+cond = always
+sender = gusarov
+showtime = 17000
+on_signal = tip_sended|sr_idle@timer2
+
+[sr_idle@timer2]
+on_timer = 2000 | nil %+ds_find_mine =release%
+on_info = {+ds_sin_blackout} nil %=release%

@@ -1,0 +1,152 @@
+[combat_ignore@pri_military]
+
+[danger@pri_military]
+;ignore_types  = grenade, corpse, sound, hit
+;ignore_distance  = 0
+
+[threshold@pri_military]
+;max_ignore_distance   = 10
+ignore_monster        = 1
+
+[hit@pri_military]
+on_info = {=hit_by_actor} %+pri_military_hit%
+
+[logic@pri_military_base_kamp1_kamper1]
+active = kamper@pri_military_base_kamp1_kamper1
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[kamper@pri_military_base_kamp1_kamper1]
+path_walk = kamp1_walk1
+path_look = kamp1_look1
+kamp_name = kamp1
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+danger = danger@pri_military
+
+[logic@pri_military_base_kamp1_kamper2]
+active = kamper@pri_military_base_kamp1_kamper2
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[kamper@pri_military_base_kamp1_kamper2]
+path_walk = kamp1_walk2
+path_look = kamp1_look2
+kamp_name = kamp1
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+danger = danger@pri_military
+
+[logic@pri_military_base_patrol1]
+active = walker@pri_military_base_patrol1
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[walker@pri_military_base_patrol1]
+path_walk = patrol1_walk
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+danger = danger@pri_military
+
+[logic@pri_military_base_patrol2]
+active = walker@pri_military_base_patrol2
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[walker@pri_military_base_patrol2]
+path_walk = patrol2_walk
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+danger = danger@pri_military
+
+[logic@pri_military_base_guard1]
+active = walker@pri_military_base_guard1
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[walker@pri_military_base_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+def_state_standing = guard
+danger = danger@pri_military
+
+[logic@pri_military_base_guard2]
+active = walker@pri_military_base_guard2
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[walker@pri_military_base_guard2]
+path_walk = guard2_walk
+path_look = guard2_look
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+def_state_standing = guard
+danger = danger@pri_military
+
+[logic@pri_military_base_sleeper1]
+active = sleeper@pri_military_base_sleeper1
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[sleeper@pri_military_base_sleeper1]
+path_main = sleeper1_main
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+wakeable = false
+danger = danger@pri_military
+
+[logic@pri_military_base_sleeper2]
+active = sleeper@pri_military_base_sleeper2
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[sleeper@pri_military_base_sleeper2]
+path_main = sleeper2_main
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+wakeable = false
+danger = danger@pri_military
+
+[logic@pri_military_base_sniper1]
+active = camper@pri_military_base_sniper1
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[camper@pri_military_base_sniper1]
+path_walk = sniper1_walk
+path_look = sniper1_look
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+sniper = true
+radius = 100
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+danger = danger@pri_military
+
+[logic@pri_military_base_sniper2]
+active = camper@pri_military_base_sniper2
+combat_ignore = combat_ignore@pri_military
+on_hit = hit@pri_military
+threshold = threshold@pri_military
+
+[camper@pri_military_base_sniper2]
+path_walk = sniper2_walk
+path_look = sniper2_look
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+sniper = true
+radius = 100
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_hit}
+danger = danger@pri_military

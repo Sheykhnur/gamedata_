@@ -1,0 +1,50 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : mob_panic.script
+ Description: Схема: "Mob panic threshold control"
+ Copyright  : 2004 © GSC Game World
+ Author     : Чугай Александр
+ Editors    : 
+ Last edit  : 07.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:Mob=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME - включение схемы
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, ...)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, nil)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, nil, npc)
+--	log("set_scheme:Mob=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, "") --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ RESET SCHEME - переключение схемы
+--/ -----------------------------------------------------------------
+function reset_scheme(npc, scheme, stor, section)
+	local iPanicThreshold = section and Get_Cfg_Number(stor.ini, section, "panic")
+	if iPanicThreshold then
+		if stor and stor.log then log("reset_scheme:Mob=[%s],scheme=[%s],section=[%s],panic=[%s]", npc:name(), scheme, section, iPanicThreshold, "") end --/#~#
+		npc:set_custom_panic_threshold(iPanicThreshold)
+	else
+		npc:set_default_panic_threshold()
+	end
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs (for compatibility, later delete)
+--/------------------------------------------------------------------
+function reset_panic(...)
+	reset_scheme(...)
+end
+--/ -----------------------------------------------------------------------------------------------

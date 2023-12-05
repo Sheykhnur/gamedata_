@@ -1,0 +1,48 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_ai_test.script
+ Description: Gulags ai_test
+ Copyright  : 2013 © LA-team
+ Author     : loxotron
+ Editors    : loxotron(03.02.2013)
+ Last edit  : 22.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	ai_test_zombie = {comm = {"zombie", "rat"}, out_rest = "level_prefix_space_restrictor_0003"},
+
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag)
+	return xr_gulag.is_on_gulag_level(info.se_obj,gulag)
+end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ test
+--/ ---------------------------------------------
+gulags.ai_test_zombie.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", gulags.ai_test_zombie.out_rest, true, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {0}, squad, groups[1], "", gulags.ai_test_zombie.out_rest, false, type, on_level_pred))
+	
+	gulags.ai_test_zombie.ltx = smart_dyn_ltx.add_mob_home(type, 2, 10, 30)
+end
+
+gulags.ai_test_zombie.state = function(gulag)
+	return 0
+end
+--/ ------------------------------------------------------------------------------------------------

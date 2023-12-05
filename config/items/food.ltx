@@ -1,0 +1,319 @@
+
+[food_base]:identity_immunities
+$prefetch                       = 8
+animation_slot                  = 4
+cform                           = skeleton
+hud                             = hud_food_base
+class                           = II_FOOD
+
+eat_health                      = 0
+eat_satiety                     = 0
+eat_thirst                      = 0
+eat_alcohol                     = 0
+eat_psy_health                  = 0
+eat_radiation                   = 0
+eat_power                       = 0
+eat_max_power                   = 0
+wounds_heal_perc                = 0
+
+script_loot_class               = food
+
+item_use_time                   = 4
+effector_blocking_group         = 7
+
+inv_grid_width                  = 1
+inv_grid_height                 = 1
+
+use_prolonged_effect            = true
+
+;------------------
+[bread]:bread_a,food_base
+$spawn                          = "items\food\food_bread"
+visual                          = weapons\bred\bred.ogf
+
+description                     = enc_bread_descr
+inv_name                        = enc_bread_name
+inv_name_short                  = enc_bread_name
+
+inv_weight                      = 0.2
+inv_grid_x         = 16
+inv_grid_y         = 25
+
+cost                            = 20
+item_use_time                   = 8.9
+
+eat_satiety                     = 0.3
+eat_thirst                      = -0.1
+
+use_prolonged_effect            = true
+effector_blocking_group         = 7
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.045
+satiety_restore_dur				= 5.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.01
+dehidration_dur					= 10.0
+
+;------------------
+[kolbasa]:kolbasa_a,food_base
+$spawn                          = "items\food\food_kolbasa"
+visual                          = weapons\kolbasa\kolbasa.ogf
+cost                            = 50
+
+description                     = enc_kolbasa_descr
+inv_name                        = enc_kolbasa_name
+inv_name_short                  = enc_kolbasa_name
+
+inv_weight                      = 0.25
+inv_grid_x         = 19
+inv_grid_y         = 25
+item_use_time                   = 8.9
+
+eat_satiety                     = 0.45
+eat_thirst                      = -0.3
+
+use_prolonged_effect            = true
+effector_blocking_group         = 7
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.07
+satiety_restore_dur				= 5.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.03
+dehidration_dur					= 10.0
+
+
+use_sound						=  
+;------------------
+[conserva]:food_attach_params,food_base
+$spawn                          = "items\food\food_conserva"
+visual                          = food\conserv1.ogf
+
+description                     = enc_conserva_descr
+inv_name                        = enc_conserva_name
+inv_name_short                  = enc_conserva_name
+
+inv_weight                      = 0.3
+inv_grid_x         = 17
+inv_grid_y         = 25
+
+cost                            = 100
+item_use_time                   = 9
+
+eat_satiety                     = 0.5
+eat_thirst                      = -0.15
+
+use_prolonged_effect            = true
+effector_blocking_group         = 7
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.1
+satiety_restore_dur				= 5.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.02
+dehidration_dur					= 10.0
+
+use_sound						=  
+
+;------------------
+[korn_conserva]:food_attach_params,food_base
+$spawn                          = "items\food\food_korn_conserva"
+visual                          = food\konserva_korn.ogf
+
+inv_name                        = enc_korn_conserva_name
+inv_name_short                  = enc_korn_conserva_name
+description                     = enc_korn_conserva_descr
+
+inv_weight                      = 0.22
+inv_grid_x         = 19
+inv_grid_y         = 24
+
+cost                            = 200
+item_use_time                   = 9
+
+eat_satiety                     = 0.4
+eat_thirst                      = -0.03
+
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.08
+satiety_restore_dur				= 5.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.003
+dehidration_dur					= 10.0
+
+use_sound						=  
+
+;------------------		to remove in future
+[olives_conserva]:food_attach_params,food_base
+$spawn                          = "items\toremove\olives"
+visual                          = food\konserva_olives.ogf
+
+inv_name                        = enc_olives_conserva_name
+inv_name_short                  = enc_olives_conserva_name
+description                     = enc_olives_conserva_descr
+
+inv_weight                      = 0.25
+inv_grid_x         = 18
+inv_grid_y         = 24
+
+cost                            = 280
+item_use_time                   = 9
+
+eat_satiety                     = 0.6
+eat_thirst                      = -0.1
+eat_power                       = 0.04
+
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.1
+satiety_restore_dur				= 6.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.03
+dehidration_dur					= 10.0
+
+energy_restore_affected_stat    = 7
+energy_restore_rate             = 0.008
+energy_restore_dur              = 5.0
+
+use_sound						=  
+
+;------------------		to remove in future
+[sardinia_conserva]:food_attach_params,food_base
+$spawn                          = "items\toremove\sardina"
+visual                          = food\konserva_sardina.ogf
+
+inv_name                        = enc_sardinia_conserva_name
+inv_name_short                  = enc_sardinia_conserva_name
+description                     = enc_sardinia_conserva_descr
+
+inv_weight                      = 0.3
+inv_grid_x         = 17
+inv_grid_y         = 24
+
+cost                            = 230
+item_use_time                   = 9
+
+eat_satiety                     = 0.6
+eat_thirst                      = -0.1
+
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.1
+satiety_restore_dur				= 6.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.04
+dehidration_dur					= 10.0
+
+use_sound						=  
+
+;------------------
+[yantar_food]:food_attach_params,food_base
+$spawn                          = "items\food\food_yantar"
+visual                          = food\konserva_yantar.ogf
+
+inv_name                        = enc_yantar_food_name
+inv_name_short                  = enc_yantar_food_name
+description                     = enc_yantar_food_descr
+
+inv_weight                      = 0.02
+inv_grid_x         = 20
+inv_grid_y         = 24
+cost                            = 50
+item_use_time                   = 8.4
+
+eat_satiety                     = 0.2
+eat_thirst                      = -0.1
+
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.016
+satiety_restore_dur				= 12.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.004
+dehidration_dur					= 10.0
+
+use_sound						=  
+
+;------------------
+[peanut_conserva]:food_attach_params,food_base
+$spawn                          = "items\toremove\peanut"
+visual                          = food\konserva_orehi.ogf
+
+inv_name                        = enc_peanut_conserva_name
+inv_name_short                  = enc_peanut_conserva_name
+description                     = enc_peanut_conserva_descr
+
+inv_weight                      = 0.22
+inv_grid_x         = 16
+inv_grid_y         = 24
+
+cost                            = 200
+item_use_time                   = 9
+
+eat_satiety                     = 0.5
+eat_thirst                      = -0.3
+eat_power                       = 0.1
+
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.1
+satiety_restore_dur				= 5.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.045
+dehidration_dur					= 13.0
+
+use_sound						=  
+
+;------------------
+[tushenka_conserva]:food_attach_params,food_base
+$spawn                          = "items\food\food_conserva_exp"
+visual                          = food\konserva_tushenka.ogf
+
+inv_name                        = enc_tushenka_conserva_name
+inv_name_short                  = enc_tushenka_conserva_name
+description                     = enc_tushenka_conserva_descr
+
+inv_weight                      = 0.3
+inv_grid_x         = 18
+inv_grid_y         = 25
+
+cost                            = 200
+item_use_time                   = 9
+
+eat_satiety                     = 0.75
+eat_thirst                      = -0.2
+eat_power                       = 0.05
+
+effects_list                    = satiety_restore, dehidration
+
+satiety_restore_affected_stat	= 5
+satiety_restore_rate			= 0.16
+satiety_restore_dur				= 6.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.018
+dehidration_dur					= 10.0
+
+energy_restore_affected_stat    = 7
+energy_restore_rate             = 0.01
+energy_restore_dur              = 5.0
+
+use_sound						=  

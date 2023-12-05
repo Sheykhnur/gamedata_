@@ -1,0 +1,182 @@
+[death@pri_field_agent]
+on_info = %+pri_field_agent_dead%
+
+[combat_ignore@pri_field_agent]
+
+[danger@pri_field_agent]
+ignore_types = grenade, corpse, sound
+ignore_distance       = 0
+ignore_distance_grenade = 1
+ignore_distance_corpse  = 0
+ignore_distance_sound   = 0 
+
+[danger@pri_field_agent@special]
+ignore_types = grenade, corpse, sound
+ignore_distance       = 0
+ignore_distance_grenade = 0
+ignore_distance_corpse  = 0
+ignore_distance_sound   = 0 
+
+[danger@pri_field_agent_norm]
+ignore_distance       = 20
+ignore_distance_sound   = 20
+ignore_distance_corpse  = 15
+
+[danger@pri_field_agent_after]
+ignore_distance       = 50
+
+[threshold@pri_field_agent]
+max_ignore_distance = 10
+
+[hit@pri_field_agent]
+on_info = %+pri_field_agent_nah%
+
+
+[logic]
+active = {+pri_eco_kamper} kamper@pri_field_agent1, {-pri_eco_kamper +pri_measurements_returned} remark@pri_field_agent7, {-pri_measurements_returned} walker@pri_field_agent_wait
+on_death = death@pri_field_agent
+combat_ignore = combat_ignore@pri_field_agent
+threshold = threshold@pri_field_agent
+
+[walker@pri_field_agent_wait]
+path_walk = pri_field_agent_wait
+path_look = pri_field_agent_wait_look
+combat_ignore_cond = {=fighting_dist_ge(5)}
+on_info = {-pri_measurements_returned =dist_to_actor_le(4)} remark@pri_field_agent0
+on_info2 = {+pri_eco_kamper} kamper@pri_field_agent1
+meet = no_meet
+danger = danger@pri_field_agent
+invulnerable = {!hit_by_actor} true
+
+[remark@pri_field_agent0]
+snd = pripyat_pri_radiation_quest_1
+target = actor
+meet = no_meet
+on_signal = sound_end| walker@pri_field_agent_met
+combat_ignore_cond = {=fighting_actor}
+danger = danger@pri_field_agent
+
+[walker@pri_field_agent_met]
+path_walk = pri_field_agent_wait
+path_look = pri_field_agent_wait_look
+meet = meet@pri_field_agent_start
+combat_ignore_cond = {=fighting_actor}
+on_info = {+pri_field_agent_start_walk} walker@pri_field_agent_out
+danger = danger@pri_field_agent
+
+[meet@pri_field_agent_start]
+meet_state		= 10| hello| 5| nil
+meet_state_wpn	= 10| hello| 5| nil
+victim			= 10| actor
+victim_wpn		= 10| actor
+use				= true
+use_wpn			= true
+meet_dialog		= pri_field_agent_start
+
+[walker@pri_field_agent_out]
+path_walk = pri_field_agent_house_out
+combat_ignore_cond = always
+danger = danger@pri_field_agent@special
+meet = no_meet
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_signal = reached| walker@pri_field_agent_walk1
+
+[walker@pri_field_agent_walk1]
+path_walk = pri_field_agent_walk1
+;path_look = pri_field_agent_look1
+combat_ignore_cond = {=fighting_dist_ge(15)}
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+meet = no_meet
+;radius = 0
+;no_retreat = true
+on_signal = quest1| {!see_enemy =rostok_dist_to_actor_le(8)} remark@pri_field_agent1 %+pri_spawn_zombied%
+danger = danger@pri_field_agent_norm
+
+[remark@pri_field_agent1]
+snd = pripyat_pri_radiation_quest_6
+anim = guard
+target = actor
+on_signal = sound_end| remark@pri_field_agent2
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+danger = danger@pri_field_agent_norm
+
+[remark@pri_field_agent2]
+anim = probe_2
+target = pri_field_agent_walk2, 0
+on_signal = anim_end| walker@pri_field_agent_walk2
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+danger = danger@pri_field_agent_norm
+on_info = {=hit_by_no_friend} %+pri_field_agent_nah%
+on_info2 = {+pri_field_agent_nah} walker@pri_field_agent_walk2
+
+
+[walker@pri_field_agent_walk2]
+path_walk = pri_field_agent_walk2
+;path_look = pri_field_agent_look2
+combat_ignore_cond = {=fighting_dist_ge(20)}
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+;radius = 0
+;no_retreat = true
+on_signal = quest2| {!see_enemy =rostok_dist_to_actor_le(8)} remark@pri_field_agent4
+meet = no_meet
+danger = danger@pri_field_agent_norm
+
+[remark@pri_field_agent4]
+anim = probe_1
+target = pri_field_agent_walk3, 0
+on_signal = anim_end| walker@pri_field_agent_walk3
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+danger = danger@pri_field_agent_norm
+
+[walker@pri_field_agent_walk3]
+path_walk = pri_field_agent_walk3
+combat_ignore_cond = {=fighting_dist_ge(20)}
+on_signal = quest3| {!see_enemy =rostok_dist_to_actor_le(8) +pri_terminal_burer_dead} remark@pri_field_agent6
+meet = no_meet
+danger = danger@pri_field_agent_norm
+
+[remark@pri_field_agent6]
+anim = probe
+snd = pripyat_pri_radiation_quest_2
+target = actor
+on_signal = sound_end| walker@pri_field_agent_walk4 %+pri_measurements_taken%
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+danger = danger@pri_field_agent_norm
+
+[walker@pri_field_agent_walk4]
+path_walk = pri_field_agent_walk4
+;path_look = pri_field_agent_look4
+combat_ignore_cond = {=fighting_dist_ge(20)}
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_signal = quest4| {+pri_measurements_returned =rostok_dist_to_actor_le(4)} remark@pri_field_agent7
+meet = no_meet
+danger = danger@pri_field_agent
+threshold = threshold@pri_field_agent
+
+[remark@pri_field_agent7]
+snd = pripyat_pri_radiation_quest_3
+anim = probe_1
+target = 6821
+on_info = {+pri_eco_kamper} kamper@pri_field_agent1
+on_timer = 10000| kamper@pri_field_agent1
+meet = no_meet
+danger = danger@pri_field_agent
+
+[kamper@pri_field_agent1]
+path_walk = pri_field_agent_kamp
+path_look = pri_field_agent_kamp_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_dist_ge(50)}
+danger = danger@pri_field_agent_after

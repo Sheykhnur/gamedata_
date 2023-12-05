@@ -1,0 +1,169 @@
+[combat_ignore@kulesh]
+
+[hit@kulesh]
+
+[threshold@kulesh]
+max_ignore_distance = 10
+ignore_monster = 0
+
+[danger@kulesh]
+ignore_distance = 0
+danger_inertion_time = 1500
+
+[danger_condition]
+ignore_distance = 0
+ignore_distance_sound = 15
+danger_inertion_time_corpse = 1500
+danger_inertion_time_sound = 1500
+danger_inertion_time_ricochet = 1500
+danger_inertion_time = 1500
+
+[meet@kulesh00]
+abuse = false
+use = true
+use_wpn = false
+victim 			=  10|actor|5|actor
+victim_wpn 		= 10|nil|5|nil
+meet_state = 10|hello@hail|5|guard@wait
+meet_state_wpn = 10|hello@hail|5|guard@wait
+precond = visibility
+
+[meet@short]
+meet_state 		= 1 | yan_professor_wait@wait
+meet_state_wpn 	= 1 | yan_professor_wait@wait
+victim 			= 1 | actor
+victim_wpn 		= 1 | nil
+use             = true
+use_wpn         = false
+abuse = false
+precond = usability
+
+[meet@no_talk]
+meet_state 		= 1 | yan_professor_wait@wait
+meet_state_wpn 	= 1 | yan_professor_wait@wait
+victim 			= 1 | actor
+victim_wpn 		= 1 | nil
+use             = false
+use_wpn         = false
+abuse = false
+precond = usability
+
+[logic]
+active = {+yan_pribor_task_tochka4} walker@kulesh_idle2, {+yan_pribor_task_tochka2_done -yan_pribor_task_tochka4} follower@kulesh_5, {-yan_pribor_task_tochka2_done +yan_pribor_task_tochka2} walker@kulesh_4e, {+yan_pribor_task_talk_pirozh2 -yan_pribor_task_tochka2} walker@kulesh_4, {+yan_pribor_task_pribor1_has -yan_pribor_task_talk_pirozh2} walker@kulesh_3, {+yan_pribor_task_talk_kulesh1 -yan_pribor_task_pribor1_has} walker@kulesh_2, {+yan_pribor_task_tochka1 -yan_pribor_task_talk_kulesh1} walker@kulesh_1e, {+yan_pribor_task_talk_pirozh0 -yan_pribor_task_tochka1} walker@kulesh_1, {+yan_pribor_task_talk_kulesh0 -yan_pribor_task_talk_pirozh0} walker@kulesh_0, {-yan_pribor_task_talk_kulesh0} walker@kulesh_idle
+combat_ignore = combat_ignore@kulesh
+on_hit = hit@kulesh
+on_death = death@kulesh
+team = yan_expedicia_group
+
+[death@kulesh]
+on_info = %+yan_kulesh_dead%
+
+[walker@kulesh_idle]
+path_walk = kulesh_idle_walk
+path_look = kulesh_idle_look
+threshold = threshold@kulesh
+combat_ignore_cond = always
+danger = danger_condition
+on_info = {+yan_pribor_task_talk_kulesh0} walker@kulesh_0
+
+[walker@kulesh_0]
+path_walk = kulesh_walk_0
+path_look = general_look_0
+threshold = threshold@kulesh
+danger = danger_condition
+meet = meet@short
+on_signal = tochka0| %+yan_pribor_task_tochka0%
+combat_ignore_cond = {=fighting_dist_ge(10)}
+on_info = {+yan_pribor_task_talk_pirozh0} walker@kulesh_1
+
+[follower@kulesh_1]
+formation_line = true
+leader = 10021
+distance = 5
+threshold = threshold@kulesh
+danger = danger_condition
+combat_ignore_cond = {=fighting_dist_ge(15)}
+meet = no_meet
+on_info = {+yan_pribor_task_tochka1} walker@kulesh_1e
+
+[walker@kulesh_1]
+path_walk = kulesh_walk_1
+path_look = kulesh_look_1
+threshold = threshold@kulesh
+danger = danger_condition
+combat_ignore_cond = {=fighting_dist_ge(25)}
+meet = meet@no_talk
+on_signal = tochka1| %+yan_pribor_task_tochka1%
+on_info = {+yan_pribor_task_tochka1} walker@kulesh_1e
+
+[walker@kulesh_1e]
+path_walk = kulesh_walk_1
+path_look = kulesh_look_1
+danger = danger_condition
+threshold = threshold@kulesh
+meet = meet@short
+combat_ignore_cond = {=fighting_dist_ge(10)}
+on_info = {+yan_pribor_task_talk_kulesh1} walker@kulesh_2
+
+[walker@kulesh_2]
+path_walk = kulesh_walk_2
+path_look = kulesh_look_2
+danger = danger_condition
+threshold = threshold@kulesh
+meet = meet@short
+combat_ignore_cond = {-yan_pribor_task_pribor1_has}
+on_info = {+yan_pribor_task_pribor1_has} walker@kulesh_3
+on_info2 = {+yan_pribor_zombie_attacked} walker@kulesh_3
+
+[walker@kulesh_3]
+path_walk = kulesh_walk_3
+path_look = general_look_3
+danger = danger_condition
+threshold = threshold@kulesh
+combat_ignore_cond = {=fighting_dist_ge(15)}
+on_info = {+yan_pribor_task_talk_pirozh2} walker@kulesh_4
+
+[walker@kulesh_4]
+path_walk = kulesh_walk_4
+path_look = kulesh_look_4
+danger = danger_condition
+threshold = threshold@kulesh
+combat_ignore_cond = {=fighting_dist_ge(15)}
+meet = no_meet
+on_info = {+yan_pribor_task_tochka2} walker@kulesh_4e
+
+[walker@kulesh_4e]
+path_walk = kulesh_walk_4
+path_look = kulesh_look_4
+danger = danger_condition
+threshold = threshold@kulesh
+combat_ignore_cond = {=fighting_dist_ge(15)}
+meet = meet@kulesh00
+on_info = {+yan_pribor_task_tochka2_done} follower@kulesh_5
+
+[follower@kulesh_5]
+formation_line = true
+leader = 10021
+distance = 5
+threshold = threshold@kulesh
+danger = danger_condition
+combat_ignore_cond = {=fighting_dist_ge(30)}
+meet = no_meet
+on_info = {+yan_pribor_task_pirozhenko_follow} walker@kulesh_6
+
+[walker@kulesh_6]
+path_walk = kulesh_walk_6
+combat_ignore_cond = {=fighting_dist_ge(15)}
+danger = danger_condition
+meet = no_meet
+invulnerable = {!hit_by_actor} true
+threshold = threshold@kulesh
+on_info = {+yan_pribor_task_tochka4 -yan_pribor_telep_kulesh} %=teleport_dist_far_npc_not_seen(kulesh_idle_walk:yan_pribor_telep_kulesh)%
+on_signal = bs2 | walker@kulesh_idle2
+
+[walker@kulesh_idle2]
+path_walk = kulesh_idle_walk
+path_look = kulesh_idle_look
+threshold = threshold@kulesh
+combat_ignore_cond = always
+danger = danger_condition

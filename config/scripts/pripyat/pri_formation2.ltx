@@ -1,0 +1,21 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = pri_formation2_idle
+engine_sound = false
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 60
+on_info = {+pri_three_formation} heli_move@flyby
+
+[heli_move@flyby]
+path_move = pri_formation2_flyby
+combat_velocity = 100
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+invulnerable = true
+default_velocity = 60
+on_signal = release| %=release%

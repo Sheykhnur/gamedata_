@@ -1,0 +1,32 @@
+[death@ambush_btr]
+on_info = %+aes_btr_death2%
+
+[logic]
+active = ph_car@wait
+on_death = death@ambush_btr
+
+[ph_car@wait]
+path_walk = aes_mono_ambush_btr
+on_info = {+aes_attack_initiated} ph_car
+on_info2 = {+aes_help_raiders_refuse} ph_car2
+on_death_info = aes_btr_death2
+
+[ph_car]
+path_walk = aes_mono_ambush_btr
+target = actor
+fire_range = 85
+fire_repeat = 100
+auto_fire = true
+track_target = true
+headlights = on
+on_death_info = aes_btr_death2
+
+[ph_car2]
+path_walk = aes_mono_ambush_btr
+target = aes_raiders
+fire_range = 85
+fire_repeat = 100
+auto_fire = true
+track_target = true
+headlights = on
+on_death_info = aes_btr_death2

@@ -1,0 +1,111 @@
+	<!-- Supply templates for Dark darkstalkers -->
+
+	<template id="darkstalker_common">
+		<include id="alcohol_vodka"/>
+		<include id="food_low"/>
+
+		<item s="mineral_water" 		prob="0.1"		cond="1.0"/>
+
+		<!-- Meds -->
+		<item s="bandage" 				prob="0.15"		cond="1.0"/>
+		<item s="antirad" 				prob="0.04"		cond="1.0"/>
+
+		<!-- Items -->
+		<item s="device_torch" 			prob="0.2"		cond="1.0"/>
+	</template>
+
+	<template id="darkstalker_general_common">
+		<include id="darkstalker_common"/>
+		<item s="medkit" 				prob="0.1"		cond="1.0"/>
+		<item s="grenade_rgd5" 			prob="0.1"		cond="1.0"/>
+		<random_select prob="0.4">
+			<opt><item s="wpn_pickaxe"		cond="1.0"/></opt>
+			<opt><item s="wpn_shovel"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="darkstalker_veteran_common">
+		<include id="darkstalker_common"/>
+		<item s="energy_drink"			prob="0.15"		cond="1.0"/>
+		<item s="medkit" 				prob="0.13"		cond="1.0"/>
+		<item s="grenade_rgd5" 			prob="0.3"		cond="1.0"/>
+	</template>
+
+
+<!-- Tier 1 -->
+	<!-- General -->
+	<template id="darkstalker_t1_general">
+		<random_select>
+			<opt w="3"><include id="darkstalker_t1_general_auto"/></opt>
+			<opt w="1"><include id="darkstalker_t1_general_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="darkstalker_t1_general_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_mp5"/></opt>
+			<opt w="1"><include id="weapon_aks74u"/></opt>
+		</random_select>
+		<include id="weapon_pm" prob="0.5"/>
+		<include id="darkstalker_general_common"/>
+	</template>
+	<template id="darkstalker_t1_general_shotgun">
+		<random_select>
+			<opt><include id="weapon_bm16_long"/></opt>
+			<opt><include id="weapon_bm16_long_slug"/></opt>
+		</random_select>
+		<include id="weapon_pm"/>
+		<include id="darkstalker_general_common"/>
+	</template>
+
+	<!-- Veteran -->
+	<template id="darkstalker_t1_veteran">
+		<include id="weapon_aks74u"/>
+		<include id="weapon_walther"/>
+		<include id="darkstalker_veteran_common"/>
+	</template>
+
+<!-- Tier 2 -->
+	<template id="darkstalker_t2_general">
+		<random_select>
+			<opt w="4"><include id="weapon_ak74"/></opt>
+			<opt w="1"><include id="weapon_akm"/></opt>
+			<opt w="2"><item s="wpn_sks" w_ammo="1"/></opt>
+			<opt w="1"><item s="wpn_m1891" w_ammo="1"/></opt>
+		</random_select>
+		<random_select>
+			<opt><include id="weapon_walther"/></opt>
+			<opt><include id="weapon_fort"/></opt>
+		</random_select>
+		<include id="darkstalker_general_common"/>
+	</template>
+
+	<template id="darkstalker_t2_veteran">
+		<random_select>
+			<opt w="3"><include id="darkstalker_t2_veteran_auto"/></opt>
+			<opt w="1"><include id="darkstalker_t2_veteran_shotgun"/></opt>
+		<item s="wpn_pickaxe" 			prob="0.55" />
+		<item s="wpn_shovel" 			prob="0.55" />
+		</random_select>
+	</template>
+	<template id="darkstalker_t2_veteran_auto">
+		<random_select>
+			<opt w="1"><include id="weapon_l85"/></opt>
+			<opt w="2"><include id="weapon_lr300"/></opt>
+		</random_select>
+		<random_select>
+			<opt><include id="weapon_walther"/></opt>
+			<opt><include id="weapon_colt1911"/></opt>
+		</random_select>
+		<include id="darkstalker_veteran_common"/>
+		<item s="wpn_pickaxe" 			prob="0.55" />
+		<item s="wpn_shovel" 			prob="0.55" />
+	</template>
+	<template id="darkstalker_t2_veteran_shotgun">
+		<random_select>
+			<opt w="1"><include id="weapon_wincheaster1300"/></opt>
+			<opt w="1"><include id="weapon_wincheaster1300_slug"/></opt>
+		</random_select>
+		<include id="weapon_beretta"/>
+		<include id="darkstalker_veteran_common"/>
+		<item s="wpn_pickaxe" 			prob="0.55" />
+		<item s="wpn_shovel" 			prob="0.55" />
+	</template>

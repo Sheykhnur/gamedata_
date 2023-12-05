@@ -1,0 +1,53 @@
+[danger@psevduch_leader]
+ignore_distance = 0
+danger_inertion_time = 1500
+
+[danger@psevduch_leader2]
+ignore_types                = hit
+ignore_distance_sound       = 0
+ignore_distance_danger_hit     = 2
+ignore_distance             = 0
+ignore_distance_hit = 0
+danger_inertion_time = 1500
+danger_inertion_time_corpse = 0
+
+[threshold@psevduch_leader]
+max_ignore_distance = 6
+
+[logic]
+active = walker@psevduch_leader_start
+;on_death = death@psevduch_leader
+danger = danger@psevduch_leader
+threshold = threshold@psevduch_leader
+
+[walker@psevduch_leader_start]
+path_walk = psevduch_group_leader_start
+path_look = psevduch_group_look
+combat_ignore_cond = always
+team = psevduch_group
+on_info = {+count_psevduch_pogovorit1} walker@psevduch_leader_walk
+meet = meet@psevduch_leader
+
+[meet@psevduch_leader]
+meet_state = 30|hello@hail|20|wait@wait
+meet_state_wpn = 30|backoff@threat_weap
+victim = 30|actor
+victim_wpn = 30|actor
+use = true
+use_wpn = false
+syndata = hello@hail|backoff@threat_weap
+meet_dialog	= count_group_start_dialog
+
+[walker@psevduch_leader_walk]
+path_walk = psevduch_group_leader_walk
+combat_ignore_cond = {=fighting_dist_ge(20)}
+meet = no_meet
+team = psevduch_group
+on_signal = dvinuli| %+count_psevduch_dvinuli =play_snd_now (10013:characters_voice\scenario\escape\assault_attack)%
+on_signal2 = prishli| walker@psevduch_leader_walk2 %=play_snd_now (10013:characters_voice\human_02\stalker\fight\attack\attack_one_3)%
+
+[walker@psevduch_leader_walk2]
+path_walk = psevduch_home_walk
+path_look = psevduch_home_walk
+team = psevduch_group
+meet = no_meet

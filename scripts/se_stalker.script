@@ -1,0 +1,320 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : se_stalker.script
+ Description: 
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin(2010-08-07), gr1ph00n(23.09.2012), & bardak`s stash fix included!
+ Last edit  : 09.05.2013 [...]
+ Change script_version:
+  3 - saving field: job_online
+  5 - saving field: was_in_smart_terrain
+  6 - saving field: death_droped
+  + - saving field: treasure_processed
+  x - saving field: pda_present
+  + - saving field: wounded
+--]] ----------------------------------------------------------------------------------------------
+-- smart_terrain_conditions - smart terrains conditions (se_stalker::spawn_ini())
+-- was_in_smart_terrain - set by smart terrain if npc was in smart terrain
+
+-- job_online - whether job in gulag is online/offline (set by xr_gulag.script)
+-- job_online_condlist - gulag job online/offline condition list (set by xr_gulag.script)
+
+-- death_droped - set by death_manager.script when npc drop loots (on death)
+-- treasure_processed - set by treasure_manager.script when actor checks npc's corpse
+
+-- gr1ph: [spawner] cond activated. off->on and on->off
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local SWITCH_DISTANCE = system_ini():r_u32("alife", "switch_distance") or 150
+local tExlCommunity = {
+	["zombied"]     = true,
+	["monolith"]    = true,
+	["arena_enemy"] = true
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CLASS CONSTRUCTION
+--/ -----------------------------------------------------------------------------------------------
+class "se_stalker" (cse_alife_human_stalker)
+--/ -----------------------------------------------------------------------------------------------
+function se_stalker:__init(section) super(section)
+	self.ini = nil
+	self.ini_initialized = false
+	self.smart_terrain_conditions = nil
+	
+	--/ this flags taken from smart work:
+	--/  nil      = smart doesn't care at all
+	--/  true     = always online
+	--/  false    = always offline
+	--/  condlist = condition, which determine true or false
+	self.job_online          = nil
+	self.job_online_condlist = nil
+	
+	self.was_in_smart_terrain = false --/ did any stalker visit at least one smart_terrain
+	self.death_droped         = false --/ did any stalker generate dropped items (loot) or not
+	--/#+#
+	self.treasure_processed   = false --/ did any stalker generate cache (search his corpse)
+	--self.pda_present          = false --/#x#
+	self.wounded              = false --/ stalker wounded or not
+	
+	self.check_distance = false
+	self.min_distance   = SWITCH_DISTANCE
+end
+
+function se_stalker:get_job_online()
+	if self.job_online_condlist == nil then
+		return self.job_online
+	end
+	return xr_logic.pick_section_from_condlist(db.actor_proxy, self, self.job_online) ~= nil
+end
+
+function se_stalker:can_switch_offline()
+	if db.is_switchings(self.id) == true then
+		return true
+	end
+	if self:get_job_online() ~= nil then
+		return not self:get_job_online()
+	end
+	if self.ini and self.spawner then
+		if self.check_distance == true then
+			local pos = level.vertex_position(self.m_level_vertex_id)
+			if pos:distance_to(db.actor:position()) < self.min_distance then
+				return false
+			end
+		end
+		if self.online ~= true and xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) == nil then
+			return true
+		end
+	end
+	return cse_alife_human_stalker.can_switch_offline(self)
+end
+
+function se_stalker:can_switch_online()
+	if db.is_switchings(self.id) then
+		return false
+	elseif self:get_job_online() ~= nil then
+		return self:get_job_online()
+	end
+	
+	if self.ini == nil or self.spawner == nil then
+		return cse_alife_human_stalker.can_switch_online(self)
+	end
+	
+	if db.actor ~= nil and db.actor:alive() == false then
+		return self.online
+	end
+	
+	if self.check_distance == true then
+		local pos = level.vertex_position(self.m_level_vertex_id)
+		if pos:distance_to(db.actor:position()) < self.min_distance then
+			return false
+		end
+	end
+	
+	if xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) ~= nil then
+		if self.online == false then
+			return cse_alife_human_stalker.can_switch_online(self)
+		end
+		return true
+	end
+	return false
+end
+
+function se_stalker:STATE_Write(packet)
+	cse_alife_human_stalker.STATE_Write(self, packet)
+	
+	if self.job_online == true then
+		packet:w_u8(0)
+	elseif self.job_online == false then
+		packet:w_u8(1)
+	elseif self.job_online == nil then
+		packet:w_u8(2)
+	else
+		packet:w_u8(3)
+		packet:w_stringZ(self.job_online_condlist)
+	end
+	
+	packet:w_bool(self.was_in_smart_terrain)
+	--packet:w_bool(self.death_droped) --/#x#
+	--/#+#
+	local flags = 0
+	if self.death_droped       then flags = bit_or(flags, 1) end
+	if self.treasure_processed then flags = bit_or(flags, 2) end
+	--if self.pda_present        then flags = bit_or(flags, 4) end --/#x#
+	if self.wounded            then flags = bit_or(flags, 8) end --/#+#
+	packet:w_u8(flags)
+end
+
+function se_stalker:STATE_Read(packet, size)
+	cse_alife_human_stalker.STATE_Read (self, packet, size)
+	
+	local t = packet:r_u8()
+	if t == 0 then
+		self.job_online = true
+	elseif t == 1 then
+		self.job_online = false
+	elseif t == 2 then
+		self.job_online = nil
+	else
+		self.job_online_condlist = packet:r_stringZ()
+		self.job_online = xr_logic.parse_condlist(nil, "se_stalker:STATE_Read", "job_online", self.job_online_condlist)
+	end
+	
+	self.was_in_smart_terrain = packet:r_bool()
+	--self.death_droped = packet:r_bool() --/#x#
+	--/#+#
+	local flags = packet:r_u8() --/< 'death_droped'
+	self.death_droped       = bit_and(flags, 1) ~= 0
+	self.treasure_processed = bit_and(flags, 2) ~= 0
+	--self.pda_present        = bit_and(flags, 4) ~= 0 --/#x#
+	self.wounded            = bit_and(flags, 8) ~= 0 --/#+#
+end
+
+function se_stalker:on_before_register()
+	self:get_ini()
+	self:fill_exclusives()
+end
+
+function se_stalker:on_register()
+	cse_alife_human_stalker.on_register(self)
+	
+	task_manager.register_target(self)
+	
+	db.Add_Hum(self.id) --/#+#
+	if self:alive() and self:smart_terrain_id() == 65535 then
+		self:brain():update(false)
+	end
+	
+	if actor_stats.add_to_ranking and not tExlCommunity[self:community()] then
+		actor_stats.add_to_ranking(self.id)
+	end
+	xr_statistic.add(self) --/#+#
+end
+
+function se_stalker:on_unregister()
+	cse_alife_human_stalker.on_unregister(self)
+	
+	smart_terrain.unregister_npc(self)
+	task_manager.unregister_target(self)
+	if actor_stats.remove_from_ranking and not tExlCommunity[self:community()] then
+		actor_stats.remove_from_ranking(self.id)
+	end
+	db.Del_Hum(self.id) --/#+#
+end
+
+function se_stalker:on_spawn()
+	cse_alife_human_stalker.on_spawn(self)
+end
+
+function se_stalker:on_death(killer)
+	cse_alife_human_stalker.on_death(self, killer)
+	
+	xr_statistic.remove(self) --/#+#
+end
+
+function se_stalker:on_info_callback(event, info_id) --/#?# what's this?
+	log("on_info_callback: [%s] : (%s) (%s) :(%s)", self:name(), event, info_id, "?") --/#~#
+	if self:alive() and self:smart_terrain_id() == 65535 then
+		self:brain():update(true)
+	end
+end
+
+function se_stalker:get_ini()
+	if not self.ini_initialized then
+		self.ini = self:spawn_ini()
+		self.ini_initialized = true
+		if self.ini:section_exist("spawner") then
+			self.spawner = xr_logic.parse_condlist(db.actor, "spawner", "cond", self.ini:r_string("spawner", "cond"))
+			
+			if self.ini:line_exist("spawner", "check_distance") == true then
+				self.check_distance = self.ini:r_bool("spawner", "check_distance")
+				if self.check_distance == nil then
+					self.check_distance = false
+				end
+				if self.ini:line_exist("spawner", "min_distance") == true then
+					self.min_distance = self.ini:r_u32("spawner", "min_distance")
+				end
+			end
+			if not self.min_distance or self.min_distance == 150 then
+				self.min_distance = SWITCH_DISTANCE - 50
+				if self.min_distance <= 50 then
+					abort(sModule..":get_ini: %s - SWITCH DISTANCE IS TOO SMALL!:<%s>", self:name(), "Error!")
+				end
+			end
+		end
+	end
+end
+
+function se_stalker:fill_exclusives()
+	self.smart_terrain_conditions = smart_terrain.read_smart_terrain_conditions(self)
+	if self.smart_terrain_conditions then
+		for name, condlist in pairs(self.smart_terrain_conditions) do
+			smart_terrain.exclusives[name] = (smart_terrain.exclusives[name] or 0) + 1
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_trader" (cse_alife_trader)
+--/ -----------------------------------------------------------------------------------------------
+function se_trader:__init(section) super(section)
+	self.spawner = nil
+	self.ini_initialized = false
+	self.smart_terrain_conditions = nil
+	self.ini = nil
+end
+
+function se_trader:keep_saved_data_anyway()
+	return true
+end
+
+function se_trader:on_before_register()
+	self:get_ini()
+	self.smart_terrain_conditions = smart_terrain.read_smart_terrain_conditions( self )
+end
+
+function se_trader:get_ini()
+	if not self.ini_initialized then
+		self.ini = self:spawn_ini()
+		self.ini_initialized = true
+		if self.ini:section_exist("spawner") then
+			self.spawner = xr_logic.parse_condlist(db.actor, "spawner", "cond", self.ini:r_string("spawner", "cond"))
+		end
+	end
+end
+
+function se_trader:can_switch_online()
+	if db.is_switchings(self.id) then
+		return false --/>
+	end
+	if self.ini == nil or self.spawner == nil then
+		return cse_alife_trader.can_switch_online(self)
+	end
+	if db.actor ~= nil and db.actor:alive() == false then
+		return self.online
+	end
+	if xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) ~= nil then
+		if self.online == false then
+			return cse_alife_trader.can_switch_online(self)
+		end
+		return true
+	end
+	return false
+end
+
+function se_trader:can_switch_offline()
+	if db.is_switchings(self.id) == true then
+		return true --/>
+	end
+	if self.ini and self.spawner and self.online ~= true then
+		if xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) == nil then
+			return true
+		end
+	end
+	return cse_alife_trader.can_switch_offline(self)
+end
+--/ -----------------------------------------------------------------------------------------------

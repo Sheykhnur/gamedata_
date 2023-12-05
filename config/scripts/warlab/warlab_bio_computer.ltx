@@ -1,0 +1,37 @@
+[logic]
+active = ph_computer@unlocked
+
+[ph_computer@unlocked]
+availability = accessible
+cerberus = true
+pc_type = desktop
+;user_name = ;ui_pc_user_name
+password = ;hello
+;password_info = pc_on_use_callback
+icons_alignment = vertical
+wallpaper = wallpaper_iaea
+show_tips = true
+tetris = true
+puzzle = true
+solitare = true
+known_info = 
+known_code = pc_test_code_1, pc_test_code_2, pc_test_code_3, pc_test_code_4, pc_test_code_5, pc_test_code_6
+known_image = test_pc_known_image_001
+known_galleries = 
+known_audio = 
+known_video =
+known_hex = 3
+on_info = {+war_bio_pc_lock_now} ph_computer@locked, {+war_bio_pc_bsod_now} ph_computer@bsod
+on_use = ;%+pc_on_use_callback%
+
+[ph_computer@locked]
+availability = locked
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+war_bio_pc_unlock_now} ph_computer@unlocked
+
+[ph_computer@bsod]
+availability = malfunction
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+war_bio_pc_fix_now} ph_computer@unlocked

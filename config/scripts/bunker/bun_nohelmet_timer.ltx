@@ -1,0 +1,32 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = sr_timer@1 %+rad_hermit_x10_to_undeground =play_snd(characters_voice\scenario\radar\rad_hat_1)%
+on_info = {+deactivate_radar_done} nil %=release%
+
+[sr_timer@1]
+type = dec
+start_value = 200000
+on_value = 5 | %=play_snd(characters_voice\scenario\radar\rad_hat_2)% | 0 | nil %=kill_actor%
+on_actor_outside = sr_idle
+on_info = {+deactivate_radar_done} nil %=release%
+on_info2 = {=current_helmet(good_psy_helmet)} sr_idle@has_helm
+string = st_helmet_countdown
+
+[sr_idle@has_helm]
+on_info = {!current_helmet(good_psy_helmet)} sr_timer@2
+on_info2 = {+deactivate_radar_done} nil %=release%
+
+[sr_timer@2]
+type = dec
+start_value = 100000
+on_value = 5 | %=play_snd(characters_voice\scenario\radar\rad_hat_2)% | 0 | nil %=kill_actor%
+on_actor_outside = sr_idle
+on_info = {+deactivate_radar_done} nil %=release%
+on_info2 = {=current_helmet(good_psy_helmet)} sr_idle@has_helm2
+string = st_helmet_countdown
+
+[sr_idle@has_helm2]
+on_info = {!current_helmet(good_psy_helmet)} nil %=kill_actor%
+on_info2 = {+deactivate_radar_done} nil %=release%

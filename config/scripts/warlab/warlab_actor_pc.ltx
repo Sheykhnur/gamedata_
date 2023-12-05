@@ -1,0 +1,18 @@
+[combat_ignore]
+
+[logic]
+active = walker@pc_actor
+combat_ignore = combat_ignore
+
+[walker@pc_actor]
+path_walk = war_player_walk
+combat_ignore_cond = always
+meet = no_meet
+on_signal = pcactor | remark@war_thing
+
+[remark@war_thing]
+anim = war_use_pc_keyboard
+target = actor_pc_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+war_con_pc_end} nil %=release%

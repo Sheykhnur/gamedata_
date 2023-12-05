@@ -1,0 +1,61 @@
+[logic@darklab_bloodsucker1_home1]
+active = mob_walker@darklab_bloodsucker1_home1
+
+[mob_walker@darklab_bloodsucker1_home1]
+path_walk = home1
+path_look = home1_look
+panic = 0
+always_aggressive = false
+friendly = true
+actor_friendly = true
+npc_friendly = true
+
+[logic@darklab_bloodsucker1_home2]
+active = mob_walker@darklab_bloodsucker1_present
+
+[mob_walker@darklab_bloodsucker1_present]
+path_walk = home1
+path_look = home1_look
+panic = 0
+always_aggressive = false
+braindead = true
+friendly = true
+actor_friendly = true
+npc_friendly = true
+on_info = {+dar_transformation} mob_remark@darklab_bloodsucker1_present
+
+[mob_remark@darklab_bloodsucker1_present]
+anim = $editor
+target = darklab_bloodsucker1_home1_look, 0
+braindead = true
+friendly = true
+actor_friendly = true
+npc_friendly = true
+on_info = {+sci_running} mob_home@darklab_bloodsucker1_home2_1
+on_timer = 500 | %+dar_sci_wait_sc1%
+
+[mob_home@darklab_bloodsucker1_home2_1]
+path_home = home2
+;always_agressive = true
+braindead = false
+friendly = true
+actor_friendly = true
+npc_friendly = false
+invulnerable = true
+home_min_radius = 4
+home_max_radius = 8
+
+[logic@darklab_bloodsucker1_home3]
+active = mob_home@darklab_bloodsucker1_home2_2
+
+[mob_home@darklab_bloodsucker1_home2_2]
+path_home = home21
+braindead = false
+always_agressive = true
+friendly = false
+actor_friendly = false
+npc_friendly = false
+invulnerable = false
+home_min_radius = 5
+home_max_radius = 12
+

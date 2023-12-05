@@ -1,0 +1,772 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_utils.script
+ Description: ...
+ Copyright  : 2008 © LA-team
+ Author     : barin, Gr1ph00n (2008-10-16)
+ Editors    : gr1ph00n, SkyLoader(26.02.2013)
+ Last edit  : 16.12.2013 [vintar]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local log_path = "gamedata\\la_logs"
+local log_mode = "a+"
+local log_hdr = false
+local log_enabled = true
+local sini = system_ini()
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------------------------------------
+function print(frm, ...)
+	if not log_enabled then
+		return
+	end
+	local log_file_name = "log_ " .. os.date("%y-%m-%d") .. ".log"
+	local log_file = io.open(log_path .. "\\" .. log_file_name, log_mode)
+	if io.type(log_file) == "file" then
+		local str = ""
+		if log_hdr == false then
+			str = string.rep("*", 10)
+			log_file:write(string.format("%s %s %s", str, os.date(), str), "\n")
+			log_hdr = true
+		end
+		
+		str = parser.FormatString(frm, ...)
+		log_file:write(str, "\n")
+		log_file:write("\n\n")
+		log_file:flush()
+		log_file:close()
+	end
+end
+
+local la_levels = {
+	["la01_escape"]         = true,
+	["la02_garbage"]        = true,
+	["la03_agroprom"]       = true,
+	["la04_darkdolina"]     = true,
+	["la04u_darklab"]       = true,
+	["la05_bar_rostok"]     = true,
+	["la06_yantar"]         = true,
+	["la07_military"]       = true,
+	["la08_deadcity"]       = true,
+	["la09_swamp"]          = true,
+	["la10_radar"]          = true,
+	["la10u_bunker"]        = true,
+	["la11_pripyat"]        = true,
+	["la12_stancia"]        = true,
+	["la12u_sarcofag"]      = true,
+	["la13_generators"]     = true,
+	["la13u_warlab"]        = true,
+	["la14_rostok_factory"] = true,
+	["la14u_secret_lab"]    = true,
+	["la15_darkscape"]      = true,
+	["la16_lost_factory"]   = true,
+	["la16u_labx16"]        = true,
+	["la17_outskirts"]      = true,
+	["la17u_labx7"]         = true,
+	["la18_damned"]         = true,
+	["la19_country"]        = true,
+	["la13u_oso"]           = true,
+	["la20_forgotten"]      = true,
+	["la22_forest"]         = true,
+	["la23_oldroad"]        = true,
+	["la24_antennas"]       = true,
+}
+
+function is_la_level(lvl)
+	return (la_levels[lvl] ~= nil)
+end
+
+function get_item_count(section)
+	local counter, inv_item = 0, nil
+	
+	for index = 0, db.actor:object_count() - 1 do
+		inv_item = db.actor:object(index)
+		if inv_item:section() == section then
+			counter = counter + 1
+		end
+	end
+	
+	return counter
+end
+--/#x# moved to xr_gulag.script
+function fill_tbl(section, idle, prior, states, squad, group, in_rest, out_rest, online, gulag_name, fn_pred)
+	local tbl = {}
+	
+	tbl.section = "logic@" .. gulag_name .. "_" .. section
+	tbl.idle    = idle
+	tbl.prior   = prior
+	tbl.state   = {}
+	
+	for index = 1, #states do
+		table.insert(tbl.state, states[index])
+	end
+	
+	tbl.squad    = squad
+	tbl.group    = group
+	tbl.in_rest  = in_rest
+	tbl.out_rest = out_rest
+	tbl.online   = online
+	
+	if type(fn_pred) == 'function' then
+		tbl.predicate = fn_pred
+	end
+	
+	return tbl
+end
+--/#x# moved to xr_gulag.script
+function fill_tbl_pred(section, idle, prior, states, squad, group, in_rest, out_rest, online, gulag_name, fn_pred)
+	local tbl = fill_tbl(section, idle, prior, states, squad, group, in_rest, out_rest, online, gulag_name)
+	tbl.predicate = fn_pred
+	return tbl
+end
+--/#x# moved to xr_gulag.script
+function is_on_gulag_level(sobj, gulag_name)
+	return alife():level_name(game_graph():vertex(sobj.m_game_vertex_id):level_id()) == alife():object(gulag_name):get_level_name()
+end
+--/#x# not used!
+function get_actor_level()
+	return alife():level_name(game_graph():vertex(alife():actor().m_game_vertex_id):level_id())
+end
+--/#x# moved to la_s.script!
+function can_use_visible_legs()
+	--return Get_Cfg_Bool(db.lost_alpha_cfg, "lost_alpha_cfg", "actor_legs_visible", false)
+	return true --get_console():get_bool("g_actor_body")
+end
+
+function relocate_items(section, quantity, relocate_type)
+	news_manager.relocate_item(nil, relocate_type, section, quantity)
+end
+
+function send_hud_message(header, text, sender, showtime, sound_type)
+	news_manager.send_tip_hud(header, text, sender, showtime, sound_type)
+end
+
+function add_spot_by_sid(sid, spot, hint)
+	local sobj = alife():story_object(sid)
+	if sobj then
+		level.map_add_object_spot(sobj.id, spot, hint)
+	end
+end
+
+function remove_items(section, quantity)
+	Lost_Items(section, quantity)
+end
+
+function teleport_server_entity(sobj, pos, lvid, gvid)
+	alife():teleport_entity(sobj, pos, lvid, gvid)
+end
+
+function change_actor_level(pos, lvid, gvid, dir)
+	alife():change_actor_level(pos, lvid, gvid, dir)
+end
+
+function get_task_state(task_name)
+	local task_state = db.actor:get_task_state(task_name, 0)
+	local state = nil
+	if task_state == task.completed then
+		state = "completed"
+	elseif task_state == task.fail then
+		state = "failed"
+	elseif task_state == task.in_progress then
+		state = "in_progress"
+	else
+		state = "not_assigned"
+	end
+	return state
+end
+
+function give_infoportion(info_id)
+	if db.actor and not has_alife_info(info_id) then
+		db.actor:give_info_portion(info_id)
+	end
+end
+
+function give_infoportions(info_tbl)
+	for _, info_id in pairs(info_tbl) do
+		give_infoportion(info_id)
+	end
+end
+
+function has_any_infoportions(info_tbl)
+	for _, info_id in pairs(info_tbl) do
+		if has_alife_info(info_id) then
+			return true
+		end
+	end
+	return false
+end
+
+function has_all_infoportions(info_tbl)
+	for _, info_id in pairs(info_tbl) do
+		if not has_alife_info(info_id) then
+			return false
+		end
+	end
+	return true
+end
+
+
+function spawn_items(parent, section, quantity, confirm)
+	local counter = 0
+	if not quantity then
+		quantity = 1
+	end
+	if confirm == nil then
+		confirm = true
+	end
+	
+	if not parent then
+		parent = db.actor
+	end
+	
+	if parent:id() ~= db.actor:id() then
+		confirm = false
+	end
+	
+	for i = 1, quantity do
+		if alife():create( section, vector(), 0, 0, parent:id() ) then
+			counter = counter + 1
+		end
+	end
+	
+	if confirm then
+		relocate_items(section, counter, "in")
+	end
+end
+
+function relocate_ammo(parent, section, quantity)
+	if not parent then
+		parent = db.actor
+	end
+	alife():create_ammo(section, vector(), 0, 0, parent:id(), quantity)
+	relocate_items(section, quantity, "in")
+end
+
+function spawn_ammo(section, counter)
+	local rounds_in_box = system_ini():r_u32(section, "box_size")
+	
+	while counter > rounds_in_box do
+		-- spawn ammo boxes
+		alife():create_ammo(section, vector(), 0, 0, db.actor:id(), rounds_in_box)
+		counter = counter - rounds_in_box
+	end
+	-- spawn rounds
+	alife():create_ammo(section, vector(), 0, 0, db.actor:id(), counter)
+end
+
+function get_subarray_name(tab)
+	if not tab then
+		return nil
+	end
+	local subarray_names = {}
+	for k, v in pairs(tab) do
+		table.insert(subarray_names, k)
+	end
+	if #subarray_names == 0 then
+		return nil
+	end
+	return subarray_names[math.random(1, #subarray_names)]
+end
+
+function count_container_items(container)
+	local counter = 0
+	for k, v in pairs(container) do
+		counter = counter + 1
+	end
+	return counter
+end
+
+function is_empty(data)
+	if data == nil then
+		return true
+	elseif type(data) == "string" then
+		return (data == "")
+	elseif type(data) == "table" then
+		return (count_container_items(data) == 0)
+	end
+	return false
+end
+
+function get_items_on_belt()
+	local tbl, obj = {}, nil
+	for i = 0, db.actor:object_on_belt_count() - 1 do
+		obj = db.actor:object_on_belt(i)
+		tbl[obj:id()] = obj
+	end
+	return tbl
+end
+
+function has_item_on_belt(section)
+	for obj_id, obj in pairs(get_items_on_belt()) do
+		if section == obj:name() then
+			return true
+		end
+	end
+	return false
+end
+
+function is_belt_empty()
+	return is_empty(get_items_on_belt())
+end
+
+function trim(s)
+	return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
+end
+
+function trim_left(s)
+	return (string.gsub(s, "^%s*", ""))
+end
+
+function trim_right(s)
+	local n = #s
+	while n > 0 and string.find(s, "^%s", n) do
+		n = n - 1
+	end
+	return string.sub(s, 1, n)
+end
+
+function get_hud_center(wnd_width, wnd_height)
+	local x = (math.modf(512 - wnd_width / 2))
+	local y = (math.modf(384 - wnd_height / 2))
+	
+	return x, y
+end
+
+function add_item_icon(wnd, child_name, item_section, x, y)
+	local child = wnd:GetStatic(child_name)
+	if child then
+		wnd:DetachChild(child)
+	end
+	
+	local inv_grid_width  = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_width", 0) * 50
+	local inv_grid_height = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_height", 0) * 50
+	local inv_grid_x      = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_x", 0) * 50
+	local inv_grid_y      = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_y", 0) * 50
+	
+	child = CUIStatic()
+	child:SetAutoDelete(true)
+	child:SetWindowName(child_name)
+	child:InitTexture("ui\\ui_icon_equipment")
+	local rect = Frect():set(inv_grid_x, inv_grid_y, inv_grid_width, inv_grid_height)
+	child:SetWndRect(rect)
+	child:SetStretchTexture(false)
+	child:SetTextureOffset(-inv_grid_x, -inv_grid_y)
+	child:SetOriginalRect(inv_grid_x, inv_grid_y, inv_grid_x + inv_grid_width, inv_grid_y + inv_grid_height)
+	wnd:AttachChild(child)
+end
+
+function add_item_icon_s(dlg, item_section, x, y)
+	
+	local inv_grid_width  = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_width", 0) * 50
+	local inv_grid_height = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_height", 0) * 50
+	local inv_grid_x      = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_x", 0) * 50
+	local inv_grid_y      = Get_Cfg_Num32(system_ini(), item_section, "inv_grid_y", 0) * 50
+	
+	dlg:InitTexture("ui\\ui_icon_equipment")
+	dlg:SetWndRect(x, y, inv_grid_width, inv_grid_height)
+	dlg:SetStretchTexture(false)
+	dlg:SetTextureOffset(-inv_grid_x, -inv_grid_y)
+	dlg:ClipperOn()
+end
+
+function distance_between_objects(source_object, destination_object) --/#~# (rudiment)
+	if source_object and destination_object then
+		return source_object:position():distance_to(destination_object:position())
+	end
+	return (-1)
+end
+
+function get_script_func_name(str)
+	local dot = str:find("%.")
+	if dot then
+		return str:sub(0, dot - 1), str:sub(dot + 1)
+	end
+	return nil, str
+end
+
+function custom_ui_usage(action, script_name)
+	if action == "show" then
+		if not has_alife_info("la_ui_custom_wnd_show") then
+			--parser.dbg_print("custom_ui_usage:%s:show", tostring(script_name) ) --/#~#
+			db.actor:give_info_portion("la_ui_custom_wnd_show")
+		end
+	elseif action == "hide" then
+		if not has_alife_info("la_ui_custom_wnd_hide") then
+			--parser.dbg_print("custom_ui_usage:%s:hide", tostring(script_name) ) --/#~#
+			db.actor:give_info_portion("la_ui_custom_wnd_hide")
+		end
+	end
+end
+
+--/ hack to hide all ui windows
+function hide_ui_window()
+	custom_ui_usage("hide", nil)
+	--xr_effects.disable_ui()
+	--xr_effects.enable_ui()
+end
+
+function IsWeapon(section)
+	local ret = string.find(section, "wpn_") ~= nil
+--	ret = ret and section ~= "wpn_binoc"
+	ret = ret and string.find(section, "addon") == nil
+	return ret
+end
+
+function IsOutfit(section)
+	return string.find(section, "_outfit") ~= nil or parser.line_exists(system_ini(), section, "bones_koeff_protection") or string.find(section, "helm_") ~= nil
+end
+
+function IsDetector (section)
+	return string.find(section, "detector_af_") ~= nil or parser.line_exists(system_ini(), section, "detect_radius") 
+end
+
+function IsScope (section)
+	return string.find(section, "wpn_addon_scope") ~= nil
+end
+
+function get_game_language()
+	return get_console():get_string("language") --Get_Cfg_String(ini_file("localization.ltx"), "string_table", "language", "eng")
+end
+
+function spawn_object(section, position, level_vertex_id, game_vertex_id)
+	return alife():create(section, position, level_vertex_id, game_vertex_id)
+end
+
+function spawn_object_parent(section, parent)
+	return alife():create(section, vector(), 0, 0, parent:id())
+end
+
+function spawn_object_actor(section)
+	return spawn_object_parent(section, db.actor)
+end
+
+function copy_table(source_table)
+	local dest_table = {}
+	for k, v in pairs(source_table) do
+		if type(v) ~= "table" then
+			dest_table[k] = v
+		else
+			dest_table[k] = copy_table(v)
+		end
+	end
+	return dest_table
+end
+
+function set_gulag_relation(gname, relation)
+	if not gname or not relation then
+		return
+	end
+	
+	if relation == "enemy" then
+		relation = game_object.enemy
+	elseif relation == "friend" then
+		relation = game_object.friend
+	elseif relation == "neutral" then
+		relation = game_object.neutral
+	else
+		return
+	end
+	
+	local gulag = xr_gulag.get_gulag_by_name(gname)
+	if gulag then
+		gulag:set_relation(relation, db.actor)
+	end
+end
+
+function set_npc_relation(who, npc, relation)
+	local relations =
+	{	
+		neutral = game_object.neutral,
+		friend = game_object.friend,
+		enemy = game_object.enemy
+	}
+	ASSERT(relations[relation] ~= nil, "Wrong relation selected %s", relation)
+	who:set_relation(relations[relation], npc)
+	npc:set_relation(relations[relation], who)
+end
+
+function get_npc_relation(npc, who)
+	local rel = npc:relation(who)
+	if rel == game_object.neutral then
+		return "neutral"
+	elseif rel == game_object.friend then
+		return "friend"
+	elseif rel == game_object.enemy then
+		return "enemy"
+	end
+	return nil
+end
+
+function release_object(obj)
+	if not obj then return end
+	if type(obj) == "number" then 
+		alife():release(alife():object(obj), true)
+	else
+		alife():release(obj, true)
+	end	
+end
+
+function store_variable(variable, value, npc)
+	if not npc then 
+		npc = db.actor
+	end
+	if variable then
+		xr_logic.pstor_store(npc, variable, value)
+	end
+end
+
+function retrieve_variable(variable, value_base, npc)
+	if not npc then 
+		npc = db.actor
+	end
+	if variable then
+		return xr_logic.pstor_retrieve(npc, variable, value_base)
+	end
+	return nil
+end
+
+function is_sobject_online(se_obj)
+	return (level.object_by_id(se_obj.id) ~= nil)
+end
+
+function mob_override_scheme(obj, scheme_to_set)
+	local overrided_logic = "[logic]\nactive = " .. scheme_to_set .. "\n"
+	overrided_logic = overrided_logic .. "[" .. scheme_to_set .. "]\n" 
+	overrided_logic = overrided_logic .. "braindead = true\n"
+	xr_logic.activate_by_section(obj, create_ini_file(overrided_logic), scheme_to_set, true)
+end
+	
+function mob_disable_overrided_scheme(obj, scheme_to_disable)
+	xr_logic.mob_release(obj)
+	_G[scheme_to_disable].disable_scheme(obj, scheme_to_disable)
+end
+
+function mob_reset_logic(obj, ini)
+	local ini = xr_logic.configure_schemes(obj, ini, "<customdata>", modules.stype_mobile, "logic", nil)
+	local sect = xr_logic.determine_section_to_activate(obj, ini, "logic", actor)
+	xr_logic.activate_by_section(obj, ini, sect, true)
+end
+
+function get_console_key()
+	return Get_Cfg_Num32(db.lost_alpha_cfg, "lost_alpha_cfg", "console", 192)
+end
+
+function is_gulag_empty(gulag_name)
+	if not gulag_name then
+		return nil
+	end
+	return (xr_conditions.gulag_empty(nil, nil, {gulag_name}))
+end
+
+function set_npc_hostile(actor, npc, info_id)
+	if npc_hitted_by_actor(actor:id(), npc:id()) then
+		if not has_alife_info(info_id) then
+			db.actor:give_info_portion(info_id)
+		end
+	end
+end
+
+function npc_hitted_by_actor(actor_id, npc_id)
+	local hit_tab = db.storage[npc_id].hit
+	if hit_tab ~= nil then
+		return hit_tab.who == actor_id
+	end
+	return false
+end
+
+function npc_killed_by_actor(actor_id, npc_id)
+	local d = db.storage[npc_id].death
+	if d ~= nil then
+		if d.killer == actor_id then
+			return true
+		end
+	end
+	return false
+end
+
+function str_explode(div, str, clear)
+	local t = {}
+	local cpt = string.find (str, div, 1, true)
+	if cpt then
+		repeat
+			if clear then
+				table.insert(t, trim(string.sub(str, 1, cpt - 1)))
+			else
+				table.insert(t, string.sub(str, 1, cpt - 1))
+			end
+			str = string.sub(str, cpt + string.len(div))
+			cpt = string.find(str, div, 1, true)
+		until cpt == nil
+	end
+	if clear then
+		table.insert(t, trim(str))
+	else
+		table.insert(t, str)
+	end
+	return t
+end
+
+function get_server_obj(obj)
+	if obj ~= nil then
+		if type(obj) == "string" then
+			if obj == "actor" or obj == "single_player" then
+				return alife():actor()
+			end
+			return alife():object(obj)
+		end
+		if type(obj) == "number" then
+			if obj == db.actor:id() then
+				return alife():actor()
+			end
+			return alife():object(obj)
+		end
+-- 		gr1ph to barin: both server and level objects have 'id' field, but level one
+--		is a method, hence a function, so this check didnt work as expected
+--		if obj.id then
+		if type(obj.id) == "number" then
+			-- obj is server_object
+			return obj
+		else
+			-- obj is level_object
+			if obj:id() == db.actor:id() then
+				return alife():actor()
+			end
+			return alife():object(obj:id())
+		end
+	end
+	return nil
+end
+
+function spawn_heli(pos, lvid, gvid, custom_data, story_id)
+	local se_obj = alife():create("helicopter", story_id , pos, lvid, gvid)
+	ASSERT(se_obj ~= nil, "can't spawn heli")
+	local se_heli = cse_alife_helicopter.cast_helicopter(se_obj)
+	ASSERT(se_heli ~= nil, "can't cast to heli")
+	se_heli:set_engine_sound("alexmx\\helicopter")
+	se_heli:set_startup_animation("idle")
+	if type(custom_data) == "string" then
+		se_heli:set_custom_data(custom_data)
+	end
+	return se_obj
+end
+--/------------------------------------------------------------------
+
+function get_parent_id(Obj,idObj)
+	local id = idObj or (Obj and ( (type(Obj.id) == "number" and Obj.id) or Obj:id() ))
+	if id then
+		local soObj = sim:object(id)
+		if soObj then
+			return soObj.parent_id
+		end
+	end
+end
+
+function release_gulags_objects(gulag_name)
+	local gul = xr_gulag.get_gulag(gulag_name)
+	if gul then
+		for id, _ in pairs(gul.Object) do
+			alife():release(alife():object(id), true)
+		end
+	end
+end
+
+local def_fov = 67.5
+
+function start_fov(t)
+	local val = t
+	if type(val) ~= 'number' then
+		val = (type(t) == 'userdata' and t.fov) or get_console():get_float("fov")
+	end
+	if val <= def_fov then
+		get_console():execute( "fov "..def_fov )
+	else
+		get_console():execute( "fov "..val )
+		start_real_timer(0.1, sModule..".start_fov", {fov = val - 1}) --/#???#
+	end
+end
+
+function start_fov_oso(t)
+	local val = t
+	if type(val) ~= 'number' then
+		val = (type(t) == 'userdata' and t.fov) or get_console():get_float("fov")
+	end
+	if val <= def_fov then
+		get_console():execute( "fov "..def_fov )
+	else
+		get_console():execute( "fov "..val )
+		start_real_timer(0.1, sModule..".start_fov", {fov = val - 1.2}) --/#???#
+	end
+end
+
+function CallFunction(func_name, t) --/#+# SkyLoader: based on materials of 'Extended Edition'
+local script, func = la_utils.get_script_func_name(func_name)
+	if script and func then
+		if _G[script] then
+			if _G[script][func] then
+				_G[script][func](t)
+			else
+				abort("[%s.script] script '%s' does not contain function '%s'", script_name(), script, func)
+			end
+		else
+			abort("[%s.script] script '%s' does not exist!", script_name(), script)
+		end
+	else
+		abort("[%s.script] cannot trigger callback", script_name())
+	end
+end
+
+function str_to_bool(str)
+	if str=="true" then
+		return true
+	elseif str=="false" then
+		return false
+	else
+		return nil
+	end
+end
+
+function CTimeAddSec(ctime,sec)
+	local Y, M, D, h, m, s, ms = 0, 0, 0, 0, 0, 0, 0
+	Y, M, D, h, m, s, ms = ctime:get(Y, M, D, h, m, s, ms)
+	return D*24*60*60 + h*60*60 + m*60 + s + sec
+end	
+
+function CTimeToSec(ctime)
+	local Y, M, D, h, m, s, ms = 0, 0, 0, 0, 0, 0, 0
+	Y, M, D, h, m, s, ms = ctime:get(Y, M, D, h, m, s, ms)
+	return D*24*60*60 + h*60*60 + m*60 + s
+end	
+
+function parse_ini_section_to_array(ini, section)
+	local tmp = {}
+	if ini:section_exist(section) then
+		local result, id, value = nil, nil, nil
+		for a = 0, ini:line_count(section) - 1 do
+			result, id, value = ini:r_line(section, a, "", "")
+			if id ~= nil and trim(id) ~= "" and trim(id) ~= nil then
+				tmp[trim(id)] = trim(value)
+			end
+		end
+	else
+		abort("[%s.script] section '%s' does not exist!", script_name(), section)
+	end
+	return tmp
+end
+
+--/ A random floating-point number in given range
+function random_range(min, max)
+	if type(min) == "table" then
+		min, max = unpack(min)
+	end
+	return min + math.random() * (max - min)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+function init()
+end

@@ -1,0 +1,72 @@
+[combat_ignore@agr_defector_terrain]
+
+[death@agr_defector_terrain]
+on_info = %+agr_factory_heli_start%
+
+[logic@agr_defector_terrain_wait]
+active = walker@agr_defector_terrain1
+combat_ignore = combat_ignore@agr_defector_terrain
+on_death = death@agr_defector_terrain
+
+[walker@agr_defector_terrain1]
+path_walk = entrance_walk1
+path_look = entrance_look1
+on_signal = heli_start | remark@agr_defector_terrain1
+combat_ignore_cond = {!fighting_actor}
+meet = no_meet
+
+[remark@agr_defector_terrain1]
+anim = help_agr
+;snd = agr_stalker_help_2
+on_signal = anim_end | %+agr_deflector_sound0% 
+on_timer = 8000 | %+agr_factory_heli_start +agr_deflector_timer0%
+on_info = {+agr_deflector_sound0 +agr_deflector_timer0} remark@agr_defector_terrain2
+target = actor
+combat_ignore_cond = {!fighting_actor}
+meet = no_meet
+
+[remark@agr_defector_terrain2]
+anim = guard
+target = actor
+on_timer = 2000 | remark@agr_defector_terrain3
+meet = no_meet
+
+[remark@agr_defector_terrain3]
+anim = threat_heli
+snd = agr_stalker_help_1
+on_signal = sound_end | %+agr_deflector_sound1%
+on_timer = 5000 |  %+agr_deflector_timer1%
+on_info = {+agr_deflector_timer1 +agr_deflector_sound1} remark@agr_defector_terrain4
+combat_ignore_cond = {!fighting_actor}
+target = agr_heli2_idle_start,0
+meet = no_meet
+
+[remark@agr_defector_terrain4]
+anim = threat_heli
+snd = agr_stalker_help_4
+on_signal = sound_end | %+agr_deflector_sound2%
+on_timer = 2000 |  %+agr_deflector_timer2%
+on_info = {+agr_deflector_timer2 +agr_deflector_sound2} walker@agr_defector_terrain
+target = agr_heli2_idle_start,0
+combat_ignore_cond = {!fighting_actor}
+meet = no_meet
+
+[walker@agr_defector_terrain]
+path_walk = attacking_stalker
+path_look = attacking_stalker_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 4000 | %+agr_factory_assault_skirmish%
+meet = no_meet
+on_info = {+agr_help_krot_done} walker@agr_defector_well_walker
+combat_ignore_cond = {!fighting_actor !hit_by_no_friend -agr_defector_reached}
+on_signal = attack| %+agr_defector_reached%
+
+[walker@agr_defector_well_walker]
+path_walk = factory_to_well_walk10
+path_look = factory_to_well_look10
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+default_state_standing = guard

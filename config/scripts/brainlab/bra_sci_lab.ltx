@@ -1,0 +1,46 @@
+[combat_ignore]
+
+[logic]
+active = walker@room
+combat_ignore = combat_ignore
+
+[walker@room]
+path_walk = x16_sci_room_wk1
+combat_ignore_cond = true
+meet = no_meet
+on_timer = 15000 | walker@room2
+on_info = {+x16_start_waves} remark@scipsy
+
+[walker@room2]
+path_walk = x16_sci_room_wk3
+combat_ignore_cond = true
+meet = no_meet
+on_timer = 10000 | walker@room3
+on_info = {+x16_start_waves} remark@scipsy
+
+[walker@room3]
+path_walk = x16_sci_room_wk5
+combat_ignore_cond = true
+meet = no_meet
+on_timer = 10000 | walker@room4
+on_info = {+x16_start_waves} remark@scipsy
+
+[walker@room4]
+path_walk = x16_sci_room_wk4
+combat_ignore_cond = true
+meet = no_meet
+on_timer = 5000 | walker@room5
+on_info = {+x16_start_waves} remark@scipsy
+
+[walker@room5]
+path_walk = x16_sci_room_wk2
+combat_ignore_cond = true
+meet = no_meet
+on_timer = 20000 | walker@room
+on_info = {+x16_start_waves} remark@scipsy
+
+[remark@scipsy]
+anim = psycho_pain
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+x16_dream_ended} %=release%

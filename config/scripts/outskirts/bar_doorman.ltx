@@ -1,0 +1,40 @@
+[smart_terrains]
+none = true
+
+[logic]
+active = walker@bar_guard
+combat_ignore = combat_ignore@out_bar_doorman
+
+[walker@bar_guard]
+path_walk = outsk_bar_guard_way
+path_look = outsk_bar_guard_look
+on_info = {=dist_to_actor_le(4)} remark@out_doorman
+combat_ignore_cond = always
+meet = no_meet
+
+[remark@out_doorman]
+anim = guard
+snd = mil_max_to_actor ;temp
+target = actor
+on_signal = sound_end | walker@bar_guard_talk
+combat_ignore_cond = always
+meet = no_meet
+
+[walker@bar_guard_talk]
+path_walk = outsk_bar_guard_way
+path_look = outsk_bar_guard_look
+combat_ignore_cond = always
+meet = meet@out_doorman
+
+[meet@out_doorman]
+use = true
+use_wpn = false
+victim 	= 15|actor
+victim_wpn = 15|actor
+meet_state = 10|idle|5|nil
+meet_state_wpn = 10|idle|5|nil 
+meet_dialog	= out_doorman_talk
+combat_ignore_cond = always
+
+[combat_ignore@out_bar_doorman]
+

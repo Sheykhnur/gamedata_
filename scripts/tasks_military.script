@@ -1,0 +1,200 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_military.script
+ Description: Tasks military
+ Copyright  : 2010 © LA-team
+ Author     : gr1ph00n
+ Editors    : vintar, lox(13.02.2013)
+ Last edit  : 23.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"mil_task_rat1_dead",
+	"mil_task_rat2_dead",
+	"mil_task_rat3_dead",
+	"mil_task_rat4_dead",
+	"mil_task_rat5_dead"
+}
+
+local mobs_tbl = {
+	"army_raid_boar_weak_0000","army_raid_flesh_weak_0000","army_raid_boar_normal_0000","army_raid_dog_bulterier_0000",
+	"army_raid_pseudodog_weak","army_raid_pseudodog_strong_0003","army_raid_dog_strong_0000","army_raid_pseudodog_strong_0000",
+	"army_dog_weak_0001","army_raid_dog_normal_0000","army_raid_pseudodog_normal","army_raid_dog_weak_0000",
+	"army_raid_dog_weak","army_raid_pseudodog_strong_0001","army_raid_pseudodog_strong","army_raid_dog_strong",
+	"army_raid_dog_normal","army_raid_flesh_weak","army_raid_dog_bulterier","army_raid_boar_normal",
+	"army_raid_flesh_weak_0001","army_raid_boar_weak","army_flesh_normal","army_raid_boar_weak_0001"
+}
+
+--/--------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:section() == "maddog_af_cristall" then
+			give_info("yan_scientist_artefact_have")
+		end
+	end
+	if info_tbl and has_any_info_portions(info_tbl) then
+		give_info("mil_task_rats_dead_some")
+	end
+	if info_tbl and has_info_portions(info_tbl) then
+		info_tbl = nil --/ clear
+		give_info("mil_task_rats_dead")
+	end
+	if has_info("monsters_wave") and not has_info("mil_mobs_online") then
+	   switch_online_tbl(mobs_tbl)
+	   give_info("mil_mobs_online")
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "radio_scene_end" then
+		start_real_timer(3, sModule..".start_small_reject") --/ ~ 5sec (real-time)
+		return true --/>
+	end
+	if info_id == "out_meet_fang_start" then
+		local sobj = alife():object("army_stalker_ghost")
+		if sobj then
+			alife():release(sobj, true)
+		end
+		return true --/>
+	end
+	if info_id == "monsters_wave" then
+		local t = get_timer("mil_contact_timer")
+		if t then t:remove() end
+		
+		return true --/>
+	end
+	if not info_id:match('^mil_') then
+		return false --/>
+	end
+	if info_id == "mil_mercs_house_elim" then
+		start_real_timer(3, nil, {tip = {game.translate_string("unknown_message_header"), game.translate_string("mil_contact_msg_text"), "contact"}})
+		start_real_timer(5, nil, {info_id = "mil_meet_contact_start"})
+		return true --/>
+	end
+	if info_id == "mil_actor_in_zone_camp" then
+		news_manager.send_tip_hud(game.translate_string("sos_signal_header"), game.translate_string("mil_stalk_camp_msg_text"), "stalker")
+		return true --/>
+	end
+	if info_id == "mil_contact_arrived" then
+		level_tasks.add_location(6715, "green_location", "stalker_camp_contact_name")
+--		start_real_timer(5, sModule..".start_small_reject")
+		return true --/>
+	end
+	if info_id == "mil_actor_brought_art" then
+		start_real_timer(4.5, nil, {info_id = "mil_bring_art_to_sak"})
+		return true --/>
+	end
+	if info_id == "mil_task_rats_converted" then
+		local sim,sobj = alife(),nil
+		for i=1,5 do
+			sobj = sim:object("mil_task_mad_guy_rat"..i)
+			if sobj then
+				give_info("mil_task_spawn_dead"..i)
+				sim:release(sobj, true)
+			end
+		end
+		return true --/>
+	end
+	if info_id == "mil_task_controller_seen" then
+		if not has_info("mil_task_controller_cant_call") then
+			local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\mil\\mil_controller_call")
+			snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+			return true --/>
+		end
+	end
+	if info_id == "mil_boss_pc" then
+		pdaDownloads.add_article{"mil_maddog_affirmation_name", "mil_maddog_affirmation_text"}
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function start_small_reject()
+	level_weathers.get_weather_manager():Active(false)
+	start_real_timer(2, "tasks_military.starting_small_reject")
+end
+
+function starting_small_reject()
+	if not xr_conditions.is_day() then
+		level.set_weather_fx("p_surge_night")
+	else
+		level.set_weather_fx("p_surge_day")
+	end
+	level.add_cam_effector("camera_effects\\shell_shock.anm", 2126, false, "")
+	level.add_pp_effector("vibros_p.ppe", 1974, false)
+	local snd = xr_sound.get_safe_sound_object("anomaly\\blowout_begin")
+	snd:play(db.actor, 0, sound_object.s2d)
+	start_real_timer(1, "tasks_military.play_earthquake") --/ ~ 4sec (real-time)
+	start_real_timer(14, "tasks_military.blackout") --/ ~ 6sec (real-time)
+	start_real_timer(16, "tasks_military.vihar")
+end
+
+function play_earthquake()
+	local snd = xr_sound.get_safe_sound_object("ambient\\earthquake")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	level.add_cam_effector("camera_effects\\earthquake.anm", 2107, false, "")
+end
+
+function blackout()
+	level.remove_pp_effector(1974)
+	level.add_pp_effector("agr_u_fade.ppe", 2124, false)
+	xr_effects.hide_weapon_helper()
+	level.disable_input()
+	level.hide_indicators()
+	--la_utils.custom_ui_usage("hide", nil) --/ breaks quicksave
+	start_quick_timer(6, xr_effects.renable_ui) --/ ~ 6sec (real-time); gri said no diff
+end
+
+function blackout_fatal()
+	level.add_pp_effector("agr_u_fade.ppe", 2124, false)
+	xr_effects.hide_weapon_helper()
+	level.disable_input()
+	level.hide_indicators()
+	--la_utils.custom_ui_usage("hide", nil) --/ breaks quicksave
+	start_quick_timer(3, this.mil_set_weather_force)
+	start_quick_timer(6, xr_effects.renable_ui) --/ ~ 6sec (real-time)
+end
+
+function renable_ui() --/#x# moved to xr_effect!
+	level.show_indicators()
+	level.enable_input()
+	--la_utils.custom_ui_usage("show", nil) --/ breaks quicksave
+	xr_effects.restore_weapon_helper()
+end
+
+function mil_set_weather_force()
+	level.set_weather("vihar", true)
+end
+
+function vihar()
+	give_info("mil_small_reject_finished")
+	this.restore_weather()
+	start_real_timer(4, nil, {info_id = "mil_mercs_house_elim"})
+end
+
+function restore_weather()
+	level_weathers.get_weather_manager():Active(true)
+end
+
+function mil_blowout_portions()
+	give_info_portions({"monsters_wave", "monsters_wave_end"})
+end
+
+function mil_message_contact() --/#-# rudiment
+	news_manager.send_tip_hud(game.translate_string("unknown_message_header"), game.translate_string("mil_contact_msg_text"), "contact")
+end
+
+function has_lr300_m2(actor, npc)
+	return db.actor:object("wpn_lr300_m2") ~= nil
+end
+--/ -----------------------------------------------------------------------------------------------

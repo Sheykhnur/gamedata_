@@ -1,0 +1,25 @@
+[combat_ignore@psycho_wounded]
+
+[death@psycho_wounded]
+on_info = {=killed_by_actor} %+fore_trap_free =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker)%
+
+[logic]
+active = walker@psycho_wounded
+on_death = death@psycho_wounded
+combat_ignore = combat_ignore@psycho_wounded
+
+[walker@psycho_wounded]
+path_walk = psycho_wounded_walk
+wounded = wounded@psycho_wounded
+combat_ignore_cond = always
+on_info = {+fore_trap_free} nil %=release%
+
+[wounded@psycho_wounded]
+hp_state = 100|wounded_heavy_3@help_heavy
+hp_state_see = 100|wounded_heavy_3@help_see
+hp_victim = 100|nil
+hp_cover = 100|false
+hp_fight = 100|false
+use_medkit = false
+help_dialog = psycho_wounded_dialog
+on_info = {+fore_trap_free} nil %=release%

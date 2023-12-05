@@ -1,0 +1,258 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_stancia.script
+ Description: Tasks STANCIA
+ Copyright  : 2012 © LA-team
+ Author     : lox
+ Editors    : vintar, loxotron(20.02.2013)
+ Last edit  : 23.06.18 (tomilovsenya) Ц fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local info_tbl_1 = {
+	"aes_mono_bridge_cleaned",
+	"aes_mono_npp_cleaned",
+	"aes_btr_death"
+}
+local info_tbl_2 = {
+	"aes_mono_npp1_dead",
+	"aes_mono_npp2_dead",
+	"aes_mono_npp3_dead",
+	"aes_mono_npp4_dead",
+	"aes_mono_npp5_dead",
+	"aes_mono_npp6_dead",
+	"aes_mono_npp7_dead",
+	"aes_mono_npp8_dead",
+	"aes_mono_npp9_dead"
+}
+local hunter_tbl = {
+	"aes_hunter1_dead",
+	"aes_hunter2_dead",
+	"aes_hunter3_dead",
+	"aes_hunter4_dead",
+	"aes_hunter5_dead",
+	"aes_hunter6_dead",
+	"aes_hunter7_dead",
+	"aes_hunter8_dead",
+	"aes_hunter9_dead",
+	"aes_hunter10_dead",
+	"aes_hunter11_dead",
+	"aes_hunter12_dead",
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if db.sMapNow == "la12_stancia" then
+		if not has_info("sar_fake_finale") and has_info("sar_voice") then
+			give_info("sar_monolith_failed")
+		end
+		if not has_info("pri_found_stancia") and has_alife_info("pri_sar_task") then
+			give_info("pri_found_stancia")
+		end
+		if not has_info("aes_helis_regrouped") then
+			if has_info_portions({"aes_heli1_regrouped","aes_heli2_regrouped","aes_heli3_regrouped"}) then
+				give_info("aes_helis_regrouped")
+			end
+		end
+		if not has_info("aes_helis_finished") then
+			if has_info_portions({"aes_helis_regrouped","aes_heli4_released","aes_heli5_released","aes_heli6_released"}) then
+				give_info("aes_helis_finished")
+			end
+		end
+	end
+	if not has_info("aes_mil_neutral2_setted") and has_info("pri_sar_task") then
+		give_info("aes_mil_neutral2_setted")
+		this.set_sta_gulag_neutral_actor("aes_mil_recon")
+	end
+	if info_tbl_1 and has_info_portions(info_tbl_1) then
+		info_tbl_1 = nil --/ clear
+		give_info("aes_mono_defeated")
+	end
+	if info_tbl_2 and has_info_portions(info_tbl_2) then
+		info_tbl_2 = nil --/ clear
+		give_info("aes_mono_npp_cleaned")
+	end
+	if hunter_tbl and has_info_portions(hunter_tbl) then
+		hunter_tbl = nil --/ clear
+		give_info("aes_heli_hunters_dead")
+	end
+	if sEvent == "item_drop" then
+		if not has_info("aes_tranceiver_placed") and obj:section() == "tranceiver" then
+			local sobj = alife():object("aes_dolg1_mono_btr_drop_zone")
+			if sobj then
+				local zone = level.object_by_id(sobj.id)
+				if zone and utils.npc_in_zone(db.actor, zone) then
+					give_info("aes_tranceiver_placed")
+				end
+			end
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^aes_') then
+		return false --/>
+	end
+	if info_id == "aes_dolg1_leader_preaccept" then
+		start_real_timer(3, nil, {info_id = "aes_dolg1_leader_accept"})
+		return true --/>
+	end
+	if info_id == "aes_dolg1_sar_details" and not has_info("aes_sar_door_code_found") then
+		give_info("aes_sar_door_code_found")
+		news_manager.send_tip_hud(game.translate_string("aes_dolg_message_header"), game.translate_string("aes_dolg1_sar_details"), "codedoor")
+		return true --/>
+	end
+	if info_id == "aes_helis_finished" then
+		start_real_timer(3, nil, {info_id = "aes_speak_to_raid_leader"})
+		xr_effects.scenario_autosave(actor, nil, {"aes_destroy_btr_title"})
+		return true --/>
+	end
+	if info_id == "aes_help_raiders_done" then
+		start_real_timer(3, nil, {info_id = "aes_raid_start"})
+		return true --/>
+	end
+	if info_id == "aes_heli_raid" then
+		start_real_timer(2, nil, {info_id = "aes_heli_raid_delay"})
+		return true --/>
+	end
+	if info_id == "aes_btr_death2" then
+		start_real_timer(4, nil, {info_id = "aes_btr_death2_delay"})
+		return true --/>
+	end
+	if info_id == "aes_after_wave_speak_delay" then
+		start_real_timer(7, nil, {info_id = "aes_after_wave_speak"})
+		return true --/>
+	end
+	if info_id == "aes_after_wave_speak" then
+		start_real_timer(2, nil, {info_id = "aes_meet_recon_leader"})
+		xr_effects.scenario_autosave(actor, nil, {"aes_meet_recon_leader_title"})
+		return true --/>
+	end
+	if info_id == "aes_hunter_task_start" then
+		news_manager.send_tip_hud(game.translate_string("aes_dudaev_message_header"), game.translate_string("aes_dudaev_mono_rpgs_msg"), "military")
+		return true --/>
+	end
+	if info_id == "aes_after_hunters_meet" then
+		start_real_timer(1, nil, {info_id = "aes_mutants_wave_start"})
+		xr_effects.scenario_autosave(actor, nil, {"aes_hunter_task_2"})
+		return true
+	end
+	if info_id == "aes_mutants_wave_start" then
+		this.sta_mutant_wave1()
+		return true --/>
+	end
+	if info_id == "aes_12mutants_dead" then
+		this.sta_mutant_wave2()
+		return true --/>
+	end
+	if info_id == "aes_wave_over" then
+		start_real_timer(40, sModule..".sta_restore_weather")
+		return true
+	end
+	if info_id == "aes_dudaev_wait_actor" then
+		xr_effects.scenario_autosave(actor, nil, {"aes_help_dudaev_2"})
+		return true
+	end
+	if info_id == "aes_dudaev_raid_done" and not has_info("aes_sar_door_code_found") then
+		give_info("aes_sar_door_code_found")
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function set_sta_gulag_neutral_actor(gulag_name)
+	relation_registry.set_community_goodwill("military", db.actor:id(), 1000)
+end
+
+function check_help_mil()
+	return has_info("npp_chose_dolg1") or has_info("aes_help_raiders_refuse")
+end
+
+function aes_heli_cond()
+	return not has_info("aes_heli1_pos") and not has_info("aes_heli2_pos")
+end
+
+function aes_cam_cond()
+	return has_info("aes_heli1_pos") or has_info("aes_heli2_pos")
+end
+
+function sta_mutant_wave1()
+	--[[
+	if not has_info("aes_wave_over") then
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\sta\\sta_call")
+		snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	end
+	--]]
+	start_real_timer(8, sModule..".sta_set_previhar") --/# не катсцена, эти таймеры должны идти в сейвы!
+end
+
+function sta_set_previhar()
+	level_weathers.get_weather_manager():Active(false)
+	level.set_weather_fx("p_surge_night")
+	level.set_weather("vihar", false)
+end
+
+function sta_mutant_wave2()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\sta\\sta_call_wave2")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	level.set_weather_fx("p_surge_night")
+	log("sta_mutant_wave2: ^_^") --/#~#
+	start_real_timer(7, sModule..".sta_earthquake")
+end
+
+function sta_earthquake()
+	level.add_cam_effector("camera_effects\\earthquake.anm", 2681, false, "")
+	local snd = xr_sound.get_safe_sound_object("ambient\\earthquake")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	log("sta_earthquake: #_#") --/#~#
+	start_real_timer(8, sModule..".sta_earthquake2")
+end
+
+function sta_earthquake2()
+	level.add_cam_effector("camera_effects\\earthquake.anm", 2682, false, "")
+	local snd = xr_sound.get_safe_sound_object("ambient\\earthquake")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	log("sta_earthquake2:woohooo!") --/#~#
+	start_real_timer(2, sModule..".sta_set_red")
+end
+
+function sta_set_red()
+	level.add_pp_effector("vibros_p.ppe", 1910, false)
+	level.set_weather_fx("surge_we")
+	start_real_timer(30, sModule..".sta_fx_loop")
+end
+
+function sta_fx_loop()
+	level.set_weather_fx("p_surge_night")
+	level.add_cam_effector("camera_effects\\earthquake.anm", 2682, false, "")
+	local snd = xr_sound.get_safe_sound_object("ambient\\earthquake")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	log("sta_fx_loop:14/88") --/#~#
+	--start_real_timer(17, sModule..".sta_fx_loop2")
+end
+
+--[[function sta_fx_loop2()
+	if has_info("aes_wave_over") then
+		start_real_timer(40, sModule..".sta_restore_weather")
+	else
+		start_real_timer(20, sModule..".sta_fx_loop2")  --needless timers, function calling itself for what?
+	end
+end]]
+
+function sta_restore_weather()
+	level.remove_pp_effector(1910)
+	level.add_pp_effector("blink.ppe", 1911, false)
+	level_weathers.get_weather_manager():Active(true)
+	level.add_cam_effector("camera_effects\\earthquake.anm", 2683, false, "")
+	local snd = xr_sound.get_safe_sound_object("ambient\\earthquake")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+--/ -----------------------------------------------------------------------------------------------

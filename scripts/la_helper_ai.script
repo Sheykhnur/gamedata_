@@ -1,0 +1,164 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_helper_ai.script
+ Description: "AI HELPERs" - different autonomic 'common' functions for AI-schemes
+ Copyright  : 2013 © STALKER-community
+ Author     : (miscellany / pack)
+ Last edit  : 07.08.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function npc_can_fight(npc)
+	if IsStalker(npc) and npc:alive() and not npc:critically_wounded() then
+		local wound_mgr = xr_wounded.get_wound_manager(npc:id())
+		if not (wound_mgr and wound_mgr.fight == false) then
+			return true --/> can fight
+		end
+	end
+	return false --/> can't fight
+end
+
+function Has_Medkit(oNPC)
+	if not oNPC then oNPC = db.actor end
+	return oNPC:object("medkit") ~= nil
+			or oNPC:object("medkit_army") ~= nil
+			or oNPC:object("medkit_scientic") ~= nil --/> boolean
+end
+
+function Get_Medkit(oNPC)
+	if not oNPC then oNPC = db.actor end
+	return oNPC:object("medkit")
+			or oNPC:object("medkit_army")
+			or oNPC:object("medkit_scientic") --/> item
+end
+
+function Has_ActiveWeapon(oNPC)
+	if not oNPC then oNPC = db.actor end
+	local item = oNPC:active_item()
+	return item ~= nil and isWeapon(item) --/>
+end
+
+function Get_ActiveWeapon(oNPC)
+	if not oNPC then oNPC = db.actor end
+	local item = oNPC:active_item()
+	if item and isWeapon(item) then
+		return item --/>
+	end
+	return nil --/>
+end
+--/ check: is there ammo for weapon in actor's rucksack
+function Has_AmmoByWeapon(weapon,oNPC)
+	if weapon then
+		if not oNPC then oNPC = db.actor end
+		local list_ammo = Get_AmmoList( weapon:section() )
+		for _,section_ammo in ipairs(list_ammo) do
+			if oNPC:object(section_ammo) then
+				return true --/>
+			end
+		end
+	end
+	return false --/>
+end
+
+function get_weapon_and_ammo(oNPC)
+	--/ check: number of cartridges(ammo) which NPC has
+	local weapon, ammo_count = nil, 0
+	--/[1] check of active slot
+	local item = oNPC:active_item()
+	if item and isWeapon(item) then
+		weapon = item:section()
+		ammo_count = item:get_ammo_in_magazine() or 0
+		if ammo_count > 0 then
+			return weapon, ammo_count, oNPC:active_slot(), true --/>
+		elseif this.Has_AmmoByWeapon(item,oNPC) then
+			return item:section(), 1, oNPC:active_slot(), true --/>
+		end
+	end
+	--/[2] check of weapon slots:
+	local active_slot = oNPC:active_slot()
+	for _,i in ipairs({2,1}) do
+		item = i ~= active_slot and oNPC:item_in_slot(i)
+		if item and isWeapon(item) then
+			ammo_count = item:get_ammo_in_magazine() or 0
+			if ammo_count > 0 then
+				return item, ammo_count, i --/>
+			elseif this.Has_AmmoByWeapon(item,oNPC) then
+				return item, 1, i --/>
+			elseif not weapon then
+				weapon = item
+			end
+		end
+	end
+	--/[3] check of all inventory:
+	for i=0, oNPC:object_count() -1 do
+		item = oNPC:object(i)
+		if isWeapon(item) then
+			ammo_count = item:get_ammo_in_magazine() or 0
+			if ammo_count > 0 then
+				return item:section(), ammo_count, nil --/>
+			elseif this.Has_AmmoByWeapon(item,oNPC) then
+				return item, 1, nil --/>
+			elseif not weapon then
+				weapon = item
+			end
+		end
+	end
+	return weapon, 0, nil --/>
+end
+
+function control_ammo_by_weapon(oNPC)
+	local weapon, ammo_count, slot, active = this.get_weapon_and_ammo(oNPC)
+	log("control_ammo_by_weapon:NPC=[%s],wpn=[%s],ammo=[%s],slot=[%s](%s)", oNPC:name(), weapon and weapon:name(), ammo_count, slot, active == true, "") --/#~#
+	if not weapon then --/ no weapon - spawning gun too
+		alife():create_ammo("ammo_9x18_fmj", vector(), 0, 0, oNPC:id(), 1) --/ spawn only 1st catridge!
+		Spawn_ItemInInv("wpn_pm",oNPC)
+		return true --/>
+	elseif ammo_count < 1 then
+		local section_ammo = Get_AmmoList(weapon:section())[1]
+		if section_ammo then
+			alife():create_ammo(section_ammo, vector(), 0, 0, oNPC:id(), 1)
+		end
+		return true --/>
+	end
+	return false --/>
+end
+
+
+function disable_npc_used(sid_or_name)
+	local sobj
+	if tonumber(sid_or_name) then
+		sobj = alife():story_object(tonumber(sid_or_name))
+	else
+		sobj = sid_or_name and alife():object(sid_or_name)
+	end
+	local npc = sobj and level.object_by_id(sobj.id)
+	if npc then
+		npc:set_callback(callback.use_object, nil)
+	end
+end
+--/------------------------------------------------------------------------------------------------
+--/ Integrating function synonyms from current module to module '_G'
+--/------------------------------------------------------------------------------------------------
+local bFuncG = false --/ flag of functions integration to module '_G'
+
+if not bFuncG then
+	local tFuncG = {
+		["Has_Medkit"] = this.Has_Medkit,
+		["Get_Medkit"] = this.Get_Medkit,
+	}
+	local oModule = _G
+	setfenv(1,oModule)
+	for k,v in pairs(tFuncG) do
+		oModule[k] = v
+		setfenv(oModule[k],oModule)
+	end
+	bFuncG = true
+end
+--/ -----------------------------------------------------------------------------------------------

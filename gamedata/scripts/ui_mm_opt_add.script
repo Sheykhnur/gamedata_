@@ -1,0 +1,153 @@
+-- дополнительные функци для Главного Меню
+
+-- Имя пользователя
+function GetUserName()
+	local paramValue=console:get_user_param_value("user_name")
+	if not paramValue or (paramValue and paramValue=="") then
+		paramValue=old_user_name()
+	end
+	return paramValue
+end
+
+function SetUserName(str)
+	if not ( str and str:len() > 0 ) then return end
+	str = str:trim()
+	if str:len() == 0 then
+		log("SetUserName: Incorrect user name!")
+		return
+	end
+	console:set_user_param_value("user_name",str)
+end
+
+-- покупка квестовых предметов
+function buy_quest_item()
+	if not game_is_running() then return end
+	local buy_item = ui_mm_opt_creator.getter_user_param("buy_item","nil")
+	if buy_item=="nil" then return end
+	local ini = config
+	local god_buy = false
+	local req_money = has_info("wish_6_approved") and 1 or 2
+	if not ini:section_exist(buy_item) then
+		sms(translate("buy_quest_item_0_0")..buy_item..translate("buy_quest_item_0_1"), nil, "nano", 30000)
+		return
+	elseif not has_money(req_money) then
+		sms("buy_quest_item_1", nil, "nano", 30000)
+	elseif db.god.u[2] and rx_utils.read_from_ini(ini, buy_item, "cheat_item", false, 0) and not has_info("wish_6_approved") then
+		sms("buy_quest_item_2", nil, "nano", 30000)
+	elseif not db.god.u[2] and is_excluded_item(buy_item) and not has_info("wish_6_approved") then
+		sms("buy_quest_item_3", nil, "nano", 30000)
+	else
+		disable_info("mm_opt")
+		lost_money(req_money)
+		got(buy_item, 1)
+		
+		if db.god.u[2] and is_excluded_item(buy_item) then
+			db.god.c[2] = db.god.c[2]+1
+		else
+			local info
+			for i =1,3 do
+				info = "acv_halavshic"..tostring(i)
+				if not has_info(info) then 
+					give_info(info)
+					break
+				end
+			end
+		end
+	end
+	console:execute("buy_item ".."nil")
+end
+
+function is_excluded_item(item)
+	local unique_items = {"wpn_fot", "wpn_kuvalda"}
+	for i, se_name in ipairs(unique_items) do
+		if se_name == item then
+			return false
+		end
+	end
+	
+	local excluded_items = {"amk_transmutator", "teleportator", "anom_egg", "arhara_obman", "bioradar", "amulet", "detector_", "^nv_", "af_", "wpn_", "ammo_", "grenade_", "_tele", "zone_", "zone_docs", "zonedocs"}
+
+	for i, se_name in ipairs(excluded_items) do
+		if string.find(item, se_name) then
+			return true
+		end
+	end
+
+	local ini = config
+	local class=ini:line_exist(item, "class") and ini:r_string(item, "class") or ""
+	local outfits={
+		["E_STLK"]=true,
+		["EQU_STLK"]=true,
+		["EQU_MLTR"]=true,
+		["EQU_EXO"]=true
+	}
+	return
+		ini:line_exist(item, "teleport") or
+		(class == "O_INVBOX") or
+		(outfits[class]) or
+		(ini:line_exist(item, "script_binding") and string.find(ini:r_string(item, "script_binding"), "bind_monster")) or
+		(ini:line_exist(item, "script_binding") and string.find(ini:r_string(item, "script_binding"), "bind_stalker"))
+end
+
+local bad_objects = {}
+local fname = ""
+local not_found_name = nil
+
+-- удаление проблемных объектов
+function del_bad_objects()
+	if not game_is_running() then return end
+	local bad_objects_value = string.trim(ui_mm_opt_creator.getter_user_param("invalid_objects","nil"))
+	if bad_objects_value=="nil" or bad_objects_value=="" then 
+		not_found_name=nil
+		return 
+	end
+	bad_objects = string.explode(bad_objects_value, " ", true)
+	local se_obj
+
+	-- сначала проверим наличие всех секций
+	for i, se_name in ipairs(bad_objects) do
+		if not server_object(se_name) then
+			not_found_name = se_name
+			return
+		end
+	end
+	
+	-- теперь удаляем
+	for i, se_name in ipairs(bad_objects) do
+		se_obj = server_object(se_name)
+		release(se_obj, true)
+		ui_mm_opt_creator.setter_user_param("invalid_objects","nil")
+	end
+	
+	return
+end
+
+-- вывод информации об удаленных объектах
+function send_bad_objects_info()
+	-- есть ненайденный объект
+	if not_found_name then
+		send_info(translate("ui_bad_object")..": ["..not_found_name.."]")
+		not_found_name = nil
+		return
+	end
+	
+	for i, se_name in ipairs(bad_objects) do
+		send_info(translate("ui_bad_object_del")..": "..se_name)
+		archievements.acv_count_event("acv_neud", 20, "acv_neud")
+	end
+
+	bad_objects = {}
+end
+
+function send_info(text)
+	sms(text, nil, "nano", 10000)
+	log(""..text)
+end
+
+-- проверка допопций
+function check_options()
+	local value = console:get_float("cam_inert")
+	if value > 0.9 then
+		console:execute("cam_inert 0.9")
+	end
+end

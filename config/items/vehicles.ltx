@@ -1,0 +1,41 @@
+;==================================================================================================
+;--/ Last edit: 15.06.2013 [...]
+;==================================================================================================
+;--/ (from items.ltx)
+[m_car]
+cform                = skeleton
+class                = SCRPTCAR
+
+inv_name				= Vehicles
+inv_name_short			= Vehicles
+description				= Vehicles
+
+inv_weight           = 1000
+cost                 = 150000
+inv_grid_width       = 1
+inv_grid_height      = 1
+
+script_binding       =  bind_car.bind ;--bind_physic_object.init
+
+;-- *************** BTR ***************
+
+[vehicle_btr]
+$spawn						= "lost alpha\vehicles\vehicle_btr"
+class 						= SCRPTCAR
+cform 						= skeleton
+visual 						= physics\vehicles\btr\veh_btr_u_01.ogf
+actor_visual 				= physics\vehicles\btr\veh_btr_u_01.ogf
+script_binding			    = bind_car.bind ;--bind_vehicles.initialize
+has_trunk					= false
+fuel_tank					= 400
+dist_use_fuel				= 2000
+fuel_consumption		    = 0.0010
+trunk_capacity			    = 200
+actor_dist_plane		    = 3.90, 5.05
+actor_dist_center		    = 4.87, 6.02
+exhaust_pipe_dist		    = 2.26, 2.90
+inv_name					= btr_name ;--btr-70
+inv_name_short			    = btr_name ;--btr-70
+icon						= ui_veh_btr
+description					= btr_descr ;--enc_vehicles_btr-70
+cost						= 500000

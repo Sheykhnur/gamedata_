@@ -1,0 +1,183 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_kamper.script
+ Description: Scheme "Lager. Dude(s) sitting near fire"
+ Copyright  : 2011 © LA-team
+ Author     : gr1ph00n(25.04.2011)
+ Editors    : gr1ph00n(26.04.2011)
+ Last edit  : 01.08.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_AI_Kamper = xr_evaluators_id.stohe_kamp_base +7
+local iAct_AI_Kamper = xr_actions_id.stohe_kamp_base +7
+local tBindEvls = {} --/ array of 'external' preconditions of activation schemes
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+Is_Pickuper = function() return false end --/ stub
+Who_Pickuping = function() return nil end --/ stub
+
+function PreSets(e)
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout and xr_blowout.get_ai_evl(0),            flg = false}, --/ don't see blowout
+		[2] = {id = db.la_ai_watcher and la_ai_watcher.get_ai_evl(0),      flg = false}, --/ no gathering
+		--[3] = {id = not db.no_gather_items and stalker_ids.property_items, flg = false}, --/#?# no items to gather
+		--[4] = {id = stalker_ids.property_puzzle_solved,                  flg = false}, --/#?# gathering (of items)
+		--[5] = {id = xr_evaluators_id.state_mgr +3,                       flg = false } --/#?#
+	}
+	for idx,v in ipairs(tAddEvls) do
+		if type(v.id) == 'number' then
+			table.insert( tBindEvls, {v.id, v.flg == true} )
+		end
+	end
+	if db.la_ai_watcher then
+		Is_Pickuper   = la_ai_watcher.Is_Pickuper
+		Who_Pickuping = la_ai_watcher.Who_Pickuping
+	end
+end
+--/ --------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+--/ Evaluators
+--/ -----------------------------------------------------------------------------------------------
+class "evaluator_kamper" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/ condition: current section of logic active (true/false)
+function evaluator_kamper:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_kamper:evaluate()
+	return xr_logic.is_active(self.object, self.st)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Actions
+--/ -----------------------------------------------------------------------------------------------
+class "action_kamper" (action_base)
+--/ ------------------------------------------------------------------
+function action_kamper:__init(action_name, st) super(nil, action_name)
+	self.st = st
+	self.log = st.log
+end
+
+function action_kamper:initialize()
+	action_base.initialize(self)
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self.path_walk  = get_patrol(self.st.path_walk)
+	self.look_point = get_patrol(self.st.path_look)
+	self.kamp_mgr = self.st.kamp_mgr
+	self.move_mgr = self.st.move_mgr
+	self.move_mgr:reset(self.st.path_walk, utils.path_parse_waypoints(self.st.path_walk), self.st.path_look, utils.path_parse_waypoints(self.st.path_look), self.st.camp_name, {moving1 = "walk"})
+	if self.log then log("ac:init:NPC=[%s] paths=[%s/%s]", self.object:name(), self.st.path_walk, self.st.path_look, "") end --/#~#
+end
+
+function action_kamper:execute()
+	action_base.execute(self)
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	self.move_mgr:update()
+	local reached, point = self.move_mgr:standing_on_terminal_waypoint()
+	if reached then
+		if not self.kamp_mgr:Contains(self.object:id()) then
+			self.kamp_mgr:AddNpc(self.object)
+		end
+		local state, sound, substate = self.kamp_mgr:UpdateNpc(self.object)
+		state_mgr.set_state(self.object, state, nil, nil, {look_position = self.look_point:point(0)}, nil, nil, {subanim = substate})
+		xr_sound.set_sound(self.object, sound)
+	end
+end
+
+function action_kamper:hit_callback(obj, amount, local_direction, who, bone_index)
+	self.st.kamp_mgr:hit_callback(obj, amount, local_direction, who, bone_index)
+end
+
+function action_kamper:death_callback(victim, who)
+	self.st.kamp_mgr:death_callback(victim, who)
+end
+
+function action_kamper:finalize()
+	self.object:set_path_type(game_object.level_path)
+	xr_sound.set_sound(self.object, nil)
+	self.kamp_mgr:OnBlowout(self.object)
+	self.kamp_mgr:RemoveNpc(self.object)
+	self.move_mgr:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	if st.log then log("add_to_binder: NPC=[%s], scheme=[%s], section=[%s]:(%s)", npc:name(), scheme, section, ">") end
+	st.move_mgr = db.storage[npc:id()].move_mgr --/#!#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	oPlanner:add_evaluator(iEvl_AI_Kamper, this.evaluator_kamper("ev_kamper", st))
+	--/ New Action: ---------------------------------------------------
+	local oNewAction = this.action_kamper("ac_kamper", st)
+	xr_motivator.addGeneralPrecondition(oNewAction) --/ adding all 'regular' conditions
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition(world_property(v[1],v[2]))
+	end
+	oNewAction:add_precondition(world_property(iEvl_AI_Kamper, true))
+	oNewAction:add_effect(world_property(iEvl_AI_Kamper, false))
+	oPlanner:add_action(iAct_AI_Kamper, oNewAction)
+	st.action = oNewAction --/ for registration of reset's
+	
+	--/ Actions (additional preconditions for some standard operators)
+	local oAction = oPlanner:action(stalker_ids.action_alife_planner)
+	oAction:add_precondition(world_property(iEvl_AI_Kamper, false))
+	if not db.no_gather_items then 
+		oAction = oPlanner:action(stalker_ids.action_gather_items) --/ action of gathering (taking items)
+		oAction:add_precondition(world_property(iEvl_AI_Kamper, false)) --/ allowed if evaluator of scheme not active
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	
+	st.path_walk = Get_Cfg_String(ini, section, "path_walk", nil, true,  gulag_name)
+	st.path_look = Get_Cfg_String(ini, section, "path_look", nil, false, gulag_name)
+	st.camp_name = Get_Cfg_String(ini, section, "kamp_name", nil, true,  gulag_name)
+	st.kamp_mgr = kamp_manager.GetKamp(st.camp_name,nil)
+	st.no_gather_items = Get_Cfg_Bool  (ini, section, "no_gather_items", true)
+	
+	ASSERT(validate_patrol_path(st.path_walk, npc, true), "set_scheme: section=[%s] path_walk=[%s] wrong!", section, st.path_walk, "")
+	ASSERT(validate_patrol_path(st.path_look, npc, true), "set_scheme: section=[%s] path_look=[%s] wrong!", section, st.path_look, "")
+	--/ for debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = npc and db.storage[ npc:id() ]
+	local st = stor and stor[scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]", npc:name(), scheme, "") end --/#~#
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

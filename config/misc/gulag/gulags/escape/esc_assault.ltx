@@ -1,0 +1,270 @@
+[danger@esc_assault]
+ignore_distance = 0
+
+[wounded@esc_assault]
+hp_cover = 0|false ;--/ запрет прятаться в каверы
+
+[combat_ignore@esc_assault]
+
+[threshold@esc_assault]
+max_ignore_distance = 3
+
+[meet@esc_assault_petruha_wait]
+meet_state		= 25|hello |5|nil
+meet_state_wpn	= 25|hello |5|nil
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog	= esc_rangers_dialog
+
+;-- **************** STATE 0 ***********************
+
+[logic@esc_assault_petruha_wait]
+active = camper@esc_assault_petruha_wait
+
+threshold = threshold@esc_assault
+
+[camper@esc_assault_petruha_wait]
+path_walk = petruha_wait
+path_look = petruha_wait_look
+danger = danger@esc_assault
+meet = meet@esc_assault_petruha_wait
+def_state_standing  = guard
+invulnerable =  true
+on_info = {+esc_assault_go1} remark@esc_assault_petruha
+on_info2 = {=dist_to_actor_le(3)} remark@esc_assault_petruha_near_wait
+on_info3 = {=is_npc_online} camper@esc_assault_petruha_good
+on_info4 = {+esc_talked_with_wolf} camper@esc_assault_petruha_good
+on_info5 = {+scene_end} camper@esc_assault_petruha_good
+
+[camper@esc_assault_petruha_good]
+path_walk = petruha_wait
+path_look = petruha_wait_look
+danger = danger@esc_assault
+meet = meet@esc_assault_petruha_wait
+def_state_standing  = guard
+invulnerable = false
+on_info = {+esc_assault_go1} remark@esc_assault_petruha
+on_info2 = {=dist_to_actor_le(3)} remark@esc_assault_petruha_near_wait
+on_info3 = {!is_npc_online -esc_talked_with_wolf -scene_end} camper@esc_assault_petruha_wait
+
+[remark@esc_assault_petruha_near_wait]
+danger = danger@esc_assault
+meet = meet@esc_assault_petruha_wait
+target = actor
+on_info = {+esc_assault_go1} remark@esc_assault_petruha
+on_info2 = {=dist_to_actor_ge(10)} camper@esc_assault_petruha_wait
+
+[remark@esc_assault_petruha]
+anim = ward
+snd = esc_assault_raid
+meet = no_meet
+target = esc_assault_walker_look, 0
+
+danger = danger@esc_assault
+on_signal = sound_end| %+esc_assault_talked_petruha =smart_terrain_force_update(esc_assault)%
+
+[logic@esc_assault_ranger1_wait]
+active = kamper@esc_assault_ranger1_wait
+
+
+;--for test
+[kamper@esc_assault_ranger1_wait]
+kamp_name = campfire_01
+path_walk = walker_wait1
+path_look = walker_look
+danger = danger@esc_assault
+threshold = threshold@esc_assault
+invulnerable = true
+on_info = {=is_npc_online} kamper@esc_assault_ranger1_good
+on_info2 = {+esc_talked_with_wolf} kamper@esc_assault_ranger1_good
+on_info3 = {+scene_end} kamper@esc_assault_ranger1_good
+
+[kamper@esc_assault_ranger1_good]
+kamp_name = campfire_01
+path_walk = walker_wait1
+path_look = walker_look
+danger = danger@esc_assault
+threshold = threshold@esc_assault
+invulnerable = false
+on_info = {!is_npc_online -esc_talked_with_wolf -scene_end} kamper@esc_assault_ranger1_wait
+
+[logic@esc_assault_ranger2_wait]
+active = kamper@esc_assault_ranger2_wait
+
+
+[kamper@esc_assault_ranger2_wait]
+kamp_name = campfire_01
+path_walk = walker_wait2
+path_look = walker_look2
+danger = danger@esc_assault
+threshold = threshold@esc_assault
+invulnerable = true
+on_info = {=is_npc_online} kamper@esc_assault_ranger2_good
+on_info2 = {+esc_talked_with_wolf} kamper@esc_assault_ranger2_good
+on_info3 = {+scene_end} kamper@esc_assault_ranger2_good
+
+[kamper@esc_assault_ranger2_good]
+kamp_name = campfire_01
+path_walk = walker_wait2
+path_look = walker_look2
+danger = danger@esc_assault
+threshold = threshold@esc_assault
+invulnerable = false
+on_info = {!is_npc_online -esc_talked_with_wolf -scene_end} kamper@esc_assault_ranger2_wait
+
+;-- **************** STATE 1 ***********************
+
+[danger@esc_assault_approaching]
+ignore_distance = 0
+ignore_distance_corpse = 0
+ignore_distance_sound = 0
+
+[logic@esc_assault_petruha_approaching]
+active = walker@esc_assault_petruha_approaching
+
+threshold = threshold@esc_assault
+
+[walker@esc_assault_petruha_approaching]
+path_walk = fight_walk1
+path_look = fight_walk1_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_approaching
+team = esc_rangers
+on_signal = wait | remark@esc_assault_petruha_wait2
+
+[remark@esc_assault_petruha_wait2]
+anim = binocular
+target = esc_assault_wait_point1_look, 0
+meet = no_meet
+danger = danger@esc_assault_approaching
+on_info = {+scene_end} walker@esc_assault_petruha_approaching2
+
+[walker@esc_assault_petruha_approaching2]
+path_walk = apprach1
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_approaching
+team = esc_rangers
+on_signal = reached | %+esc_assault_go2%
+on_info = {+esc_assault_go2} %=smart_terrain_force_update(esc_assault)%
+
+[logic@esc_assault_ranger1_approaching]
+active = walker@esc_assault_ranger1_approaching
+
+threshold = threshold@esc_assault
+
+[walker@esc_assault_ranger1_approaching]
+path_walk = fight_walk2
+path_look = fight_walk2_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_approaching
+team = esc_rangers
+on_signal = wait | remark@esc_assault_ranger1_wait2
+
+[remark@esc_assault_ranger1_wait2]
+anim = caution
+target = esc_assault_wait_point2_look, 0
+meet = no_meet
+danger = danger@esc_assault_approaching
+on_info = {+scene_end} walker@esc_assault_ranger1_approaching2
+
+[walker@esc_assault_ranger1_approaching2]
+path_walk = apprach2
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_approaching
+team = esc_rangers
+on_signal = reached | %+esc_assault_go2%
+
+
+[logic@esc_assault_ranger2_approaching]
+active = walker@esc_assault_ranger2_approaching
+
+threshold = threshold@esc_assault
+
+[walker@esc_assault_ranger2_approaching]
+path_walk = fight_walk3
+path_look = fight_walk3_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_approaching
+team = esc_rangers
+on_signal = wait | remark@esc_assault_ranger2_wait2
+
+[remark@esc_assault_ranger2_wait2]
+anim = caution
+target = esc_assault_wait_point3_look, 0
+meet = no_meet
+danger = danger@esc_assault_approaching
+on_info = {+scene_end} walker@esc_assault_ranger2_approaching2
+
+[walker@esc_assault_ranger2_approaching2]
+path_walk = apprach3
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_approaching
+team = esc_rangers
+on_signal = reached | %+esc_assault_go2%
+
+
+;-- **************** STATE 2 ***********************
+
+[danger@esc_assault_fight]
+ignore_distance_corpse = 0
+
+[logic@esc_assault_petruha_fight]
+active = walker@esc_assault_petruha_fight
+
+
+[walker@esc_assault_petruha_fight]
+path_walk = fight_walk1a
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_fight
+wounded = wounded@esc_assault
+
+[logic@esc_assault_ranger1_fight]
+active = walker@esc_assault_ranger1_fight
+
+
+[walker@esc_assault_ranger1_fight]
+path_walk = fight_walk2a
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_fight
+wounded = wounded@esc_assault
+
+[logic@esc_assault_ranger2_fight]
+active = walker@esc_assault_ranger2_fight
+
+
+[walker@esc_assault_ranger2_fight]
+path_walk = fight_walk3a
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@esc_assault_fight
+wounded = wounded@esc_assault
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,0 +1,86 @@
+; Универсальный телепортатор
+[teleportator]:identity_immunities
+GroupControlSection	= spawn_group
+discovery_dependency =
+$spawn 			= "food and drugs\antirad"
+$prefetch 		= 32
+class			= II_ANTIR
+cform           = skeleton
+visual          = equipments\item_pda.ogf
+description		= teleportator_descr
+
+inv_name			= teleportator
+inv_name_short		= teleportator
+inv_weight			= 0.2
+
+inv_grid_width		= 2
+inv_grid_height		= 2
+inv_grid_x			= 10
+inv_grid_y			= 24
+cost				= 30000
+
+; eatable item
+eat_health = 0
+eat_satiety = 0
+eat_power = 0
+eat_radiation = 0
+wounds_heal_perc = 0
+eat_portions_num = 1
+
+; food item
+animation_slot		= 4
+
+;hud item
+hud = wpn_vodka_hud
+
+; артефакт "Булыжник" (из АМК)
+[af_kamen]:af_base
+GroupControlSection	= spawn_group
+$spawn				= "artifacts\electra moonlight"
+
+$prefetch 			= 64
+cform				= skeleton
+class				= ARTEFACT
+
+visual				= physics\anomaly\artefact_kamen.ogf  
+description			= descr_af_kamen
+inv_name			= af_kamen
+inv_name_short		= 
+inv_weight			= 0.5
+
+inv_grid_x			= 12
+inv_grid_y			= 23
+
+
+cost				= 500
+
+jump_height			= 3
+
+particles			= anomaly2\artefact\artefact_mincer
+
+
+lights_enabled = true
+trail_light_color = 1, 0.894, 0.403
+trail_light_range = 5.0
+
+
+;скорости увеличения (уменьшения) 
+health_restore_speed		= 0.0					
+radiation_restore_speed		= 0.0				
+satiety_restore_speed		= 0.0				
+power_restore_speed		= 0.0				
+bleeding_restore_speed		= 0.0		
+hit_absorbation_sect		= af_kamen_absorbation
+
+artefact_activation_seq		= af_activation_bold
+
+[af_kamen_absorbation]			;коэффициенты иммунитета 
+burn_immunity = 1.0
+strike_immunity = 1.0
+shock_immunity = 1.0
+wound_immunity = 1.0		
+radiation_immunity = 1.0
+telepatic_immunity = 1.0
+chemical_burn_immunity = 1.0
+explosion_immunity = 1.0
+fire_wound_immunity  = 1.0

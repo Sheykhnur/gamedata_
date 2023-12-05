@@ -1,0 +1,9 @@
+[logic]
+active = sr_idle@actor_in_zone
+
+[sr_idle@actor_in_zone]
+on_actor_inside = {-rad_meeting_actor -rad_actor_attacks_monolith} sr_idle@2 %+rad_meeting_actor%
+
+[sr_idle@2]
+on_info = {+rad_actor_attacks_monolith} nil %=release%
+on_info2 = {+rad_follower_enable} nil %=release%

@@ -1,0 +1,137 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : functional.script
+ Description: Adds functions for basic functional programming.
+ Copyright  : 2017 © STALKER-community
+ Author     : phobos2077
+ Editors    :
+ Last edit  : 05.11.2017 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+
+--- Reduces list into single value using given function.
+-- @param list - a LUA table
+-- @param func - a function with args (current, element, key) that yields new value
+-- @param start - starting value for reduction
+-- @return reduced value
+function reduce(list, func, start)
+	local current = start
+	for k, v in pairs(list) do
+		current = func(current, v, k)
+	end
+	return current
+end
+
+--- Sum a list of numbers.
+-- @param list
+-- @param func Optional transformation function.
+function sum(list, func)
+	if func then
+		list = map(list, func)
+	end
+	return reduce(list, function(a, x) return a + x end, 0)
+end
+
+--- Calculate average from a list of numbers.
+-- @param list
+-- @param func Optional transformation function.
+function average(list, func)
+	if #list == 0 then
+		return nil
+	end
+	return sum(list, func) / #list
+end
+
+--- Transforms given list using map function.
+-- @param list - a LUA table
+-- @param func - a function in form (value, key) that yields new value for each table field
+-- @return a new table
+function map(list, func)
+	local newList = {}
+	for k, v in pairs(list) do
+		newList[k] = func(v, k)
+	end
+	return newList
+end
+
+--- Extracts given field from a list of tables.
+-- Example: pluck({{a: 1}, {a: 2}, {a: 3}}, "a") => {1, 2, 3}
+-- @param list - A list of tables.
+-- @param key - A key to pluck from each sub-table.
+-- @return a new table
+function pluck(list, key)
+	local newList = {}
+	for k, v in pairs(list) do
+		newList[k] = v[key]
+	end
+	return newList
+end
+
+--- Filters given list using predicate.
+-- @param list - a LUA table
+-- @param func - a predicate function in form (value, key) that yeilds true to keep element or false to remove it.
+-- @return new list
+function filter(list, func)
+	local newList = {}
+	for k, v in pairs(list) do
+		if func(v, k) then
+			table.insert(newList, v)
+		end
+	end
+	return newList
+end
+
+--- Executes a function for each item in the table.
+-- @param list - a LUA table
+-- @param func - a function in form (value, key)
+function foreach(list, func)
+	for k, v in pairs(list) do
+		func(v, k)
+	end
+end
+
+--- Class for chaining list processing operations
+--[[
+	Example: chain({1,2,3})
+		.map(function(x) return x*x end)
+		.filter(function(x) return x < 5 end)
+		.value()
+]]--
+class "chain"
+
+--- Constructor
+-- @param tbl Initial table.
+function chain:__init(tbl)
+	self.tbl = tbl
+end
+
+function chain:map(func)
+	self.tbl = map(self.tbl, func)
+	return self
+end
+
+function chain:filter(func)
+	self.tbl = filter(self.tbl, func)
+	return self
+end
+
+function chain:foreach(func)
+	foreach(self.tbl, func)
+	return self
+end
+
+function chain:reduce(func, start)
+	return reduce(self.tbl, func, start)
+end
+
+function chain:sort(func)
+	table.sort(self.tbl)
+	return self
+end
+
+function chain:concat(delim, startIdx, endIdx)
+	return table.concat(self.tbl, delim, startIdx, endIdx)
+end
+
+function chain:value()
+	return self.tbl
+end

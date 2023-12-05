@@ -1,0 +1,35 @@
+[combat_ignore@killer_ob4]
+
+[hit@killer_ob4]
+on_info = {=hit_by_actor} %+fore_killer_fight%
+
+[death@killer]
+on_info = %+fore_killer_fight%
+
+[logic]
+active = walker@killer_ob40
+combat_ignore = combat_ignore@killer_ob4
+on_hit = hit@killer_ob4
+on_death = death@killer
+
+[walker@killer_ob40]
+path_walk = killer_ob4_walk1
+path_look = fore_killer_look
+combat_ignore_cond = {-fore_killer_fight =fighting_actor}  
+on_info = {+fore_killer_talk} walker@killer_ob4
+show_spot = false
+danger = danger_condition@killer
+ 
+[danger_condition@killer]
+ignore_distance       = 25
+ignore_distance_grenade = 25
+ignore_distance_corpse  = 1
+
+[walker@killer_ob4]
+path_walk = killer_ob4_walk1
+path_look = fore_killer_look
+combat_ignore_cond = {-fore_killer_fight =fighting_actor}  
+on_info = {=actor_out_zone(fore_talk_restrictor)} %+fore_killer_fight %
+show_spot = false
+meet = no_meet
+danger = danger_condition@killer

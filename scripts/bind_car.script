@@ -1,0 +1,533 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : bind_car.script (old name: bind_vehicles.script)
+ Description: Cars binding
+ Copyright  : 2008 © LA-team
+ Author     : barin, Gr1ph00n
+ Editors    : barin, Gr1ph00n, lox(01.01.2013)
+ Last edit  : 24.08.2013 [SkyLoader]
+--]]-----------------------------------------------------------------------------------------------
+--/ TODO: Tachometer and fuelicons disabled, gri moved all to engine, script need proper adaptation!!! lox
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+VEHICLES = {}
+
+local DISABLE_KNIFE = true --/ disable knife usage inside vehicle
+local DISABLE_NADES = true --/ disable grenades usage inside vehicle
+
+local ENABLE_MEDKIT  = true --/ enable medkit usage inside vehicle
+local ENABLE_BANDAGE = true --/ enable bandage usage inside vehicle
+
+local HUD_DUMP = false --/ debug info on hud
+
+local REFUEL_AMOUNT = 20
+
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function get_car_binder(car_id)
+	return car_id and VEHICLES[car_id]
+end
+
+function refuel_vehicle(car_id)
+	if car_id and VEHICLES[car_id] then
+		VEHICLES[car_id]:refuel()
+	end
+end
+
+function repair_vehicle(car_id)
+	if car_id and VEHICLES[car_id] then
+		VEHICLES[car_id]:repair()
+	end
+end
+
+function can_use_medkit()
+	return ENABLE_MEDKIT
+end
+
+function can_use_bandage()
+	return ENABLE_BANDAGE
+end
+
+function play_horn_sound()
+	if is_actor_inside_car() then
+		local snd_obj = xr_sound.get_safe_sound_object("car\\klaxon")
+		if snd_obj and not snd_obj:playing() then
+--			log("play_horn_sound:") --/#~#
+			if EngineBuildId() > 5311 then
+				snd_obj:play(db.actor, 0, sound_object.looped_s2d) --sky: added sound_object.looped + sound_object.s2d, waiting for new sound file
+			else
+				snd_obj:play(db.actor, 0, bit_or(sound_object.looped, sound_object.s2d))
+			end
+		end
+	end
+end
+
+function stop_horn_sound()
+	local snd_obj = xr_sound.get_safe_sound_object("car\\klaxon")
+	if snd_obj and snd_obj:playing() then
+--		log("stop_horn_sound:") --/#~#
+		snd_obj:stop()
+	end
+end
+
+function is_actor_inside_car()
+	for id, binder in pairs(VEHICLES) do
+		if binder.actor_inside then
+			return true
+		end
+	end
+	return false
+end
+
+function is_actor_inside_car_id()
+	for id, binder in pairs(VEHICLES) do
+		if binder.actor_inside then
+			return true, id
+		end
+	end
+	return false, nil
+end
+
+function handle_active_item()
+	local active_item = db.actor:active_item()
+	if active_item then
+		local s = active_item:section()
+		if DISABLE_KNIFE and s == "wpn_knife" then
+			db.actor:activate_slot(-1) --/ binoculars
+		elseif DISABLE_NADES and (s == "grenade_f1" or s == "grenade_rgd5" or s == "grenade_gd-05") then
+			db.actor:activate_slot(-1) --/ binoculars
+		end
+	end
+end
+
+function handle_flashlight()
+	local oItem = db.actor:item_in_slot(9)
+	if oItem and oItem:section() == "device_torch" then
+		db.actor:set_torch_state(false)
+	end
+end
+
+function r_double_float(section, field)
+	local t = parser.r_string_list(system_ini(), section, field, "0, 0")
+	return {min = tonumber(t[1]), max = tonumber(t[2])} --/>
+end
+
+function in_range(range, value)
+	return (value > range.min and value < range.max) --/>
+end
+
+--/ -----------------------------------------------------------------
+--/ Binding - registration of objects in binder
+--/ -----------------------------------------------------------------
+function bind(obj)
+	obj:bind_object( this.car_binder(obj) )
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "car_binder" (object_binder)
+--/ -----------------------------------------------------------------------------------------------
+function car_binder:__init(obj) super(obj)
+	self.loaded      = false
+	self.initialized = false
+	self.destroyed   = false --/#+#
+end
+
+function car_binder:reload(section)
+	object_binder.reload(self, section)
+end
+
+function car_binder:reinit()
+	object_binder.reinit(self)
+	--/#+#
+	self.car = self.object:get_car()
+	ASSERT(self.car ~= nil, sModule..":reinit:Obj=[%s] ~ NO CCar!", self.object:name(), "")
+	self.health = self.car:GetfHealth()
+	self.obj_id  = self.object:id()
+	self.obj_cid = self.object:clsid()
+	-- self.fuel = 0
+	self.prev_pos = nil
+	--self.need_refuel = false --/ refill flag
+	self.dump_hud = false --/ for debug
+	
+	db.storage[self.obj_id] = {}
+	self.st = db.storage[self.obj_id]
+	VEHICLES[self.obj_id] = self
+	
+	local sini,section = system_ini(), self.object:section() --/#+#
+	self.has_trunk      = Get_Cfg_Bool  (sini, section, "has_trunk", false) --/ do we have trunk
+	--self.trunk_capacity = Get_Cfg_Number(sini, section, "trunk_capacity", 5.0) --/ trunk capacity
+	self.fuel_tank         = Get_Cfg_Num32(sini, section, "fuel_tank", 10) --/ fuel tank
+	--self.dist_use_fuel     = Get_Cfg_Num32(sini, section, "dist_use_fuel", 500)
+	--self.fuel_consumption  = Get_Cfg_Num32(sini, section, "fuel_consumption", -10^4) --/ fuel consumption
+	self.actor_dist_plane  = r_double_float(section, "actor_dist_plane")
+	self.actor_dist_center = r_double_float(section, "actor_dist_center")
+	self.exhaust_pipe_dist = r_double_float(section, "exhaust_pipe_dist")
+	--if self.is_usable then
+		--self.trunk_items = {}
+	--end
+	if section:match('^vehicle_btr') then
+		self.is_btr = true
+		self.st.car_mgr = ph_car.action_car(self.object, self.st)
+	end
+	self.object:set_tip_text("")
+--	log("reinit:Obj=[%s/%s]", self.object:name(), self.obj_id, "") --/#~#
+end
+
+function car_binder:net_spawn(server_obj)
+	if not object_binder.net_spawn(self, server_obj) then return false end --/>
+--	log("net_spawn:Obj=[%s/%s]", self.object:name(), self.obj_id, "") --/#~#
+	return true
+end
+
+function car_binder:net_destroy()
+	if self.actor_inside then
+		self.actor_inside = false
+		stop_horn_sound()
+	end
+	if self.st.active_scheme then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "net_destroy")
+	end
+	self:clear_callbacks()
+	
+	db.storage[self.obj_id] = nil
+	VEHICLES[self.obj_id] = nil
+	
+	object_binder.net_destroy(self)
+end
+
+function car_binder:update(delta)
+	object_binder.update(self, delta)
+	
+	if self.destroyed then --/#+# car destroyed
+		return --/>
+	elseif not self.initialized and db.actor then
+		self.initialized = true
+		
+		local ph_shell = self.object:get_physics_shell()
+		if ph_shell then
+			ph_shell:apply_force(0,-1,0)
+		end
+		--/#+# SkyLoader: fix actor in car (for recover matrix of the actor in vehicle)
+		if self.car:engaged() then
+			--log("update: Obj=[%s] id=[%s] :fix actor in car", self.object:name(), self.obj_id, "") --/#~#
+			db.actor:detach_vehicle()
+			db.actor:attach_vehicle(self.obj_id)
+		end
+		--/<
+		xr_logic.initialize_obj(self.object, self.st, self.loaded, db.actor, modules.stype_car)
+		if self.st.active_section then
+			--log("update: Obj=[%s],id=[%s],clsid=[%s],sid=[%s],logic=[%s]", self.object:name(), self.obj_id, self.obj_cid, self.object:story_id(), self.st.active_section, "") --/#~#
+			self:set_callbacks() --/ all CALLBACKs set here:
+		end
+	end
+	
+	if self.car:engaged() then
+		if not self.actor_inside then
+			self.actor_inside = true
+			self:on_first_use()
+		end
+		this.handle_flashlight()
+	else
+		if self.actor_inside then
+			self.actor_inside = false
+			stop_horn_sound()
+		end
+		--/ set tip
+		--/SkyLoader: gr1ph's function is_actor_near_shell() is buggy, people got crashes with it. DIsabled, because i made use_callback for trunk bone
+		--[[if self:is_actor_near_shell() then
+			self.object:set_tip_text("car_character_use_trunk")
+		else
+			self.object:set_tip_text("")
+		end]]
+		
+	end
+	--/#+# necessary for work of logic schemes 'ph_car.script' and etc.
+	if self.st.active_section then
+--		log("update: Obj=[%s], active_section=[%s]", self.object:name(), self.st.active_section, "") --/#~#
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "update", delta)
+	end
+	--/#+# for cars 'hit_callback' and 'death_callback' not calling - let's plug this hole at least somehow:
+	local hp = self.car:GetfHealth() or 0
+	if self.health - hp > 0.00001 then --/ got damage?
+		local who = nil
+		if db.actor and self.car:IsObjectVisible(db.actor) then
+			who = db.actor
+		end
+		if hp >= 0.005 then
+			if who then
+				self:hit_callback(self.object, self.health - hp, vector():set(0,1,0), who, 0)
+			end
+		else --/ consider as destroyed
+			self.destroyed = true --/ flag: car destroyed
+			self:death_callback(self.object, who) --/#?# do we need it?
+		end
+	end
+	self.health = hp
+end
+
+function car_binder:net_save_relevant()
+	return true --/>
+end
+
+function car_binder:save(packet)
+	set_save_marker(packet, "save", false, sModule, self.object)
+	object_binder.save(self, packet)
+	xr_logic.save_obj(self.object, packet)
+	set_save_marker(packet, "save", true, sModule, self.object)
+end
+
+function car_binder:load(reader)
+	self.loaded = true
+	set_save_marker(reader, "load", false, sModule, self.object)
+	object_binder.load(self, reader)
+	xr_logic.load_obj(self.object, reader)
+	set_save_marker(reader, "load", true, sModule, self.object)
+end
+--/ ---------------------------------------------
+--/ CALLBACKs
+--/ ---------------------------------------------
+function car_binder:set_callbacks()
+end
+
+function car_binder:clear_callbacks()
+	self.object:set_callback(callback.use_object, nil)
+	self.object:set_nonscript_usable(true)
+end
+
+--/#+#
+function car_binder:use_trunk_callback()
+	if self.object:position():distance_to(db.actor:position()) < 3 and db.actor:get_current_holder_id() == 65535 then
+		--log("use_trunk_callback: car=[%s]", self.object:name(), "") --/#~#
+		self.car:OpenTrunkBone()
+		local wnd = ui_car_trunk.uiTrunkMenu(self.obj_id, self)
+		level.start_stop_menu(wnd, true)
+	end
+end
+--/#+# pseudo-callback
+function car_binder:hit_callback(obj, amount, local_direction, who, bone_index)
+--	log("hit_callback: Obj=[%s], amount=[%s], who=[%s]", self.object:name(), string.short(amount), who and who:name(), "") --/#~#
+	xr_logic.issue_event_schemes(self.object, {"hit",self.st.active_section}, "hit_callback", obj, amount, local_direction, who, bone_index)
+end
+--/#+# pseudo-callback
+function car_binder:death_callback(victim, who)
+	--log("death_callback: Obj=[%s], who=[%s]", victim and victim:name(), who and who:name(), "") --/#~#
+	if self.actor_inside then
+		self.actor_inside = false
+		stop_horn_sound()
+	end
+	local car_id = GetVar("actor_car_id", nil)
+	local dead_car = alife():object(self.object:id())
+	--log("actor car id = [%s] and dead car id = [%s] ", tostring(car_id),tostring(dead_car.id))
+	if level.map_has_object_spot(dead_car.id, "green_location") then
+		level.map_remove_object_spot(dead_car.id, "green_location")
+	end
+	if car_id and car_id == dead_car.id then
+		db.actor:disable_info_portion("bar_"..dead_car:section_name())
+		DelVar("actor_car")
+		DelVar("actor_car_id")
+	end
+	VEHICLES[self.obj_id] = nil
+	if self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "death_callback", victim or self.object, who)
+	end
+	xr_logic.switch_to_section(self.object, self.st, "nil")
+	self:drop_trunk_items()
+	self:clear_callbacks()
+	self.destroyed = true --/ flag: car destroyed
+end
+
+function car_binder:drop_trunk_item(item)
+	self.object:drop_item(item)
+	--/ Explode canisters and such
+	if item:clsid() == clsid.obj_explosive then
+		start_quick_timer(
+			0.05 + math.random() * 0.3,
+			function(t)
+				t[1]:explode(0)
+			end,
+			{item}
+		)
+	end
+end
+
+function car_binder:drop_trunk_items()
+	self.object:iterate_inventory(self.drop_trunk_item, self)
+end
+
+--/ ------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/ ------------------------------------------------------------------
+function car_binder:is_actor_inside()
+	return self.car:engaged()
+end
+
+function car_binder:get_health()
+	return self.car:GetfHealth()
+end
+
+function car_binder:get_velocity()
+	return self.car:CurrentVel():magnitude()
+end
+
+function car_binder:get_distance()
+	if not db.actor then
+		return 0
+	end
+	if not self:is_actor_inside() then
+		return 0
+	end
+	if not self.prev_pos then
+		self.prev_pos = db.actor:position()
+		return 0
+	end
+	
+	local curr_pos = db.actor:position()
+	local dist = curr_pos:distance_to(self.prev_pos)
+	self.prev_pos = curr_pos
+	
+	return dist
+end
+
+function car_binder:get_fuel()
+	return self.car:GetFuel()
+end
+
+function car_binder:fuel_percentage()
+	return 100 * (self.fuel / self.fuel_tank)
+end
+--/ актор вблизи корпуса?
+function car_binder:is_actor_near_shell()
+	if not db.actor then return false end --/>
+	
+	local actor_pos = db.actor:position()
+	if in_range(self.actor_dist_center, self.object:position():distance_to(actor_pos)) then
+		local bone = self.object:section() == "vehicle_zil" and "exhausts_" or "exhausts"
+		local dist = self.object:bone_position(bone):distance_to(actor_pos)
+		if in_range(self.exhaust_pipe_dist, dist) then
+			local blw = self.object:bone_position("back_left_wheel")
+			local flw = self.object:bone_position("front_left_wheel")
+			local brw = self.object:bone_position("back_right_wheel")
+			local frw = self.object:bone_position("front_right_wheel")
+			
+			local m1 = vector():set((flw.x + frw.x)/2, (flw.y + frw.y)/2, (flw.z + frw.z)/2)
+			local m2 = vector():set((blw.x + brw.x)/2, (blw.y + brw.y)/2, (blw.z + brw.z)/2)
+			
+			if in_range(self.actor_dist_plane, la_math.GetDistanceActorPlane(m1, m2)) then
+--				log("is_actor_near_shell: TRUE") --/#~#
+				return true --/>
+			end
+		--else log("is_actor_near_shell: bone_dist=[%s]~?", dist, "") --/#~#
+		end
+	end
+	return false
+end
+
+function car_binder:turn_engine_off()
+	if self.object:action() then
+		return
+	end
+	self.object:script(true, sModule)
+	action(self.object, move(move.off + move.handbrake), cond(cond.time_end, 1000)) --/ engine_off + vehicle_stop
+	self.object:script(false, sModule)
+end
+
+function car_binder:reset_move_handbrake()
+	self.object:script(true, sModule)
+	action(self.object, move(move.default), cond(cond.time_end))
+	self.object:script(false, sModule)
+end
+
+function car_binder:can_repair()
+	return self:get_health() < 0.9 and Has_Item("repair_kit")
+end
+
+function car_binder:can_refuel()
+	return self:get_fuel() < self.fuel_tank and Has_Item("explosive_mobiltank")
+end
+
+function car_binder:refuel()
+	Lost_Items("explosive_mobiltank", 1)
+	self.car:AddFuel(REFUEL_AMOUNT)
+end
+
+function car_binder:repair()
+	--/ particle starts at health ~0.659
+	local repairKit = nil
+	-- Find repkit with less portions left
+	db.actor:iterate_inventory(function(_, item)
+		if item:section() == "repair_kit" and (repairKit == nil or item:get_portions_num() < repairKit:get_portions_num()) then
+			repairKit = item
+		end
+	end, {})
+	-- Use one portion of repkit
+	if repairKit then
+		item_usage.eat_portion(db.actor, repairKit)
+	end
+	self.car:SetfHealth(1)
+	self.car:RemoveDamageParticles()
+end
+
+function car_binder:on_first_use()
+	if not has_info("actor_vehicle_first_use") then
+		give_info("actor_vehicle_first_use")
+		level.start_stop_menu(ui_car_info.uiVehicleFirstUse(), true)
+	end
+	--if level.map_has_object_spot(self.object:id(), "green_location") == 0 then
+	--	local carName = system_ini():r_string(self.object:section(), "inv_name")
+	--	level.map_add_object_spot_ser(self.object:id(), "green_location", carName)
+	--end
+	
+	local ini = self.object:spawn_ini()
+	if ini and ini:section_exist("vehicle_data") then --/ and ini:line_exist("vehicle_data", "on_use")
+		local on_use = xr_logic.cfg_get_condlist(ini, "vehicle_data", "on_use", self.object)
+		if on_use then
+			xr_logic.pick_section_from_condlist(db.actor, self.object, on_use.condlist)
+		end
+	--	log("on_first_use: Obj=[%s] :on_use(%s)", self.object:name(), on_use ~= nil, "") --/#~#
+	end
+end
+
+function car_binder:dump_info()
+	--[[
+	if not HUD_DUMP then
+		return
+	end
+	
+	local message = parser.FormatString("actor_inside = %s", tostring(self:is_actor_inside())) .. "\\n"
+	message = message .. parser.FormatString("health = %.3f", self:get_health()) .. "\\n"
+	message = message .. parser.FormatString("speed = %.3f", self:get_velocity()) .. "\\n"
+	message = message .. parser.FormatString("fuel = %.2f", self:fuel_percentage()) .. " %\\n"
+	message = message .. parser.FormatString("has_trunk = %s", tostring(self.has_trunk)) .. "\\n"
+	message = message .. parser.FormatString("fuel_tank = %d", self.fuel_tank) .. " L\\n"
+	message = message .. parser.FormatString("fuel_consumption = %d/%d", self.fuel_consumption, self.dist_use_fuel) .. " L/M\\n"
+	message = message .. parser.FormatString("trunk_capacity = %d", self.trunk_capacity) .. " KG\\n"
+	
+	local hud = get_hud()
+	local custom_static = hud:GetCustomStatic("priboy_dump_vertex")
+	if custom_static == nil then
+		hud:AddCustomStatic("priboy_dump_vertex", true)
+		custom_static = hud:GetCustomStatic("priboy_dump_vertex")
+	end
+	custom_static:wnd():SetTextST(message)
+	
+	if not self.dump_hud then
+		self.dump_hud = true
+	end
+	--]]
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------------------------------------
+function on_use_trunk(car_id) --/< by Skyloader: from engine (lost_alpha_cfg.ltx)
+	local binder = get_car_binder(car_id)
+	if binder then
+		binder:use_trunk_callback(binder.object, db.actor)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

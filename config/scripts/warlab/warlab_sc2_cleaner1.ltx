@@ -1,0 +1,68 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc2_cleaner1
+combat_ignore = combat_ignore
+
+[remark@war_sc2_cleaner1]
+anim = guard
+target = war_sc2_cleaner_walk, 2
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc2_talk1} remark@war_sc2_cleaner11
+
+[remark@war_sc2_cleaner11]
+anim = guard
+snd = war_replics13
+target = war_sc2_cleaner_walk, 2
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc2_talk2%
+on_info = {+war_sc2_talk3} remark@war_sc2_cleaner12
+
+[remark@war_sc2_cleaner12]
+anim = ordinary_talk3
+snd = war_replics15
+target = war_sc2_cleaner_walk, 2
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 4500 | remark@war_sc2_cleaner12_synth
+
+[remark@war_sc2_cleaner12_synth]
+anim = wait
+target = war_sc2_cleaner_walk, 2
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 1200 | %+war_sc2_kick%
+on_timer2 = 3200 | %+war_sc2_talk4%
+on_info = {+war_sc2_talk5} remark@war_sc2_cleaner13
+
+[remark@war_sc2_cleaner13]
+anim = ordinary_talk2
+snd = war_replics17
+target = war_sc2_cleaner_walk, 2
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc2_talk6% remark@war_sc2_cleaner13_synth
+
+[remark@war_sc2_cleaner13_synth]
+anim = wait
+target = war_sc2_cleaner_walk, 2
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc2_talk7} remark@war_sc2_cleaner14
+
+[remark@war_sc2_cleaner14]
+anim = war_earphone
+snd = war_replics19
+target = war_sc2_cleaner_walk, 2
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc2_talk8% remark@war_sc2_cleaner15
+
+[remark@war_sc2_cleaner15]
+anim = ward
+target = war_sc2_cleaner1_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc2_end} %=release%

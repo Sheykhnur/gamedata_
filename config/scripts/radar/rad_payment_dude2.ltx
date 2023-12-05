@@ -1,0 +1,25 @@
+[combat_ignore@punk2]
+
+[logic]
+active = walker@radar_punk2
+combat_ignore = combat_ignore@punk2
+
+[walker@radar_punk2]
+path_walk = rad_punk2_walk
+path_look = rad_punk2_look
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+meet = meet@punk2
+on_info = {+rad_monolith_outpost_welcome} walker@punk2_paid
+
+[walker@punk2_paid]
+path_walk = rad_punk2_paid_walk
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+meet = no_meet
+
+[meet@punk2]
+meet_state = 10|claim@rad_replics1|3|wait
+meet_state_wpn = 10|claim@rad_replics1|3|wait
+victim = 8|actor
+victim_wpn = 8|actor
+use = true
+use_wpn = true

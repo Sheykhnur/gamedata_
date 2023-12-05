@@ -1,0 +1,597 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : pdaMusicPlayer.script
+ Description: PDA: "MusicPlayer" field (5)
+ Copyright  : 2009 © LA-team
+ Author     : barin (19.04.2009)
+ Editors    : barin(09.09.2009)
+ Last edit  : 26.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local PlayListMgr = nil
+--/ --------------------------
+local PLAYLIST = "mplayer.ltx"
+local PLAYDIR  = "mplayer"
+local list_vertical_lines = false
+local vis_texture = nil
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function GetPlayList()
+	if not PlayListMgr then
+		PlayListMgr = PlayList()
+	end
+	return PlayListMgr
+end
+--/ --------------------------
+function update(e)
+	PlayListMgr:update(e.time)
+end
+--/ --------------------------
+function FindSoundFiles(subDir)
+	local nameList = {}
+	local fs_list = getFS():file_list_open("$game_sounds$", subDir, FS.FS_ListFiles)
+	for i=0, fs_list:Size()-1 do
+		local name = fs_list:GetAt(i):match('([%w|_]+)%.ogg')
+		if name and name ~= "" then --/
+--			log("FindSoundFiles: file=[%s] :(%s)", name, "+") --/#~#
+			table.insert(nameList, name)
+		end
+	end
+	--table.print(nameList) --/#~#
+	return nameList --/>
+end
+
+function read_description(ltx, section, field, default_value)
+	if ltx:section_exist(section) and ltx:line_exist(section,field) then
+		local str = ltx:r_string_wq(section, field)
+		if str then
+			str = str:gsub('\"', "")
+			if str ~= "" and str:gsub('%s', "") ~= "" then
+				return str:gsub('%s', '\160')  --/>
+			end
+		end
+	end
+	return default_value --/>
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "PlayList"
+--/ -----------------------------------------------------------------------------------------------
+function PlayList:__init()
+	self.play_list = {}
+	
+	self.reiterate = 0
+	self.hud_notify = false
+	
+	self.global_volume = 0.5
+	self.curr_track    = nil
+	self.track_changed = false
+	
+	self.upd_timer    = nil
+	self.time_elapsed = nil
+	self.time_tick    = nil
+end
+
+function PlayList:__finalize()
+end
+
+function PlayList:update(time)
+	if self.curr_track then
+		if self.play_list[self.curr_track].snd:playing() then
+			if time >= self.upd_timer then
+				self.upd_timer = time + (self.time_tick or 0)
+				self.time_elapsed = self.time_elapsed + 1
+			end
+		else
+			self:SelectTrack()
+		end
+	end
+end
+
+function PlayList:GetElapsedTime()
+	return self.time_elapsed or 0
+end
+
+function PlayList:SelectTrack()
+	local next_track = self.curr_track
+	--self.curr_track = nil
+	
+	if self.reiterate == 2 then
+		next_track = next_track + 1
+		if next_track > #self.play_list then
+			next_track = 1
+		end
+	elseif self.reiterate == 1 then
+		next_track = math.random(#self.play_list)
+		if #self.play_list > 1 then
+			while next_track == self.curr_track do
+				next_track = math.random(#self.play_list)
+			end
+		end
+	else
+		if self.reiterate == 0 then
+			self.track_changed = true
+		--else --/ repeat current track
+		end
+		return --/>
+	end
+	
+	self:Play(next_track)
+	self.track_changed = true
+end
+
+function PlayList:LoadPlayList()
+	local ltx = ini_file(PLAYLIST)
+	if ltx and ltx:section_exist("options") then
+		local subDir = utils.cfg_get_string(ltx, "options", "subdir", db.actor, false, "", PLAYDIR).."\\"
+		local nameList = this.FindSoundFiles(subDir)
+		for _,name in ipairs(nameList) do
+			local snd_obj = sound_object(subDir..name)
+			if snd_obj then
+				local track = { snd = snd_obj, length = snd_obj:length(), name = name}
+				track.duration = ms2string(track.length)
+				track.title  = this.read_description(ltx, name, "title", name)
+				track.artist = this.read_description(ltx, name, "artist", "<unknown>")
+				table.insert(self.play_list, track)
+			else
+				abort(sModule..":LoadPlayList: sound '"..subDir..name.."' init failed!")
+			end
+		end
+		--table.print(self.play_list) --/#~#
+	else
+		abort("%s:FindSoundFiles: file '%s' or section 'options' does not exist!", sModule, PLAYLIST)
+	end
+end
+
+function PlayList:IsPlaying()
+	return self.curr_track ~= nil
+end
+
+function PlayList:Play(index)
+	self:Stop()
+	
+	self.play_list[index].snd:play(db.actor, 0, sound_object.s2d)
+	self.play_list[index].snd.volume = self.global_volume
+	
+	self.time_tick = self.play_list[index].length / 100 --/#?#
+	self.upd_timer = time_global() + self.time_tick
+	self.time_elapsed = 0
+	
+	self.curr_track = index
+	
+	if self.hud_notify then
+		local msg = "%c[255,160,160,160]" .. game.translate_string("ui_pda_mplayer_now_playing") .. "\\n%c[default]"
+		msg = msg .. self:GetArtist(index) .. " - " .. self:GetTitle(index)
+		--db.actor:give_game_news(msg, "ui\\ui_iconsTotal", Frect():set(670, 530, 83, 47), 5000, 0) --/#?#
+		news_manager.send_tip_hud("", msg, "pda")
+	end
+end
+
+function PlayList:Stop()
+	if self.curr_track then
+		if self.play_list[self.curr_track].snd:playing() then
+			self.play_list[self.curr_track].snd:stop()
+		end
+		self.curr_track = nil
+	end
+end
+
+function PlayList:GetArtist(index)
+	return self.play_list[index].artist
+end
+
+function PlayList:GetTitle(index)
+	return self.play_list[index].title
+end
+
+function PlayList:GetDuration(index)
+	return self.play_list[index].duration
+end
+
+function PlayList:GetVolume(index)
+	return self.play_list[index].snd.volume
+end
+
+function PlayList:SetVolume(index, vol)
+	self.play_list[index].snd.volume = vol
+end
+
+function PlayList:GetGlobalVolume()
+	return self.global_volume
+end
+
+function PlayList:SetGlobalVolume(vol)
+	self.global_volume = vol
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "mpTrack" (CUIListBoxItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function mpTrack:__init(index) super()
+	self:SetWndRect(0, 0, 415, 18)
+	
+	self.track = index
+	
+	local texture = if_then_else(index % 2 == 0, "ui\\pc\\ui_frm_dark_grey", "ui\\pc\\ui_frm_light_grey")
+	self.background = CUIStatic()
+	self.background:SetAutoDelete(true)
+	self:AttachChild(self.background)
+	self.background:Init(texture, 0, 0, 415, 16)
+	self.background:SetStretchTexture(true)
+	
+	self.playing = CUIStatic()
+	self.playing:SetAutoDelete(true)
+	self:AttachChild(self.playing)
+	self.playing:SetWndRect(0, 0, 16, 18)
+	self.playing:InitTexture("ui\\pc\\ui_pda_mplayer_stop")
+	self.playing:Show(false)
+	
+	self.track_no = CUIStatic()
+	self.track_no:SetAutoDelete(true)
+	self:AttachChild(self.track_no)
+	self.track_no:SetWndRect(20, 0, 20, 18)
+	self.track_no:SetText(tostring(index))
+	self.track_no:SetTextAlign(CGameFont.alRight)
+	self.track_no:SetFont(GetFontByName("letterica16"))
+	self.track_no:SetTextColor(GetColourByName("full_white"))
+	
+	self.artist = CUIStatic()
+	self.artist:SetAutoDelete(true)
+	self:AttachChild(self.artist)
+	self.artist:SetWndRect(50, 0, 145, 18)
+	self.artist:SetText(PlayListMgr:GetArtist(index))
+	self.artist:SetTextAlign(CGameFont.alLeft)
+	self.artist:SetFont(GetFontByName("letterica16"))
+	self.artist:SetTextColor(GetColourByName("full_white"))
+	
+	self.title = CUIStatic()
+	self.title:SetAutoDelete(true)
+	self:AttachChild(self.title)
+	self.title:SetWndRect(205, 0, 145, 18)
+	self.title:SetText(PlayListMgr:GetTitle(index))
+	self.title:SetTextAlign(CGameFont.alLeft)
+	self.title:SetFont(GetFontByName("letterica16"))
+	self.title:SetTextColor(GetColourByName("full_white"))
+	
+	self.duration = CUIStatic()
+	self.duration:SetAutoDelete(true)
+	self:AttachChild(self.duration)
+	self.duration:SetWndRect(360, 0, 55, 18)
+	self.duration:SetText(PlayListMgr:GetDuration(index))
+	self.duration:SetTextAlign(CGameFont.alCenter)
+	self.duration:SetFont(GetFontByName("letterica16"))
+	self.duration:SetTextColor(GetColourByName("full_white"))
+	
+	if list_vertical_lines then
+		local dlg = nil
+		for k, v in pairs({45, 200, 355}) do
+			dlg = CUIStatic()
+			dlg:SetAutoDelete(true)
+			self:AttachChild(dlg)
+			dlg:SetWndRect(v, 0, 1, 18)
+			dlg:InitTexture("ui\\pc\\ui_hor_line_list")
+		end
+	end
+end
+
+function mpTrack:SetFocus(playing)
+	local A,R,G,B = GetColourByName(playing and "yellow" or "full_white")
+	self.track_no:SetTextColor(A,R,G,B)
+	self.artist:SetTextColor(A,R,G,B)
+	self.title:SetTextColor(A,R,G,B)
+	self.duration:SetTextColor(A,R,G,B)
+	self.playing:Show(playing)
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaMusicPlayer" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaMusicPlayer:__init(name,rect,active) super()
+	self:SetWindowName("pda_"..name)
+	self:SetAutoDelete(true)
+	self.rect = rect
+	self.active = active
+	self.initialized = false
+	
+	if vis_texture then
+		self.visual_texture = vis_texture
+	else
+		self.visual_texture = string.format("ui_mplayer_visual_%d_", math.random(1,4))
+		vis_texture = self.visual_texture
+	end
+	self.visual_style = 1
+	
+	self.spectrum_upd = 0
+	self.visual_upd = nil
+	self.prev_track = nil
+end
+
+function uiPdaMusicPlayer:initialize()
+	GetPlayList()
+	self:InitControls()
+	self:InitCallBacks()
+	self.initialized = true
+end
+
+function uiPdaMusicPlayer:Update()
+	CUIScriptWnd.Update(self)
+	
+	if PlayListMgr:IsPlaying() then
+		self.duration:SetProgressPos(PlayListMgr:GetElapsedTime())
+		local time = time_global()
+		if time >= self.spectrum_upd then
+			self.spectrum_upd = time + 500
+			for k, v in pairs(self.spectrum) do
+				v:SetProgressPos(math.random(100))
+			end
+		end
+		if time >= self.visual_upd then
+			self.visual_upd = time + 1000
+			self.visualisation:InitTexture(self.visual_texture .. self.visual_style)
+			self.visual_style = self.visual_style + 1
+			if self.visual_style > 15 then
+				self.visual_style = 1
+			end
+		end
+	end
+	
+	if PlayListMgr.track_changed then
+		PlayListMgr.track_changed = false
+		if self.prev_track then
+			local track = self:FindTrack(PlayListMgr.curr_track)
+			if track ~= -1 then
+				self.track_title:SetText(PlayListMgr:GetTitle(PlayListMgr.curr_track))
+				self.visual_texture = string.format("ui_mplayer_visual_%d_", math.random(1,4))
+				vis_texture = self.visual_texture
+				if PlayListMgr.reiterate == 0 then
+					self.playlist:GetItem(self.prev_track):SetFocus(false)
+					self:StartStopMusic(nil, false)
+					self.prev_track = nil
+				elseif track ~= self.prev_track then
+					self.playlist:GetItem(self.prev_track):SetFocus(false)
+					self.playlist:GetItem(track):SetFocus(true)
+					self.prev_track = track
+				end
+			end
+		end
+	end
+end
+
+function uiPdaMusicPlayer:InitControls()
+	self:Init( unpack(self.rect) )
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_"..self:WindowName()..".xml")
+	--/ left panel
+	xml:InitFrame("left_frame_window", self)
+	xml:InitFrameLine("left_frame_header", self)
+	
+	if list_vertical_lines then
+		xml:InitAutoStaticGroup("playlist_lines_header", self)
+	end
+	
+	self.playlist = xml:InitListBox("playlist", self)
+	self:Register(self.playlist, "playlist")
+	
+	--/ left bottom panel
+	xml:InitFrame("options_frame_window",  self)
+	xml:InitFrameLine("options_frame_header", self)
+	
+	self:Register(xml:InitTab("tab_playback", self), "tab_playback")
+	self:Register(xml:InitCheck("btn_notify", self), "btn_notify")
+	
+	--/ right panel
+	xml:InitFrame("right_frame_window", self)
+	self.track_title = xml:InitFrameLine ("right_frame_header", self):GetTitleStatic()
+	xml:InitAnimStatic("anim_static", self)
+	xml:InitStatic("visualisation_skin", self)
+	
+	self.visualisation = CUIStatic()
+	self.visualisation:SetAutoDelete(true)
+	self.visualisation:Init("ui\\ui_noise", 474, 53, 277, 194)
+	self.visualisation:SetStretchTexture(true)
+	self:AttachChild(self.visualisation)
+	
+	local base_x,base_y = 478,256
+	self.spectrum = {}
+	
+	for i = 1, 15 do
+		self.spectrum[i] = xml:InitProgressBar("spectrum_bar", self)
+		self.spectrum[i]:SetWndPos(base_x + (i - 1) * 14, base_y)
+	end
+	
+	self.duration   = xml:InitProgressBar("duration_bar",  self)
+	self.vol_holder = xml:InitStatic     ("volume_holder", self)
+	self.vol_pbar   = xml:InitProgressBar("volume_bar", self)
+	self.vol_stc    = xml:InitStatic     ("volume_stc", self)
+	self.vol_up     = xml:Init3tButton   ("btn_volume_up",   self)
+	self.vol_down   = xml:Init3tButton   ("btn_volume_down", self)
+	
+	self:Register(self.vol_up,   "btn_vol_up")
+	self:Register(self.vol_down, "btn_vol_down")
+	self:HandleVolCtrls(false)
+end
+
+function uiPdaMusicPlayer:InitCallBacks()
+	self:AddCallback("playlist",     ui_events.LIST_ITEM_CLICKED, self.OnTrackSelected,   self)
+	self:AddCallback("tab_playback", ui_events.TAB_CHANGED,       self.OnPlaybackOptions, self)
+	self:AddCallback("btn_notify",   ui_events.BUTTON_CLICKED,    self.OnNotifyOptions,   self)
+	self:AddCallback("btn_vol_up",   ui_events.BUTTON_CLICKED,    self.OnVolumeUp,        self)
+	self:AddCallback("btn_vol_down", ui_events.BUTTON_CLICKED,    self.OnVolumeDown,      self)
+end
+
+function uiPdaMusicPlayer:OnPlaybackOptions()
+	PlayListMgr.reiterate = self:GetTabControl("tab_playback"):GetActiveIndex()
+end
+
+function uiPdaMusicPlayer:OnNotifyOptions()
+	local btn = self:GetCheckButton("btn_notify")
+	if btn:GetCheck() then
+		PlayListMgr.hud_notify = true
+		btn:SetTextST("ui_pda_mplayer_on")
+	else
+		PlayListMgr.hud_notify = false
+		btn:SetTextST("ui_pda_mplayer_off")
+	end
+end
+
+function uiPdaMusicPlayer:OnVolumeUp()
+	self:ChangeVolume(1)
+end
+function uiPdaMusicPlayer:OnVolumeDown()
+	self:ChangeVolume(-1)
+end
+
+function uiPdaMusicPlayer:ChangeVolume(value)
+	local curr_vol = PlayListMgr:GetGlobalVolume() --/ 0...1
+	curr_vol = math.max(0, math.min(curr_vol + value*0.1, 1))
+--	log("uiPdaMusicPlayer:ChangeVolume: [%s] => [%s]", value, curr_vol, "") --/#~#
+	self.vol_pbar:SetProgressPos(curr_vol*100)
+	self.vol_stc:SetText(string.format("vol %d%%", curr_vol*100))
+	
+	PlayListMgr:SetGlobalVolume(curr_vol)
+	if self.prev_track then
+		PlayListMgr:SetVolume(self.playlist:GetItem(self.prev_track).track, curr_vol)
+	end
+end
+
+function uiPdaMusicPlayer:HandleVolCtrls(b)
+	self.vol_holder:Show(b)
+	self.vol_pbar:Show(b)
+	self.vol_stc:Show(b)
+	self.vol_down:Show(b)
+	self.vol_up:Show(b)
+end
+
+function uiPdaMusicPlayer:StartStopMusic(index, action)
+	self:HandleVolCtrls(action)
+	
+	self.duration:SetProgressPos(0)
+	self.visualisation:InitTexture("ui\\ui_noise")
+	self.visual_texture = string.format("ui_mplayer_visual_%d_", math.random(1,4))
+	vis_texture = self.visual_texture
+	self.visual_style = 1
+	
+	for k, v in pairs(self.spectrum) do
+		v:SetProgressPos(0)
+	end
+	
+	if action then
+		PlayListMgr:Play(index)
+		local volume = PlayListMgr:GetGlobalVolume() * 100
+		self.vol_pbar:SetProgressPos(volume)
+		self.vol_stc:SetText(string.format("vol %d%%", volume))
+		self.spectrum_upd = time_global() + 1000
+		self.visual_upd = time_global() + 1000
+		self.track_title:SetText(PlayListMgr:GetTitle(PlayListMgr.curr_track))
+	else
+		PlayListMgr:Stop()
+		self.track_title:SetText("")
+	end
+end
+
+function uiPdaMusicPlayer:OnTrackSelected()
+	if self.playlist:GetSize() > 0 then
+		local idx = self.playlist:GetSelectedItem()
+		if idx ~= -1 then
+			if self.prev_track then
+				local track_mgr = self.playlist:GetItem(self.prev_track)
+				if self.prev_track == idx then
+					self:StartStopMusic(track_mgr.track, not PlayListMgr:IsPlaying())
+					return --/>
+				else
+					track_mgr:SetFocus(false)
+				end
+			end
+			local track_mgr = self.playlist:GetItem(idx)
+			track_mgr:SetFocus(true)
+			self:StartStopMusic(track_mgr.track, true)
+			self.prev_track = idx
+		end
+	end
+end
+
+function uiPdaMusicPlayer:FindTrack(index)
+	for idx = 0, self.playlist:GetSize() - 1 do
+		if self.playlist:GetItem(idx).track == index then
+			return idx --/>
+		end
+	end
+	return -1 --/>
+end
+
+function uiPdaMusicPlayer:AddPlayList()
+	if self.active and not next(PlayListMgr.play_list) then
+		PlayListMgr:LoadPlayList()
+		if next(PlayListMgr.play_list) then
+			for idx, track in ipairs(PlayListMgr.play_list) do
+				self.playlist:AddItem( this.mpTrack(idx) )
+			end
+			event("update"):register(this.update)
+		end
+	end
+end
+
+function uiPdaMusicPlayer:OnShow(show)
+	if show then
+		if not self.initialized then
+			self:initialize()
+		end
+		self:AddPlayList()
+		
+		self:GetTabControl("tab_playback"):SetNewActiveTab(tonumber(PlayListMgr.reiterate) or 0)
+		
+		local btn_notify = self:GetCheckButton("btn_notify")
+		if PlayListMgr.hud_notify then
+			btn_notify:SetCheck(true)
+			btn_notify:SetTextST("ui_pda_mplayer_on")
+		else
+			btn_notify:SetCheck(false)
+			btn_notify:SetTextST("ui_pda_mplayer_off")
+		end
+		
+		if PlayListMgr:IsPlaying() then
+			self.prev_track = self:FindTrack(PlayListMgr.curr_track)
+			if self.prev_track ~= -1 then
+				for idx = 0, self.playlist:GetSize() - 1 do
+					self.playlist:GetItem(idx):SetFocus(false)
+				end
+				
+				self.playlist:GetItem(self.prev_track):SetFocus(true)
+				self:HandleVolCtrls(true)
+				
+				self.visualisation:InitTexture("ui\\ui_noise")
+				if vis_texture then
+					self.visual_texture = vis_texture
+				else
+					self.visual_texture = string.format("ui_mplayer_visual_%d_", math.random(1,4))
+					vis_texture = self.visual_texture
+				end
+				self.visual_style = 1
+				self.track_title:SetText(PlayListMgr:GetTitle(PlayListMgr.curr_track))
+				
+				local volume = PlayListMgr:GetVolume(PlayListMgr.curr_track) * 100
+				self.vol_pbar:SetProgressPos(volume)
+				self.vol_stc:SetText(string.format("vol %d%%", volume))
+				self.spectrum_upd = time_global() + 500
+				self.visual_upd = time_global() + 500
+			else
+				abort("%s:uiPdaMusicPlayer:OnWindowShow: Could not find track on list!", sModule)
+				self.prev_track = nil
+			end
+		end
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

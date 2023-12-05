@@ -1,0 +1,36 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : game_registrator.script
+ Description: ...
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : ...
+ Last edit  : 13.02.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+--pragma deprecated
+
+function register(object_factory)
+	if not editor() then
+		--/                                    server_object_class |  clsid   | script_clsid
+	end
+end
+
+function get_game_clsid(game_type_option,is_server)
+	local tClsidByType = {
+		["single"]             = "SINGL"
+	}
+	local sClsid = game_type_option and tClsidByType[game_type_option]
+	if sClsid then
+		if is_server == true then
+			sClsid = "SV_"..sClsid
+		elseif is_server == false then
+			sClsid = "CL_"..sClsid
+		end
+	end
+	
+	if not editor() then
+		if event then event("connect"):trigger( {clsid=sClsid} ) end --/#+#>
+	end
+
+	return sClsid or "" --/>
+end
+--/ -----------------------------------------------------------------------------------------------

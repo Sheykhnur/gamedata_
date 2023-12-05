@@ -1,0 +1,44 @@
+[logic]
+active = sr_idle@0
+
+[sr_idle@0]
+on_info = {+fore_actor_in_trap} sr_idle@1
+on_info2 = {+fore_trap_free} nil %=release%
+
+[sr_idle@1]
+on_actor_inside = sr_sound@1
+on_info = {+fore_has_compass} nil %=release%
+on_info2 = {+fore_trap_free} nil %=release%
+
+[sr_sound@1]
+snd = flashbacks\flashback1,flashbacks\flashback2,flashbacks\flashback3,flashbacks\flashback4
+play_at_actor = true
+on_signal = sound_end| sr_idle@1
+on_timer = 20000| sr_tip %=spawn_object_random_pos(af_compass:compass_spawn_point:5) =remove_counter(fore_trap_count)%
+on_info = {+fore_has_compass} nil %=release%
+on_info2 = {=counter_equal(fore_trap_count:2)} sr_tip %=spawn_object_random_pos(af_compass:compass_spawn_point:5) =remove_counter(fore_trap_count)%
+on_info3 = {+fore_trap_free} nil %=release%
+on_actor_inside = %=inc_counter(fore_trap_count)%
+
+[sr_tip]
+header = hmm
+name = fore_v_piz
+sender = actor
+type = tips
+single = true
+showtime = 7000
+on_signal = tip_sended| sr_idle@2
+on_info = {+fore_has_compass} nil %=release%
+on_info2 = {+fore_trap_free} nil %=release%
+
+[sr_idle@2]
+on_actor_inside = sr_sound@2
+on_info = {+fore_has_compass} nil %=release%
+on_info2 = {+fore_trap_free} nil %=release%
+
+[sr_sound@2]
+snd = flashbacks\flashback1,flashbacks\flashback2,flashbacks\flashback3,flashbacks\flashback4
+play_at_actor = true
+on_signal = sound_end| sr_idle@2
+on_info = {+fore_has_compass} nil %=release%
+on_info2 = {+fore_trap_free} nil %=release%

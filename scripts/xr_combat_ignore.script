@@ -1,0 +1,149 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_combat_ignore.script
+ Description: Ignoring enemies
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : gr1ph00n
+ Last edit  : 06.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+-- TODO: get rid of combat_ignore_cond, it is too slow, try porting CoP system instead!
+-- TODO: Problem: slow reacting on combat_ignore_cond = {+info}, slow reacting on actor at all before any combat starts, very serious problem!!!
+-- TODO: add proper condition always, from new broken script xr_combat_ignore.script_ or use it and fix it!
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_process_enemy"
+--/ -----------------------------------------------------------------------------------------------
+function action_process_enemy:__init( oNPC, st )
+	self.object = oNPC
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function action_process_enemy:hit_callback(oObj, iAmount, vLocalDirection, oWho, iBoneIndex)
+--	if self.log then log("ac:hit_callback:NPC=[%s],Enemy=[%s]", oObj and oObj:name(), oWho and oWho:name(), "") end --/#~#
+	if iAmount > 0 and oWho and oWho:id() == idActor then --/ otherwise: somebody shoot in air
+		local tOverrides = self.st.overrides --xr_logic.generic_scheme_overrides(oObj)
+		if not (tOverrides and tOverrides.combat_ignore_keep_when_attacked) then
+			self.st.enabled = false
+		end
+	end
+end
+
+function action_process_enemy:enemy_callback(oNPC, oEnemy)
+	if oNPC and oEnemy then
+		if self.log then log("ac:enemy_callback:NPC=[%s],Enemy=[%s]", self.object:name(), oEnemy and oEnemy:name(), "") end --/#~#
+		return this.is_enemy(oNPC, oEnemy, self.st) --/>
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oNPC, ini, sScheme, sSection, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:[%s]", oNPC:name(), sScheme, sSection, ">") --/#~#
+	st.action = this.action_process_enemy(oNPC, st)
+	--/ fot debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:[%s]", oNPC:name(), sScheme, sSection, "+") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(oNPC, ini, sScheme, sSection)
+--	log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", oNPC:name(), sScheme, sSection, "") --/#~#
+	local st = xr_logic.assign_storage_and_bind(oNPC, ini, sScheme, sSection)
+	--[[
+	oNPC:set_enemy_callback( st.action.enemy_callback, st.action ) --/#?#
+	--/ registration of 'action', for call of 'callback' when changing settings of scheme:
+	xr_logic.subscribe_action_for_events(oNPC, st, st.action)
+	--st.logic = xr_logic.cfg_get_switch_conditions(ini, sSection, oNPC)
+	st.enabled = true
+	--]]
+	--/ for debug
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", oNPC:name(), sScheme, sSection, "") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ RESET SCHEME - switching scheme
+--/ -----------------------------------------------------------------
+function reset_scheme(oNPC, sScheme, tStor, sSection) --/#+#
+	local st = tStor.combat_ignore
+	--if st then --prevent's proper log
+		if st.action then
+			--/ setting enemy-callback
+			if IsStalker(oNPC) then
+				oNPC:set_enemy_callback( st.action.enemy_callback, st.action ) --/#?#
+			else
+				log("reset_scheme:NPC=[%s],clsid=[%s],scheme=[%s],section=[%s] ~ not set_enemy_callback", oNPC:name(), oNPC:clsid(), sScheme, sSection, "") --/#~#
+			end
+			--/ subscribe on hit callback:
+			xr_logic.subscribe_action_for_events( oNPC, st, st.action )
+			st.overrides = xr_logic.generic_scheme_overrides(oNPC)
+			st.enabled = true
+			--/ for debug
+			if st.log then log("reset_scheme:NPC=[%s],scheme=[%s],section=[%s]", oNPC:name(), sScheme, sSection, "") end --/#~#
+		else
+			log("reset_scheme:NPC=[%s],scheme=[%s],section=[%s], action~%s", oNPC:name(), sScheme, "???") --/#~#
+		end
+	--end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(oNPC, sScheme)
+	if IsStalker(oNPC) then --/ CCustomMonster : cannot access class member set_enemy_callback!
+		oNPC:set_enemy_callback() --/< disable 'enemy_callback'
+	elseif not IsTrader(oNPC) then
+		log("disable_scheme: NPC=[%s], clsid=[%s] ~ cannot access class member set_enemy_callback!", oNPC and oNPC:name(), oNPC and oNPC:clsid(), "") --/#~#
+	end
+	local st = db.storage[oNPC:id()][sScheme]
+	if st then
+		st.enabled = false
+		if st.action then
+			--/ unsubscribe from hit callback:
+			--/ This is necessary cause otherwise when switching on other set of schemes, in which there is no interception of combat,
+			--/ on old subscribed action continue call of callback.
+			xr_logic.unsubscribe_action_from_events(oNPC, st, st.action)
+		end
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]", oNPC:name(), sScheme, "") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------------------------------------
+function is_enemy(oNPC, oEnemy, st)
+	if not oNPC:alive() then
+		return false --/>
+	elseif oNPC:critically_wounded() then
+		return true --/>
+	end
+	local tStor = db.storage[oNPC:id()]
+	if not st then
+		if tStor then
+			st = tStor.combat_ignore
+		end
+	end
+	if not (st and st.enabled) then
+		return true --/>
+	end
+	
+	tStor.enemy = oEnemy
+	tStor.enemy_id = oEnemy and oEnemy:id() --/#?#
+	
+	local tO = st.overrides --xr_logic.generic_scheme_overrides(oNPC)
+	if tO and tO.combat_ignore and xr_logic.pick_section_from_condlist(db.actor, oNPC, tO.combat_ignore.condlist) ~= nil then
+		oNPC:enable_memory_object(oEnemy, false)
+		return false --/>
+	end
+	return true --/>
+end
+--/ -----------------------------------------------------------------------------------------------

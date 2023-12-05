@@ -1,0 +1,261 @@
+
+[danger@ros_bar_lager]
+ignore_distance = 0
+
+[combat_ignore@ros_bar_lager]
+
+[meet@ros_bar_lager]
+use = true
+use_wpn = true
+meet_talk_enabled = true
+meet_state = ward
+
+[logic@ros_bar_lager_hole_watcher]
+active = walker@ros_bar_lager_hole_watcher
+
+[walker@ros_bar_lager_hole_watcher]
+path_walk = hole_watcher_walk
+path_look = hole_watcher_look
+danger = danger@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard1]
+active = walker@ros_bar_lager_duty_guard1
+
+[walker@ros_bar_lager_duty_guard1]
+path_walk = duty_guard1_walk
+path_look = duty_guard1_look
+danger = danger@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard2]
+active = walker@ros_bar_lager_duty_guard2
+
+[walker@ros_bar_lager_duty_guard2]
+path_walk = duty_guard2_walk
+path_look = duty_guard2_look
+danger = danger@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard3]
+active = walker@ros_bar_lager_duty_guard3a
+
+[walker@ros_bar_lager_duty_guard3a]
+path_walk = duty_guard3_walk1
+path_look = duty_guard3_look1
+on_timer = 240000 | walker@ros_bar_lager_duty_guard3b
+danger = danger@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard3b]
+path_walk = duty_guard3_walk2
+path_look = duty_guard3_look2
+on_info {=npc_stay_on_point(180:reached)} walker@ros_bar_lager_duty_guard3c
+danger = danger@ros_bar_lager
+
+[walker@ros_bar_lager_duty_guard3c]
+path_walk = duty_guard3_walk3
+on_signal = reached | walker@ros_bar_lager_duty_guard3a
+danger = danger@ros_bar_lager
+
+[logic@ros_bar_lager_duty_guard4]
+active = walker@ros_bar_lager_duty_guard4
+
+[walker@ros_bar_lager_duty_guard4]
+path_walk = duty_guard4_walk
+path_look = duty_guard4_look
+danger = danger@ros_bar_lager
+
+[logic@ros_bar_lager_duty_commander]
+active = walker@ros_bar_lager_duty_commander1
+
+[walker@ros_bar_lager_duty_commander1]
+path_walk = commander_walk1
+path_look = commander_look1
+def_state_moving1 = ward
+def_state_moving2 = ward
+def_state_moving3 = ward
+on_timer = 120000 | walker@ros_bar_lager_duty_commander2
+danger = danger@ros_bar_lager
+
+[walker@ros_bar_lager_duty_commander2]
+path_walk = commander_walk2
+def_state_moving1 = walk
+on_signal = reached | walker@ros_bar_lager_duty_commander1
+danger = danger@ros_bar_lager
+
+[logic@ros_bar_lager_barman]
+active = walker@ros_bar_lager_barman
+combat_ignore = combat_ignore@ros_bar_lager
+trade = misc\trade\trade_barman.ltx
+inv_max_weight = 10000
+
+[walker@ros_bar_lager_barman]
+path_walk = barman_walk
+path_look = barman_look
+combat_ignore_cond = always
+def_state_standing = barman_wait_free
+def_state_moving1 = barman_walk_free
+def_state_moving2 = barman_walk_free
+def_state_moving3 = barman_walk_free
+meet = meet@ros_bar_lager_barman
+danger = danger@ros_bar_lager
+
+[meet@ros_bar_lager_barman]
+meet_state = 2|barman_talk_free@bar_bar_barmen_hello
+meet_state_wpn = 2|barman_talk_free@bar_bar_barmen_hello
+victim = 2|actor
+victim_wpn = 2|actor
+use = true
+use_wpn = true
+;meet_dialog		=  bar_bar_barmen_start
+
+[logic@ros_bar_lager_osvedomitel]
+active = walker@ros_bar_lager_osvedomitel
+
+[walker@ros_bar_lager_osvedomitel]
+path_walk = osvedomitel_walk
+path_look = osvedomitel_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager_osvedomitel
+danger = danger@ros_bar_lager
+
+[meet@ros_bar_lager_osvedomitel]
+use = true
+use_wpn = true
+meet_talk_enabled = true
+meet_state = 10|ward@bar_bar_osvedomitel_hello|2|ward
+meet_state_wpn = 10|ward@bar_bar_osvedomitel_hello|2|ward
+
+[logic@ros_bar_lager_hunter]
+active = walker@ros_bar_lager_hunter
+
+[walker@ros_bar_lager_hunter]
+path_walk = hunter_walk
+path_look = hunter_look
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_map_watcher]
+active = walker@ros_bar_lager_map_watcher1
+
+[walker@ros_bar_lager_map_watcher1]
+path_walk = map_watcher_walk
+path_look = map_watcher_look
+soundgroup = bar_visitors1
+def_state_standing = ward
+def_state_moving1 = walk
+on_timer = 180000 | walker@ros_bar_lager_map_watcher2
+meet = no_meet
+
+[walker@ros_bar_lager_map_watcher2]
+path_walk = map_watcher_walk2
+def_state_moving1 = walk
+def_state_moving2 = walk
+def_state_moving3 = walk
+def_state_standing = ward
+soundgroup = bar_visitors1
+on_signal = reached | walker@ros_bar_lager_map_watcher1
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_bar_stalker1]
+active = walker@ros_bar_lager_bar_stalker1
+
+[walker@ros_bar_lager_bar_stalker1]
+path_walk = stalker_walk1
+path_look = stalker_look1
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_bar_stalker2]
+active = walker@ros_bar_lager_bar_stalker2
+
+[walker@ros_bar_lager_bar_stalker2]
+path_walk = stalker_walk2
+path_look = stalker_look2
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_bar_stalker3]
+active = walker@ros_bar_lager_bar_stalker3
+
+[walker@ros_bar_lager_bar_stalker3]
+path_walk = stalker_walk3
+path_look = stalker_look3
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_bar_stalker4]
+active = walker@ros_bar_lager_bar_stalker4
+
+[walker@ros_bar_lager_bar_stalker4]
+path_walk = stalker_walk4
+path_look = stalker_look4
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_bar_stalker5]
+active = walker@ros_bar_lager_bar_stalker5
+
+[walker@ros_bar_lager_bar_stalker5]
+path_walk = stalker_walk5
+path_look = stalker_look5
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_bar_stalker6]
+active = walker@ros_bar_lager_bar_stalker6
+
+[walker@ros_bar_lager_bar_stalker6]
+path_walk = stalker_walk6
+path_look = stalker_look6
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_bar_stalker7]
+active = walker@ros_bar_lager_bar_stalker7
+
+[walker@ros_bar_lager_bar_stalker7]
+path_walk = stalker_walk7
+path_look = stalker_look7
+soundgroup = bar_visitors1
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+[logic@ros_bar_lager_assistant]
+active = walker@ros_bar_lager_assistant
+
+[walker@ros_bar_lager_assistant]
+path_walk = assistant_walk
+path_look = assistant_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager_assistant
+def_state_standing = ward
+def_state_moving1 = walk
+
+[meet@ros_bar_lager_assistant]
+meet_state = 10 | wait
+meet_state_wpn = 10 | wait
+victim = 10 | actor
+victim_wpn = 10 | actor
+use = true
+use_wpn = true
+;meet_dialog = 
+
+[logic@ros_bar_lager_assistant_guard]
+active = walker@ros_bar_lager_assistant_guard
+
+[walker@ros_bar_lager_assistant_guard]
+path_walk = assistant_guard_walk
+path_look = assistant_guard_look
+danger = danger@ros_bar_lager
+meet = meet@ros_bar_lager
+
+
+
+
+
+

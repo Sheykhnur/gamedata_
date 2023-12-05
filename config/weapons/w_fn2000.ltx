@@ -1,0 +1,240 @@
+[wpn_fn2000]:weapon_base,weapon_5.56x45,weapon_m209
+$prefetch                               = 8
+$spawn                                  = "weapons\fn-2000"
+animation_slot                          = 2
+class                                   = WP_GROZA
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+hand_dependence                         = 1
+repair_compatibility                    = l85
+scheduled                               = off
+weapon_class                            = assault_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 4
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 18
+silencer_x                              = 160
+silencer_y                              = 14
+
+; Text
+inv_name                                = wpn-fn2000
+inv_name_short                          = wpn-fn2000
+description                             = enc_weapons1_wpn-fn2000
+
+; Visual
+hud                                     = wpn_fn2000_hud
+position                                = -0.026, -0.132, 0.0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_fn2000
+strap_position                          = -0.15, -0.35, 0.27
+strap_orientation                       = -10, -3, 10
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_fn2000\wpn_fn2000.ogf
+lens_texture                            = wpn\wpn_crosshair_g36_lens
+lens_texture_h                          = 648
+lens_texture_w                          = 648
+lens_texture_x                          = 183
+lens_texture_y                          = 75
+
+; Effects
+fire_point                              = 0.010000, 0.166000, 0.475000
+flame_particles                         = weapons\generic_weapon05
+smoke_particles                         = weapons\generic_shoot_00
+silencer_smoke_particles                = weapons\generic_shoot_00
+shell_point                             = -0.020000, 0.186000, 0.200000
+shell_dir                               = 0.0, 1.0, 0.0
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 4
+light_var_color                         = 0.05
+light_var_range                         = 0.1
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\generic_draw
+snd_empty                               = weapons\gen_empty, 0.5
+snd_holster                             = weapons\generic_holster
+snd_reload                              = weapons\fn2000_reload, 0.8
+snd_shoot                               = weapons\n_fn2000_shot
+snd_silncer_shot                        = weapons\w_ak74_shot1
+snd_switch                              = weapons\groza_switch, 1.0, 0.5
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_FT200_M
+upgr_icon_x                             = 300
+upgr_icon_y                             = 395
+upgr_icon_width                         = 292
+upgr_icon_height                        = 118
+
+; Cost & Weight
+cost                                    = 10050
+inv_weight                              = 4.6
+ph_mass                                 = 4
+
+; Ammo
+ammo_mag_size                           = 30
+
+; Features
+fire_modes                              = 1, -1
+scope_status                            = 1
+scope_zoom_factor                       = 37.5 ;x1.6
+silencer_status                         = 2
+grenade_launcher_status                 = 1
+
+; Impact
+hit_power                               = 1.25
+
+; Ballistics
+fire_dispersion_base                    = 0.2
+
+; Performance
+rpm                                     = 750
+
+; Reliability
+misfire_start_prob                      = 0.01
+misfire_end_prob                        = 0.2
+condition_shot_dec                      = 0.000625 ; 1600 rounds
+condition_queue_shot_dec                = 0.000625
+
+; Handling
+control_inertion_factor                 = 1.2f
+PDM_disp_base                           = 2.3
+PDM_disp_vel_factor                     = 1.3
+PDM_disp_accel_factor                   = 1.3
+
+; Recoil
+cam_dispersion                          = 1.8
+cam_dispersion_inc                      = 0.4
+cam_dispersion_frac                     = 0.7
+cam_max_angle                           = 9.0
+cam_max_angle_horz                      = 5.0
+cam_step_angle_horz                     = 2.5
+zoom_cam_dispersion                     = 0.9
+zoom_cam_dispersion_inc                 = 0.3
+zoom_cam_step_angle_horz                = 1.5
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_fn2000
+upgrades                                = up_gr_firstab_fn2000, up_gr_seconab_fn2000, up_gr_thirdab_fn2000, up_gr_fourtab_fn2000, up_gr_fourtcd_fn2000, up_gr_fourte_fn2000, up_gr_fourtf_fn2000
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 50
+max_radius                              = 150
+holder_range_modifier                   = 1.85
+holder_fov_modifier                     = 0.7
+
+
+[wpn_fn2000_hud]:hud_base
+aim_hud_offset_pos                      = -0.112000,0.029500,-0.318000
+aim_hud_offset_rot                      = 0.010000,0.002500,-0.010000
+aim_hud_offset_pos_16x9                 = -0.138500,0.019500,-0.301800
+aim_hud_offset_rot_16x9                 = 0.010000,0.002500,-0.010000
+anim_bore                               = fn_2000_idle_bore
+anim_bore_g                             = fn_2000_idle_bore_gl
+anim_bore_w_gl                          = fn_2000_idle_bore
+anim_hide                               = fn_2000_holster
+anim_hide_g                             = fn_2000_holster_gl
+anim_hide_w_gl                          = fn_2000_holster
+anim_idle                               = fn_2000_idle
+anim_idle_aim                           = fn_2000_idle_aim
+anim_idle_g                             = fn_2000_idle_gl
+anim_idle_g_aim                         = fn_2000_idle_aim_gl
+anim_idle_moving                        = fn_2000_idle_moving
+anim_idle_moving_g                      = fn_2000_idle_moving_gl
+anim_idle_moving_w_gl                   = fn_2000_idle_moving
+anim_idle_sprint                        = fn_2000_idle_sprint_gl
+anim_idle_sprint_g                      = fn_2000_idle_sprint_gl
+anim_idle_sprint_w_gl                   = fn_2000_idle_sprint
+anim_idle_w_gl                          = fn_2000_idle
+anim_idle_w_gl_aim                      = fn_2000_idle_aim
+anim_reload                             = fn_2000_reload
+anim_reload_g                           = fn_2000_reload_gl
+anim_reload_w_gl                        = fn_2000_reload
+anim_shots                              = fn_2000_shoot
+anim_shots_g                            = fn_2000_shoot_gl
+anim_shots_w_gl                         = fn_2000_shoot
+anim_show                               = fn_2000_draw
+anim_show_g                             = fn_2000_draw_gl
+anim_show_w_gl                          = fn_2000_draw
+anim_switch                             = fn_2000_switch_off
+anim_switch_g                           = fn_2000_switch_on
+attach_place_idx                        = 0
+fire_bone                               = wpn_body
+fire_bone2                              = wpn_body
+fire_point                              = 0,0.054,0.358
+fire_point2                             = 0.0,-0.008,0.408
+gl_hud_offset_pos                       = -0.068500,-0.091000,0.000000
+gl_hud_offset_pos_16x9                  = -0.124500,-0.084000,0.000000
+gl_hud_offset_rot                       = -0.162500,0.000000,0.000000
+gl_hud_offset_rot_16x9                  = -0.170000,0.030000,0.000000
+hands_orientation                       = 0.250001,0.649990,1.849998
+hands_orientation_16x9                  = 2.149999,0.250000,1.399999
+hands_position                          = -0.081500,-0.204000,0.288000
+hands_position_16x9                     = -0.032000,-0.214499,0.299498
+item_orientation                        = -16.844534,-2.475593,361.820557
+item_position                           = 0.005280,0.016463,-0.003394
+item_visual                             = dynamics\weapons\wpn_fn2000\wpn_fn2000_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_dir                               = 0.0, 1.0, 0.0
+shell_point                             = 0.037,0.063,0.118
+zoom_hide_crosshair                     = true
+
+
+[wpn_fn2000_old]
+$spawn                                  = "weapons\fn-2000_old"
+class                                   = WP_GROZA
+
+; Inventory icon
+inv_grid_width                          = 4
+inv_grid_height                         = 2
+inv_grid_x                              = 32
+inv_grid_y                              = 24
+silencer_x                              = 175
+silencer_y                              = 14
+
+; Text
+description                             = enc_weapons1_wpn-fn2000_old
+
+; Visual
+hud                                     = wpn_fn2000_old_hud
+position                                = -0.026, -0.132, -0.01
+visual                                  = dynamics\weapons\wpn_fn2000\wpn_fn2000.ogf		;wpn_fn2000_old.ogf -- I lost file :) add to db pls
+
+; Effects
+fire_point                              = 0.01, 0.21, 0.37
+
+; Cost & Weight
+cost                                    = 18000
+inv_weight                              = 4.6
+
+; Features
+silencer_status                         = 2
+
+; Ballistics
+fire_dispersion_base                    = 0.18
+
+
+[wpn_fn2000_old_hud]:wpn_fn2000_hud
+apply_bobbing                           = false
+apply_collide                           = false
+apply_strafe_inertion                   = false
+fire_point                              = 0.0, 0.0, -0.05
+grenade_zoom_offset                     = -0.064300, -0.027600, 0.000000
+grenade_zoom_rotate_x                   = -0.074700
+grenade_zoom_rotate_y                   = 0.007000

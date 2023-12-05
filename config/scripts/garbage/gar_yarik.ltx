@@ -1,0 +1,47 @@
+[smart_terrains]
+gar_small_hangar = {+gar_seriy_give_info}
+
+[threshold@gar_yarik]
+ignore_monster = 0
+
+[combat_ignore]
+
+[hit@yarik]
+on_info = {=hitted_by_gulag(gar_bandit_hangar)} %+yarik_start_fight%
+
+[death@gar_yarik]
+on_info = {+gar_yarik_talked -gar_hangar_cleaned} %+gar_seriy_go%
+
+[logic]
+active = walker@wait
+combat_ignore = combat_ignore
+on_hit = hit@yarik
+on_death = death@gar_yarik
+threshold = threshold@gar_yarik
+
+[walker@wait]
+path_walk = gar_yarik_wait_point
+path_look = gar_yarik_wait_look
+combat_ignore_cond = always
+on_info = {+gar_yarik_talked} walker@assault
+danger = danger@1
+threshold = threshold@gar_yarik
+
+[walker@assault]
+path_walk = gar_yarik_path1
+combat_ignore_cond = {-yarik_start_fight}
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = reached | %+yarik_start_fight%
+danger = danger@2
+on_info = {+gar_seriy_give_info} %=smart_terrain_force_update(gar_small_hangar)%
+threshold = threshold@gar_yarik
+
+[danger@1]
+ignore_distance = 0
+
+[danger@2]
+ignore_types = corpse, sounds
+ignore_distance = 0

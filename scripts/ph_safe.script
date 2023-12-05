@@ -1,0 +1,126 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ph_safe.script
+ Description: scheme: "Использование сейфа"
+ Copyright  : 2009 © LA-team
+ Author     : barin (27.08.2009)
+ Editors    : barin(06.07.2010)
+ Last edit  : 12.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/------------------------------------------------------------------------------------------------
+class "action_safe"
+--/------------------------------------------------------------------------------------------------
+function action_safe:__init(obj, st)
+	self.object  = obj
+	self.st      = st
+	self.log     = st.log
+	self.initialized = false
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_safe:reset_scheme()
+	self.object:set_tip_text("action_open_safe")
+	
+	if not self.initialized then
+		self.initialized = true
+		local shell = self.object:get_physics_shell()
+		if shell then
+			shell:apply_force(0,-1,0)
+		end
+	end
+	
+	local se_obj = alife():object(self.object:id())
+	if se_obj then
+		se_obj:set_init_items(self.st.items)
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_safe:update()
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function action_safe:use_callback(safe, actor)
+	if not db.actor then
+		return
+	end
+	
+	local se_obj = alife():object(self.object:id())
+	if se_obj then
+		if se_obj.safe_locked then
+			ui_wheel.load_ui(self.st.code, self)
+		else
+			ui_safe.DisplaySafeWindow(se_obj)
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs (for ui_wheel.script)
+--/------------------------------------------------------------------
+function action_safe:unlock_safe()
+	local se_obj = alife():object(self.object:id())
+	if se_obj then
+		se_obj:unlock()
+		if self.st.on_unlock then
+			give_info(self.st.on_unlock)
+		end
+		ui_safe.DisplaySafeWindow(se_obj)
+	end
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function action_safe:deactivate()
+	self.object:set_tip_text("")
+end
+
+--/------------------------------------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local oNewAction = this.action_safe(obj, st)
+	--/ action registration, for 'reset_scheme' method call in case of change of settings of the scheme:
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+--	log("set_scheme: Obj=[%s],scheme=[%s],section=[%s],gulag=[%s]:[%s]", obj:name(), scheme, section, gulag_name, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	local tbl = parser.r_string_list(ini, section, "code", nil)
+	st.code = {}
+	for i=1, #tbl do
+		st.code[i] = tonumber(tbl[i])
+	end 
+	st.items     = parser.r_string_number_list(ini, section, "items", nil)
+	st.on_unlock = Get_Cfg_String(ini, section, "on_unlock", nil)
+	--/ fot debug:
+	if st.log then log("set_scheme: Obj=[%s],scheme=[%s],section=[%s]%s", obj:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	local st = db.storage[obj:id()][scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(obj, st, st.action)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

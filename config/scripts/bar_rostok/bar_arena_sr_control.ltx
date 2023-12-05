@@ -1,0 +1,23 @@
+[logic]
+active = sr_idle@idle
+
+[sr_idle@idle]
+on_info = {=bar_actor_ready_for_arena -bar_arena_actor_afraid} sr_idle@start
+
+[sr_idle@start]
+on_info = {=bar_arena_actor_inside} sr_idle@introduce %+bar_arena_start_introduce =tasks_bar_rostok.bar_arena_introduce% 
+
+[sr_idle@introduce]
+on_info = {-bar_arena_start_introduce -bar_arena_door_1_open -bar_megafon_start} %+bar_arena_door_1_open%
+on_info2 = {+bar_megafon_start} sr_idle@fight
+on_timer = 70000 | {-bar_megafon_start} sr_idle@idle %-bar_arena_door_1_open +bar_arena_start_introduce +bar_arena_actor_afraid =tasks_bar_rostok.bar_arena_actor_afraid%
+
+[sr_idle@fight]
+on_info = {+bar_arena_monstr_dead} sr_idle@idle %+bar_arena_door_1_open%
+on_info2 = {=actor_dead} nil %=tasks_bar_rostok.bar_arena_actor_dead +bar_arena_actor_dead +bar_arena_start_introduce%
+
+;[sr_idle@outside]
+;on_info = {=bar_arena_actor_inside} sr_idle@pause %-bar_arena_door_1_open +bar_arena_pause%
+
+;[sr_idle@pause]
+;on_game_timer = 45000 | sr_idle@idle %-bar_arena_pause%

@@ -1,0 +1,27 @@
+;DOOR TO THE CELL WITH MO AND DOC
+[logic]
+active = {-cit_jail_door_open} ph_door@locked, ph_door@closed
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = cell_locked
+on_info = {+cit_jail_door_open} ph_door@closed
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = cell_open
+snd_close_start = metal_small_close_start
+snd_close_stop = trader_door_close_stop
+on_use = ph_door@closed
+on_info = {-cit_jail_door_open} ph_door@locked
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = cell_open
+snd_close_start = metal_small_close_start
+snd_close_stop = trader_door_close_stop
+on_use = ph_door@open %+cit_doctor_door_opened%
+on_info = {-cit_jail_door_open} ph_door@locked

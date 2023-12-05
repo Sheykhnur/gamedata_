@@ -1,0 +1,47 @@
+;[logic]
+;active = ph_computer
+
+;[ph_computer]
+;availability = locked ;accessible
+;pc_type = desktop
+;icons_alignment = vertical
+;wallpaper = wallpaper_dso ;--wallpaper3
+;show_tips = true
+
+
+[logic]
+active = ph_computer@unlocked
+
+[ph_computer@unlocked]
+availability = accessible ;malfunction
+pc_type = desktop
+user_name = ;ui_pc_user_name
+password = 9231
+password_info = dar_for_admin_pc
+icons_alignment = horizontal
+wallpaper = wallpaper_dso
+show_tips = true
+tetris = true
+puzzle = true
+solitare = true
+known_info = dar_tut_pc_about_mutants
+known_code = pc_test_code_1, pc_test_code_2, pc_test_code_3, pc_test_code_4
+known_image =
+known_galleries = test_pc_known_gallery_001, test_pc_known_gallery_002, test_pc_known_gallery_003
+known_audio =
+known_video =
+known_hex = 5
+on_info = {+pc_lock_now} ph_computer@locked, {+pc_bsod_now} ph_computer@bsod
+on_use = ;%+pc_on_use_callback%
+
+[ph_computer@locked]
+availability = locked
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+pc_unlock_now} ph_computer@unlocked
+
+[ph_computer@bsod]
+availability = malfunction
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+pc_fix_now} ph_computer@unlocked

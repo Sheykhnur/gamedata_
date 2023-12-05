@@ -1,0 +1,516 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_general.script
+ Description: Gulag GENERAL
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : vintar
+ Last edit  : 11.06.2014 [vintar]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ --------------------------
+local sModule = script_name()
+--/ ----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	general_lager = {comm = true},
+	--/ for monsters ------------------------------
+	general_lair  = {comm = true}
+}
+--/ --------------------------
+
+local validate_way = nil
+
+if not editor() then
+	validate_way = level.patrol_path_exists
+	
+	if false then --/ for debug!
+		validate_way = function(way_name) return validate_patrol_path(way_name,nil,false) end
+	end
+end
+
+local on_level_pred = function(npc_info,gulag)
+	return true
+end
+
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ UNIVERSAL LAGER OF STALKERS
+--/ ------------------------------------------------------------------
+gulags.general_lager.jobs = function(sj, gname, type, squad, groups)
+	local ltx = ""
+	local t, i = {}, 1
+	local job_name, job_section, way_name, job_count
+	--/#+#
+	local gulag = xr_gulag.get_gulag_by_name(gname)
+	local rest_in  = gulag and gulag.smrttrn.in_restrictions or ""
+	local rest_out = gulag and gulag.smrttrn.out_restrictions or ""
+--	log("general_lager.jobs:gulag=[%s],type=[%s],rests:[%s]/[%s]", gname, type, rest_in, rest_out, "") --/#~#
+	--/ ----------------------------------
+	--/ 'kamp': having way pref..'_kamp_center'
+	--/ ----------------------------------
+	way_name = gname .. "_" .. "kamp_center"
+	if validate_way(way_name) then
+		--/ number of works(nicks) depending from 0-point of way (waypoint)
+		job_count = math.min(gulag_tasks.get_job_count(way_name,5),8)
+		--/ creating works description (lowing priority down!):
+		job_name = "kamp"
+		for j=1, job_count do
+			t = gulag_tasks.getJob(job_name, 0, 8-j, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+			t.position_threshold = 30 --/50
+			t.predicate = on_level_pred
+			table.insert(sj, t)
+		end
+		--/ adding work to ltx:
+		job_section = gname .. "_" .. job_name
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = kamp@" .. job_section .. "\n"
+			.. "[kamp@" .. job_section .. "]\n"
+			.. "center_point = kamp_center\n"
+	end
+	--/ ----------------------------------
+	--/ 'kamper': having ways pref..'_kamp_N_walk' - point 'where to sit'
+	--/ When using kamper scheme for general lager, in order for NPCs to be synchronised, all kamps should have their own smart terrain.
+	--/ ----------------------------------
+	i = 1
+	job_name = "kamp_" .. i
+	job_section = gname .. "_" .. job_name
+	while validate_way(job_section .. "_walk") do
+		--/ creating description of work:
+		t = gulag_tasks.getJob(job_name, 0, 9, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+		t.position_threshold = 30 --/50
+		t.predicate = on_level_pred
+		table.insert(sj, t)
+		--/ adding work to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = kamper@" .. job_section .. "\n"
+			.. "[kamper@" .. job_section .. "]\n"
+			.. "path_walk = " .. job_name .. "_walk\n"
+		--/ if we have 'where to look' - adding:
+		if validate_way(job_section .. "_look") then
+			ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+		end
+		--/ point of synhronization of work:
+		if validate_way(gname.."_".."kamp_center") then
+			ltx = ltx .. "kamp_name = kamp_center\n"
+		else
+			ltx = ltx .. "kamp_name = kamp1\n"
+		end
+		--/ moving to next work:
+		i = i + 1
+		job_name = "kamp_" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'sleeper': having ways pref..'_sleep_N' - point 'where to sleep'
+	--/ ----------------------------------
+	i = 1
+	job_name = "sleep_" .. i
+	job_section = gname .. "_" .. job_name
+	while validate_way(job_section) do
+		--/ creating job description:
+		t = gulag_tasks.getJob(job_name, 0, 4, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+		t.position_threshold = 50
+		t.predicate = on_level_pred
+		table.insert(sj, t)
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = sleeper@" .. job_section .. "\n"
+			.. "[sleeper@" .. job_section .. "]\n"
+			.. "path_main = " .. job_name .. "\n"
+		--/ moving to next job:
+		i = i + 1
+		job_name = "sleep_" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'walker': having ways pref..'_walker_N_walk' - walking at kamp (with timeout!)
+	--/ ----------------------------------
+	i = 1
+	job_name = "walker_" .. i
+	job_section = gname .. "_" .. job_name
+	while validate_way(job_section .. "_walk") do
+		--/ creating description of work:
+		t = gulag_tasks.getJob(job_name, 0, 5, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+		t.idle = Random.I(40,60)*60*1000 --/ change: 40..60 game-minutes (pause to repeat job)
+		t.timeout = Random.I(10,20)*60*1000 --/#!# 10..20 game-minutes (duration of job)
+		t.position_threshold = 50
+		t.predicate = on_level_pred
+		table.insert(sj, t)
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = walker@" .. job_section .. "\n"
+			.. "[walker@" .. job_section .. "]\n"
+			.. "sound_idle = state\n"
+			.. "path_walk = " .. job_name .. "_walk\n"
+		--/ if having 'where to look' - adding:
+		if validate_way(job_section .. "_look") then
+			ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+		end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "walker_" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'walker':2: having ways pref..'_walker2_N_walk' - walking at kamp (without timeout!)
+	--/ ----------------------------------
+	i = 1
+	job_name = "walker2_" .. i
+	job_section = gname .. "_" .. job_name
+	while validate_way(job_section .. "_walk") do
+		--/ creating description of work:
+		t = gulag_tasks.getJob(job_name, 0, 5, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+		t.position_threshold = 50
+		t.predicate = on_level_pred
+		table.insert(sj, t)
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = walker@" .. job_section .. "\n"
+			.. "[walker@" .. job_section .. "]\n"
+			.. "sound_idle = state\n"
+			.. "path_walk = " .. job_name .. "_walk\n"
+		--/ if having 'where to look' - adding:
+		if validate_way(job_section .. "_look") then
+			ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+		end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "walker2_" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'patrol': having ways pref..'_patrol_N_walk' - patrols
+	--/ ----------------------------------
+	i = 1
+	job_name = "patrol_" .. i
+	job_section = gname .. "_"..job_name
+	way_name = gname .. "_" .. job_name .. "_walk"
+	while validate_way(way_name) do
+		--/ determine number of works from 0-point of way
+		job_count = math.min(gulag_tasks.get_job_count(way_name,3),7) --/ не более 7-ми
+		--/ creating description of job:
+		for j=1, job_count do
+			t = gulag_tasks.getJob(job_name, 0, 6, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+			t.idle = Random.I(60,120)*60*1000 --/ change: 1..2 game-hours (пауза повтора работы)
+			t.position_threshold = 50
+			t.predicate = on_level_pred
+			table.insert(sj, t)
+		end
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = patrol@" .. job_section .. "\n"
+			.. "[patrol@" .. job_section .. "]\n"
+			.. "meet = meet@generic_lager_patrol\n"
+			.. "on_signal = end| %=search_gulag_job%\n" --/ if we have flag - search new job!
+			.. "path_walk = " .. job_name .. "_walk\n"
+		--/ if having 'where to look' - adding:
+		if validate_way(gname .. "_" .. job_name .. "_look") then
+			ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+		end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "patrol_" .. i
+		job_section = gname .. "_" .. job_name
+		way_name = gname .. "_" .. job_name .. "_walk"
+	end
+	--/ ----------------------------------
+	--/ 'camper':guard: having ways pref..'_guard_N_walk' - by hours
+	--/ ----------------------------------
+	i = 1
+	job_name = "guard_" .. i
+	job_section = gname .. "_" .. job_name
+	while validate_way(job_section .. "_walk") do
+		--/ creating description of work:
+		t = gulag_tasks.getJob(job_name, 0, 7, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+		t.position_threshold = 50
+		t.predicate = on_level_pred
+		table.insert(sj, t)
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = camper@" .. job_section .. "\n"
+			.. "[camper@" .. job_section .. "]\n"
+			.. "meet = meet@generic_lager_guard\n"
+			.. "path_walk = " .. job_name .. "_walk\n"
+		--/ if having 'where to look' - adding:
+		if validate_way(gname .. "_" .. job_name.."_look") then
+			ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+		end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "guard_" .. i .. "_walk"
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'camper':sniper: having ways pref..'_sniper_N_walk' & pref..'_sniper_N_look' - snipers
+	--/ ----------------------------------
+	i = 1
+	job_name = "sniper_" .. i
+	job_section = gname .. "_" .. job_name
+	while validate_way(job_section .. "_walk") and validate_way(job_section .. "_look") do
+		--/ creating description of work:
+		t = gulag_tasks.getJob(job_name, 0, 10, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+		t.position_threshold = 50
+		t.predicate = function(npc_info,gulag) return npc_info.is_sniper == true and xr_gulag.is_on_gulag_level(npc_info.se_obj,gulag) end
+		table.insert(sj, t)
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@"..job_section .. "]\n"
+			.. "active = camper@"..job_section .. "\n"
+			.. "[camper@" .. job_section .. "]\n"
+			.. "path_walk = " .. job_name .. "_walk\n"
+			.. "path_look = " .. job_name .. "_look\n"
+			.. "sniper = true\n"
+		--/ moving to next job
+		i = i + 1
+		job_name = "sniper_" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'patrol':raid: having ways pref..'_raid_N_walk' - raid
+	--/ ----------------------------------
+	i = 1
+	job_name = "raid_" .. i
+	job_section = gname .. "_" .. job_name
+	way_name = job_section .. "_walk"
+	while validate_way(way_name) do
+		--/ determine number of works from 0-point of way
+		job_count = math.min(gulag_tasks.get_job_count(way_name,5),7) --/ no more then 7
+		--/ creating description of job:
+		for j=1, job_count do
+			t = gulag_tasks.getJob(job_name, 0, 10, {1}, squad, groups[1], rest_in, rest_out, nil, gname)
+			t.position_threshold = 50
+			t.predicate = on_level_pred
+			t.fill_idle = xr_gulag.idle_once --/#!# flag of once time job
+			table.insert(sj, t)
+		end
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = patrol@" .. job_section .. "\n"
+			.. "[patrol@" .. job_section .. "]\n"
+			.. "meet = meet@generic_lager_patrol\n"
+			.. "formation = around\n"
+			.. "path_walk = " .. job_name .. "_walk\n"
+		--/ if having 'where to look' - adding:
+		if validate_way(job_section.."_look") then
+			ltx = ltx.."path_look = " .. job_name .. "_look\n"
+		end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "raid_" .. i
+		job_section = gname .. "_" .. job_name
+		way_name = job_section .. "_walk"
+	end
+	if ltx:match('generic_lager_patrol') then
+		--/ adding common section to ltx:
+		ltx = ltx.."\n[meet@generic_lager_patrol]\n"
+			.. "meet_state     = 5|wait@wait\n"
+			.. "meet_state_wpn = 10|backoff@threat_weap\n"
+			.. "victim         = 5|actor\n"
+			.. "victim_wpn     = 10|actor\n"
+			.. "use            = true\n"
+			.. "use_wpn        = false\n"
+			.. "syndata        = backoff@threat_weap\n"
+			.. "precond        = visibility\n"
+	end
+	if ltx:match('generic_lager_guard') then
+		--/ adding common section to ltx:
+		ltx = ltx .. "\n[meet@generic_lager_guard]\n"
+			.. "meet_state     = 10|wait@wait\n"
+			.. "meet_state_wpn = 10|backoff@threat_weap\n"
+			.. "victim         = 10|actor\n"
+			.. "victim_wpn     = 10|actor\n"
+			.. "use            = true\n"
+			.. "use_wpn        = false\n"
+			.. "syndata        = backoff@threat_weap\n"
+			.. "precond        = visibility\n"
+	end
+	
+	gulags.general_lager.ltx = ltx
+end
+
+--/ ------------------------------------------------------------------
+--/ UNIVERSAL LAIR OF MONSTERS
+--/ ------------------------------------------------------------------
+gulags.general_lair.jobs = function(sj, gname, type, squad, groups)
+	local ltx,t = "",{}
+	local job_name,job_section,way_name,wp_data,job_count
+	--/#+#
+	local rest_in,rest_out = "",""
+	local gulag = xr_gulag.get_gulag_by_name(gname)
+	if gulag then
+		rest_in  = gulag.smrttrn.in_restrictions or ""
+		rest_out = gulag.smrttrn.out_restrictions or ""
+	end
+--	log("general_lair.jobs:gulag=[%s],type=[%s],rests:[%s]/[%s]", gname, type, rest_in, rest_out, "") --/#~#
+	--/ ----------------------------------
+	--/ 'mob_home': having ways pref..'_home' | pref..'_home_N'
+	--/ ----------------------------------
+	local i = 0
+	job_name = "home"
+	job_section = gname .. "_" .. job_name --/ way_name
+	while validate_way(job_section) do
+		--/ determine number of works from 0-point of way
+		wp_data = utils.parse_waypoint_data(job_section, 0)
+		job_count = tonumber(wp_data.count) or 10
+		--/ creating job description:
+		for j=1, job_count do
+			t = gulag_tasks.getJob(job_name, 0, 5, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+			t.position_threshold = 20 --/#?# 50
+			t.predicate = on_level_pred
+			table.insert(sj, t)
+		end
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = mob_home@" .. job_section .. "\n"
+			.. "[mob_home@" .. job_section .. "]\n"
+			.. "path_home = " .. job_name .. "\n"
+		if wp_data.attacked then
+			ltx = ltx .. "on_signal = attacked | mob_combat@" .. job_section .. "\n"
+				.. "[mob_combat@" .. job_section .. "]\n"
+				.. "on_timer = " .. Random.I(30,60)*1000 .. " | mob_home@" .. job_section .. "\n"
+		end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "home_" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'mob_home':raid: having ways pref..'_raid' | pref..'_raid_N' - raid
+	--/ ----------------------------------
+	i = 0
+	job_name = "raid"
+	job_section = gname .. "_" .. job_name
+	while validate_way(job_section) do
+		--/ determine number of works from 0-point of way
+		wp_data = utils.parse_waypoint_data(job_section, 0)
+		job_count = tonumber(wp_data.count) or 5
+		--/ creating job description:
+		for j=1, job_count do
+			t = gulag_tasks.getJob(job_name, 0, 10, {1}, squad, groups[1], rest_in, rest_out, nil, gname) --/#!# state == 1
+			t.position_threshold = 70 --/#?# 50
+			t.predicate = on_level_pred
+			t.fill_idle = xr_gulag.idle_once --/#!# flag of once time job
+			table.insert(sj, t)
+		end
+		--/ adding job to ltx:
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			.. "active = mob_home@" .. job_section .. "\n"
+			.. "[mob_home@" .. job_section .. "]\n"
+			.. "path_home = " .. job_name .. "\n"
+			--/#+# 'attack like mob_home with agressive':
+			if wp_data.attacked then
+				ltx = ltx .. "aggressive_home\n"
+					.. "on_signal = attacked | mob_combat@" .. job_section .. "\n"
+					.. "[mob_combat@" .. job_section .. "]\n"
+					.. "on_timer = " .. Random.I(30,60)*1000 .. " | mob_home@" .. job_section .. "\n"
+			end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "raid_" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	--/ 'mob_fake_death': having ways pref..'_homeN'
+	--/ ----------------------------------
+	local i = 1
+	job_name = "home" .. i
+	job_section = gname .. "_" .. job_name --/ way_name
+	while validate_way(job_section) do
+		--/ determine number of works from 0-point of way
+		wp_data = utils.parse_waypoint_data(job_section, 0)
+		job_count = tonumber(wp_data.count) or 5
+		--/ creating job description:
+		for j=1, job_count do
+			t = gulag_tasks.getJob(job_name, 0, 6, {0,1}, squad, groups[1], rest_in, rest_out, nil, gname)
+			t.position_threshold = 20 --/#?# 50
+			t.predicate = on_level_pred
+			table.insert(sj, t)
+		end
+		--/ adding job to ltx:
+		local job_fake_section = gname .. "_fake_death" .. i
+		ltx = ltx .. "[logic@" .. job_fake_section .. "]\n"
+			.. "active = mob_home@" .. job_section .. "\n"
+			.. "[mob_fake_death@" .. job_fake_section .. "]\n"
+			.. "on_actor_dist_le_nvis = 10 | mob_home@" .. job_section .. "\n"
+			.. "[mob_home@" .. job_section .. "]\n"
+			.. "path_home = " .. job_name .. "\n"
+			.. "aggressive_home\n"
+			.. "on_actor_dist_ge_nvis = 10 | mob_fake_death@" .. job_fake_section .. "\n"
+		if wp_data.attacked then
+			ltx = ltx .. "on_signal = attacked | mob_combat@".. job_section .."\n"
+				.. "[mob_combat@" .. job_section .. "]\n"
+				.. "on_timer = " .. Random.I(30,60)*1000 .. " | mob_home@" .. job_section .. "\n"
+		end
+		--/ moving to next job:
+		i = i + 1
+		job_name = "home" .. i
+		job_section = gname .. "_" .. job_name
+	end
+	--/ ----------------------------------
+	gulags.general_lair.ltx = ltx
+end
+
+--/ -----------------------------------------------------------------
+--/ State - check of gulag conditions
+--/ -----------------------------------------------------------------
+gulags.general_lager.state = function(gulag)
+	if gulag.state == 0 then
+		if gulag.population_comed == 0 then
+			return 0
+		elseif gulag.state_switch_1 and xr_logic.pick_section_from_condlist(db.actor, gulag.smrttrn, gulag.state_switch_1) ~= nil then
+			--level.map_add_object_spot(gulag.smrttrn.id, "alife_presentation_smart_ready", "Ready") --/#~#
+			return 1
+		end
+		return 0
+	elseif gulag.state == 1 then
+		if not db.zone_by_name[gulag.name] then --/#+#
+			--/ If gulag is not on current location, then check other useless, cause:
+			--/ - noted in switch_0 gulags simply won't be found by name;
+			--/ - arrived population can be zero cause of other scheme of it's calculation.
+			return 1
+		elseif gulag.population_comed == 0 then
+			return 0
+		elseif gulag.state_switch_0 and xr_logic.pick_section_from_condlist(db.actor, gulag.smrttrn, gulag.state_switch_0) ~= nil then
+			--level.map_remove_object_spot(gulag.smrttrn.id, "alife_presentation_smart_ready") --/#~#
+			return 0
+		end
+		return 1
+	end
+	return 0
+end
+
+gulags.general_lair.state = function(gulag)
+	if gulag.state == 0 then
+		if gulag.population_comed == 0 then
+			return 0
+		elseif gulag.state_switch_1 and xr_logic.pick_section_from_condlist(db.actor, gulag.object, gulag.state_switch_1) ~= nil then
+			--level.map_add_object_spot(gulag.smrttrn.id, "alife_presentation_smart_ready", "Ready") --/#~#
+			return 1
+		end
+		return 0
+	elseif gulag.state == 1 then
+		if not db.zone_by_name[gulag.name] then --/#+#
+			return 1
+		elseif gulag.population_comed == 0 then
+			return 0
+		elseif gulag.state_switch_0 and xr_logic.pick_section_from_condlist(db.actor, gulag.object, gulag.state_switch_0) ~= nil then
+			--level.map_remove_object_spot(gulag.smrttrn.id, "alife_presentation_smart_ready") --/#~#
+			return 0
+		end
+		return 1
+	end
+	return 0
+end
+--/ -----------------------------------------------------------------------------------------------

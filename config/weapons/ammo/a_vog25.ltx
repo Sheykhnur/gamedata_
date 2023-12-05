@@ -1,0 +1,115 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Grenades for Attachable grenade launcher
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_vog-25p]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_vog-25p"
+can_be_unlimited            = true ;false
+cform                       = skeleton
+class                       = A_VOG25
+discovery_dependency        =
+fake_grenade_name           = wpn_fake_missile_vog25p
+GroupControlSection         = spawn_group
+jump_height                 = 1
+kill_msg_height             = 22
+kill_msg_width              = 21
+kill_msg_x                  = 17
+kill_msg_y                  = 232
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_vog_25p.ogf
+tracer                      = off
+wm_size                     = 0.05
+
+; Icon
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 32
+inv_grid_y         = 20
+
+; Text
+inv_name                    = ammo-vog-25p
+inv_name_short              = ammo-vog-25p_s
+description                 = enc_weapons1_ammo_ammo-vog-25p
+
+; Economy
+cost                        = 1450
+inv_weight                  = .25
+box_size                    = 1
+
+; Impact
+k_hit                       = 2.6
+k_ap                        = 0.3
+k_pierce                    = 1.35
+k_impulse                   = 1
+impair                      = 1
+buck_shot                   = 0
+
+; Ballistics
+k_disp                      = 1
+k_dist                      = 1.3
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_vog-25]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_vog-25"
+can_be_unlimited            = true ;false
+cform                       = skeleton
+class                       = A_VOG25
+discovery_dependency        =
+fake_grenade_name           = wpn_fake_missile_vog25
+GroupControlSection         = spawn_group
+kill_msg_height             = 22
+kill_msg_width              = 21
+kill_msg_x                  = 38
+kill_msg_y                  = 233
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_vog_25.ogf
+tracer                      = off
+wm_size                     = 0.05
+
+; Icon
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 31
+inv_grid_y         = 20
+
+; Text
+inv_name                    = ammo-vog-25
+inv_name_short              = ammo-vog-25_s
+description                 = enc_weapons1_ammo_ammo-vog-25
+
+; Economy
+cost                        = 1250
+inv_weight                  = .25
+box_size                    = 1
+
+; Impact
+k_hit                       = 2.85
+k_ap                        = 0.3
+k_pierce                    = 1.1
+k_impulse                   = 1
+impair                      = 1
+buck_shot                   = 0
+
+; Ballistics
+k_disp                      = 1
+k_dist                      = 1
+
+
+[weapon_gp25]
+grenade_flame_particles                 = amik\weapons\grenade_flame_particles\grenade_flame_particles_00
+
+snd_reload_grenade                      = weapons\gp30\gp30_grenload, 1.0, 0.8
+snd_shoot_grenade                       = weapons\gp30\gp30_grenshoot
+snd_switch                              = weapons\gp30\gp30_switch
+
+grenade_class                           = ammo_vog-25, ammo_vog-25p  ; types of grenades usable on the weapon
+
+grenade_launcher_name                   = wpn_addon_grenade_launcher
+
+grenade_vel                             = 76
+launch_speed                            = 76 ; grenade launch speed in m/s
+

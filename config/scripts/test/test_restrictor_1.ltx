@@ -1,0 +1,43 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = %+enlightered_docs6 +encyclopedy +esc_start_think_given% nil
+;on_actor_inside = {-war_sc4_end} sr_cutscene
+
+[sr_cutscene]
+cam_effector = test1,test2
+point = target_test1
+look = bloodsucker_home
+pp_effector = sar_out
+on_timer = 7500 | %+gar_cutscene_end%
+on_info = {+gar_cutscene_end} sr_cutscene@2
+
+[sr_cutscene@2]
+cam_effector = test3
+point = target_test1
+look = bloodsucker_home
+pp_effector = nil
+on_timer = 4500 | %-gar_cutscene_end%
+on_info = {-gar_cutscene_end} sr_cutscene@3
+
+[sr_cutscene@3]
+cam_effector = test4
+point = target_test1
+look = bloodsucker_home
+pp_effector = nil
+on_timer = 4000 | %+gar_cutscene_end%
+on_info = {+gar_cutscene_end} sr_cutscene@4
+
+[sr_cutscene@4]
+cam_effector = test5
+point = target_test1
+look = bloodsucker_home
+pp_effector = nil
+on_signal = cameff_end | nil %=rad_psy_basic_clear +war_sc4_end%
+
+
+;[sr_idle]
+;on_actor_inside = %+has_freeplay_info% sr_idle@2
+
+;[sr_idle@2]

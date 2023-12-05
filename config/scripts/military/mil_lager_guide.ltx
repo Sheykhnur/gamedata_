@@ -1,0 +1,20 @@
+[combat_ignore@guide]
+
+[logic]
+active = walker@guide
+combat_ignore = combat_ignore@guide
+
+[walker@guide]
+path_walk = mil_lager_guide_walk
+path_look = mil_lager_guide_look
+combat_ignore_cond = always
+meet = meet@guide
+
+[meet@guide]
+meet_state		= 15|hello|3|nil
+meet_state_wpn	= 15|hello|3|nil
+victim			= 15|actor|3|nil
+victim_wpn		= 15|actor|3|nil
+use				= true
+use_wpn			= true
+precond 		= visibility

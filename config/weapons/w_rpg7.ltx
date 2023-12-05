@@ -1,0 +1,225 @@
+[wpn_rpg7]:weapon_base
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\rpg-7"
+animation_slot                          = 4
+auto_spawn_ammo                         = false
+class                                   = WP_RPG7
+ef_main_weapon_type                     = 4
+ef_weapon_type                          = 9
+hand_dependence                         = 1
+rocket_class                            = wpn_rpg7_missile
+scheduled                               = off
+weapon_class                            = heavy_weapon
+weapon_rank                             = 4
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 5
+inv_grid_y                              = 12
+
+; Text
+inv_name                                = wpn-rpg7
+inv_name_short                          = wpn-rpg7
+description                             = enc_weapons1_wpn-rpg7
+
+; Visual
+grenade_bone                            = grenade
+hud                                     = wpn_rpg7_hud
+position                                = -0.027, -0.113, 0.0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_rpg
+strap_position                          = -0.28, -0.20, 0.25
+strap_orientation                       = -15, -189, 110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_rpg7\wpn_rpg7.ogf
+
+; Effects
+fire_point                              = 0.0, 0.162, 0.35
+smoke_particles                         = weapons\generic_weapon02
+shell_point                             = 0.0, 0.0, 0.0
+light_color                             = 0.95, 0.95, 0.3
+light_range                             = 20.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.75
+explode_duration                        = 5
+wallmark_section                        = explosion_marks
+
+; Sounds
+snd_draw                                = weapons\rpg7\rpg7_draw
+snd_empty                               = weapons\rpg7\rpg7_empty
+snd_explode                             = weapons\rpg7\rpg7_explode
+snd_holster                             = weapons\rpg7\rpg7_holster
+snd_reload                              = weapons\rpg7\rpg7_reload
+snd_shoot                               = weapons\rpg7\rpg7_shoot
+
+; Upgrade icon
+upgr_icon_x                             = 1079
+upgr_icon_y                             = 111
+upgr_icon_width                         = 290
+upgr_icon_height                        = 124
+
+; Cost & Weight
+cost                                    = 22500
+inv_weight                              = 6.3
+ph_mass                                 = 1
+
+; Ammo
+ammo_limit                              = 120
+ammo_class                              = ammo_og-7b
+ammo_mag_size                           = 1
+
+; Features
+scope_status                            = 1
+scope_zoom_factor                       = 22.222 ; x2.7
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 5.00
+hit_impulse                             = 500
+hit_type                                = explosion
+fragment_speed                          = 150
+
+; Ballistics
+bullet_speed                            = 1200
+launch_speed                            = 70
+fire_distance                           = 920
+fire_dispersion_base                    = 0.5
+
+; Performance
+rpm                                     = 10
+rpm_empty_click                         = 200
+
+; Reliability
+misfire_start_prob                      = 0.001
+misfire_end_prob                        = 0.02
+condition_shot_dec                      = 0.0001
+condition_queue_shot_dec                = 0.0001
+
+; Handling
+control_inertion_factor                 = 2.0f
+PDM_disp_base                           = 5.0
+PDM_disp_vel_factor                     = 1.5
+PDM_disp_accel_factor                   = 1.5
+sprint_allowed                          = false
+
+; Recoil
+cam_relax_speed                         = 4.0
+cam_relax_speed_ai                      = 2.0
+cam_dispersion                          = 6.0
+cam_max_angle                           = 8
+cam_max_angle_horz                      = 5.0
+cam_step_angle_horz                     = 0.5
+
+; Aiming
+zoom_enabled                            = true
+max_zoom_factor                         = 22.222; 8
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_rpg
+upgrades                                = up_gr_firstab_rpg7, up_gr_seconab_rpg7, up_gr_thirdab_rpg7, up_gr_fourtab_rpg7
+
+; AI Params
+min_radius                              = 50
+max_radius                              = 150
+holder_range_modifier                   = 2.0
+holder_fov_modifier                     = 0.5
+
+
+[wpn_rpg7_hud]:hud_base
+aim_hud_offset_pos                      = -0.1529,-0.02385,-0.01
+aim_hud_offset_pos_16x9                 = -0.1529,-0.02385,-0.01
+aim_hud_offset_rot                      = -0.01605,0.06355,0
+aim_hud_offset_rot_16x9                 = -0.01605,0.06355,0
+anim_bore                               = rpg7_idle_aim
+anim_hide                               = rpg7_holster
+anim_idle                               = rpg7_idle
+anim_idle_aim                           = rpg7_idle_aim
+anim_idle_moving                        = rpg7_idle_moving
+anim_idle_sprint                        = rpg7_idle_sprint
+anim_reload                             = rpg7_reload, reload
+anim_shots                              = rpg7_shoot, shoot
+anim_show                               = rpg7_draw
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_point                              = -0.02,0.05,0.23
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 3.65,1.05,-0.05
+hands_orientation_16x9                  = 3.65,1.05,-0.05
+hands_position                          = -0.0105,-0.186,0.2095
+hands_position_16x9                     = -0.0105,-0.186,0.2095
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_rpg7\wpn_rpg7_hud
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+
+
+[wpn_rpg7_missile]:identity_immunities,default_weapon_params
+$prefetch                               = 32
+cform                                   = skeleton
+class                                   = G_RPG7
+discovery_dependency                    =
+engine_impulse                          = 0
+engine_impulse_up                       = 133
+engine_present                          = true
+engine_work_time                        = 3000
+force_explode_time                      = 30000
+GroupControlSection                     = spawn_group
+lights_enabled                          = true
+trail_light_color                       = 0.6, 0.5, 0.3
+trail_light_range                       = 15.0
+
+; Inventory icon
+inv_grid_width                          = 4
+inv_grid_height                         = 1
+inv_grid_x                              = 15
+inv_grid_y                              = 5
+
+; Text
+inv_name                                = "Og-7b"
+inv_name_short                          = "Og-7b"
+
+; Visual
+visual                                  = dynamics\weapons\wpn_ammo\ammo_og_7b.ogf
+
+; Effects
+light_color                             = 1.9, 1.4, 0.5
+light_range                             = 24.0
+light_time                              = 1.28
+explode_duration                        = 5
+explode_particles                       = explosions\explosion_04
+wallmark_section                        = explosion_marks
+wm_size                                 = 0.1
+
+; Sounds
+snd_explode                             = weapons\rpg7_explode
+snd_fly_sound                           = weapons\rocket_fly
+
+; Cost & Weight
+cost                                    = 200
+inv_weight                              = .2
+ph_mass                                 = 5
+
+; Impact
+hit_type_blast                          = explosion
+hit_type_frag                           = fire_wound
+frags                                   = 100
+frags_r                                 = 30
+frag_hit                                = 1.5
+frag_hit_impulse                        = 275
+fragment_speed                          = 100
+blast                                   = 15
+blast_r                                 = 10
+blast_impulse                           = 350
+blast_impulse_factor                    = 1
+
+; Ballistics
+up_throw_factor                         = 0.25

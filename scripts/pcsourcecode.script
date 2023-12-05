@@ -1,0 +1,187 @@
+
+-- file: pcSourceCode.script
+-- author: barin
+-- date: 2009-06-18
+-- edited by: barin
+-- last edited: 2009-09-09
+
+class "TextLine" (CUIListBoxItemEx)
+
+function TextLine:__init(str, font, colour) super()
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self:AttachChild(self.text)
+	self.text:SetText(str)	
+	self.text:SetFont(pcTextViewer.get_font(font))
+	self.text:SetTextColor(pcTextViewer.get_colour(colour))
+end
+
+-- ******************************************************************************************* --
+
+local lua_keywords =
+{
+	"and", "break", "do", "else", "elseif", "end", "false",
+	"for", "function", "if", "in", "local", "nil", "not", "or",
+	"repeat", "return", "then",	"true", "until", "while"
+}
+
+local perl_keywords =
+{
+	"package", "use", "sub", "my", "shift", "bless",
+	"return", "die", "if", "defined", "length", "unpack",
+	"splice", "unless", "pack", "foreach", "while", "elsif",
+	"else", "push", "chomp", "eq",
+}
+
+local keywords = {}
+
+function set_keywords(keywords_list, lang)
+	if not keywords[lang] then
+		keywords[lang] = {}
+	end
+	
+	for _, key in ipairs(keywords_list) do
+		if not keywords[lang][key] then
+			keywords[lang][key] = true
+		end
+	end
+end
+
+set_keywords(lua_keywords, "lua")
+set_keywords(perl_keywords, "perl")
+
+function ToUpper(word, lang)
+	if not lang then
+		return word
+	end
+	
+	if keywords[lang][word] then
+		return string.upper(word)
+	else
+		return string.lower(word)
+	end
+end
+
+function split(str, pat)
+	local t = {}
+	local fpat = "(.-)" .. pat
+	local last_end = 1
+	local s, e, cap = string.find(str, fpat, 1)
+	
+	while s do
+		if s ~= 1 or cap ~= "" then
+			table.insert(t, cap)
+		end
+		last_end = e + 1
+		s, e, cap = string.find(str, fpat, last_end)
+	end
+	
+	if last_end <= #str then
+		cap = string.sub(str, last_end)
+		table.insert(t, cap)
+	end
+	
+	return t
+end
+
+-- ******************************************************************************************* --
+
+class "uiSourceCode" (CUIScriptWnd)
+
+function uiSourceCode:__init(parent, x, y) super()
+	self:SetWindowName("uiSourceCode")
+	self.owner = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 580
+	self.wnd_height = 450
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+end
+
+function uiSourceCode:__finalize()
+end
+
+function uiSourceCode:reset(src)
+	self.wnd_frame:SetCaption(game.translate_string(src.name))
+	
+	local dlg = self.string_list
+
+	if dlg:GetSize() ~= 0 then
+		dlg:RemoveAll()
+	end
+	
+	local code, f, c = nil, nil, nil
+	
+	for k, v in ipairs(src.code) do
+		code = game.translate_string(v)
+		code = string.gsub(code, "\\t", string.rep(" ", 2))
+		code = string.gsub(code, "\\n", "\n")
+		
+		if src.lang and src.lang[k] then
+			if src.lang[k] == "lua" then
+				code = string.gsub(code, "%w+", function(word) return ToUpper(word, "lua") end)
+			elseif src.lang[k] == "perl" then
+				code = string.gsub(code, "%w+", function(word) return ToUpper(word, "perl") end)
+			else
+				code = string.gsub(code, "%w+", function(word) return ToUpper(word) end)
+			end
+		else
+			code = string.gsub(code, "%w+", function(word) return ToUpper(word) end)
+		end
+		
+		for kk, vv in pairs(split(code, "\n")) do
+			f = if_then_else(src.font and src.font[k], src.font[k], nil)
+			c = if_then_else(src.color and src.color[k], src.color[k], nil)
+			dlg:AddItem(TextLine(vv, f, c))
+		end
+	end
+end
+
+function uiSourceCode:OnChildDialogExit(child_name)
+end
+
+function uiSourceCode:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiSourceCode:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption("")
+	self.wnd_frame:Show(true)
+	
+	self.string_list = self.owner.xml:InitListBox("code_viewer:string_list", self)
+	self.string_list:SetWndPos(self.wnd_x + 10, self.wnd_y + 35)
+	self.string_list:ShowSelectedItem(false)
+	self.string_list:Show(true)
+	self:Register(self.string_list, "string_list")
+end
+
+function uiSourceCode:InitCallBacks()
+end
+
+function uiSourceCode:OnExit()
+	self.owner:OnChildDialogExit(self:WindowName())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiSourceCode:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end	
+	
+	return true
+end

@@ -1,0 +1,123 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc5_sci
+combat_ignore = combat_ignore
+
+[remark@war_sc5_start]
+anim = stand_smoke
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 5000 | remark@war_sc5_sci
+
+[remark@war_sc5_sci]
+anim = stand_smoke
+snd = war_replics41
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc5_talk1%
+on_info = {+war_sc5_talk2} remark@war_sc5_sci2
+
+[remark@war_sc5_sci2]
+anim = ordinary_talk3
+snd = war_replics43
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_sc5_sci2_synth %+war_sc5_talk3%
+
+[remark@war_sc5_sci2_synth]
+anim = stand_smoke
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc5_talk4} remark@war_sc5_sci3
+
+[remark@war_sc5_sci3]
+anim = npc_refuse
+snd = war_replics45
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_sc5_sc3_synth
+
+[remark@war_sc5_sc3_synth]
+anim = wait
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 5 | %+war_sc5_talk5% walker@war_sc5_sci4
+
+[walker@war_sc5_sci4]
+path_walk = war_sc5_sci_walk
+def_state_moving1 = sci_walk_tank
+def_state_moving2 = sci_walk_tank
+def_state_moving3 = sci_walk_tank
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sc5w1 | walker@war_sc5_sci41
+
+[walker@war_sc5_sci41]
+path_walk = war_sc5_sci_walk2
+def_state_moving1 = sci_walk_tank
+def_state_moving2 = sci_walk_tank
+def_state_moving3 = sci_walk_tank
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sc5w2 | walker@war_sc5_sci42
+
+[walker@war_sc5_sci42]
+path_walk = war_sc5_sci_walk3
+def_state_moving1 = sci_walk_tank
+def_state_moving2 = sci_walk_tank
+def_state_moving3 = sci_walk_tank
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sci5rch | remark@war_sc5_sci4
+
+[remark@war_sc5_sci4]
+anim = stand_wait
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc5_talk6} remark@war_sc5_sci5
+
+[remark@war_sc5_sci5]
+anim = ordinary_talk
+snd = war_replics47
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc5_talk7% remark@war_sc5_sci5_synth
+
+[remark@war_sc5_sci5_synth]
+anim = wait
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc5_talk8} remark@war_sc5_sci6
+
+[remark@war_sc5_sci6]
+anim = stand_smoke
+snd = war_replics49
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc5_talk9%
+on_info = {+war_sc5_talk10} remark@war_sc5_sci7
+
+[remark@war_sc5_sci7]
+anim = ordinary_talk2
+snd = war_replics51
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_sc5_sci7_synth
+
+[remark@war_sc5_sci7_synth]
+anim = stand_smoke
+target = war_sc5_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc5_end} %=release%

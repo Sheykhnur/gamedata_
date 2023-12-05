@@ -1,0 +1,255 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_darklab.script
+ Description: Gulags Darklab
+ Copyright  : 2013 © LA-team
+ Author     : loxotron
+ Editors    : loxotron(23.02.2013)
+ Last edit  : 31.10.2017 (by lox) [restrictors]
+--]] ----------------------------------------------------------------------------------------------
+--]] seems only 3 restrictors of it's type allowed for smart-terrain
+--]] also engine doesn't support dynamic restrictors
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	darklab_bloodsucker1 = {comm = {"bloodsucker"},      in_rest = "darklab_bloodsucker1_in_rest", out_rest = "darklab_bloodsucker1_out_rest"},
+	darklab_bloodsucker2 = {comm = {"bloodsucker"},     out_rest = "darklab_bloodsucker2_out_rest"},
+	darklab_bloodsucker3 = {comm = {"bloodsucker"},     out_rest = "darklab_bloodsucker3_out_rest"},
+	darklab_burer1       = {comm = {"burer"},           out_rest = "darklab_burer1_out_rest"},
+	darklab_burer2       = {comm = {"burer"},           out_rest = "darklab_giant_out_rest"},
+	darklab_burer3       = {comm = {"burer"},           out_rest = "darklab_giant_out_rest"},
+	darklab_polter1      = {comm = {"poltergeist"},     out_rest = "darklab_polter1_out_rest"},	--/polter_tele_indoor
+	darklab_giant        = {comm = {"pseudo_gigant"},   out_rest = "darklab_giant_out_rest"},
+	darklab_snorks1      = {comm = {"snork"},            in_rest = "darklab_in_scene_rest", out_rest = "darklab_snorks1_out_rest"},
+	darklab_snorks2      = {comm = {"snork"},            in_rest = "darklab_in_scene_rest", out_rest = "darklab_snorks2_out_rest"},
+	darklab_rats1        = {comm = {"rat","tushkano"},   in_rest = "darklab_rats1_in_rest2, darklab_rats1_in_rest3, darklab_rats1_in_rest4", out_rest = "darklab_rats1_out_rest"},
+	darklab_rats2        = {comm = {"rat","tushkano"},   in_rest = "darklab_in_scene_rest, darklab_zombies2_in_restr, darklab_global_monsters_rest2", out_rest = "darklab_glob_monsters_rest"},
+	darklab_rats3        = {comm = {"rat","tushkano"},   in_rest = "darklab_rats3_in_rest, darklab_rats3_in_rest2, darklab_rats3_in_rest3", out_rest = "darklab_rats3_out_rest"},
+	darklab_rats4        = {comm = {"rat","tushkano"},   in_rest = "darklab_rats2_in_rest"},
+	darklab_tushkanos1   = {comm = {"tushkano"},         in_rest = "darklab_rats1_in_rest2, darklab_rats1_in_rest3", out_rest = "darklab_tushkanos1_out_rest"},
+	darklab_zombies1     = {comm = {"zombie"},           in_rest = "darklab_in_scene_rest", out_rest = "darklab_zombies1_out_rest"},
+	darklab_zombies2     = {comm = {"zombie"},           in_rest = "darklab_in_scene_rest", out_rest = "darklab_glob_monsters_rest"},
+	darklab_zombies3     = {comm = {"zombie", "karlik"}, in_rest = "darklab_in_scene_rest", out_rest = "darklab_zombies3_out_rest"},
+	darklab_zombies4     = {comm = {"zombie"},			in_rest = "darklab_zombies4_in_rest", out_rest = "darklab_zombies4_out_rest"},
+	darklab_zombies5     = {comm = {"zombie"},          in_rest = "darklab_zombies5_in_rest", out_rest = "darklab_zombies5_out_rest"},
+	darklab_zombies6     = {comm = {"zombie"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/ ---------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ giant
+--/ ---------------------------------------------
+gulags.darklab_giant.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", gulags.darklab_giant.out_rest, false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 4, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+gulags.darklab_giant.state = function(gulag)
+	if has_info("ds_borov_documents_start") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ bloodsuckers
+--/ ---------------------------------------------
+gulags.darklab_bloodsucker1.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], gulags.darklab_bloodsucker1.in_rest, gulags.darklab_bloodsucker1.out_rest, false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home3", 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+gulags.darklab_bloodsucker1.state = function(gulag)
+	if has_info("dar_cutscene_end") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.darklab_bloodsucker2.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_bloodsucker2.ltx = smart_dyn_ltx.add_mob_home(type, 1, 5, 15)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", gulags.darklab_bloodsucker2.out_rest,   nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.darklab_bloodsucker3.jobs = function(sj, gname, type, squad, groups)
+	--gulags.darklab_bloodsucker3.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 15)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", gulags.darklab_bloodsucker3.out_rest, false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+gulags.darklab_bloodsucker3.state = function(gulag)
+	if has_info("dar_transformation_2") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ burers
+--/ ---------------------------------------------
+--/ removed restrictor, ai-map separated in it from other nodes.
+gulags.darklab_burer1.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_burer1.ltx = smart_dyn_ltx.add_mob_home(type, 1, 7, 9)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", "",   nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.darklab_burer2.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_burer2.ltx = smart_dyn_ltx.add_mob_home(type, 1, 4, 6)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", gulags.darklab_burer2.out_rest, nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.darklab_burer3.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_burer3.ltx = smart_dyn_ltx.add_mob_home(type, 1, 4, 6)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "", gulags.darklab_burer3.out_rest, nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.darklab_zombies1.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_zombies1.ltx = smart_dyn_ltx.add_fake_home(type, 2, 5, 10)
+	table.insert(sj, gulag_tasks.getJob("fake_death1", 0, 5, {0}, squad, groups[1], gulags.darklab_zombies1.in_rest, gulags.darklab_zombies1.out_rest, false, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("fake_death2", 0, 5, {1}, squad, groups[1], gulags.darklab_zombies1.in_rest, gulags.darklab_zombies1.out_rest,   nil, type, on_level_pred))
+end
+
+gulags.darklab_zombies1.state = function(gulag)
+	if has_info("dar_player_scene_0_end") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.darklab_zombies2.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_zombies2.ltx = smart_dyn_ltx.add_fake_home(type, 3, 8, 15, 25)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("fake_death" .. i, 0, 5, {0}, squad, groups[1], gulags.darklab_zombies2.in_rest, gulags.darklab_zombies2.out_rest,   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.darklab_zombies3.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_zombies3.ltx = smart_dyn_ltx.add_mob_home(type, 3, 30, 40)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], gulags.darklab_zombies3.in_rest, "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.darklab_zombies4.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_zombies4.ltx =   smart_dyn_ltx.add_fake_home(type, 2, 10, 20, 30)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("fake_death" .. i, 0, 5, {0}, squad, groups[1], "", "darklab_zombies4_out_rest", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.darklab_zombies5.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("fake_death1", 0, 5, {0}, squad, groups[1], "", "darklab_zombies5_out_rest",   nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.darklab_zombies6.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("fake_death1", 0, 5, {0}, squad, groups[1], "", "darklab_zombies6_out_rest2",   nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.darklab_rats1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], gulags.darklab_rats1.in_rest, "",   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.darklab_rats2.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_rats2.ltx = smart_dyn_ltx.add_mob_home(type, 3, 10, 12)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", gulags.darklab_rats2.out_rest,   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.darklab_rats3.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_rats3.ltx = smart_dyn_ltx.add_mob_home(type, 3, 11, 13)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", gulags.darklab_rats3.out_rest,   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.darklab_rats4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], gulags.darklab_rats4.in_rest, "",   nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ tushkanos
+--/ ---------------------------------------------
+gulags.darklab_tushkanos1.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_tushkanos1.ltx = smart_dyn_ltx.add_mob_home(type, 5, 40, 50)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], gulags.darklab_tushkanos1.in_rest, "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snorks
+--/ ---------------------------------------------
+gulags.darklab_snorks1.jobs = function(sj, gname, type, squad, groups)
+gulags.darklab_snorks1.ltx = smart_dyn_ltx.add_mob_home(type, 1, 4, 6)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], gulags.darklab_snorks1.in_rest, gulags.darklab_snorks1.out_rest, nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.darklab_snorks2.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_snorks2.ltx = smart_dyn_ltx.add_mob_home(type, 4, 4, 6)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], gulags.darklab_snorks2.in_rest, gulags.darklab_snorks2.out_rest, false, type, nil))
+	end
+	for i = 3, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], gulags.darklab_snorks2.in_rest, "",   nil, type, nil))
+	end
+end
+
+gulags.darklab_snorks2.state = function(gulag)
+	if has_info("dar_sc6_end") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ polter
+--/ ---------------------------------------------
+gulags.darklab_polter1.jobs = function(sj, gname, type, squad, groups)
+	gulags.darklab_polter1.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 7)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", gulags.darklab_polter1.out_rest, nil, type, on_level_pred))
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,247 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : pp_eff.script
+ Description: 
+ Copyright  : 2008 © LA-team
+ Author     : barin (04.12.2008)
+ Editors    : barin (09.09.2009)
+ Last edit  : 30.05.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local fs = getFS()
+local current_pp_ids = {}
+local current_ppe = {} --/#?# Tbl[name] = obj
+--/ default scripted postprocess
+local def_scripted_pp = "lost_alpha\\anom_zone\\anom_zone_pp.ltx"
+local def_color_base = "0.5, 0.5, 0.5"
+local def_color_add  = "0.0, 0.0, 0.0"
+local def_color_gray = "0.5, 0.5, 0.5"
+local def_noise = "0.9, 0.5, 30"
+local def_dual  = "0.0, 0.0"
+local def_gray  = "0.0"
+local def_blur  = "0.0"
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function get_pp_id()
+	local id = Random.I(3000, 3500)
+	while current_pp_ids[id] do
+		id = Random.I(3000, 3500)
+	end
+	current_pp_ids[id] = true
+	return id --/>
+end
+
+function parse_num(str)
+	local tbl = {}
+	
+	if type(str) == 'string' then
+		for w in string.gfind(str, "%s*([%d%.]+)%s*") do
+			table.insert(tbl, tonumber(w))
+		end
+	else
+		abort(sModule..":parse_num: syntax error!")
+	end
+	
+	return unpack(tbl) --/>
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------
+class "PPEffector" (effector)
+--/ -----------------------------------------------------------------
+function PPEffector:__init(id_number) super(id_number, 10000000)
+	self.params = effector_params()
+end
+
+function PPEffector:process(pp)
+	pp:assign(self.params)
+	effector.process(self, pp)
+	return true
+end
+
+function PPEffector:SetColorBase(r, g, b)
+	self.params.color_base = color(r, g, b)
+end
+
+function PPEffector:SetColorAdd(r, g, b)
+	self.params.color_add = color(r, g, b)
+end
+
+function PPEffector:SetColorGray(r, g, b)
+	self.params.color_gray = color(r, g, b)
+end
+
+function PPEffector:SetNoise(intensity, grain, fps)
+	self.params.noise = noise(intensity, grain, fps)
+end
+
+function PPEffector:SetDuality(horizontal, vertical)
+	self.params.dual = duality(horizontal, vertical)
+end
+
+function PPEffector:SetGray(gray)
+	self.params.gray = gray
+end
+
+function PPEffector:SetBlur(blur)
+	self.params.blur = blur
+end
+
+function PPEffector:SetDefaultParams()
+	self.params.color_base = color(parse_num(def_color_base))
+	self.params.color_add  = color(parse_num(def_color_add))
+	self.params.color_gray = color(parse_num(def_color_gray))
+	self.params.noise = noise(parse_num(def_noise))
+	self.params.dual  = duality(parse_num(def_dual))
+	self.params.gray  = parse_num(def_gray)
+	self.params.blur  = parse_num(def_blur)
+end
+
+function PPEffector:LoadFromLtx(path, eff_name)
+	local ltx = path
+	if type(path) == 'string' then
+		ltx = ini_file(path)
+	elseif not ltx then
+		abort("%s:LoadFromLtx: '%s' does not exist!", sModule, path)
+		self:SetDefaultParams()
+	elseif type(eff_name) ~= 'string' or eff_name == "" then
+		abort("%s:LoadFromLtx: 'eff_name' wrong type=(%s) or zero", sModule, type(eff_name))
+		self:SetDefaultParams()
+	elseif not ltx:section_exist(eff_name) then
+		abort("%s:LoadFromLtx: effector '%s' does not exist!", sModule, eff_name)
+		self:SetDefaultParams()
+	else
+		self:SetColorBase(parse_num(Get_Cfg_String(ltx, eff_name, "color_base", def_color_base)))
+		self:SetColorAdd (parse_num(Get_Cfg_String(ltx, eff_name, "color_add",  def_color_add)))
+		self:SetColorGray(parse_num(Get_Cfg_String(ltx, eff_name, "color_gray", def_color_gray)))
+		self:SetNoise    (parse_num(Get_Cfg_String(ltx, eff_name, "noise", def_noise)))
+		self:SetDuality  (parse_num(Get_Cfg_String(ltx, eff_name, "dual",  def_dual)))
+		self:SetGray     (parse_num(Get_Cfg_String(ltx, eff_name, "gray",  def_gray)))
+		self:SetBlur     (parse_num(Get_Cfg_String(ltx, eff_name, "blur",  def_blur)))
+	end
+end
+
+function PPEffector:print()
+	log("color_base = %.3f, %.3f, %.3f", self.params.color_base.r, self.params.color_base.g, self.params.color_base.b)
+	log("color_add = %.3f, %.3f, %.3f", self.params.color_add.r, self.params.color_add.g, self.params.color_add.b)
+	log("color_gray = %.3f, %.3f, %.3f", self.params.color_gray.r, self.params.color_gray.g, self.params.color_gray.b)
+	log("noise = %.3f, %.3f, %d", self.params.noise.intensity, self.params.noise.grain, self.params.noise.fps)
+	log("dual = %.3f, %.3f", self.params.dual.h, self.params.dual.v)
+	log("gray = %.3f", self.params.gray)
+	log("blur = %.3f", self.params.blur)
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------
+class "scr_pp"
+--/ -----------------------------------------------------------------
+function scr_pp:__init(effector_name)
+	self.pp = nil
+	self.playing = false
+	self:setup(effector_name)
+end
+
+function scr_pp:setup(effector_name)
+	self.pp = PPEffector(get_pp_id())
+	if effector_name then
+		self.pp:LoadFromLtx(def_scripted_pp, effector_name)
+	else
+		self.pp:SetDefaultParams()
+	end
+end
+
+function scr_pp:start()
+	if self.pp then
+		if not self.playing then
+			self.pp:start()
+			self.playing = true
+		end
+	else
+		abort(sModule..":scr_pp:start attempt to start not initialized effector!")
+	end
+end
+
+function scr_pp:stop()
+	if self.pp then
+		if self.playing then
+			self.pp:finish()
+			self.playing = false
+		end
+	else
+		abort(sModule..":scr_pp:stop: attempt to stop not initialized effector!")
+	end
+end
+
+function scr_pp:print()
+	self.pp:print()
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------
+class "file_pp"
+--/ -----------------------------------------------------------------
+function file_pp:__init(fileName)
+	self.playing = false
+	self.name = self:GetPPFileName(fileName)
+	self.id = get_pp_id()
+	--current_ppe[self.name] = self
+end
+
+function file_pp:GetPPFileName(fileName)
+	if fileName:match('[%w|_]*(%.ppe)') then
+		return fileName --/>
+	end
+	return fileName .. ".ppe" --/>
+end
+
+function file_pp:set_factor(num)
+	if self.playing and type(num) == 'number' then
+		level.set_pp_effector_factor(self.id, num)
+	end
+end
+
+function file_pp:start()
+	if not self.playing then
+		level.add_pp_effector(self.name, self.id, true)
+		self.playing = true
+	end
+end
+
+function file_pp:stop()
+	if self.playing then
+		level.remove_pp_effector(self.id)
+		self.playing = false
+	end
+end
+
+--/ -----------------------------------------------------------------
+--/ Helpers
+--/ -----------------------------------------------------------------
+function check_ppe(fileName)
+	if fileName:match('[%w|_]*(%.ppe)') then
+		return fs:exist("$game_anims$", fileName) --/>
+	end
+	return fs:exist("$game_anims$", fileName .. ".ppe") --/>
+end
+
+function get_pp(str)
+	if type(str) == 'string' and str ~= "" then
+		if check_ppe(str) then
+			--return current_ppe[str] or file_pp(str) --/>
+			return file_pp(str) --/>
+		end
+		return scr_pp(str) --/>
+	end
+	return nil --/>
+end
+--/ ------------------------------------------------------------------------------------------------

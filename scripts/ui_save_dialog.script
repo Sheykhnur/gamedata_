@@ -1,0 +1,261 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_save_dialog.script
+ Description: Save Dialog for STALKER
+ Copyright  : 2004 © GSC Game World
+ Author     : Serhiy Vynnychenko (narrator@gsc-game.kiev.ua)
+ Editors    : barin (2010-08-14)
+ Last edit  : 28.01.2013 (by ...)
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ Print-Log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "save_item" (CUIListBoxItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function save_item:__init() super()
+	self:SetWndRect(0, 0, 500, 22)
+	self:SetColor(GetARGB(255, 255, 255, 255))
+	
+	self.fn = self:GetTextItem()
+	--self.fn:SetAutoDelete(true)
+	--self:AttachChild(self.fn)
+	--self.fn:SetWndRect(0, 0, 230, 22)
+	self.fn:SetText("filename")
+	self.fn:SetFont(GetFontLetterica18Russian())
+	self.fn:SetTextColor(GetARGB(255, 255, 255, 255))
+	self.fn:SetTextAlignment(CGameFont.alLeft)
+	
+	self.fage = self:AddTextField("fileage", 160)
+	--self.fage:SetAutoDelete(true)
+	--self:AttachChild(self.fage)
+	--self.fage:SetWndRect(250, 0, 160, 22)
+	self.fage:SetWndPos(250, 0)
+	--self.fage:SetText()
+	self.fage:SetFont(GetFontLetterica16Russian())
+	self.fage:SetTextColor(GetARGB(255, 255, 255, 255))
+	self.fage:SetTextAlignment(CGameFont.alRight)
+end
+
+class "save_dialog" (CUIScriptWnd)
+
+function save_dialog:__init() super()
+	self:InitControls()
+	self:InitCallBacks()
+	self:FillList()
+end
+
+function save_dialog:__finalize()
+end
+
+function save_dialog:reset()
+	self:GetEditBox("edit_filename"):SetText("")
+	self:GetListBox("list_window"):RemoveAll()
+	self:FillList()
+end
+
+function save_dialog:FillList()
+	local flist = getFS():file_list_open_ex("$game_saves$", FS.FS_ListFiles, "*.sav")
+	local f_cnt = flist:Size()
+	
+	flist:Sort(FS.FS_sort_by_modif_down)
+	
+	for	it = 0, f_cnt - 1 do
+		local file = flist:GetAt(it)
+		local file_name = string.sub(file:NameFull(), 0, (string.len(file:NameFull()) - 4))
+		local date_time = "[ " .. file:ModifDigitOnly() .. " ]"
+		self:AddItemToList(file_name, date_time)
+	end
+end
+
+function save_dialog:InitControls()
+	self:Init(0, 0, 1024, 768)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_mm_save_dlg.xml")
+	
+	local st = xml:InitStatic("back_video", self)
+	st:InitTexture("ui\\ui_vid_back_04")
+	
+	local ctrl = nil
+	
+	--xml:InitStatic("back_video", self)
+	
+	xml:InitStatic("background", self)
+	--xml:InitStatic("newspaper_video", self)
+	
+	self.form = xml:InitStatic("form", self)
+	
+	xml:InitStatic("form:caption", self.form)
+	
+	ctrl = xml:InitEditBox("form:edit", self.form)
+	self:Register(ctrl, "edit_filename")
+	
+	xml:InitFrame("form:list_frame", self.form)
+	
+	self.list_box = xml:InitListBox("form:list", self.form)
+	self.list_box:ShowSelectedItem(true)
+	self:Register(self.list_box, "list_window")
+	
+	ctrl = xml:Init3tButton("form:btn_save", self.form)
+	self:Register(ctrl, "button_ok")
+	
+	ctrl = xml:Init3tButton("form:btn_delete", self.form)
+	self:Register(ctrl, "button_del")
+	
+	ctrl = xml:Init3tButton("form:btn_cancel", self.form)
+	self:Register(ctrl, "button_cancel")
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box, "message_box")
+	self.mbox_mode = 0
+end
+
+function save_dialog:InitCallBacks()
+	self:AddCallback("button_ok", ui_events.BUTTON_CLICKED, self.OnButton_ok_clicked, self)
+	self:AddCallback("button_cancel", ui_events.BUTTON_CLICKED, self.OnButton_cancel_clicked, self)
+	self:AddCallback("button_del", ui_events.BUTTON_CLICKED, self.OnButton_del_clicked, self)
+	self:AddCallback("message_box", ui_events.MESSAGE_BOX_YES_CLICKED, self.OnMsgYes, self)
+	self:AddCallback("list_window", ui_events.LIST_ITEM_CLICKED, self.OnListItemClicked, self)
+	self:AddCallback("edit_filename", ui_events.EDIT_TEXT_COMMIT, self.OnButton_ok_clicked, self)
+end
+
+function save_dialog:OnListItemClicked()
+	
+	if self.list_box:GetSize() == 0 then
+		return
+	end
+	
+	local item_id = self.list_box:GetSelectedIndex()
+	local item = self.list_box:GetItem(item_id)
+	
+	if item == nil then
+		return
+	end
+	
+	local edit_box = self:GetEditBox("edit_filename")
+	local item_text = item.fn:GetText()
+	edit_box:SetText(item_text)
+end
+
+function save_dialog:OnMsgYes()
+	if self.mbox_mode == 1 then
+		self:SaveFile(self.new_save)
+		self:OnButton_cancel_clicked()
+	elseif self.mbox_mode == 2 then
+		self:delete_selected_file()
+	end
+end
+
+function save_dialog:OnButton_del_clicked()
+	
+	if self.list_box:GetSize() == 0 then
+		return
+	end
+	
+	local index	= self.list_box:GetSelectedIndex()
+	if index == -1 then
+		return
+	end
+	
+	self.mbox_mode = 2
+	self.message_box:Init("message_box_delete_file_name")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function save_dialog:delete_selected_file()
+	
+	if self.list_box:GetSize() == 0 then
+		return
+	end
+	
+	local index	= self.list_box:GetSelectedIndex()
+	if index == -1 then
+		return
+	end
+	
+	local item = self.list_box:GetItem(index)
+	if item then
+		local filename = item.fn:GetText()
+		
+		ui_load_dialog.delete_save_game(filename)
+		
+		self.list_box:RemoveItem(index)
+		self:OnListItemClicked()
+	end
+end
+
+function save_dialog:OnButton_ok_clicked()
+	local message_box	= self.message_box
+	local edit_box = self:GetEditBox("edit_filename")
+	self.new_save = edit_box:GetText()
+	
+	if string.len(self.new_save) == 0 then
+		self.mbox_mode = 0
+		self.message_box:Init("message_box_empty_file_name")
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		return
+	end
+	
+	local f = getFS()
+	--local flist = f:file_list_open("$game_saves$", FS.FS_ListFiles)
+	local file_struct = f:exist("$game_saves$", self.new_save .. ".sav")
+	
+	if file_struct ~= nil then
+		self.mbox_mode = 1
+		self.message_box:Init("message_box_file_already_exist")
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		--flist:Free()
+		return
+	end
+	
+	--flist:Free()
+	self:SaveFile(self.new_save)
+	
+	self:OnButton_cancel_clicked()
+end
+
+function save_dialog:OnButton_cancel_clicked()
+	self:GetHolder():start_stop_menu(self.owner, true)
+	self:GetHolder():start_stop_menu(self, true)
+	self.owner:Show(true)
+end
+
+function save_dialog:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:GetHolder():start_stop_menu(self.owner, true)
+			self:GetHolder():start_stop_menu(self, true)
+			self.owner:Show(true)
+		end
+	end
+	
+	return true
+end
+
+function save_dialog:AddItemToList(file_name, date_time)
+	local _itm = save_item()
+	_itm.fn:SetText(file_name)
+	_itm.fage:SetText(date_time)
+	
+	
+	self.list_box:AddItem(_itm)
+end
+
+function save_dialog:SaveFile(fileName)
+	if fileName ~= nil then
+		event("game_save"):trigger({sav=fileName}) --/#+#
+		local console = get_console()
+		console:execute(string.format("save %s", fileName))
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

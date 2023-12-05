@@ -1,0 +1,63 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_.500]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_.500"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_44_fmj.ogf
+wm_size                     = 0.17
+
+; Icon
+inv_grid_width              = 2
+inv_grid_height             = 1
+inv_grid_x                  = 37
+inv_grid_y                  = 22
+
+; Text
+inv_name                    = st_ammo_.500_name
+inv_name_short              = st_ammo_.500_name
+description                 = st_ammo_.500_descr
+
+; Economy
+cost                        = 760
+inv_weight                  = .44
+box_size                    = 20
+
+; Impact
+k_hit                       = 3.2
+k_ap                        = 0.44
+k_pierce                    = 0.44
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 1.3
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.9
+
+
+[weapon_.500]
+; Effects
+shell_particles             =
+flame_particles             = weapons\generic_weapon05
+smoke_particles             = amik\weapons\smoke_particles\smoke_particles_00
+silencer_flame_particles    = ; no flame
+silencer_smoke_particles    = amik\weapons\smoke_particles\silencer_smoke_particles_00
+
+; Ammo
+ammo_class                  = ammo_.500
+ammo_limit                  = 120
+
+; Features
+silencer_name               = ; no silencer
+
+; Ballistics
+bullet_speed                = 640
+
+; Impact
+hit_impulse                 = 380

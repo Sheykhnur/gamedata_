@@ -1,0 +1,69 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_weapon_restorer.script
+ Description: Рестриктор активирующий оружие актора
+ Copyright  : 2011 © LA-team
+ Author     : Gr1ph00n
+ Editors    : Gr1ph00n
+ Last edit  : 20.03.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_weapon_restorer"
+--/ -----------------------------------------------------------------------------------------------
+function action_weapon_restorer:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_weapon_restorer:reset_scheme()
+	if self.log then log("reset_scheme: Obj=[%s]", self.object:name(), "") end --/#~#
+	self.st.signals = {}
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_weapon_restorer:update(delta)
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	if db.actor:is_weapon_hidden() then
+		db.actor:restore_weapon() --/ due to slots block counter
+		if self.log then log("update: Obj=[%s]~>(%s)", self.object:name(), "restoring") end --/#~#
+	else
+		self.st.signals["weapon_restored"] = true
+		if self.log then log("update: Obj=[%s]~>(%s)", self.object:name(), "signal") end --/#~#
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local oNewAction = this.action_weapon_restorer(obj, st)
+	--/ регистрация 'action', для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	--/ for debug!
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", oObj:name(), scheme, section, "") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

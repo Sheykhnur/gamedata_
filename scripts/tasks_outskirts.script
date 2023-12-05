@@ -1,0 +1,74 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_outskirts.script
+ Description: Tasks Outskirts
+ Copyright  : 2010 © LA-team
+ Author     : vintar
+ Editors    : lox, vintar(08.02.2013)
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"out_guide_center_spoke",
+	"out_guide_scorcher_spoke",
+	"out_guide_zone_spoke"
+}
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ Print-Log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if not has_info("out_got_flash") and sEvent == "item_take" then
+		if obj:story_id() == 8229 then
+			give_info("out_got_flash")
+		end
+	end
+	if info_tbl and has_info_portions(info_tbl) then
+		give_info("out_guide_spoke_all")
+		info_tbl = nil --/ clear
+	end
+	if has_info("bas_switcher_off") and not has_info("pri_ghost_meet_start") then
+		give_info("pri_ghost_meet_start")
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^out_') then
+		return false --/>
+	end
+	if info_id == "out_bug_placed" then
+		local bug = db.actor:object("out_bug")
+		if bug then
+			alife():release(alife():object(bug:id()), true)
+		end
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function out_dolg_task_actor_pos()
+	local pos = get_patrol("out_actor_walk"):point(0)
+	local dir = get_patrol("out_actor_look"):point(0):sub(pos)
+	db.actor:set_actor_position(pos)
+	db.actor:set_actor_direction(-dir:getH())
+end
+
+function check_duty_suit()
+	local suit = db.actor:get_current_outfit()
+	return (suit and (suit:section():match("dolg_medium_outfit") or suit:section():match("dolg_medium_outfit_m1") or suit:section():match("dolg_scientific_outfit") or suit:section():match("dolg_protoexo_outfit") or suit:section():match("dolg_heavy_outfit"))) ~= nil
+end
+
+function out_spy_flashcard_fail()
+	return has_info("out_actor_gave_flash_merc") or has_info("bar_out_task_half_failed")
+end
+--/ -----------------------------------------------------------------------------------------------

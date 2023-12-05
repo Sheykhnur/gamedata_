@@ -1,0 +1,31 @@
+:DOOR INTO SID'S BUNKER
+[logic]
+active = {+esc_trader_can_leave} ph_door@closed, {-esc_trader_can_leave} ph_door@locked
+
+[ph_door@locked]
+locked = true
+snd_open_start = trader_door_unlock
+on_info = {+esc_trader_can_leave} ph_door@closed %=play_snd(device\door_servomotor) =enable_save =set_safe_zone(in) =enable_stalkers_network -esc_actor_scene +esc_trader_newbie =spawn_toolkits%
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = trader_door_open_start
+snd_close_start = trader_door_close_start
+snd_close_stop = trader_door_close_stop
+on_use = ph_door@open %-esc_close_door%
+on_info = {+esc_trader_dialog2 -esc_dialog2_finished} ph_door@locked_story
+
+[ph_door@open]
+closed = false
+locked = false
+on_use = ph_door@closed
+snd_open_start = trader_door_open_start
+snd_close_start = trader_door_close_start
+snd_close_stop = trader_door_close_stop
+on_info = {+esc_close_door} ph_door@closed
+on_info2 = {+esc_trader_dialog2 -esc_dialog2_finished} ph_door@locked_story
+
+[ph_door@locked_story]
+locked = true
+on_info = {+esc_talk_to_sid +esc_dialog2_finished} ph_door@open

@@ -1,0 +1,554 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_artefact_hunter.script
+ Description: NPCs hunting for artefacts
+ Copyright  : 2008 © LA-team
+ Author     : barin (03.06.2014.)
+ Editors    : barin, gr1ph00n, vintar, loxotron [16.04.17]
+ Last edit  : 14.05.2017 [phobos2077] 
+--]]-----------------------------------------------------------------------------------------------
+--]] quest item now forbidden to grab by npc
+--]] radius and probability to detect artefacts are configurable
+
+-- Artefacts reserved for specific NPC {artifact_id = npc_id}
+local reserved_artefacts = {}
+
+-- All artefact hunter NPCs
+local af_hunters = {}
+
+-- All searched corpses (corpse_id = true)
+local searched_corpse = {}
+
+--local blocked_afs = {}
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local bEnabled    = false --/ flag of permission of activity of the scheme
+local sSchemeName = "af_hunter" --/ string name of the scheme
+local tExcludedNPCs   = {} --/ 
+local tExcludedComm   = {} --/ 
+local tExcludedItem   = {} --/ 
+local tExcludedCorpse = {} --/ 
+local iEvl_AI_AfHunter = 0 --/ property_base
+local iAct_AI_AfHunter = 0 --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+local tBindActs = {} --/ array of 'external' actions disconnected in case of the active scheme
+local max_distance
+local max_distance_see_artefact
+local max_distance_see_corpse
+local probability_see_artefact
+local probability_see_corpse
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	--log("init","")
+	if bInit then return end
+	iEvl_AI_AfHunter,iAct_AI_AfHunter = register_ai_module(sModule, sSchemeName)
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ --------------------------
+function get_ai_evl(idx)
+	return iEvl_AI_AfHunter + (idx or 0) --/>
+end
+function get_ai_act(idx)
+	return iAct_AI_AfHunter + (idx or 0) --/>
+end
+--/ --------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	local ltx = ini_file("lost_alpha\\ai_schemes\\" .. sModule .. ".ltx")
+	bEnabled     = Get_Cfg_Bool (ltx, "options", "enabled", bEnabled)
+	max_distance = Get_Cfg_Num32(ltx, "options", "max_distance", 80)
+	max_distance_see_artefact = Get_Cfg_Num32(ltx, "options", "max_distance_see_artefact", 15)
+	max_distance_see_corpse = Get_Cfg_Num32(ltx, "options", "max_distance_see_corpse", 35)
+	probability_see_artefact = Get_Cfg_Num32(ltx, "options", "probability_see_artefact", 100)
+	probability_see_corpse = Get_Cfg_Num32(ltx, "options", "probability_see_corpse", 100)
+	
+	--log("INIT: artefacts [dist=%s, prob=%s], corpses [dist=%s, prob=%s]", max_distance_see_artefact, probability_see_artefact, max_distance_see_corpse, probability_see_corpse)
+	tExcludedNPCs   = Get_IniSection(ltx, "excluded_npcs",      "true")
+	tExcludedComm   = Get_IniSection(ltx, "excluded_community", "true")
+	tExcludedCorpse = Get_IniSection(ltx, "excluded_corpses",   "true")
+	tExcludedItem   = Get_IniSection(ltx, "excluded_items",     "true")
+	tBindActs = {
+		[1] = stalker_ids.action_alife_planner,
+		--[2] = stalker_ids.action_combat_planner,
+		--[3] = stalker_ids.action_danger_planner,
+		--[4] = stalker_ids.action_anomaly_planner,
+	}
+	tBindEvls = {
+		[1] = { stalker_ids.property_alive,         true  }, --/ NPC alive
+		[2] = { stalker_ids.property_enemy,         false }, --/ no enemies
+		[3] = { stalker_ids.property_danger,        false }, --/ no dangers
+		[4] = { stalker_ids.property_anomaly,       false }, --/#?# no anomalies
+		[5] = { xr_evaluators_id.sidor_wounded_base,false }  --/ NPC not wounded
+	}
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout and xr_blowout.get_ai_evl(0), flg = false}, --/ don't see a blowout
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+	this.get_af_zone_mgr()
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "zone_mgr"
+--/ -----------------------------------------------------------------------------------------------
+function zone_mgr:__init()
+	self.anom_zones = {}
+	self.npc_zone   = {}
+	self.monitor    = false
+end
+
+function zone_mgr:add_zone(zone)
+	self.anom_zones[zone.id] = {
+		zone = zone,
+		reserved = nil
+	}
+end
+
+function zone_mgr:is_zone_accessible(npc, zone)
+	if zone == nil then
+		zone = self.anom_zones[self.npc_zone[npc:id()]].zone
+	end
+	
+	if npc:position():distance_to(zone.position) <= max_distance then
+		if zone:is_zone_enabled() and zone:af_exist() then
+			return level.valid_vertex_id(zone.m_level_vertex_id) and npc:accessible(zone.m_level_vertex_id)
+		end
+	end
+	
+	return false
+end
+
+function zone_mgr:reserve_zone(npc)
+	if self.monitor then
+		return
+	end
+	
+	self.monitor = true
+	
+	for k, v in pairs(self.anom_zones) do
+		if self:is_zone_accessible(npc, v.zone) then
+			if not v.reserved then
+				self.npc_zone[npc:id()] = k
+				v.reserved = npc:id()
+				break
+			end
+		end
+	end
+	
+	self.monitor = false
+end
+
+function zone_mgr:has_assigned_zone(npc_id)
+	if self.npc_zone[npc_id] then
+		return self.anom_zones[ self.npc_zone[npc_id] ].reserved == npc_id
+	end
+	return false
+end
+
+function zone_mgr:release_assignment(npc_id)
+	if self:has_assigned_zone(npc_id) then
+		self:block_af_movement(npc_id, false)
+		self.anom_zones[ self.npc_zone[npc_id] ].reserved = nil
+		self.npc_zone[npc_id] = nil
+	end
+end
+
+function zone_mgr:get_zone_lvid(npc_id)
+	return self.anom_zones[ self.npc_zone[npc_id] ].zone.m_level_vertex_id
+end
+
+function zone_mgr:take_artefact(npc)
+	self.anom_zones[ self.npc_zone[npc:id()] ].zone:npc_take_artefact(npc)
+end
+
+function zone_mgr:block_af_movement(npc_id, flag)
+	self.anom_zones[ self.npc_zone[npc_id] ].zone:block_af_movement(flag)
+end
+
+function zone_mgr:npc_inside_zone(npc)
+	if self.anom_zones[ self.npc_zone[npc:id()] ].zone.online then
+		local zone = level.object_by_id(self.npc_zone[npc:id()])
+		return zone:inside(npc:position())
+	end
+	
+	return false
+end
+
+function zone_mgr:get_af_position(npc)
+	local id = self.anom_zones[ self.npc_zone[npc:id()] ].zone.curr_artefact
+	local af = level.object_by_id(id)
+	return (af and af:position())
+end
+
+--/ ----------------------------------------------
+function get_af_zone_mgr()
+	if not af_zone_mgr then
+		af_zone_mgr = this.zone_mgr()
+	end
+	return af_zone_mgr
+end
+
+function add_zone(zone)
+	get_af_zone_mgr():add_zone(zone)
+end
+
+function isHuntingArtefact(id)
+	return af_hunters[id] ~= nil
+end
+
+-- ******************** EVALUATORS ********************* --
+
+class "evaluator_see_artefact" (property_evaluator)
+
+function evaluator_see_artefact:__init(evaluator_name, storage) super(nil, evaluator_name)
+	self.stor = storage
+	self.stor.mine_artefact_id = nil
+	
+	-- Artefacts ignored by this NPC {artefact_id = true/false}
+	self.stor.seen_artefacts = {}
+end
+
+function evaluator_see_artefact:evaluate()
+	self:im_too_lazy()
+	
+	if not self.stor.af_hunter_enabled then
+		return false
+	end
+	
+	return self:found_artefact()
+end
+
+function evaluator_see_artefact:im_too_lazy()
+	local active_scheme = db.storage[self.object:id()].active_scheme
+	--log("active scheme = [%s]",active_scheme)
+	if active_scheme == "camper" or xr_sleeper.is_npc_asleep(self.object) then
+		self.stor.af_hunter_enabled = false
+	end
+end
+
+function evaluator_see_artefact:found_artefact()
+	if self.stor.mine_artefact_id ~= nil then
+		return true
+	end
+	
+	local selectedItem
+	for visible_object, v in self.object:memory_visible_objects() do
+		local item = visible_object:object()
+		
+		--log("npc [%s] visible object [%s]",self.object:name(),tostring(item:section()))
+		if ( (is_artefact(item) and self:can_see_artefact(item))
+			or (is_corpse(item) and self:can_see_corpse(item)))
+			and not reserved_artefacts[item:id()]
+			and level.valid_vertex_id(item:level_vertex_id())
+			and self.object:accessible(item:level_vertex_id()) then
+			
+			-- select the first available artifact, but evaluate all others as well
+			if selectedItem == nil then
+				selectedItem = item
+			end
+		end
+	end
+	
+	if selectedItem ~= nil then
+		self.stor.mine_artefact_id = selectedItem:id()
+		reserved_artefacts[selectedItem:id()] = self.object:id()
+		af_hunters[self.object:id()] = true
+		--[[if not blocked_afs[self.stor.mine_artefact_id] then
+			blocked_afs[self.stor.mine_artefact_id] = true
+			self:stop_artefact_movement(self.stor.mine_artefact_id)
+		end]]
+		
+		-- log("npc [%s] found artefact [%s]", self.object:name(), selectedItem:section())
+		
+		--xr_sound.set_sound_play(self.object, "see_artefact")
+		return true
+	end
+	
+	return false
+end
+
+function evaluator_see_artefact:distance_to(item)
+	return self.object:position():distance_to(item:position())
+end
+
+--/ Roll against probability that is made only once for each item
+function evaluator_see_artefact:roll_seen_artefact(item, probability)
+	if self.stor.seen_artefacts[item:id()] == nil then
+		local rollResult = math.random(0, 99) < probability
+		self.stor.seen_artefacts[item:id()] = rollResult
+		-- log("Trying to see item %s, result = %s", item:section(), rollResult)
+	end
+	return self.stor.seen_artefacts[item:id()]
+end
+
+function evaluator_see_artefact:can_see_artefact(item)
+	return self:distance_to(item) < max_distance_see_artefact
+		and self:roll_seen_artefact(item, probability_see_artefact)
+end
+
+function evaluator_see_artefact:can_see_corpse(item)
+	return self:distance_to(item) < max_distance_see_corpse
+		and not searched_corpse[item:id()]
+		and self:roll_seen_artefact(item, probability_see_corpse)
+end
+
+function evaluator_see_artefact:stop_artefact_movement(id)
+	local af = level.object_by_id(id)
+	local pos = af:position()
+	--log("stopping artefact movement for [%s] at pos [%s]",af:section(),tostring(pos.x .. pos.y .. pos.z))
+	pos.y = pos.y + 1.5
+	af:drop_item_and_teleport(af, pos)
+end
+
+-- ******************** ACTIONS ************************ --
+
+class "action_grab_the_artefact" (action_base)
+
+function action_grab_the_artefact:__init(action_name, storage) super(nil, action_name)
+	self.stor = storage
+	self.anim_timer = nil
+	self.prev_state = nil
+	self.attack_actor_timer = nil
+end
+
+function action_grab_the_artefact:initialize()
+	action_base.initialize(self)
+	self.state = "approaching"
+	self.prev_state = state_mgr.get_state(self.object)
+end
+
+function action_grab_the_artefact:see_artefact(artefact)
+	if not artefact then
+		--self:action_end()
+		return false
+	end
+	
+	if not level.valid_vertex_id(artefact:level_vertex_id()) or not self.object:accessible(artefact:level_vertex_id()) or not self.object:see(artefact) then
+		--self:action_end()
+		return false
+	end
+	
+	return true
+end
+
+function action_grab_the_artefact:actor_has_the_artefact(artefact)
+	if not db.actor:alive() then
+		return false
+	end
+	
+	local inv_item = nil
+	for index = 0, db.actor:object_count() - 1 do
+		inv_item = db.actor:object(index)
+		if inv_item:name() == artefact:name() then
+			return true
+		end
+	end
+	
+	return false
+end
+
+function action_grab_the_artefact:execute()
+	action_base.execute(self)
+	
+	local artefact = level.object_by_id(self.stor.mine_artefact_id)
+	
+	if artefact then
+		if not self:see_artefact(artefact) then
+			if self:actor_has_the_artefact(artefact) then
+				self:action_end()
+			end
+		end
+
+		if self.anim_timer == nil then
+			if self.object:position():distance_to(artefact:position()) <= 0.8 then
+				state_mgr.set_state(self.object, "npc_pickup_item")
+				self.anim_timer = time_global() + 1800
+				
+				-- log("npc [%s] is taking artefact", self.object:name())
+			else
+				self.object:set_desired_position(artefact:position())
+				self.object:set_dest_level_vertex_id(artefact:level_vertex_id())
+				self.object:set_path_type(game_object.level_path)
+				self.object:set_detail_path_type(move.line)
+				state_mgr.set_state(self.object, "walk")
+			end
+		else
+			if self.anim_timer <= time_global() then
+				if not is_corpse(artefact) then
+					alife():release(alife():object(self.stor.mine_artefact_id), true)
+					alife():create(artefact:section(), self.object:position(), self.object:level_vertex_id(), self.object:game_vertex_id(), self.object:id())
+					
+					-- log("npc [%s] has taken the artefact", self.object:name())
+				else
+					searched_corpse[self.stor.mine_artefact_id] = true
+					self:grab_loot()
+				end
+				self:action_end()
+			end
+		end
+	else
+		self:action_end()
+	end
+end
+
+function action_grab_the_artefact:grab_loot()
+	local oTarget = level.object_by_id(self.stor.mine_artefact_id)
+	if oTarget then
+		if IsHuman(oTarget) then
+			oTarget:iterate_inventory(
+				function (dummy,oItem)
+					 if not (tExcludedItem[oItem:section()] or oItem:section():match("_fake") or oItem:section():match("_test") or Get_Cfg_Bool(system_ini(), oItem:section(), "quest_item", false)) then
+						local soItem = alife():object(oItem:id())
+						if soItem then
+							local oOwner = oItem:parent()
+							if oOwner then
+								if oOwner:id() == self.stor.mine_artefact_id and soItem.parent_id == self.stor.mine_artefact_id then
+									--oOwner:mark_item_dropped(oItem) --/ выбрасываем с пометкой 'выброшен'
+									-- log("ac_Take_Stuff:Transfer:NPC=[%s]<+Item=[%s/%s]", self.object:name(), oItem:section(), oItem:id() )
+									oOwner:transfer_item(oItem,self.object)
+								-- else log("ac_Take_Stuff:Transfer:NPC=[%s]<~Item=[%s/%s]:<%s>", self.object:name(), oItem:section(), oItem:id(), "Info!") --/#~#
+								end
+							else 
+								-- log("ac_Take_Stuff:Transfer:NPC=[%s]<+Item=[%s/%s]:[%s]", self.object:name(), oItem:section(), oItem:id(), "?") --/#~#
+								oItem:transfer_item(oItem,self.object) --/ подбираем предмет
+							end
+						-- else log("ac_Take_Stuff:Break:NPC=[%s]<x~Item=[%s/%s/%s],Body=[%s]:(%s):<%s>", self.object:name(), oItem:section(), oItem:id(), oItem:clsid(), oTarget:name(), soItem and soItem.parent_id, "?") --/#~#
+						end
+					end
+				end
+			,nil)
+		end
+	end
+end
+
+function action_grab_the_artefact:action_end()
+	if self.stor.mine_artefact_id ~= nil then
+		reserved_artefacts[self.stor.mine_artefact_id] = nil
+		--blocked_afs[self.stor.mine_artefact_id] = nil
+		self.stor.mine_artefact_id = nil
+	end
+	af_hunters[self.object:id()] = nil
+	self.anim_timer = nil
+	-- self.object:clear_animations()
+	state_mgr.set_state(self.object, "walk")
+end
+
+function action_grab_the_artefact:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	-- log("add_to_binder: NPC=[%s], scheme=[%s], section=[%s]:%s", npc:name(), scheme, section, ">") --/#~#
+	st.af_hunter_enabled = bEnabled
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	if not bEnabled or tExcludedComm[npc:character_community()] or tExcludedNPCs[npc:name()] then
+		oPlanner:add_evaluator(iEvl_AI_AfHunter, property_evaluator_const(false))
+	else --if npc:name():match("wanderer") or npc:name():match("wandering") or this.is_general_lager(npc) then
+		oPlanner:add_evaluator(iEvl_AI_AfHunter, this.evaluator_see_artefact("evaluator_see_artefact", st))
+		--/ New Actions -------------------------------------------------
+		local oNewAction = this.action_grab_the_artefact("action_grab_the_artefact", st)
+		for _,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+		end
+		oNewAction:add_precondition(world_property(iEvl_AI_AfHunter, true ))
+		oNewAction:add_effect(world_property(iEvl_AI_AfHunter, false))
+		oPlanner:add_action(iAct_AI_AfHunter, oNewAction)
+		
+		--/ Actions (additional preconditions for some standard operators)
+		local oAction
+		for idx,v in ipairs(tBindActs) do
+			oAction = oPlanner:action(v)
+			oAction:add_precondition (world_property(iEvl_AI_AfHunter, false))
+		end
+	--else
+		--oPlanner:add_evaluator(iEvl_AI_AfHunter, property_evaluator_const(false))
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+	xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/#+?#
+	local idNPC = npc and npc:id()
+	local st = idNPC and db.storage[idNPC] and db.storage[idNPC][scheme]
+	if st then
+		st.enabled = false
+	end
+end
+--/------------------------------------------------------------------
+--/#?# rudiment
+--/------------------------------------------------------------------
+function reset_hunter(npc, scheme, st, section)
+	local enabled = true
+	
+	if scheme == nil or scheme == "nil" then
+		enabled = Get_Cfg_Bool(st.ini, st.section_logic, "af_hunter_enabled", true)
+	elseif scheme == "remark" then
+		enabled = false
+	else
+		enabled = Get_Cfg_Bool(st.ini, section, "af_hunter_enabled", true)
+	end
+	
+	if st["artefact_hunter"] then
+		st["artefact_hunter"].af_hunter_enabled = enabled and bEnabled
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+
+function is_general_lager(npc)
+	local se_npc = alife():object(npc:id())
+	if se_npc then
+		local smart = smart_terrain.get_smart_terrain(se_npc)
+		if smart then
+			local st_type = smart.gparams.type
+			--log("smart terrain type = [%s] for npc [%s]",tostring(st_type),npc:name())
+			if st_type and st_type ==  "general_lager" then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function is_artefact(item)
+	return item:clsid() == clsid.artefact or item:clsid() == clsid.artefact_s
+end
+
+function is_corpse(item)
+	if item:clsid() == clsid.script_stalker then
+		if not item.alive or not item:alive() then
+			if not tExcludedCorpse[item:name()] then
+				if IsNPC(item) then
+					local tStor = db.storage[item:id()]
+					if tStor and tStor.death then
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end

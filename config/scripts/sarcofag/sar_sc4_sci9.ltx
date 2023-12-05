@@ -1,0 +1,70 @@
+[combat_ignore@sci9]
+
+[danger@sar_sci9_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sci_9_1
+combat_ignore = combat_ignore@sci9
+danger = danger@sar_sci9_sc4
+
+[remark@sci_9_1]
+anim = sci_panel_full
+target = sar_scene_4_sci10_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_5} remark@sci_9_2
+
+[remark@sci_9_2]
+anim = sci_panel2
+snd = sar_replics5
+target = sar_scene_4_sci10_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@sci_9_synth %+sar_scene4_info_6%
+
+[remark@sci_9_synth]
+anim = sci_panel_full
+target = sar_scene_4_sci10_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_10} remark@sci_9_3
+
+[remark@sci_9_3]
+anim = sar_panel_special3
+;snd = sar_replics10
+target = sar_scene_4_sci10_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 5500 | remark@sci_9_4 %+sar_scene4_info_11%
+
+[remark@sci_9_4]
+anim = sci_panel_full
+target = sar_scene_4_sci10_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_28} remark@sci_9_finale
+
+[remark@sci_9_finale]
+anim = sci_fear_new
+snd = sar_replics28
+target = sar_scene_4_boss_walk, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@sci_9_final %=sar_reactor_earthquakes2%
+
+[remark@sci_9_final]
+anim = hide
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 2000 | walker@sci_9_run
+
+[walker@sci_9_run]
+path_walk = sar_random7
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_info = {+sar_scene4_info_30} %=release% 

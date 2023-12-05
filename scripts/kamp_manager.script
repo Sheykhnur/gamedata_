@@ -1,0 +1,615 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : kamp_manager.script
+ Description: 
+ Copyright  : 2012 © LA-team
+ Author     : 
+ Editors    : gr1ph00n(03.02.2013)
+ Last edit  : 16.12.2013 [vintar], 21.10.2017[lox]
+-- we shouldn't set relation to fake scripted objects.
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+kamps = {}
+kamp_stalkers = {}
+
+local all_anims = {
+	"wait", "sit", "sit_ass", "sit_knee", "eat_kolbasa", "eat_vodka", "eat_energy", "eat_bread", "trans"
+}
+local ENABLE_HARMONICA = false
+local POPULATION_CTRL = true
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+
+function GetKamp(kamp_name, radius)
+	if not kamps[kamp_name] then
+		if radius then
+			KampManager(kamp_name, radius)
+		else
+			KamperManager(kamp_name)
+		end
+	end
+	return kamps[kamp_name] --/>
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ ------------------------------------------------------------------------------------------------
+class "KamperManager"
+--/ ------------------------------------------------------------------------------------------------
+function KamperManager:__init(kamp_name)
+	kamps[kamp_name] = self
+	self.kamp_name = kamp_name --/ name of fireplace/camping
+	self.kamp_state = "idle"
+	self.count = 0
+	
+	self.npcs = {}
+	--/ Table of matching state of lager and allowable animations and sounds.
+	self.avail_state = {
+		idle           = { directed = {unpack(all_anims)} },
+		pre_harmonica  = { directed = {"wait_harmonica"},  undirected = {unpack(all_anims)} },
+		harmonica      = { directed = { "play_harmonica"}, undirected = {unpack(all_anims)} },
+		post_harmonica = { directed = { "wait_harmonica"}, undirected = {unpack(all_anims)} },
+		pre_guitar     = { directed = { "wait_guitar"},    undirected = {unpack(all_anims)} },
+		guitar         = { directed = { "play_guitar"},    undirected = {unpack(all_anims)} },
+		post_guitar    = { directed = { "wait_guitar"},    undirected = {unpack(all_anims)} },
+		story          = { directed = { "declarate"},      undirected = {unpack(all_anims)} },
+		post_story     = { directed = { "declarate"},      undirected = {unpack(all_anims)} },
+		pre_joke       = { directed = { "declarate"},      undirected = {unpack(all_anims)} },
+		joke           = { directed = { "declarate"},      undirected = {unpack(all_anims)} },
+		post_joke      = { directed = { "declarate"},      undirected = {unpack(all_anims)} }
+	}
+	self.avail_sound = {
+		idle           = { directed = "idle"},
+		pre_harmonica  = { directed = "pre_harmonica",  undirected = ""},
+		harmonica      = { directed = "play_harmonica", undirected = ""},
+		post_harmonica = { directed = "",               undirected = "reac_harmonica"},
+		pre_guitar     = { directed = "pre_guitar",     undirected = ""},
+		guitar         = { directed = "play_guitar",    undirected = ""},
+		post_guitar    = { directed = "",               undirected = "reac_guitar"},
+		story          = { directed = "play_story",     undirected = ""},
+		post_story     = { directed = "",               undirected = "reac_story"},
+		pre_joke       = { directed = "pre_joke",       undirected = ""},
+		joke           = { directed = "play_joke",      undirected = ""},
+		post_joke      = { directed = "",               undirected = "reac_joke"}
+	}
+	--/ Table of timeouts by state. If state setted, then after some time it can't be changed.
+	self.timeout = {
+		idle           = { min = 30000 },
+		pre_harmonica  = { min = 3000 },
+		harmonica      = { min = 5000, soundstart = true },
+		post_harmonica = { min = 3000 },
+		pre_guitar     = { min = 3000 },
+		guitar         = { min = 5000, soundstart = true },
+		post_guitar    = { min = 3000 },
+		story          = { min = 1000, soundstart = true },
+		post_story     = { min = 3000 },
+		pre_joke       = { min = 3000 },
+		joke           = { min = 5000, soundstart = true },
+		post_joke      = { min = 3000 }
+	}
+	--/ Table of global lager states.
+	self.kamp_states = {
+		idle           = true,
+		pre_harmonica  = false,
+		harmonica      = false,
+		post_harmonica = false,
+		pre_guitar     = false,
+		guitar         = false,
+		post_guitar    = false,
+		story          = false,
+		post_story     = false,
+		pre_joke       = true,
+		joke           = true,
+		post_joke      = true
+	}
+	--/ Table of acceptable transitions between states with probability.
+	self.trans_kamp = {
+		idle           = { idle = 0, pre_harmonica = 30, pre_guitar = 30, story = 0, pre_joke = 40 },
+		pre_harmonica  = { harmonica = 100 },
+		harmonica      = { post_harmonica = 100 },
+		post_harmonica = { idle = 70, harmonica = 30 },
+		pre_guitar     = { guitar = 100 },
+		guitar         = { post_guitar = 100 },
+		post_guitar    = { idle = 70, guitar = 30 },
+		story          = { post_story = 100 },
+		post_story     = { idle = 100 },
+		pre_joke       = { joke = 100 },
+		joke           = { post_joke = 100 },
+		post_joke      = { idle = 100 }
+	}
+	--/ storage for director of lager (director is stalker, started not usual behavior)
+	self.director = nil
+end
+
+function KamperManager:hit_callback(obj, amount, local_direction, who, bone_index)
+	self:AlertKamp(who)
+end
+
+function KamperManager:death_callback(victim, who)
+	self:AlertKamp(who)
+end
+
+function KamperManager:AlertKamp(who)
+	if not who then
+		return
+	end
+--hours of debug... fake grenades stub
+	for id, data in pairs(self.npcs) do
+	local sSection = who:section()
+		if not sSection:match("_fake") then
+			data.obj:set_relation(game_object.enemy, who)
+		end
+	end
+	--log("!!!!")
+end
+
+
+function KamperManager:ProceedState(npc)
+	local npc_id = npc:id()
+	local active_sound_count = npc:active_sound_count()
+	
+	if self.npcs[npc_id].need_sound_begin == true then
+		if active_sound_count == 0 then
+			return --/>
+		else
+			self.npcs[npc_id].need_sound_begin = false
+		end
+	end
+	if self.begin and self.begin + self.timeout[self.kamp_state].min > time_global() then
+		return --/>
+	end
+	
+	if active_sound_count > 0 then
+		return --/>
+	end
+	
+	if self.kamp_state == "post_story" then
+		if self.story_last < self.story_max - 1 then
+			self.kamp_state = "story"
+			self.begin = time_global()
+			self.director = npc_id
+			self.npcs[npc_id].begin = nil
+			self.npcs[npc_id].need_sound_begin = true
+			for _,v in pairs(self.npcs) do
+				v.new = true
+			end
+			return --/>
+		else
+			self.selected_story = nil
+		end
+	end
+	
+	local temp = {}
+	local max_rnd = 0
+	
+	for k,v in pairs(self.trans_kamp[self.kamp_state]) do
+		if self.kamp_states[k] == true then
+			temp[k] = v
+			max_rnd = max_rnd + v
+		end
+	end
+	
+	if max_rnd == 0 then
+		temp["idle"] = 100
+		max_rnd = 100
+	end
+	
+	local p = math.random(0, max_rnd)
+	
+	for k,v in pairs(temp) do
+		p = p - v
+		if p <= 0 then
+			if k == "idle" then
+				self.director = nil
+				if self.kamp_state ~= "idle" then
+					self.npcs[npc_id].begin = nil
+				end
+			else
+				self.npcs[npc_id].begin = nil
+				if self.timeout[k].soundstart == true then
+					self.npcs[npc_id].need_sound_begin = true
+				end
+				self.director = npc_id
+				self.censor = nil
+			end
+			self.kamp_state = k
+			self.begin = time_global()
+			if k == "post_story" then
+				local dep = sound_theme.theme[self.selected_story].depence[self.story_last]
+				if dep and dep.min and dep.max then
+					self.timeout["post_story"].min = math.random(dep.min, dep.max) * 1000
+				end
+			end
+			for kk, vv in pairs(self.npcs) do
+				vv.new = true
+			end
+			return
+		end
+	end
+end
+
+function KamperManager:ProceedRole(npc, director)
+	local sound, state = "", ""
+	local npc_id = npc:id()
+	local states = 0
+	
+	if not self.npcs[npc_id].begin or self.npcs[npc_id].begin + self.npcs[npc_id].state_idle <= time_global() then
+		if director then
+			states = self.avail_state[self.kamp_state].directed
+			sound = self.avail_sound[self.kamp_state].directed
+		else
+			states = self.avail_state[self.kamp_state].undirected
+			sound = self.avail_sound[self.kamp_state].undirected
+		end
+		local temp = {}
+		for _,v in pairs(states) do
+			if self.npcs[npc_id].states[v] == true then
+				table.insert(temp, v)
+			end
+		end
+		if not self.selected_story and db.story_by_id[npc_id] and sound == "play_story" then
+			local story_num = #db.story_by_id[npc_id]
+			if story_num > 0 then
+				self.selected_story = db.story_by_id[npc_id][math.random(story_num)]
+			end
+		end
+		self.npcs[npc_id].begin = time_global()
+		state = temp[math.random(#temp)]
+		self.npcs[npc_id].state_selected = state
+		self.npcs[npc_id].state_idle = math.random(15000, 20000)
+	else
+		state = self.npcs[npc_id].state_selected
+		if director then
+			sound = self.avail_sound[self.kamp_state].directed
+		else
+			sound = self.avail_sound[self.kamp_state].undirected
+		end
+	end
+	
+	return state, sound
+end
+
+function KamperManager:UpdateNpc(npc)
+	self:CheckNpcAbilities(npc)
+	local npc_id = npc:id()
+	local director = (self.director == nil or self.director == npc_id)
+	if director then
+		self:ProceedState(npc)
+	end
+	local state, sound = self:ProceedRole(npc, director)
+	local substate = nil
+	if state == "wait_harmonica" then
+		if sound == "pre_harmonica" and self.npcs[npc_id].new == true then
+			xr_sound.set_sound_play(npc, "intro_music", math.random(2000, 3000))
+			self.npcs[npc_id].new = false
+		end
+		state = "harmonica"
+		kamp_stalkers[npc_id] = false
+	elseif state == "play_harmonica" then
+		state = "harmonica"
+		substate = 1
+		kamp_stalkers[npc_id] = false
+	elseif state == "wait_guitar" then
+		if sound == "pre_guitar" and self.npcs[npc_id].new == true then
+			xr_sound.set_sound_play(npc, "intro_music", math.random(2000, 3000))
+			self.npcs[npc_id].new = false
+		end
+		state = "guitar"
+		kamp_stalkers[npc_id] = false
+	elseif state == "play_guitar" then
+		state = "guitar"
+		substate = 1
+		kamp_stalkers[npc_id] = false
+	elseif state == "declarate" then
+		if self.npcs[npc_id].new == true then
+			if sound == "pre_joke" then
+				xr_sound.set_sound_play(npc, "intro_joke", math.random(2000, 3000))
+			elseif sound == "play_joke" then
+				xr_sound.set_sound_play(npc, "joke", math.random(2000, 3000))
+			elseif sound == "play_story" then
+				xr_sound.set_sound_play(npc, self.selected_story)
+				self.story_last, self.story_max = xr_sound.get_last_IDS(npc, self.selected_story)
+			end
+			self.npcs[npc_id].new = false
+		end
+		if npc:character_community() == "monolith" then
+			local t = math.mod(npc_id, 2)
+			if t == 0 then
+				state = "trans_0"
+			else
+				state = "trans_1"
+			end
+		elseif npc:character_community() == "zombied" then
+			state = "trans_zombied"
+		else
+			local t = math.mod(npc_id, 3)
+			if t == 0 then
+				state = "sit"
+			elseif t == 1 then
+				state = "sit_ass"
+			else
+				state = "sit_knee"
+			end
+		end
+		kamp_stalkers[npc_id] = false
+	elseif state == "trans" then
+		if npc:character_community() == "monolith" then
+			local t = math.mod(npc_id, 2)
+			if t == 0 then
+				state = "trans_0"
+			else
+				state = "trans_1"
+			end
+		elseif npc:character_community() == "zombied" then
+			state = "trans_zombied"
+		end
+		kamp_stalkers[npc_id] = false
+	else
+		kamp_stalkers[npc_id] = true
+	end
+	
+	if sound == "idle" then
+		sound = "weather, state"
+	elseif sound == "reac_guitar" then
+		sound = "reac_music"
+	elseif sound == "reac_harmonica" then
+		sound = "reac_music"
+	elseif sound == "reac_joke" then
+		sound = ""
+		if self.npcs[npc_id].new == true then
+			if self.censor == nil then
+				xr_sound.set_sound_play(npc, "reac_joke", math.random(2000, 3000))
+				self.censor = npc_id
+			else
+				xr_sound.set_sound_play(npc, "story_reac_laughter", math.random(100, 300))
+			end
+			self.npcs[npc_id].new = false
+		end
+	elseif sound == "reac_story" then
+		sound = ""
+		if self.npcs[npc_id].new == true then
+			local dep = sound_theme.theme[self.selected_story].depence[self.story_last + 1]
+			if dep then
+				if dep.type == "all" then
+					xr_sound.set_sound_play(npc, dep.theme, math.random(100, 300))
+				else
+					sound = dep.theme
+				end
+			end
+		end
+	elseif sound == "reac_story" then
+		sound = ""
+	else
+		sound = ""
+	end
+	
+	return state, sound, substate
+end
+
+function KamperManager:AddNpc(npc)
+	self.count = self.count + 1
+	if npc:character_community() == "monolith" or npc:character_community() == "zombied" then
+		self.npcs[npc:id()] = {
+			obj = npc,
+			current = nil,
+			speak = 0,
+			states = {
+				stand_wait = false, sit = false, sit_ass = false, sit_knee = false, declarate = true,
+				eat_kolbasa = false, eat_vodka = false, eat_energy = false, eat_bread = false, trans = true,
+				play_harmonica = false, play_guitar = false, play_joke = false, play_story = false
+			}
+		}
+	else
+		self.npcs[npc:id()] = {
+			obj = npc,
+			current = nil,
+			speak = 0,
+			states = {
+				stand_wait = true, sit = true, sit_ass = true, sit_knee = true, declarate = true,
+				eat_kolbasa = false, eat_vodka = false, eat_energy = false, eat_bread = false, trans = false,
+				play_harmonica = false, play_guitar = false, play_joke = false, play_story = false
+			}
+		}
+		self:CheckNpcAbilities(npc)
+	end
+end
+
+function KamperManager:CheckNpcAbilities(npc)
+	if npc:character_community() ~= "monolith" and npc:character_community() ~= "zombied" then
+		local npc_id = npc:id()
+		self.npcs[npc_id].states["eat_bread"]   = npc:object("bread") ~= nil --/#?# SCRIPT RUNTIME ERROR:399: attempt to index field '?' (a nil value)
+		self.npcs[npc_id].states["eat_kolbasa"] = npc:object("kolbasa") ~= nil
+		self.npcs[npc_id].states["eat_vodka"]   = npc:object("vodka") ~= nil
+		self.npcs[npc_id].states["eat_energy"]  = npc:object("energy_drink") ~= nil
+		
+		local enabled = npc:object("harmonica_a") ~= nil
+		self.npcs[npc_id].states["play_harmonica"] = enabled
+		self.npcs[npc_id].states["wait_harmonica"] = enabled
+		self.kamp_states["pre_harmonica"]  = enabled
+		self.kamp_states["harmonica"]      = enabled
+		self.kamp_states["post_harmonica"] = enabled
+		
+		enabled = npc:object("guitar_a") ~= nil
+		self.npcs[npc_id].states["play_guitar"] = enabled
+		self.npcs[npc_id].states["wait_guitar"] = enabled
+		self.kamp_states["pre_guitar"]  = enabled
+		self.kamp_states["guitar"]      = enabled
+		self.kamp_states["post_guitar"] = enabled
+		
+		enabled = self.count > 1
+		self.kamp_states["pre_joke"]  = enabled
+		self.kamp_states["joke"]      = enabled
+		self.kamp_states["post_joke"] = enabled
+	end
+end
+
+function KamperManager:Contains(npc_id)
+	return self.npcs[npc_id] ~= nil
+end	
+
+function KamperManager:RemoveNpc(npc,npc_id)
+	if not npc_id then npc_id = npc:id() end
+	if self.npcs[npc_id] then
+		self.npcs[npc_id] = nil
+		self.count = self.count - 1
+		if npc_id == self.director then
+			self.director = nil
+			self.censor = nil
+			self.kamp_state = "idle"
+			self.begin = time_global()
+			for _,v in pairs(self.npcs) do
+				v.new = true
+			end
+			xr_sound.set_sound(npc, nil)
+			stop_play_sound(npc)
+		end
+	end
+end	
+
+function KamperManager:OnBlowout(npc)
+	if surge_manager.is_started() or psi_storm_manager.is_started() then
+		if self.npcs[npc:id()] then
+			if npc:active_sound_count() ~= 0 then
+				xr_sound.set_sound(npc, nil)
+				stop_play_sound(npc)
+			end
+		end
+	end
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ ------------------------------------------------------------------------------------------------
+class "KampManager" (KamperManager)
+--/ ------------------------------------------------------------------------------------------------
+function KampManager:__init(kamp_name, radius) super(kamp_name)
+	self.patrol = get_patrol(kamp_name)
+	self.center = self.patrol:level_vertex_id(0)
+	self.radius = radius
+	self.population = 0
+	self.positions = {
+		{dir = vector():set( 1, 0, 0), used = nil},
+		{dir = vector():set( 1, 0, 1), used = nil},
+		{dir = vector():set( 0, 0, 1), used = nil},
+		{dir = vector():set(-1, 0, 1), used = nil},
+		{dir = vector():set(-1, 0, 0), used = nil},
+		{dir = vector():set(-1, 0,-1), used = nil},
+		{dir = vector():set( 0, 0,-1), used = nil},
+		{dir = vector():set( 1, 0,-1), used = nil},
+	}
+	--/ Parsing patrol way and updating positions vector:
+	--/  0 vertex - center of lager(kamp).
+	--/  1 flag - sector occupied, can sit in point.
+	--/  2 flag - sector occupied, can't sit in point.
+	for i = 1, self.patrol:count() - 1 do
+		--/ if there is flag 1 or 2 - cancel sector as occupied
+		if self.patrol:flag(i,1) or self.patrol:flag(i,2) then
+			for _,v in pairs(self.positions) do
+				local dir = vector():sub(level.vertex_position(self.patrol:level_vertex_id(i)), level.vertex_position(self.center))
+				yaw = yaw_degree(dir, v.dir)
+				if yaw <= 23 then
+					v.used = -1
+					break
+				end
+			end
+			--/ if there is 1 flag - create place to sit in point of way
+			if self.patrol:flag(i,1) then
+				table.insert(self.positions, {lvid = self.patrol:level_vertex_id(i)})
+			end
+		end
+	end
+end
+
+function KampManager:getFreePositions(npc_id) --/#+#
+	local avail = {} --/ list of free avaliable positions
+	for idx,v in pairs(self.positions) do
+		if not v.used then
+			table.insert(avail, idx)
+		elseif v.used > 0 then
+			if v.used == npc_id or not (level.object_by_id(v.used) or alife():object(v.used)) then
+				v.used = nil --/ clear 'ours' old place or 'left'
+				table.insert(avail, idx)
+			end
+		end
+	end
+	return avail --/>
+end
+
+function KampManager:selectPosition(npc)
+	local npc_id = npc and npc:id()
+	if not npc_id then
+		log("km:getFreePositions: kamp=[%s], wrong args", tostring(self.kamp_name), "Warning!") --/#~#
+		return false
+	end
+	local avail = self:getFreePositions(npc_id)
+	if #avail > 0 then
+		--/ selecting closest position:
+		local lvid = npc:level_vertex_id()
+		for _,idx in pairs(avail) do
+			if level.vertex_in_direction(self.center, self.positions[idx].dir, self.radius) == lvid then
+				self.positions[idx].used = npc_id
+				self.npcs[npc_id].position = idx
+				return true --/>
+			end
+		end
+		--/ from avaliable positions randomly choose one:
+		local idx = avail[math.random(#avail)]
+		self.positions[idx].used = npc_id
+		self.npcs[npc_id].position = idx
+		return true --/>
+	end
+	return false --/>
+end
+
+function KampManager:selectNearestPos(npc) --/ rudiment
+	return self:selectPosition(npc) --/>
+end
+
+function KampManager:getDestVertex(npc_id, radius)
+	local pos_idx = self.npcs[npc_id] and self.npcs[npc_id].position
+	if not pos_idx then
+		local npc = npc_id and level.object_by_id(npc_id)
+		if npc and self:selectPosition(npc) then
+			pos_idx = self.npcs[npc_id].position
+		else
+			table.print(self.positions, sModule..":Positions|"..tostring(self.kamp_name)) --/#~#
+			abort("%s:km:getDestVertex: kamp=[%s] npc=[%s]/[%d] ~ hasn`t position", sModule, tostring(self.kamp_name), npc and npc:name(), npc_id, "")
+			return nil --/>
+		end
+	end
+	
+	local pos = self.positions[pos_idx]
+	if pos.lvid then
+		return pos.lvid, pos_idx --/>
+	end
+	
+	local idLv = level.vertex_in_direction(self.center, pos.dir, radius)
+	return level.vertex_in_direction(idLv, vector():set(math.random(-1,1), 0, math.random(-1,1)), math.random(0,0.5)), pos_idx --/>
+end
+
+function KampManager:increasePops()
+	self.population = self.population + 1
+end
+
+function KampManager:decreasePops()
+	self.population = self.population - 1
+end
+
+function KampManager:AddNpc(npc)
+	KamperManager.AddNpc(self, npc)
+	self:selectPosition(npc)
+end
+
+function KampManager:RemoveNpc(npc)
+	local npc_id = npc:id()
+	KamperManager.RemoveNpc(self, npc, npc_id)
+	if self.npcs[npc_id] and self.npcs[npc_id].position then
+		self.positions[self.npcs[npc_id].position].used = nil
+		self.npcs[npc_id] = nil
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,132 @@
+[combat_ignore@sci_boss]
+
+[logic]
+active = remark@sci_boss
+combat_ignore = combat_ignore@sci_boss
+
+[remark@sci_boss]
+anim = wait
+target = sar_scene_4_boss_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_1} remark@sci_boss1
+
+[remark@sci_boss1]
+anim = stand_wait
+target = sar_scene_4_talk_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_2} remark@sci_boss2 %+sar_sc4_synth1%
+
+;ok guys proceed as we planned y heard the order
+
+[remark@sci_boss2]
+anim = stand_wait
+snd = sar_replics2a
+target = sar_scene_4_boss_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_3%
+on_info = {+sar_scene4_info_11} remark@sci_boss3
+
+[remark@sci_boss3]
+anim = wait
+snd = sar_replics11
+target = sar_scene_4_talk_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_12%
+on_info = {+sar_scene4_info_13} remark@sci_boss4_synth
+
+[remark@sci_boss4_synth]
+anim = wait
+target = sar_scene_4_boss_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_15} remark@sci_boss5 %+sar_sc4_synth4%
+
+[remark@sci_boss5]
+anim = wait
+snd = sar_replics15
+target = sar_scene_4_talk_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_16%
+on_info = {+sar_scene4_info_17} remark@sci_boss6
+
+[remark@sci_boss6]
+anim = stand_wait
+snd = sar_replics17
+target = sar_scene_4_boss_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@sci_boss7
+
+[remark@sci_boss7]
+anim = ordinary_talk4
+snd = sar_replics18f
+target = sar_scene_4_boss_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@sci_boss7_synth %+sar_scene4_info_18%
+
+[remark@sci_boss7_synth]
+anim = wait
+target = sar_scene_4_boss_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+sar_scene4_info_21} remark@sci_boss8
+
+[remark@sci_boss8]
+anim = sci_worried
+snd = sar_replics21
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_21% remark@sci_boss8_synth
+
+[remark@sci_boss8_synth]
+anim = wait
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 200 | walker@sci_boss_to_panel
+
+[walker@sci_boss_to_panel]
+path_walk = sar_scene_4_boss_walk
+path_look = sar_scene_4_boss_look
+combat_ignore_cond = always
+meet = no_meet
+on_signal = panel | remark@sci_boss_panel %+sar_scene4_info_22%
+
+[remark@sci_boss_panel]
+anim = sar_panel
+combat_ignore_cond = always
+target = sar_scene_4_boss_look, 0
+meet = no_meet
+on_info = {+sar_scene4_info_24} remark@sci_boss9
+
+[remark@sci_boss9]
+anim = sci_fear
+snd = sar_replics24
+combat_ignore_cond = always
+target = sar_scene_4_boss_look, 0
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_25%
+on_info = {+sar_scene4_info_28} remark@sci_boss_sabotage
+
+[remark@sci_boss_sabotage]
+anim = sar_angry
+snd = sar_replics31
+combat_ignore_cond = always
+target = sar_scene_4_boss_look, 0
+meet = no_meet
+on_info = {+sar_scene4_info_29} remark@sci_boss_claim_actor
+
+[remark@sci_boss_claim_actor]
+anim = sci_blame
+snd = sar_replics32
+combat_ignore_cond = always
+target = actor
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_30 =run_postprocess(sar_blink) =sar_scene4_finale_timer =sar_enable_input =enable_ui_elements(all) =release% 

@@ -1,0 +1,41 @@
+[combat_ignore@dar_sc5]
+
+[danger@dar_sc5]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_sc5]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = walker@darklab_sci_eco_go
+combat_ignore = combat_ignore@dar_sc5
+threshold = threshold@dar_sc5
+
+[walker@darklab_sci_eco_go]
+path_walk = dar_sci5_eco_move
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+on_signal = teleready | %+dar_eco_here% remark@darklab_sci_dar_eco_dialog
+
+[remark@darklab_sci_dar_eco_dialog]
+snd = dar_replics24
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_start, 0
+on_signal = sound_end | %+dar_sci5_eco_talk%
+on_info = {+dar_sci5_info_letsgo} walker@darklab_sci_eco_go2
+
+[walker@darklab_sci_eco_go2]
+path_walk = dar_sci5_eco_move2
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+on_timer = 500 | %+dar_sci5_info4%
+on_signal = telebad | %=dar_kill_eco% nil

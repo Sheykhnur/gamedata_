@@ -1,0 +1,65 @@
+
+-- file: pcWndFrame.script
+-- author: barin
+-- date: 2009-06-09
+-- edited by: Kolmogor
+-- last edited: 2014-04-29
+
+class "uiWndFrame" (CUIScriptWnd)
+
+function uiWndFrame:__init(parent, x, y, w, h, frm_texture) super()
+	self.parent = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self.wnd_width = w
+	self.wnd_height = h
+	
+	self:InitControls(frm_texture)
+	self:InitCallBacks()
+end
+
+function uiWndFrame:InitControls(frm_t)
+	--self:Init(0, 0, device().width, device().height)
+	--self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self:Init(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	
+	self.frame = CUIFrameWindow()
+	self.frame:SetAutoDelete(true)
+	self.frame:SetWindowName("wnd_frame")
+	self.frame:Init(if_then_else(frm_t, frm_t, "ui_pc_wnd_frame_01"), 0, 0, self.wnd_width, self.wnd_height)
+	self:AttachChild(self.frame)
+	
+	self.caption = CUIStatic()
+	self.caption:SetAutoDelete(true)
+	self.caption:SetWindowName("wnd_caption")
+	self.caption:SetWndRect(10, 7, self.wnd_width - 55, 18)
+	self.caption:SetText("")
+	self.caption:SetTextAlign(CGameFont.alLeft)
+	self.caption:SetTextColor(pcTextViewer.get_colour("full_white"))
+	self.caption:SetFont(pcTextViewer.get_font("letterica18"))
+	self:AttachChild(self.caption)
+	
+	self.exit = CUI3tButton()
+	self.exit:SetAutoDelete(true)
+	--self.exit:SetWindowName("btn_exit")
+	local mul, adjust = pdaContacts.get_aspect_ratio()
+	self.exit:Init("ui_pc_wnd_btn", self.wnd_width - 24 * mul, 5 * mul, 17 * mul, 17 * mul)
+	self:AttachChild(self.exit)
+	self:Register(self.exit, "btn_exit")
+end
+
+function uiWndFrame:InitCallBacks()
+	self:AddCallback("btn_exit", ui_events.BUTTON_CLICKED, self.OnExit, self)
+end
+
+function uiWndFrame:OnExit()
+	if self.parent then
+		self.parent:OnExit()
+	end
+end
+
+function uiWndFrame:SetCaption(str)
+	self.caption:SetText(str)
+end

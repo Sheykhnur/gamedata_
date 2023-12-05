@@ -1,0 +1,42 @@
+[logic]
+active = remark@fake_actor_start
+combat_ignore = combat_ignore
+
+[remark@fake_actor_start]
+on_timer = 1 | walker@fake_actor
+combat_ignore_cond = always
+meet = no_meet
+no_move = true
+no_rotate = true
+
+[walker@fake_actor]
+path_walk = country_actor_scene_way
+combat_ignore_cond = always
+meet = no_meet
+on_signal = reached | remark@fake_actor
+
+[remark@fake_actor]
+anim = guard_rac
+snd = con_actor_scene_1
+combat_ignore_cond = always
+meet = no_meet
+no_move = true
+target = country_cam_look, 0
+on_signal = sound_end| remark@fake_actor_wait %=play_snd(characters_voice\scenario\country\country_eco_radio_msg)%
+
+[remark@fake_actor_wait]
+anim = guard_rac
+combat_ignore_cond = always
+meet = no_meet
+no_move = true
+no_rotate = true
+target = country_cam_look, 0
+on_timer = 11000 | remark@fake_actor_hide_rac
+
+[remark@fake_actor_hide_rac]
+anim = raciya_10_hide_0
+combat_ignore_cond = always
+meet = no_meet
+no_move = true
+no_rotate = true
+target = country_cam_look, 0

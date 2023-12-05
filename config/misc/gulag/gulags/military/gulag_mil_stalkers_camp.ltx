@@ -1,0 +1,197 @@
+[danger@mil_stalkers_camp]
+;ignore_distance = 0
+
+[danger@mil_stalkers_camp_basement]
+;ignore_types = grenade, hit, corpse, sound
+;ignore_distance = 0
+
+[threshold@mil_stalkers_camp_basement]
+;max_ignore_distance = 5
+ignore_monster      = 0
+
+[combat_ignore@stalkers_camp]
+
+;*********state 0*********************
+
+[logic@mil_stalkers_camp_sleeper_day1]
+active = sleeper@mil_stalkers_camp_sleeper_day1
+
+[sleeper@mil_stalkers_camp_sleeper_day1]
+path_main = sleep_1
+wakeable = false
+
+[logic@mil_stalkers_camp_sleeper_day2]
+active = sleeper@mil_stalkers_camp_sleeper_day2
+
+[sleeper@mil_stalkers_camp_sleeper_day2]
+path_main = sleep_5
+wakeable = false
+
+[logic@mil_stalkers_camp_patrol]
+active = walker@mil_stalkers_camp_patrol
+
+[walker@mil_stalkers_camp_patrol]
+path_walk = patrol
+danger = danger@mil_stalkers_camp
+
+[logic@mil_stalkers_camp_kamp1]
+active = kamper@mil_stalkers_camp_kamper1
+
+[kamper@mil_stalkers_camp_kamper1]
+path_walk = kamp_1
+path_look = kamp_look
+kamp_name = kamp1
+
+[logic@mil_stalkers_camp_kamp2]
+active = kamper@mil_stalkers_camp_kamper2
+
+[kamper@mil_stalkers_camp_kamper2]
+path_walk = kamp_2
+path_look = kamp_look_2
+kamp_name = kamp1
+
+[logic@mil_stalkers_camp_kamp3]
+active = kamper@mil_stalkers_camp_kamper3
+
+[kamper@mil_stalkers_camp_kamper3]
+path_walk = kamp_3
+path_look = kamp_look_3
+kamp_name = kamp1
+
+[logic@mil_stalkers_camp_drunk1]
+active = walker@mil_stalkers_camp_drunk1
+combat_ignore = combat_ignore@stalkers_camp
+
+[walker@mil_stalkers_camp_drunk1]
+path_walk = drunk_1
+path_look = drunk_1_look
+danger = danger@mil_stalkers_camp
+combat_ignore_cond = always
+
+[logic@mil_stalkers_camp_walk]
+active = walker@mil_stalkers_camp_walk
+
+[walker@mil_stalkers_camp_walk]
+path_walk = walk_1
+on_timer = 25000 | walker@mil_stalkers_camp_walk2
+danger = danger@mil_stalkers_camp
+
+[walker@mil_stalkers_camp_walk2]
+path_walk = walk_2
+on_timer = 25000 | walker@mil_stalkers_camp_walk3
+danger = danger@mil_stalkers_camp
+
+[walker@mil_stalkers_camp_walk3]
+path_walk = walk_3
+on_timer = 25000 | walker@mil_stalkers_camp_walk
+danger = danger@mil_stalkers_camp
+
+;*********state 0, 1*********************
+
+[logic@mil_stalkers_camp_guard2]
+active = walker@mil_stalkers_camp_guard2
+threshold = threshold@mil_stalkers_camp_basement
+
+[walker@mil_stalkers_camp_guard2]
+path_walk = guard_2
+path_look = guard_2_look
+danger = danger@mil_stalkers_camp
+threshold = threshold@mil_stalkers_camp_basement
+
+[logic@mil_stalkers_camp_drunk2]
+active = walker@mil_stalkers_camp_drunk2
+combat_ignore = combat_ignore@stalkers_camp
+danger = danger@mil_stalkers_camp_basement
+
+[walker@mil_stalkers_camp_drunk2]
+path_walk = drunk_2
+path_look = drunk_2_look
+danger = danger@mil_stalkers_camp_basement
+combat_ignore_cond = always
+threshold = threshold@mil_stalkers_camp_basement
+
+[logic@mil_stalkers_camp_trader]
+active = walker@stalkers_camp_trader
+combat_ignore = combat_ignore@stalkers_camp
+danger = danger@mil_stalkers_camp_basement
+trade = misc\trade\trade_suplier.ltx
+inv_max_weight = 10000
+
+[walker@stalkers_camp_trader]
+path_walk = trader_walk
+path_look = trader_look
+danger = danger@mil_stalkers_camp
+meet = meet@mil_stalkers_camp_trader
+combat_ignore_cond = always
+threshold = threshold@mil_stalkers_camp_basement
+
+[meet@mil_stalkers_camp_trader]
+victim = 2|actor
+victim_wpn = 2|actor
+use = true
+use_wpn = true
+
+[logic@mil_stalkers_camp_guard_trader]
+active = walker@mil_stalkers_camp_guard_trader
+combat_ignore = combat_ignore@stalkers_camp
+danger = danger@mil_stalkers_camp_basement
+
+[walker@mil_stalkers_camp_guard_trader]
+path_walk = guard_trader_walk
+path_look = guard_trader_look
+def_state_moving1 = ward
+def_state_moving2 = ward
+def_state_moving3 = ward
+def_state_standing = ward
+danger = danger@mil_stalkers_camp_basement
+meet = no_meet
+combat_ignore_cond = always
+threshold = threshold@mil_stalkers_camp_basement
+
+;***********state 1*******************
+
+[logic@mil_stalkers_camp_sleeper1]
+active = sleeper@mil_stalkers_camp_sleeper1
+
+[sleeper@mil_stalkers_camp_sleeper1]
+path_main = sleep_1
+wakeable = false
+
+[logic@mil_stalkers_camp_sleeper2]
+active = sleeper@mil_stalkers_camp_sleeper2
+
+[sleeper@mil_stalkers_camp_sleeper2]
+path_main = sleep_2
+wakeable = false
+
+[logic@mil_stalkers_camp_sleeper3]
+active = sleeper@mil_stalkers_camp_sleeper3
+
+[sleeper@mil_stalkers_camp_sleeper3]
+path_main = sleep_3
+wakeable = false
+
+[logic@mil_stalkers_camp_sleeper4]
+active = sleeper@mil_stalkers_camp_sleeper4
+
+[sleeper@mil_stalkers_camp_sleeper4]
+path_main = sleep_4
+wakeable = false
+
+[logic@mil_stalkers_camp_sleeper5]
+active = sleeper@mil_stalkers_camp_sleeper5
+
+[sleeper@mil_stalkers_camp_sleeper5]
+path_main = sleep_5
+wakeable = false
+
+[logic@mil_stalkers_camp_guard1]
+active = walker@mil_stalkers_camp_guard1
+threshold = threshold@mil_stalkers_camp_basement
+
+[walker@mil_stalkers_camp_guard1]
+path_walk = guard_1
+path_look = guard_1_look
+danger = danger@mil_stalkers_camp
+threshold = threshold@mil_stalkers_camp_basement
+meet = no_meet

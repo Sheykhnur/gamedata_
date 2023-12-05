@@ -1,0 +1,185 @@
+[wpn_sr25]:weapon_base,weapon_7.62x51
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\sr25"
+animation_slot                          = 2
+class                                   = WP_SVU
+hand_dependence                         = 1
+repair_compatibility                    = ar
+scheduled                               = off
+weapon_class                            = sniper_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 6
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 28
+silencer_x                              = 244
+silencer_y                              = 21
+
+; Text
+inv_name                                = st_wpn_sr25
+inv_name_short                          = st_wpn_sr25
+description                             = st_wpn_sr25_descr
+
+; Visual
+hud                                     = wpn_sr25_hud
+position                                = -0.026, -0.130,0
+orientation                             = 0,0,0
+scope_texture                           = wpn_crosshair_sr25
+strap_position                          = -0.15, -0.37, 0.2
+strap_orientation                       = -10, -5, 10
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_sr25\wpn_sr25.ogf
+
+; Effects
+fire_point                              = 0,0.199,0.575
+fire_point2                             = 0,0.199,0.575
+shell_point                             = 0.12,0,0.07
+shell_dir                               = 0,0,0.4
+light_color                             = 0.6,0.5,0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.1
+light_time                              = 0.2
+silencer_light_color                    = 0.6,0.5,0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\sr25\draw
+snd_empty                               = weapons\sr25\empty,	0.7
+snd_holster                             = weapons\sr25\holster
+snd_reload                              = weapons\sr25\reload
+snd_shoot                               = weapons\sr25\shoot
+snd_silncer_shot                        = weapons\sr25\shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 0
+upgr_icon_y                             = 700
+upgr_icon_width                         = 300
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 50200
+inv_weight                              = 4.5
+ph_mass                                 = 5
+
+; Ammo
+ammo_mag_size                           = 10
+
+; Features
+fire_modes                              = 1, 3
+scope_status                            = 1
+scope_dynamic_zoom                      = on
+scope_zoom_factor                       = 15
+silencer_name                           = wpn_addon_silencer_76251 ; Unique silencer
+silencer_status                         = 2
+
+; Ballistics
+fire_dispersion_base                    = 0.33
+fire_dispersion_condition_factor        = 6
+
+; Performance
+rpm_semi                                = 360
+
+; Reliability
+misfire_start_prob                      = 0.005
+misfire_end_prob                        = 0.1
+condition_shot_dec                      = 0.0005
+condition_queue_shot_dec                = 0.0005
+
+; Handling
+control_inertion_factor                 = 1.7f
+PDM_disp_base                           = 4.0
+PDM_disp_vel_factor                     = 1.5
+PDM_disp_accel_factor                   = 1.5
+sprint_allowed                          = true
+
+; Recoil
+cam_relax_speed                         = 5.5
+cam_dispersion                          = 2.5
+cam_step_angle_horz                     = 3.0
+zoom_cam_dispersion                     = 1.2
+zoom_cam_step_angle_horz                = 0.5
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.55
+zoom_rotate_time                        = 0.3
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_10plus3
+upgrades                                = up_gr_firstab_sr25, up_gr_seconab_sr25, up_gr_thirdab_sr25, up_gr_thirdcd_sr25, up_gr_thirdef_sr25
+installed_upgrades                      = 
+
+; AI Params
+ef_main_weapon_type                     = 3
+ef_weapon_type                          = 8
+min_radius                              = 30
+max_radius                              = 135
+holder_range_modifier                   = 2.15
+holder_fov_modifier                     = 0.5
+
+
+[wpn_sr25_hud]:hud_base	
+aim_hud_offset_pos                      = -0.09025,0.052,-0.147
+aim_hud_offset_pos_16x9                 = -0.09025,0.052,-0.147
+aim_hud_offset_rot                      = 0.017,-0.0008,-0.0125
+aim_hud_offset_rot_16x9                 = 0.017,-0.0008,-0.0125
+anim_bore                               = m16_aim
+anim_bore_g                             = m16_aim_g, idle_g
+anim_bore_w_gl                          = m16_aim_w_gl
+anim_hide                               = m16_holster,,2.0
+anim_hide_g                             = m16_holster_g, idle_g, 2.0
+anim_hide_w_gl                          = m16_holster_w_gl,,2.0
+anim_idle                               = m16_idle
+anim_idle_aim                           = m16_aim
+anim_idle_g                             = m16_idle_g, idle_g	
+anim_idle_g_aim                         = m16_aim_g, idle_g	
+anim_idle_moving                        = m16_move
+anim_idle_moving_g                      = m16_move_g, idle_g
+anim_idle_moving_w_gl                   = m16_move_w_gl
+anim_idle_sprint                        = m16_sprint
+anim_idle_sprint_g                      = m16_sprint_g, idle_g
+anim_idle_sprint_w_gl                   = m16_sprint_w_gl
+anim_idle_w_gl                          = m16_idle_w_gl
+anim_idle_w_gl_aim                      = m16_aim_w_gl
+anim_reload                             = m16_reload, reload
+anim_reload_g                           = m16_reload_g, reload_g
+anim_reload_w_gl                        = m16_reload_w_gl, reload
+anim_shots                              = m16_shoot, shoot
+anim_shots_g                            = m16_shoot_g, shoot_g
+anim_shots_w_gl                         = m16_shoot_w_gl, shoot
+anim_show                               = m16_draw
+anim_show_g                             = m16_draw_g, idle_g	
+anim_show_w_gl                          = m16_draw_w_gl
+anim_switch                             = m16_switch_off, switch_off
+anim_switch_g                           = m16_switch_on, switch_on
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = muzzle_gl
+fire_point                              = 0,0,0
+fire_point2                             = 0,0,0
+gl_hud_offset_pos                       = -0.0913,-0.1,-0.15
+gl_hud_offset_pos_16x9                  = -0.0913,-0.1,-0.15
+gl_hud_offset_rot                       = -0.148,-0.00075,0
+gl_hud_offset_rot_16x9                  = -0.148,-0.00075,0
+hands_orientation                       = 0,5.56,0
+hands_orientation_16x9                  = 0,5.56,0
+hands_position                          = -0.06,-0.215,0.151
+hands_position_16x9                     = -0.06,-0.215,0.151
+item_orientation                        = -0.052159,-4.538854,0.051869
+item_position                           = 0.000052,0.007611,0.006485
+item_visual                             = dynamics\weapons\wpn_sr25\wpn_sr25_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true

@@ -1,0 +1,158 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_car_info.script (ui_hud_info)
+ Description: 
+ Copyright  : 2010 © LA-team
+ Author     : barin(27.01.2010)
+ Editors    : barin(14.08.2010)
+ Last edit  : 07.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+class "uiWndFrame" (CUIScriptWnd)
+--/ ------------------------------------------------------------------
+function uiWndFrame:__init(parent, x, y, w, h) super()
+	self.parent = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self.wnd_width = w
+	self.wnd_height = h
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiWndFrame:InitControls()
+	--self:Init(0, 0, device().width, device().height)
+	--self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self:Init(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.frame = CUIFrameWindow()
+	self.frame:SetAutoDelete(true)
+	self.frame:SetWindowName("wnd_frame")
+	self.frame:Init("ui_stroketextbox", 0, 0, self.wnd_width, self.wnd_height)
+	self:AttachChild(self.frame)
+	
+	local x = (math.modf(self.wnd_width / 2 - 117 / 2))
+	
+	self.btn_close = CUI3tButton()
+	self.btn_close:SetAutoDelete(true)
+	self.btn_close:SetWindowName("btn_close")
+	self.btn_close:Init("ui_button_ordinary", x, self.wnd_height - 35, 117, 29)
+	self.btn_close:SetTextST("ui_inv_ok")
+	self:AttachChild(self.btn_close)
+	self:Register(self.btn_close)
+end
+
+function uiWndFrame:InitCallBacks()
+	self:AddCallback("btn_close", ui_events.BUTTON_CLICKED, self.OnExit, self)
+end
+
+function uiWndFrame:OnExit()
+	if self.parent then
+		self.parent:OnExit()
+	end
+end
+
+--/ ------------------------------------------------------------------
+class "uiListItem" (CUIListBoxItemEx)
+--/ ------------------------------------------------------------------
+function uiListItem:__init(key, descr) super()
+	self:SetWndRect(0, 0, 280, 18)
+	
+	self.key = CUIStatic()
+	self.key:SetAutoDelete(true)
+	self:AttachChild(self.key)
+	self.key:SetWndRect(0, 0, 50, 18)
+	self.key:SetText(key)
+	self.key:SetTextAlign(CGameFont.alLeft)
+	self.key:SetFont(pcTextViewer.get_font("letterica18"))
+	self.key:SetTextColor(pcTextViewer.get_colour("yellow"))
+	
+	self.descr = CUIStatic()
+	self.descr:SetAutoDelete(true)
+	self:AttachChild(self.descr)
+	self.descr:SetWndRect(70, 0, 190, 18)
+	self.descr:SetText(descr)
+	self.descr:SetTextAlign(CGameFont.alLeft)
+	self.descr:SetFont(pcTextViewer.get_font("letterica18"))
+	self.descr:SetTextColor(pcTextViewer.get_colour("yellow"))
+end
+
+--/ ------------------------------------------------------------------------------------------------
+local veh_key_binding = {
+	[1] = {key = "key_bind_turn_engine_key", descr = "key_bind_turn_engine_descr"},
+	[2] = {key = "key_bind_forward_key",     descr = "key_bind_forward_descr"},
+	[3] = {key = "key_bind_back_key",        descr = "key_bind_back_descr"},
+	[4] = {key = "key_bind_lstrafe_key",     descr = "key_bind_lstrafe_descr"},
+	[5] = {key = "key_bind_rstrafe_key",     descr = "key_bind_rstrafe_descr"},
+	[6] = {key = "key_bind_accel_key",       descr = "key_bind_accel_descr"},
+	[7] = {key = "key_bind_torch_key",       descr = "key_bind_torch_descr"},
+	[8] = {key = "key_bind_horn_key",        descr = "key_bind_horn_descr"},
+	[9] = {key = "key_bind_use_key",         descr = "key_bind_use_descr"}
+}
+--/ ------------------------------------------------------------------------------------------------
+class "uiVehicleFirstUse" (CUIScriptWnd)
+--/ ------------------------------------------------------------------------------------------------
+function uiVehicleFirstUse:__init() super()
+	self:NeedCenterCursor(true)
+	la_utils.custom_ui_usage("show", script_name())
+	self.wnd_width, self.wnd_height = 300, 250
+	self.wnd_x, self.wnd_y = la_utils.get_hud_center(self.wnd_width, self.wnd_height)
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiVehicleFirstUse:__finalize()
+end
+
+function uiVehicleFirstUse:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiVehicleFirstUse:InitControls()
+	--self:Init(0, 0, device().width, device().height)
+	--self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self:Init(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	
+	self.wnd_frame = uiWndFrame(self, 0, 0, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:Show(true)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_hud_info.xml")
+	
+	xml:InitStatic("vehicle:caption", self)
+	self.listview = xml:InitFrame("vehicle:list_frame", self)
+	self.listview = xml:InitListBox("vehicle:listview", self)
+	
+	local key, descr = "", ""
+	for k, v in ipairs(veh_key_binding) do
+		key = string.upper(game.translate_string(v.key))
+		descr = game.translate_string(v.descr)
+		self.listview:AddItem(uiListItem(key, descr))
+	end
+end
+
+function uiVehicleFirstUse:InitCallBacks()
+end
+
+function uiVehicleFirstUse:OnExit()
+	self:GetHolder():start_stop_menu(self, true)
+	la_utils.custom_ui_usage("hide", script_name())
+end
+
+function uiVehicleFirstUse:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnExit()
+		end
+	end
+	
+	return true
+end
+--/ ------------------------------------------------------------------------------------------------

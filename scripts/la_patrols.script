@@ -1,0 +1,643 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : la_patrols.script
+ Description: PatrolPoints Manager
+ Copyright  : 2012 © LA-team
+ Author     : ...
+ Editors    : gr1ph00n
+ Last edit  : 26.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tPatrols        = {}  --/ array of ways
+local tWayPointProps  = {}  --/ array of data(parsed) for way points
+local tPPathValidated = {}  --/ array of checked patrol ways (true - , false -, nil -)
+local tWayReplaces    = nil --/ array of replacements for patrol ways
+local tCreateWays     = nil --/ array of created patrol ways
+local iLevelMaxY      = 90  --/ for helicopters-ways
+local idMapNow,sMapNow --/ current level (index/name)
+local idLvMaxNow = nil
+local pini       = nil
+local sDbgPatrol = nil --/ for debug
+--/ --------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+--	debug_print(sModule..":init:>") --/#~#
+	if bInit then return end --/>
+	tPatrols,tWayPointProps = {},{}
+	pini = ini_file("lost_alpha\\"..sModule..".ltx")
+	tWayReplaces = Get_IniSection(pini, "replace_ways", "string")
+	tCreateWays  = Get_IniSection(pini, "create_ways", "string") --/ "list"
+	if not next(tWayReplaces) then tWayReplaces = nil end
+	if next(tCreateWays) then
+		event("new_game"):register(CreateWays) --/#?# insurance
+		event("load_storehouse"):register(CreateWays)
+	else
+		tCreateWays = nil
+	end
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------------------------------------
+function PreSets(e)
+	idMapNow = alife():level_id() --/ ID of current level/map
+	sMapNow  = idMapNow and alife():level_name(idMapNow) --/ name of current level/map (level.name())
+	if sMapNow and level.present() and level.name() then
+		idLvMaxNow = la_helper.Get_Max_IdLevelVertex(idMapNow)
+		iLevelMaxY = level.get_bounding_volume().max.y
+--	log("PreSets: idMapNow=[%s], idLvMaxNow=[%s], LevelMaxY=[%s], WayReplaces=(%s)", idMapNow, idLvMaxNow, string.short(iLevelMaxY), tWayReplaces ~= nil, "") --/#~#
+	end
+end
+--/ ------------------------------------
+--/ 
+--/ ------------------------------------
+function CreateWays()
+	if tCreateWays and level.present() then
+		for way_name,v in pairs(tCreateWays) do
+			if level.patrol_path_exists(way_name) then
+				--/ stub: way already exist
+			elseif type(v) == 'string' and level.patrol_path_exists(v) then
+				local source_patrol_path = this.get_patrol(v)
+				local dynamic_patrol_path = DynamicPatrolPath(way_name)
+				local t, count, terminal_idx = {}, source_patrol_path:count(), nil
+--				log("CreateWays: way=[%s] <= [%s] points=[%s]:(%s)", way_name, v, count, ">") --/#~#
+				--/ create points:
+				for i=0, count -1 do
+					t[i] = { point = DynamicPatrolPoint() }
+					t[i].point:set_name           ( source_patrol_path:name(i) )
+					t[i].point:set_flags          ( source_patrol_path:flags(i):get() )
+					t[i].point:set_position       ( source_patrol_path:point(i) )
+					t[i].point:set_level_vertex_id( source_patrol_path:level_vertex_id(i) )
+					t[i].point:set_game_vertex_id ( source_patrol_path:game_vertex_id(i) )
+					if source_patrol_path:terminal(i) then
+						terminal_idx = i --log("CreateWays: way=[%s] <= [%s] terminal_idx=[%s] points=[%s]", way_name, v, i, count, "") --/#~#
+					end
+					dynamic_patrol_path:add_point( t[i].point )
+				end
+				if count > 1 then
+					--/ linking:
+					local p_curr, p_next
+					for i=0, count -1 do
+						p_curr = t[i].point
+						if p_curr and not (terminal_idx and p_curr == terminal_idx) then
+							--/#?# TODO: finish it!!! Linking not always linear, it increases...
+							p_next = (t[i+1] and t[i+1].point) or (i > 0 and t[0] and t[0].point)
+							if p_next then
+								dynamic_patrol_path:add_link(p_curr, p_next)
+							end
+						end
+					end
+				end
+				level.add_patrol(dynamic_patrol_path)
+				tPatrols[way_name] = patrol(way_name)
+				log("CreateWays: way=[%s] <= [%s] created(%s) :<%s>", way_name, v, type(tPatrols[way_name]) == 'userdata', "Info!") --/#~#
+			elseif pini:section_exist(way_name) then
+				tPatrols[way_name] = CPatrolPointsManager(way_name):create_patrol()
+				log("CreateWays: way=[%s] <~created(%s) :<%s>", way_name, type(tPatrols[way_name]) == 'userdata', "Info!") --/#~#
+			end
+		end
+		tCreateWays = nil
+	end
+end
+
+function get_replace_way_name(way_name,...)
+	if not pini then this.PreSets() end --/ insurance
+	--if tCreateWays then this.CreateWays() end --/#?# insurance
+	if tWayReplaces then
+		for name,sub_name in pairs(tWayReplaces) do
+			if name == way_name then
+				if level.present() and level.patrol_path_exists(sub_name) then
+					return sub_name --/>
+				elseif pini:section_exist(sub_name) then
+					tPatrols[way_name] = CPatrolPointsManager(sub_name,...):replace(true):create_patrol()
+					log("get_replace_way_name: way=[%s]=>[%s] <~create(%s):<%s>", way_name, sub_name, type(tPatrols[way_name]) == 'userdata', "Info!") --/#~#
+					return sub_name --/>
+				end
+				return nil --/>
+			end
+		end
+	end
+	return nil --/>
+end
+
+function get_patrol(way_name,...)
+	if tPatrols[way_name] == nil then
+		local sub_name = this.get_replace_way_name(way_name,...)
+		if sub_name then --/ replaced?
+			if level.patrol_path_exists(sub_name) then
+				tPatrols[way_name] = patrol(sub_name,...)
+				log("get_patrol: way=[%s] => [%s] ~replaced!", way_name, sub_name, "") --/#~#
+			else
+				log("get_patrol: way=[%s] => [%s] NOT replace:<%s>", way_name, sub_name, "Warning!") --/#~#
+			end
+		elseif level.patrol_path_exists(way_name) then
+			tPatrols[way_name] = patrol(way_name,...)
+		elseif pini:section_exist(way_name) then --/#+# create dynamic? (only for LA)
+			tPatrols[way_name] = CPatrolPointsManager(way_name,...):create_patrol()
+			log("get_patrol: way=[%s] <~created(%s) :<%s>", way_name, type(tPatrols[way_name]) == 'userdata', "Info!") --/#~#
+		elseif way_name then
+			if db.is_mixed_mode then
+				callstack("get_patrol: Wrong way with a name '"..tostring(way_name).."' :<Warning!>") --/#~#
+			else
+				log("get_patrol: Wrong way with a name '"..tostring(way_name).."' :<Warning!>") --/#~#
+			end
+			tPatrols[way_name] = false
+		else
+			callstack("get_patrol: way_name=NIL :<Warning!>") --/#~#
+			return nil --/>
+		end
+	end
+	if db.is_mixed_mode and way_name and tPatrols[way_name] and tPatrols[way_name].is_replacement then --/ for debug
+		--table.print(tPatrols[way_name], sModule..":tPatrol|"..way_name)
+		log("get_patrol:[%s]=>[%s]:counts=[%s],flags(0)=[%s]:(%s)", way_name, tPatrols[way_name]:get_name(), tPatrols[way_name]:count(), tPatrols[way_name]:flags(0):get(), "is_replacement!")
+	end
+	return tPatrols[way_name] --/> patrol
+end
+--/ ---------------------------------------------
+--/ CLASS CONSTRUCTION
+--/-------------------------------------------------------------------------------------------------
+class "CPatrolPointsManager"
+--/-------------------------------------------------------------------------------------------------
+function CPatrolPointsManager:__init(way_name,...)
+--	log("CPatrolPointsManager:init:=[%s]:(%s)", way_name, "+") --/#~#
+	local tPatrol = {_name = way_name}
+	tPatrol.points = string.split( pini:r_string(way_name,"points"), "," )
+	tPatrol.counts = #tPatrol.points
+	for i=0,tPatrol.counts-1 do
+		tPatrol[i] = {}
+		local sPref = "p"..i..":"
+		tPatrol[i].name = pini:r_string(way_name, sPref.."name")
+		local tPos = string.split( pini:r_string(way_name, sPref.."position"), "," )
+		tPatrol[i].pos = vector():set(tonumber(tPos[1]) or 0, math.min(tonumber(tPos[2]) or 0,iLevelMaxY), tonumber(tPos[3]) or 0)
+		if pini:line_exist(way_name, sPref.."level_vertex_id") then
+			tPatrol[i].lvid = pini:r_u32(way_name, sPref.."level_vertex_id")
+		else
+			tPatrol[i].lvid = -1
+		end
+		if pini:line_exist(way_name, sPref.."level_vertex_id") then
+			tPatrol[i].gvid = pini:r_u32(way_name, sPref.."game_vertex_id")
+		else
+			tPatrol[i].gvid = 65535
+		end
+		if pini:line_exist(way_name, sPref.."flags") then
+			local iFlag = tonumber( string.sub( pini:r_string(way_name, sPref.."flags"),3), 16 ) or 0
+			tPatrol[i]._set_flags = iFlag
+			tPatrol[i].flags = flags32():set(iFlag, true) --/#?#
+			tPatrol[i].flags = flags32():assign(iFlag)
+--			log("CPatrolPointsManager:init:=[%s]:iFlag(%s)=[%s]=>[%s]", way_name, i, iFlag, tPatrol[i].flags:get(), "") --/#~#
+		else
+			tPatrol[i].flags = flags32():assign(0)
+		end
+		if pini:line_exist(way_name,sPref.."links") then
+			--tPatrol[i].links = pini:r_string(way_name, sPref.."links") --/#?#
+			local tLinks = string.split( pini:r_string(way_name,sPref.."links"), "," ) --/#?#
+			local tPoints,sPoint,sProbe = {},nil,nil
+			for _,v in pairs (tLinks) do
+				sPoint,sProbe = v:match('^%s*p(%d+)%s*%(%s*(.*)%s*%)$') --/ splitting on index and probability
+--				log("CPatrolPointsManager:init: point=[%s], probe=[%s]", sPoint, sProbe, "")
+				if tonumber(sPoint) then
+					table.insert(tPoints, {idx = tonumber(sPoint), probe = math.floor((tonumber(sProbe) or 1)*100)})
+				end
+			end
+			if next(tPoints) then
+				tPatrol[i].links = tPoints
+			end
+		end
+	end
+	--table.print(tPatrol, sModule..":tPatrol|"..way_name) --/#~#
+	self._p = tPatrol
+	self.dynamic_patrol_path = nil
+end
+
+function CPatrolPointsManager:_links(idx) --/#+#
+	return self._p[idx] and self._p[idx].links --/> table
+end
+function CPatrolPointsManager:count()
+	return self._p.counts --/> number (0)
+end
+function CPatrolPointsManager:name(idx) --/< number (index)
+	return self._p[idx] and self._p[idx].name --/> string 'name00|...'
+end
+function CPatrolPointsManager:point(idx)
+	return self._p[idx] and self._p[idx].pos --/> vector (v.x,v.y,v.z)
+end
+function CPatrolPointsManager:level_vertex_id(idx)
+	return self._p[idx] and self._p[idx].lvid --/> number (0)
+end
+function CPatrolPointsManager:game_vertex_id(idx)
+	return self._p[idx] and self._p[idx].gvid --/> number (65535)
+end
+function CPatrolPointsManager:terminal(idx)
+	return self._p[idx] and self._p[idx].links == nil --/> boolean
+end
+function CPatrolPointsManager:flags(idx)
+	if self._p[idx] and self._p[idx].flags then
+		if self._p[idx]._set_flags then
+			--self._p[idx].flags:set(self._p[idx]._set_flags, true) --/#?#
+			self._p[idx].flags:assign(self._p[idx]._set_flags)
+		end
+		return self._p[idx].flags --/> userdata
+	end
+	return flags32() --/> userdata
+end
+function CPatrolPointsManager:index(sIndex) --/< string ('name0N|...')
+	if type(sIndex) == 'string' then
+		for i=0, self:count()-1 do
+			if self:name(i) == sIndex then
+				return idx --/> number (index)
+			end
+		end
+	end
+	return db.iMax_s32 --/>
+end
+function CPatrolPointsManager:get_nearest(vPosition) --/< vector (v.x,v.y,v.z)
+	local idx,iDist,iMinDist = nil,nil,nil
+	if type(vPosition) == 'userdata' then
+		for i=0, self:count()-1 do
+			iDist = self:point(i):distance_to(vPosition)
+			if not iMinDist or iDist < iMinDist then
+				iMinDist = iDist
+				idx = i
+			end
+		end
+	end
+	return idx --/> number (index)
+end
+function CPatrolPointsManager:flag(idx, iBit)
+	local oFlags = self:flags(idx)
+	if oFlags and iBit then
+		return oFlags:is(iBit) --/#?#> boolean
+	end
+	return false --/>
+end
+
+function CPatrolPointsManager:get_name() --/#+#
+	return self._p._name --/> string
+end
+function CPatrolPointsManager:replace(is_replacement) --/#+#
+	self.is_replacement = is_replacement
+	return self
+end
+function CPatrolPointsManager:isReplacement() --/#+?#
+	return self.is_replacement --/>
+end
+
+--/#+# by gr1ph00n (only for LA)
+function CPatrolPointsManager:create_patrol()
+	if not level.present() then return end --/>
+	local way_name = self:get_name()
+	local iCount = self:count()
+	self.dynamic_patrol_path = DynamicPatrolPath(way_name)
+	--/ create points
+	for i=0, iCount -1 do
+		self._p[i].point = DynamicPatrolPoint()
+		self._p[i].point:set_position( self:point(i) )
+		self._p[i].point:set_level_vertex_id( self:level_vertex_id(i) )
+		self._p[i].point:set_game_vertex_id( self:game_vertex_id(i) )
+		self._p[i].point:set_flags( self:flags(i):get() )
+		self._p[i].point:set_name( self:name(i) )
+		
+		self.dynamic_patrol_path:add_point( self._p[i].point )
+	end
+	if iCount > 0 then
+		--/ linking
+		local p_curr, p_next
+		for i=0, iCount -1 do
+			p_curr = self._p[i] and self._p[i].point
+			if p_curr and self:get_next(i) then
+				p_next = self._p[self:get_next(i)].point
+				if p_next then
+					self.dynamic_patrol_path:add_link(p_curr, p_next)
+				end
+			end
+		end
+	end
+	level.add_patrol(self.dynamic_patrol_path) --/#fix#
+--	log("CPatrolPointsManager:create_patrol:=[%s] exists=(%s)", self:get_name(), level.patrol_path_exists(way_name), "") --/#~#
+	return patrol(way_name) --/> self
+end
+
+function CPatrolPointsManager:_links(idx) --/#+#
+	return self._p[idx] and self._p[idx].links --/> table
+end
+function CPatrolPointsManager:get_next(idx) --/#+?#< current index
+	local tLinks = self:_links(idx)
+	local iNext = tLinks and tLinks[1].idx
+	if iNext and #tLinks > 1 then  --log("CPatrolPointsManager:get_next:=[%s],links=(%s)", iNext, #tLinks, "") --/#~#
+		if db.iGSVer < 0 then math.randomseed( device():time_global() ) end --/ for debug
+		local iProbe,iRnd = 0,0
+		for _,v in ipairs(tLinks) do
+			iProbe = iProbe + v.probe
+			iRnd = math.random(1,iProbe)
+			if iRnd <= v.probe then  --log("CPatrolPointsManager:get_next:p=[%s],rnd=[%s/%s]", v.probe, iRnd, iProbe, "") --/#~#
+				iNext = v.idx
+			end
+		end
+	end
+	return iNext --/> number (index)
+end
+
+function CPatrolPointsManager:__tostring()
+	return "CPatrolPoint: '"..tostring(self:get_name()).."' counts="..tostring(self._p.counts) --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ PARSINGs
+--/ -----------------------------------------------------------------------------------------------
+function parse_waypoint_data(way_name, wp_flags, wp_name)
+	local tProps = {flags = wp_flags}
+	--/#+# if not setted name of point (wp_name) - prase setted by index from 2nd argument or 0
+	if not wp_name then
+		local oPatrol = this.get_patrol(way_name)
+		if oPatrol then
+			local idx = type(wp_flags) == 'number' and wp_flags or 0
+			wp_name = oPatrol:name(idx)
+			tProps.flags = oPatrol:flags(idx)
+		end
+	end
+	if wp_name and wp_name:match('|') then
+		local iNumPar = 1
+		local iNumFld,sKey,sValue
+		for sParam in wp_name:gmatch("([%w_\\%=%-%,%*]+)|*") do
+			if iNumPar > 1 then
+				if sParam ~= "" then
+					iNumFld,sKey,sValue = 1,nil,nil
+					
+					for s in sParam:gmatch("([%w_\\%-%,%*]+)=*") do
+						if iNumFld == 1 then
+							sKey = s
+						elseif iNumFld == 2 then
+							sValue = s
+						else
+							abort("%s:parse_waypoint_data:path=[%s],point=[%s]:syntax error while parsing the param=[%s]", sModule, way_name, wp_name, sParam)
+						end
+						iNumFld = iNumFld +1
+					end
+					
+					if sKey and sKey ~= "" then
+						if not sValue or sValue == "" then
+							sValue = "true"
+						end
+						tProps[sKey] = sValue
+					else
+						abort("%s:parse_waypoint_data:path=[%s]:point=[%s]:syntax error while parsing the param=[%s]:no field specified", sModule, way_name, wp_name, sParam)
+					end
+				else
+					abort("%s:parse_waypoint_data:path=[%s],point=[%s]:syntax error in waypoint name", sModule, way_name, wp_name)
+				end
+			end
+			iNumPar = iNumPar +1
+		end
+	end
+	return tProps --/>
+end
+
+function path_parse_waypoints(way_name)
+	if not way_name then return nil end --/>
+	local tProps = tWayPointProps[way_name]
+	if tProps == nil then --/ if we didn't parse yet
+		tProps = {}
+		local oPatrol = this.get_patrol(way_name)
+		if oPatrol then  --log("path_parse_waypoints:WayName=[%s]", way_name, "") --/#~#
+			for i=0, oPatrol:count()-1 do  --log("path_parse_waypoints:(%s)=[%s]", i, oPatrol:name(i), "") --/#~#
+				tProps[i] = this.parse_waypoint_data(way_name, oPatrol:flags(i), oPatrol:name(i))
+			end
+		else
+			log("path_parse_waypoints:WayName=[%s] <~hasn`t patrol:<%s>", way_name, "Warning!") --/#~#
+			tProps[0] = {flags = flags32():assign(0)} --/#?#< stub
+		end
+		tWayPointProps[way_name] = tProps
+	end
+	return table.copy(tProps) --/>
+end
+
+function path_parse_waypoints_from_arglist(way_name, iCount, ...)
+	local oPatrol = this.get_patrol(way_name)
+	if oPatrol and iCount and oPatrol:count() == iCount then
+		local tProps,oFlags = {},nil
+		local arg,a = {...},nil
+		for i=0, iCount-1 do
+			a = arg[i+1]
+			if a then
+				oFlags = flags32()
+				oFlags:assign(a[1]) --/ a[1]: (number)
+				tProps[i] = parse_waypoint_data(way_name, oFlags, a[2]) --/ a[2]: point_name (string)
+				if not tProps[i] then
+					abort("%s:path_parse_waypoints_from_arglist:while processing point=[%s] of path=[%s]:(%s)", sModule, i, way_name, "1")
+				end
+			else
+				abort("%s:path_parse_waypoints_from_arglist:while processing point=[%s] of path=[%s]:(%s)", sModule, i, way_name, "2")
+			end
+		end
+		return tProps --/>
+	end
+	abort("%s:path_parse_waypoints_from_arglist:path=[%s],points=[%s], but [%s] points were expected", sModule, way_name, oPatrol and oPatrol:count(), iCount)
+end
+
+--/ reading of parameter 'count' (number of works from 0 point of way)
+function get_count_by_waypoint(way_name,def_value)
+	local oPatrol = this.get_patrol(way_name)
+	local wp_name = oPatrol:name(0)
+	if not wp_name:match('|') then
+		return def_value --/>
+	end
+	local count, cnt, key, val = 0, nil, nil, nil
+	for param in wp_name:gmatch('([%w_\\%=%-%,%*]+)|*') do
+		count = count + 1
+		if count > 1 then
+			if param ~= "" then
+				cnt, key, val = 1, nil, nil
+				for s in param:gmatch('([%w_\\%-%,%*]+)=*') do
+					if cnt == 1 then
+						key = s
+					elseif cnt == 2 then
+						val = s
+					else
+						abort("%s:get_job_count:way=[%s],waypoint=[%s] syntax error: while parsing the param=[%s]", sModule, way_name, wp_name, param, "")
+					end
+					cnt = cnt + 1
+				end
+				if key and key ~= "" then
+					if key == "count" then
+--						log("get_job_count:=[%s] way=[%s] wp=[%s]", tonumber(val), way_name, wp_name, "") --/#~#
+						return tonumber(val) or def_value --/>
+					end
+				else
+					abort("%s:get_job_count:way=[%s],waypoint=[%s],param=[%s] syntax error: no key specified!", sModule, way_name, wp_name, param, "")
+				end
+			else
+				abort("%s:get_job_count:way=[%s],waypoint=[%s]~syntax error!", sModule, way_name, wp_name, "")
+			end
+		end
+	end
+	return def_value --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Check of way validity on attach to current location
+--/ -----------------------------------------------------------------------------------------------
+local function OnTimer_ErrorPP(t)
+	abort("%s:OnTimer_ErrorPP: '%s' , for '%s' :<%s>", sModule, t.pp, t.npc, "Error!")
+end
+
+function Validate_PPath(way_name, oNPC, bLog)
+	if not way_name then return false end --/>
+	local bValid = tPPathValidated[way_name] --/ validate with list of checked
+	if bValid == nil then --/ still not checked?
+		if not idMapNow then this.PreSets() end
+		--/ for debug:
+		if sDbgPatrol and tPPathValidated[sDbgPatrol] == nil then
+			abort(sModule..":Validate_PPath:=[%s]:<%s>", sDbgPatrol, "Error!")
+		end
+		sDbgPatrol = way_name --/ remember
+		--/ start debug-timer ( time(sec), func, tbl_params )
+		local t = start_quick_timer(0.005, function() abort("Error validate PPath=[%s]", way_name, if_then_else(oNPC,", for=["..oNPC:name().."]","")) end)
+		--/<
+		local oPatrol = this.get_patrol(way_name)
+		if oPatrol then
+			local iCnt,iPoint = oPatrol:count(), 0
+			local idGv = oPatrol:game_vertex_id(iPoint)
+			if idGv == 65535 and iCnt > 0 then
+				for i=1,iCnt-1 do
+					idGv = oPatrol:game_vertex_id(i)
+					if idGv ~= 65535 then
+						iPoint = i
+						break
+					end
+				end
+			end
+			local idMap = ( idGv and idGv ~= 65535 and la_helper.Get_LevelId(idGv) )
+			if idMap then
+				if idMap == idMapNow then
+					if not idLvMaxNow then --and level.present() and level.name() then
+						idLvMaxNow = la_helper.Get_Max_IdLevelVertex(idMapNow)
+					end
+					if idLvMaxNow then --/ on current level and avaliable for checks?
+						local idLvMax = idLvMaxNow
+						for i=iPoint,iCnt-1 do
+							local idLv = oPatrol:level_vertex_id(i)
+							if idLv and idLv < db.iMax_s32 then
+								if idLv <= idLvMax or (level.valid_vertex_id and level.valid_vertex_id(idLv)) then --/ within the valid range of vertex?
+									if i > 0 then log("Validate_PPath:=[%s],NPC=[%s],idLv(%s/%s)=[%s]~>Map=[%s]:<%s>", way_name, oNPC and oNPC:name(), i+1, iCnt, idLv, la_helper.Get_LevelName(idGv), "Info!") end --/#~#
+									bValid = true
+									break
+								elseif oNPC and oNPC:accessible(idLv) then --/ checking availability
+									log("Validate_PPath:=[%s],NPC=[%s],idLv(%s/%s)=[%s]=>[%s]~>Map=[%s]:<%s>", way_name, oNPC and oNPC:name(), i+1, iCnt, idLvMax, idLv, la_helper.Get_LevelName(idGv), "Info!") --/#~#
+									this.Set_Metka_PPath(way_name) --/#?# for test
+									bValid = true
+									break
+								else log("Validate_PPath:=[%s],NPC=[%s],idGv=[%s]:NOT_valid_idLv(%s/%s)=[%s]<?>(%s=max):<%s>", way_name, oNPC and oNPC:name(), idGv, i+1, iCnt, idLv, idLvMax, "Warning!") end
+							else
+								if db.is_dbg1 and idLv and idLv == db.iMax_s32 then
+									log("Validate_PPath:=[%s],NPC=[%s],idGv=[%s],idLv(%s/%s)=[%s]~NOT_valid:(%s=max):<%s>", way_name, oNPC and oNPC:name(), idGv, i+1, iCnt, idLv, idLvMax, "Info!")
+									local vPos = oPatrol:point(i)
+									local idLvN = 0 --/ calculating level-vertex by position of way point
+									if level.vertex_id then --/ for STCS&SCoP &LA (b4913)
+										idLvN = vPos and level.vertex_id(vPos)
+									else --/ for SHoC ( db.iSSVer <= 7)
+										idLvN = vPos and la_helper.Get_Never_idLv_by_Pos(vPos)
+									end
+									log("Validate_PPath:=[%s],NPC=[%s],idGv=[%s]=>[%s],idLv(%s/%s)=[%s]=>[%s]~!:<%s>", way_name, idGv, oNPC and oNPC:name(), idGvN, i+1, iCnt, idLv, idLvN, idLvMax, "Info!")
+								else
+									log("Validate_PPath:=[%s],NPC=[%s],idGv=[%s]:NOT_valid_idLv(%s/%s)=[%s]<x>(%s):<%s>", way_name, oNPC and oNPC:name(), idGv, i+1, iCnt, (idLv ~= db.iMax_s32 and idLv) or 'none', idLvMax, "Warning!")
+								end
+							end
+						end
+					else
+						bValid = level.patrol_path_exists(way_name) --/#?#
+						if bLog ~= false and db.is_dbg1 then log("Validate_PPath:=[%s],NPC=[%s],idGv=[%s]~>CurMap(%s)=[%s]:exists=(%s):idLvMaxNow=[%s]:<%s>", way_name, oNPC and oNPC:name(), idGv, idMap, sMapNow, bValid, idLvMaxNowNow, "Info!") end --/#~#
+					end
+				else --/ way not on current map:
+					bValid = level.patrol_path_exists(way_name) --/#?#
+					if bLog ~= false and db.is_dbg1 then log("Validate_PPath:=[%s],NPC=[%s],idGv=[%s]~>Map(%s)=[%s]:CurMap=[%s]:exists=(%s):<%s>", way_name, oNPC and oNPC:name(), idGv, idMap, la_helper.Get_LevelName(idGv), sMapNow, bValid, "Info!") end --/#~#
+				end
+			elseif level.patrol_path_exists(way_name) then --/ 
+				bValid = true
+				if db.is_dbg1 then log("Validate_PPath:=[%s],points=[%s],idGv=[%s]~is_fake:<%s>", way_name, iCnt, idGv, "Info!") end --/#~#
+			elseif oPatrol.is_replacement then
+				bValid = true
+				if db.is_dbg1 then log("Validate_PPath:=[%s],points=[%s],idGv=[%s]~is_replaced:<%s>", way_name, iCnt, idGv, "Info!") end --/#~#
+			else
+				log("Validate_PPath:=[%s],points=[%s],idGv=[%s]~not_valid:<%s>", way_name, iCnt, idGv, "Warning!")
+			end
+		end
+		tPPathValidated[way_name] = bValid == true --/ remembering
+		--/ for debug:
+		sDbgPatrol = nil --/ clear
+		if t then t:remove() end --/ disconnect the debug-timer
+		--/<
+	end
+	return bValid --/>
+end
+
+function Get_Coordinates_PPath(way_name)
+	local oPatrol = this.get_patrol(way_name)
+	if oPatrol then
+		local i,iCnt = 0,oPatrol:count()
+		for i=0,iCnt-1 do
+			local idGv = oPatrol:game_vertex_id(i)
+			if game_graph():valid_vertex_id(idGv) then
+				local idLv = oPatrol:level_vertex_id(i)
+				if idLv >= 0 and idLv < idLvMaxNow then
+					return oPatrol:point(i),idLv,idGv --/> vector (coordinates) i-point of way
+				end
+			end
+		end
+		local vPos,idLv = oPatrol:point(0),oPatrol:level_vertex_id(0) --/ vector (coordinates) 0-point of way
+		if idLv < 0 or idLv > idLvMaxNow then
+			idLv = la_helper.Get_Never_idLv_by_Pos(vPos) or 0
+		end
+		return vPos,idLv,idGvMinNow --/> vPos,idLv,idGv
+	end
+	return nil,nil,nil --/>
+end
+--/ setting marks(hints) on point of way (by coordinates) (for debug)
+function Set_Metka_PPath(way_name)
+	local vPos,idLv,idGv = this.Get_Coordinates_PPath(way_name)
+	if vPos and idLv and idGv then --/
+		local idLvS,sValid = idLv,""
+		local idMap = la_helper.Get_LevelId(idGv)
+		local idLvMax = idMap and la_helper.Get_Max_IdLevelVertex(idMap)
+		if idLv < 0 or idLv > idLvMax then --/ level-vertex not valid?
+			sValid = "(err)"
+			if idMap == idMapNow then --/ correcting for current level
+				local idLvN = 0 --/ calculating level-vertex by position of point of way
+				if db.iSSVer <= 7 then --/ for SHoC
+					idLvN = la_helper.Get_Never_idLv_by_Pos(vPos)
+				else --/ for STCS&SCoP
+					idLvN = level.vertex_id(vPos)
+				end
+				local vPosN = idLvN and level.vertex_position(idLvN)
+				log("Set_Metka_PPath:=[%s],Pos=[%s],idLv=[%s]~>[%s]:(%s):<%s>", way_name, vPos, idLv, vPosN, idLvMax, "?") --/#~#
+				if idLvN and idLvN > 0 and idLvN < idLvMax then
+					idLvS = idLvN
+					sValid = "(new)"
+					log("Set_Metka_PPath:=[%s],Pos=[%s],idLv=[%s]~>[%s]:(%s):<%s>", way_name, vPos, idLv, vPosN, idLvMax, "??") --/#~#
+				end
+			end
+		end
+		--return this.Get_GpsMetka(vector():set(vPos.x,vPos.y+0.5,vPos.z), idLvS, idGv, way_name) ~= nil --/>
+		return true --/>
+	end
+end
+--/ setting beacon by coordinates
+function Get_GpsMetka(vPos,idLv,idGv,sSpot)
+	if vPos and idLv and idGv then
+		local soMetka = alife():create("gps_metka", vPos, idLv, idGv, 65535)
+		if soMetka then
+			log("Get_GpsMetka:id=[%s],Pos=[%s],idLv=[%s],idGv=[%s]:(%s):[%s]", soMetka.id, vPos, idLv, idGv, sSpot, "Info!") --/#~#
+			if sSpot then
+				Add_MapSpot(soMetka.id, "dbg_metka2", "Metka("..tostring(sSpot)..")")
+			end
+			return soMetka.id --/>
+		end
+	end
+end
+--/-------------------------------------------------------------------------------------------------

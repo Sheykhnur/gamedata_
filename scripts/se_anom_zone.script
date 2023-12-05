@@ -1,0 +1,511 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : se_anom_zone.script
+ Description: Регистрация аномальных зон
+ Copyright  : 2000 © LA-team
+ Author     : barin (2009-07-10)
+ Editors    : barin, gr1ph00n(2012-06-20)
+ Last edit  : 06.2018 [07]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local ID_NONE = 65535
+local DEF_CONDITIONS  = 0
+local DEF_ON_BLOW     = "use_cond"
+local DEF_IDLE_TIME   = 10
+local DEF_JUMP_SPEED  = 400
+local DEF_HIT_POWER  = 0.1
+local DEF_ANOM_RADIUS = 3
+local DEF_ANOM_FIELDS = "lost_alpha\\anom_zone\\anom_fields.ltx"
+local DEF_ANOM_TYPE   = "zone_mosquito_bald_weak"
+
+DEF_RESTR_TYPE = cse_alife_space_restrictor.DEFAULT_RESTRICTOR_TYPE_IN --/ or 2
+
+local ANOM_ZONES = {}
+local BINDING    = {}
+
+local SPAWN_SOUNDS = {
+	"anomaly\\anomaly_gravy_blast00",
+	"anomaly\\anomaly_gravy_blast01",
+	"anomaly\\anomaly_gravy_blast",
+	"anomaly\\electra_blast",
+	"anomaly\\gravi_blowout2",
+	"anomaly\\gravity_entrance",
+	"anomaly\\pux_blast",
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function bind_anom_with_zone(zone_name, anom_id)
+	if not BINDING[zone_name] then
+		BINDING[zone_name] = {}
+	end
+	table.insert(BINDING[zone_name], anom_id)
+end
+
+function on_anom_register(anom)
+	local ini = anom:spawn_ini()
+	if ini:section_exist("anom_zone") and ini:line_exist("anom_zone","belongs_to") then
+		--if anom:get_space_restrictor_type() == DEF_RESTR_TYPE then
+			bind_anom_with_zone(ini:r_string("anom_zone","belongs_to"), anom.id)
+		--end
+	end
+end
+
+function blowout_awake()
+	for id, zone in pairs(ANOM_ZONES) do
+		zone:blowout_spawn()
+	--	log("blowout_awake:[%s][%s]", zone, id, "")
+	end
+end
+
+--/debug feature
+function print_ANOM_ZONES()
+	table.print(ANOM_ZONES)
+end
+
+--/ ---------------------------------------------
+function get_tab_elem_num(tbl)
+	local num = 0
+	for section, quantity in pairs(tbl) do
+		if section then
+			num = num + quantity
+		end
+	end
+	return num
+end
+
+function get_rnd_idx(tbl)
+	local t = {}
+	for k, v in pairs(tbl) do
+		table.insert(t, k)
+	end
+	return t[math.random(1, #t)]
+end
+
+function get_hit_type(str)
+	local t = {
+		["chemical_burn"] = hit.chemical_burn,
+		["burn"]          = hit.burn,
+		["radiation"]     = hit.radiation,
+		["shock"]         = hit.shock,
+		["strike"]        = hit.strike,
+		["telepatic"]     = hit.telepatic,
+	}
+	return ( t[str] or hit.radiation )
+end
+
+function get_zone_ltx(zone_name)
+	local ltx = ini_file(DEF_ANOM_FIELDS)
+	if ltx then
+		if ltx:section_exist(zone_name) then
+			return ltx
+		end
+		abort("[%s.script] section '%s' does not exist in '%s'!", sModule, zone_name, DEF_ANOM_FIELDS)
+	else
+		abort("[%s.script] '%s' does not exist!", sModule, DEF_ANOM_FIELDS)
+	end
+	return nil
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_anom_zone" (cse_alife_smart_zone)
+--/ -----------------------------------------------------------------------------------------------
+function se_anom_zone:__init(section) super(section)
+	self.zone_enabled  = false
+	self.curr_artefact = ID_NONE
+	self.af_movement_blocked = false
+	
+	if not editor() then
+		self.af_spawn_time = game_timer.GameTimer()
+	end
+end
+
+function se_anom_zone:on_before_register()
+	cse_alife_smart_zone.on_before_register(self)
+	
+	--log("on_before_register:anom_zone=[%s],ID=[%s]%s", self:name(), self.id, "") --/#~#
+	--xr_artefact_hunter.add_zone(self)
+	--ANOM_ZONES[self.id] = self
+end
+
+function se_anom_zone:keep_saved_data_anyway()
+	return true
+end
+
+function se_anom_zone:on_spawn()
+	cse_alife_smart_zone.on_spawn(self)
+	
+	local sAnomName = self:name()
+	local ltx = get_zone_ltx(sAnomName)
+	if ltx then
+		self.idle_time = Get_Cfg_Num32(ltx, sAnomName, "idle_time", DEF_IDLE_TIME)
+		self:set_idle_time()
+		
+		if Get_Cfg_Bool(ltx, sAnomName, "spawn_af_on_zone_spawn", false) then
+			local af_section = Get_Cfg_String(ltx, sAnomName, "af_on_zone_spawn", "af_medusa")
+			local sobj = alife():create(af_section, self.position, self.m_level_vertex_id, self.m_game_vertex_id)
+			self.curr_artefact = sobj.id
+		end
+		
+		--unused part
+		--[[if Get_Cfg_Bool(ltx, sAnomName, "spawn_anomalies", false) then
+			local anom_pos =  Get_Cfg_String(ltx, sAnomName, "anom_pos", nil)
+			if not anom_pos then
+				abort("[%s.script] 'anom_pos' field syntax error in '%s'", sModule, sAnomName)
+			else
+				local ptr = get_patrol(anom_pos)
+				if not ptr then
+					abort("[%s.script] '%s' patrol does not exist for '%s'", sModule, anom_pos, sAnomName)
+				else
+					local anom_pos_count = ptr:count()
+					local ptr_name = anom_pos
+					
+					local anom_type,radius = nil, nil
+					local wp_info = nil
+					
+					anom_pos = {}
+					
+					for index = 0, anom_pos_count - 1 do
+						wp_info = utils.parse_waypoint_data(ptr_name, ptr:flags(index), ptr:name(index))
+						
+						anom_type = if_then_else(wp_info["anom_type"] ~= nil and wp_info["anom_type"] ~= "", wp_info["anom_type"], DEF_ANOM_TYPE)
+						
+						if wp_info["radius"] and wp_info["radius"] ~= "" then
+							radius = tonumber((string.gsub(wp_info["radius"], "%,", "%.")))
+						end
+						if not radius then
+							radius = DEF_ANOM_RADIUS
+						end
+						
+						anom_pos[index + 1] = {
+							pos  = ptr:point(index),
+							lvid = ptr:level_vertex_id(index),
+							gvid = ptr:game_vertex_id(index),
+							anom_type = anom_type,
+							radius = radius
+						}
+					end
+					spawn_anomalies(anom_pos, sAnomName)
+				end
+			end
+		end--]]
+	end
+end
+
+function se_anom_zone:on_register()
+	cse_alife_smart_zone.on_register(self)
+	
+	self.zone_enabled = self:read_field_params()
+	if self.zone_enabled then
+		ANOM_ZONES[self.id] = self
+		if self.npc_accessible then
+			xr_artefact_hunter.add_zone(self)
+		end
+		--self:show_anom_zone_debug_spot1(true)
+	--	log("[%s.script] '%s' anomaly field activated!", sModule, self:name())
+	else
+		abort("[%s.script] '%s' anomaly field deactivated!", sModule, self:name())
+	end
+end
+
+function se_anom_zone:on_unregister()
+	cse_alife_smart_zone.on_unregister(self)
+end
+
+function se_anom_zone:can_switch_online()
+	return cse_alife_smart_zone.can_switch_online(self)
+end
+
+function se_anom_zone:can_switch_offline()
+	return cse_alife_smart_zone.can_switch_offline(self)
+end
+
+function se_anom_zone:zone_update()
+	if self.zone_enabled then
+		if self.curr_artefact ~= ID_NONE then
+			self:set_idle_time()
+		end
+		
+		self.af_spawn_time:update()
+		
+		if self.af_spawn_time:expired() then
+			if self.curr_artefact == ID_NONE then
+				-- self:spawn_artefact()
+			end
+			self:set_idle_time()
+		end
+	end
+end
+
+function se_anom_zone:update()
+	cse_alife_smart_zone.update(self)
+	--/ offline update
+	self:zone_update()
+	--self:show_anom_zone_debug_spot1(true)
+end
+
+function se_anom_zone:STATE_Write(packet)
+	cse_alife_smart_zone.STATE_Write(self, packet)
+	
+	if editor() then
+		return
+	end
+	packet:w_u16(self.curr_artefact) --/< id (65535 or ...)
+	self.af_spawn_time:save(packet) --/< CTime
+end
+
+function se_anom_zone:STATE_Read(reader, size)
+	cse_alife_smart_zone.STATE_Read(self, reader, size)
+	
+	if editor() then
+		return
+	end
+	if reader:r_elapsed() > 0 then
+		self.curr_artefact = reader:r_u16() --/ id (65535 or ...)
+		self.af_spawn_time:load(reader) --/ CTime
+	end
+end
+
+function se_anom_zone:npc_take_artefact(npc)
+	if self:af_exist() then
+		local af = level.object_by_id(self.curr_artefact)
+		if af then
+			--af:transfer_item(af, npc) --/#x# ERROR: can't detach independant object.
+			alife():create(af:section(), vector(), 0, 0, npc:id())
+			alife():release(alife():object(af:id()), true)
+			self.curr_artefact = ID_NONE
+		end
+	end
+end
+
+function se_anom_zone:can_move_artefact()
+	return (not self.af_movement_blocked)
+end
+
+function se_anom_zone:block_af_movement(flag)
+	self.af_movement_blocked = flag
+	if self.af_movement_blocked then
+		local af = level.object_by_id(self.curr_artefact)
+		local pos = level.vertex_position(self.m_level_vertex_id)
+		pos.y = pos.y + 1.5
+		af:drop_item_and_teleport(af, pos)
+	end
+end
+
+function se_anom_zone:actor_discovered()
+	if self.actor_first_visit and not has_info(self.actor_first_visit) then
+		give_info(self.actor_first_visit)
+	end
+end
+
+function se_anom_zone:spawn_artefact(prob)
+	if not db.actor then
+		return
+	end
+	
+	if not prob then
+		prob = tonumber(xr_logic.pick_section_from_condlist(db.actor, self, self.conditions)) or 0
+		local diff_koef = level.get_game_difficulty() == game_difficulty.novice and 1.8 or level.get_game_difficulty() == game_difficulty.stalker and 1.4 or level.get_game_difficulty() == game_difficulty.veteran and 1.2 or 1
+		prob = prob*diff_koef
+	end
+	
+	if prob == 0 then
+		return
+	end
+	
+	local af_spawned = nil
+	local sum = 0
+	if Random.I(100) <= prob then
+	
+        	for s,p in pairs(self.artefacts) do
+            		sum = sum + p
+        	end
+        	log("anom_zone=[%s] SUM=[%s]", self:name(), sum)
+            	--math.randomseed (device ():time_global ())
+        	sum = utils.RandomI(0, sum)
+        	--log("anom_zone=[%s] SUMrand=[%s]", self:name(), sum)
+        	for s,p in pairs(self.artefacts) do
+            		sum = sum - p
+            		if sum <= 0 then
+                		af_spawned = s
+                		--log("anom_zone=[%s] set spawn artefact=[%s]", self:name(), af_spawned)
+                		break
+            		end
+        	end
+	end
+	
+	if af_spawned then
+		local obj = alife():create(af_spawned, self.position, self.m_level_vertex_id, self.m_game_vertex_id)
+		self.curr_artefact = obj.id
+		if db.is_dbg1 then
+			--log("anom_zone=[%s] on level=[%s] artefact=[%s] spawned", self:name(), Get_MapNameObj(self), af_spawned) --/#~#
+		end
+	--	log("anom_zone=[%s] on level=[%s] artefact=[%s] spawned", self:name(), Get_MapNameObj(self), af_spawned)
+		self:on_artefact_spawn()
+	end
+end
+
+function se_anom_zone:on_artefact_spawn()
+	if self.online then
+		if not BINDING[self:name()] then
+			return
+		end
+		
+		local obj, part, snd = nil, nil, nil
+		
+		for k, v in pairs(BINDING[self:name()]) do
+			obj = level.object_by_id(v)
+			if obj then
+				part = Get_Cfg_String("misc\\zones.ltx", obj:section(), "blowout_particles", nil)
+				if part then
+					particles_object(part):play_at_pos(obj:position())
+				end
+				if k % 3 == 0 then
+					snd = Get_Cfg_String("misc\\zones.ltx", obj:section(), "blowout_sound", nil)
+					if snd then
+						sound_object(snd):play_no_feedback(obj, sound_object.s2d, 0, vector(), 1.0)
+					end
+				end
+			end
+		end
+		
+		snd = sound_object(SPAWN_SOUNDS[math.random(#SPAWN_SOUNDS)])
+		snd:play_no_feedback(level.object_by_id(self.id), sound_object.s2d, 0, vector(), 1.0)
+		--particles_object("anomaly2\\polter_blast_00"):play_at_pos(self.position)
+	end
+end
+
+function se_anom_zone:blowout_spawn()
+	if self.zone_enabled then
+		if self.curr_artefact == ID_NONE then
+			if self.on_blowout == "never" then
+				return
+			elseif self.on_blowout == "always" then
+				self:spawn_artefact(100)
+			elseif self.on_blowout == "use_cond" then
+				self:spawn_artefact()
+			end
+			self:set_idle_time()
+		end
+	end
+end
+
+function se_anom_zone:af_exist()
+	if self.curr_artefact ~= ID_NONE then
+		local af = alife():object(self.curr_artefact)
+		if af then
+			if af.parent_id then
+				if af.parent_id ~= ID_NONE then
+					--/ someone took it
+					self.curr_artefact = ID_NONE
+					return false
+				end
+			end
+			return true
+		else
+			self.curr_artefact = ID_NONE
+		end
+	end
+	
+	return false
+end
+
+function se_anom_zone:is_zone_enabled()
+	return self.zone_enabled
+end
+
+function se_anom_zone:set_idle_time()
+	local h, f = math.modf(self.idle_time / 60)
+	local m = self.idle_time - (h * 60)
+	self.af_spawn_time:reset(h, m, 0, 0)
+end
+
+function se_anom_zone:read_field_params()
+	local ltx = get_zone_ltx(self:name())
+	
+	if not ltx then
+		return false
+	end
+	
+	if not self.idle_time then
+		self.idle_time = Get_Cfg_Num32(ltx, self:name(), "idle_time", DEF_IDLE_TIME)
+	end
+	
+	self.conditions = xr_logic.parse_condlist(self, self:name(), "cond",
+		Get_Cfg_String(ltx, self:name(), "cond", DEF_CONDITIONS))
+	
+	self.on_blowout = Get_Cfg_String(ltx, self:name(), "on_blowout", DEF_ON_BLOW)
+	if self.on_blowout ~= "always" and
+		self.on_blowout ~= "use_cond" and
+		self.on_blowout ~= "never"
+	then
+		log("[%s.script] zone '%s' wrong value in field 'on_blowout'", sModule, self:name())
+		self.on_blowout = DEF_ON_BLOW
+	end
+	
+	self.artefacts = parser.r_str_num_list(Get_Cfg_String(ltx, self:name(), "artefacts", ""))
+	if get_tab_elem_num(self.artefacts) == 0 then
+		abort("[%s.script] artefacts not specified for '%s'", sModule, self:name())
+		return false
+	end
+	
+	self.af_paths = Get_Cfg_String(ltx, self:name(), "af_paths", nil)
+	if not self.af_paths then
+		abort("[%s.script] 'af_path' not specified for '%s'", sModule, self:name())
+		return false
+	end
+	
+	self.hit_type = get_hit_type(Get_Cfg_String(ltx, self:name(), "hit_type", "radiation"))
+	self.pp_eff = Get_Cfg_String(ltx, self:name(), "postprocess", nil)
+	
+	self.npc_accessible = Get_Cfg_Bool(ltx, self:name(), "npc_accessible", false)
+	self.af_jump_speed = Get_Cfg_Num32(ltx, self:name(), "af_jump_speed", DEF_JUMP_SPEED)
+	
+	self.actor_first_visit = Get_Cfg_String(ltx, self:name(), "actor_first_visit", nil)
+	self.hit_power = Get_Cfg_Number(ltx, self:name(), "hit_power", DEF_HIT_POWER)
+	
+	return true
+end
+
+--/ Show mark
+--self:show_anom_zone_debug_spot1(true)
+function se_anom_zone:show_anom_zone_debug_spot1(avail)
+		local section = "artefacts = \\n"
+			for k,v in pairs(self.artefacts) do
+				section = section .. k .. "," .. v .. "\\n"
+			end
+		local conditions = "conditions = \\n"
+			for k,v in pairs(self.conditions) do
+				conditions = conditions .. k .. "," .. v.section .. "\\n"
+			end
+		local p0 = self.zone_enabled or "nil"
+		local p1 = self:name()
+		local p2 = tostring(conditions)
+		local p3 = self.on_blowout
+		local p4 = self.idle_time
+		local p5 = self.curr_artefact or ID_NONE
+		local p6 = self.hit_type
+		local p7 = tostring(self.npc_accessible)
+		local p8 = self.pp_eff
+		local p9 = "NONE"
+		if p5 ~= ID_NONE then
+			local se_obj = alife():object(self.curr_artefact)
+			p9 = se_obj.section and se_obj:section() or se_obj:section_name()
+		end
+		local str = p1.."\\n"..p2.."\\non_blowout = "..p3.."\\nidle = "..p4.."\\nppe = "..p8.."\\nhit_type = "..p6.."\\nnpc = "..p7.."\\n"..section.."\\ncurrent = "..p9.."["..p5.."]"
+			if self.spot_showed ~= true then
+				level.map_add_object_spot(self.id, "artefact_location", str)
+			else
+				level.map_change_spot_hint(self.id, "artefact_location", str)
+			end
+
+		 self.spot_showed = true
+		local str, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9 = nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,118 @@
+[combat_ignore@nimble]
+
+[danger@nimble]
+ignore_distance          = 3
+ignore_distance_grenade  = 3
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 3
+ignore_distance_sound    = 2
+danger_inertion_time_grenade = 3
+danger_inertion_time_corpse  = 0
+danger_inertion_time_hit     = 3
+danger_inertion_time_sound   = 3
+danger_inertion_time = 2000
+
+[threshold@nimble]
+max_ignore_distance = 3
+ignore_monster = 0
+
+[hit@nimble]
+on_info = {=hit_by_actor} %=actor_enemy%
+
+[logic]
+active = {+esc_nimble_item1_done} kamper@nimble1, {-esc_nimble_item1_done +esc_nimble_item1_have} walker@nimble4, {-esc_nimble_item1_have +esc_nimble_sleep} sleeper@nimble0, {+esc_nimble_after_talk -esc_nimble_sleep} walker@nimble3, {-esc_nimble_after_talk +esc_nimble_done} walker@nimble2, {+esc_nimble_vpered -esc_nimble_done} walker@nimble1, walker@nimble00
+combat_ignore = combat_ignore@nimble
+threshold = threshold@nimble
+on_hit = hit@nimble
+on_death = death@nimble
+invulnerable = {!hit_by_actor} true
+
+[death@nimble]
+on_info = %+esc_nimble_dead%
+
+[walker@nimble00]
+path_walk = esc_assault_nimble_walk00
+path_look = esc_assault_nimble_look00
+threshold = threshold@nimble
+meet = meet@nimble0
+combat_ignore_cond = always
+on_info = {+nimble_second_talk} walker@nimble0
+
+
+[walker@nimble0]
+path_walk = esc_assault_nimble_walk0
+path_look = esc_assault_nimble_look0
+threshold = threshold@nimble
+combat_ignore_cond = always
+danger = danger@nimble
+on_info = {+esc_nimble_vpered} walker@nimble1
+
+
+[walker@nimble1]
+path_walk = esc_assault_nimble_walk1a
+path_look = esc_assault_nimble_look1
+meet = no_meet
+combat_ignore_cond = always
+threshold = threshold@nimble
+danger = danger@nimble
+on_signal = done| walker@nimble2 %+esc_nimble_done%
+
+
+[walker@nimble2]
+path_walk = esc_assault_nimble_walk1a
+path_look = esc_assault_nimble_look1
+threshold = threshold@nimble
+danger = danger@nimble
+combat_ignore_cond = always
+invulnerable = {!hit_by_actor} true
+on_info = {+esc_nimble_after_talk} walker@nimble3
+
+
+[walker@nimble3]
+path_walk = esc_assault_nimble_walk2
+meet = no_meet
+danger = danger@nimble
+threshold = threshold@nimble
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+invulnerable = {!hit_by_actor} true
+on_signal = sleep| sleeper@nimble0 %+esc_nimble_sleep%
+on_info = {+esc_nimble_sleep} sleeper@nimble0 %+esc_nimble_sleeping%
+
+
+[sleeper@nimble0]
+path_main = esc_assault_nimble_sleep
+wakeable = false
+meet = meet@nimble1
+invulnerable = {!hit_by_actor} true
+on_info = {+esc_nimble_slept} walker@nimble4
+on_info2 = {+esc_nimble_item1_have} walker@nimble4
+
+
+[walker@nimble4]
+path_walk = esc_assault_nimble_walk3
+path_look = esc_assault_nimble_look3
+danger = danger@nimble
+threshold = threshold@nimble
+on_signal = cache|%+esc_nimble_item1_talk%
+invulnerable = {!hit_by_actor} true
+on_info = {+esc_nimble_item1_done} kamper@nimble1
+on_actor_dist_ge_nvis = 80|kamper@nimble1 %+esc_nimble_item1_done%
+
+
+[kamper@nimble1]
+path_walk = esc_assault_nimble_kamp_walk
+path_look = esc_assault_nimble_kamp_look
+kamp_name = kamp1
+danger = danger@nimble
+invulnerable = {!hit_by_actor} true
+
+
+[meet@nimble0]
+use_wpn = true
+trade_enable = false
+
+[meet@nimble1]
+use_wpn = true
+trade_enable = false

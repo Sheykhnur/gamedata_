@@ -1,0 +1,17 @@
+[logic]
+active = sr_idle@wait
+
+[sr_idle@wait]
+on_actor_inside = {-lost_decon_cleared +country_cutscene_finished} sr_idle@inside_wait
+
+[sr_idle@inside_wait]
+on_timer = 2000| sr_idle@inside %=play_snd(characters_voice\scenario\lost\lost_decon_starting)%
+
+[sr_idle@inside]
+on_timer = 2000| sr_idle@wait_after %=play_snd(characters_voice\scenario\lost\lost_gas_filling) =play_particle_on_path(la_particles\fog_00:lost_decon_point:100)%
+
+[sr_idle@wait_after]
+on_timer = 8000| sr_idle@reset %+lost_decon_cleared -lost_decon_dist_check -lost_decon_reset =tasks_lost_factory.decontamination_reset%
+
+[sr_idle@reset]
+on_info = {+lost_decon_reset +lost_decon_dist_check} sr_idle@wait

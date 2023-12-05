@@ -1,0 +1,214 @@
+[wpn_protecta]:weapon_base,weapon_12ga
+$npc                                    = on				; option for Level Editor
+$prefetch                               = 8
+$spawn                                  = "weapons\protecta"					; option for Level Editor
+animation_slot                          = 10		; type of the animation that will be used
+class                                   = WP_ASHOT
+ef_main_weapon_type                     = 1
+ef_weapon_type                          = 9
+hand_dependence                         = 1
+repair_compatibility                    = spas
+scheduled                               = off              ; option for ALife Simulator
+weapon_class                            = shotgun
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 5
+inv_grid_y                              = 12
+scope_x                                 = 63
+scope_y                                 = -1
+
+; Text
+inv_name                                = st_wpn_protecta
+inv_name_short                          = st_wpn_protecta
+description                             = st_wpn_protecta_descr
+
+; Visual
+hud                                     = wpn_protecta_hud
+position                                = -0.024, -0.097, 0.
+orientation                             = 0, -4, 0      ;значение устанавливается в градусах
+scope_texture                           = wpn_crosshair_l85
+strap_position                          = -0.26,-0.15,0.15
+strap_orientation                       = -15,-9,110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_protecta\wpn_protecta
+
+; Effects
+fire_point                              = 0.0, 0.158, 0.647
+fire_point2                             = 0.0, 0.158, 0.647
+flame_particles                         = weapons\generic_weapon05
+smoke_particles                         = weapons\generic_shoot_00
+shell_point                             = 0.0, 0.180, 0.647
+light_color                             = 0.6,0.5,0.3
+light_range                             = 6.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+
+; Sounds
+snd_add_cartridge                       = weapons\spas12_reload
+snd_close_weapon                        = weapons\spas12_reload_end
+snd_draw                                = weapons\generic_draw
+snd_empty                               = weapons\generic_empty
+snd_holster                             = weapons\generic_holster
+snd_open_weapon                         = weapons\draw_silent
+snd_reload                              = weapons\spas12_reload_end
+snd_shoot                               = weapons\n_spas12_shot
+snd_shoot_duplet                        = weapons\n_spas12_shot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_PMm
+upgr_icon_x                             = 0
+upgr_icon_y                             = 909
+upgr_icon_width                         = 297
+upgr_icon_height                        = 113
+
+; Cost & Weight
+cost                                    = 9000
+inv_weight                              = 3.0
+ph_mass                                 = 3
+
+; Ammo
+ammo_mag_size                           = 12
+
+; Features
+fire_modes                              = 1
+scopes_sect                             = scope_susat_proecta, scope_susat_x1.6_proecta, scope_susat_custom_proecta, scope_susat_dusk_proecta, scope_susat_night_proecta
+scope_status                            = 2
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+tri_state_reload                        = on
+
+; Impact
+
+
+; Ballistics
+fire_dispersion_base                    = 0.6  ;угол (в градусах) базовой дисперсии оружия (оружия зажатого в тисках)
+fire_dispersion_condition_factor        = 3	;увеличение дисперсии в процентах при максимальном износе
+
+; Performance
+rpm                                     = 400
+rpm_semi                                = 180           ;60 = 1 секунда
+
+; Reliability
+misfire_start_prob                      = 0.01
+misfire_end_prob                        = 0.3
+condition_shot_dec                      = 0.002
+condition_queue_shot_dec                = 0.002
+
+; Handling
+control_inertion_factor                 = 1.25f
+PDM_disp_base                           = 3.0
+PDM_disp_vel_factor                     = 2.0
+PDM_disp_accel_factor                   = 2.0
+
+; Recoil
+cam_relax_speed                         = 10
+cam_dispersion                          = 4.0
+cam_dispersion_inc                      = 1.0	;увеличениe cam_dispersion с каждым выстрелом
+cam_dispersion_frac                     = 0.7
+cam_step_angle_horz                     = 4.0
+zoom_cam_dispersion                     = 2.5
+zoom_cam_step_angle_horz                = 3.0
+
+; Aiming
+zoom_enabled                            = true                                                ; (on,off)zoom mode (right mouse button)
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_protecta
+upgrades                                = up_gr_firstab_protecta, up_gr_seconab_protecta, up_gr_thirdab_protecta, up_gr_fourtab_protecta
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 0
+max_radius                              = 50
+holder_range_modifier                   = 1.0               ; во сколько раз увеличивается eye_range
+holder_fov_modifier                     = 1.0              ; во сколько раз увеличивается eye_fov
+
+
+[wpn_protecta_hud]:hud_base
+aim_hud_offset_pos                      = -0.129000,0.017000,-0.001500
+aim_hud_offset_rot                      = -0.012500,0.040000,0.020000
+aim_hud_offset_pos_16x9                 = -0.193999,0.054500,0.000000
+aim_hud_offset_rot_16x9                 = 0.025000,0.085000,0.002500
+anim_add_cartridge                      = protecta_reload
+anim_bore                               = protecta_idle_bore
+anim_close                              = protecta_reload_end
+anim_hide                               = protecta_holster
+anim_idle                               = protecta_idle
+anim_idle_aim                           = protecta_idle_aim
+anim_idle_moving                        = protecta_idle_moving
+anim_idle_sprint                        = protecta_idle_sprint
+anim_open                               = protecta_reload_start
+anim_shots                              = protecta_shoot
+anim_show                               = protecta_draw
+attach_place_idx                        = 0
+fire_bone                               = wpn_body
+fire_point                              = -0.000000,0.059500,0.650487
+hands_orientation                       = -6.850007,-3.649996,3.449997
+hands_orientation_16x9                  = -4.099998,-2.199999,2.499999
+hands_position                          = -0.035000,-0.183000,0.112002
+hands_position_16x9                     = 0.027000,-0.207499,0.137000
+item_orientation                        = 0.045015,1.047468,0.056850
+item_position                           = 0.000075,-0.004612,0.001283
+item_visual                             = dynamics\weapons\wpn_protecta\wpn_protecta_hud
+shell_bone                              = wpn_body
+shell_dir                               = 0.0, 1.0, 0.0
+shell_point                             = 0.020000,0.072000,0.228000
+
+
+[scope_susat_proecta]
+scope_name                              = wpn_addon_scope_susat
+scope_x                                 = 95
+scope_y                                 = -1
+
+
+[scope_susat_x1.6_proecta]
+scope_name                              = wpn_addon_scope_susat_x1.6
+scope_x                                 = 95
+scope_y                                 = -1
+
+
+[scope_susat_custom_proecta]
+scope_name                              = wpn_addon_scope_susat_custom
+scope_x                                 = 95
+scope_y                                 = -1
+
+
+[scope_susat_dusk_proecta]
+scope_name                              = wpn_addon_scope_susat_dusk
+scope_x                                 = 95
+scope_y                                 = -1
+
+
+[scope_susat_night_proecta]
+scope_name                              = wpn_addon_scope_susat_night
+scope_x                                 = 95
+scope_y                                 = -1
+
+
+;-----------------------------------------------------------------------------
+; Уникальнvе
+;-----------------------------------------------------------------------------
+[wpn_protecta_m1]:wpn_protecta
+$spawn                                  = "weapons\wpn_protecta_nimble"   ; name and section in level editor
+unique_item                             = true
+
+; Cost & Weight
+cost                                    = 15000
+
+; Ammo
+ammo_mag_size                           = 16
+
+; Ballistics
+fire_dispersion_base                    = 0.5
+
+; Performance
+rpm                                     = 450
+rpm_semi                                = 210
+
+; Upgrades
+installed_upgrades                      = up_firsta_protecta, up_firstd_protecta, up_firstf_protecta

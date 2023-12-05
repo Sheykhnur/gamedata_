@@ -1,0 +1,10 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {+ds_heli_stop -ds_sin_blackout -ds_mine_reached} sr_idle@2 %+ds_mine_reached%
+on_info = {+ds_sin_blackout} nil %=release%
+
+[sr_idle@2]
+on_timer = 2000|nil %+ds_mine_deeper =release%
+on_info = {+ds_sin_blackout} nil %=release%

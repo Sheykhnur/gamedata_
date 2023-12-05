@@ -1,0 +1,14 @@
+[hit]
+on_info = {=hit_by_actor} %+actor_attacked_bridge%
+
+[logic]
+active = mgunner@soldier_mgunner
+combat_ignore = true
+on_hit = hit
+
+[mgunner@soldier_mgunner]
+path_walk = mgunner_walk
+path_look = mgunner_look
+;--turret_name = turret
+turret_sid = 6030
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge}

@@ -1,0 +1,12 @@
+;LEGENDARY STASH DOOR CODE PANEL
+[logic]
+active = ph_idle@wait
+
+[ph_idle@wait]
+nonscript_usable = false
+tips = tip_box_unknown
+on_info = {=actor_has_item(bcr_5947)} ph_code@5947
+
+[ph_code@5947]
+code    = 5947
+on_code = nil %+country_5947_discovered =play_snd(device\door_servomotor) =lost_item(bcr_5947)%

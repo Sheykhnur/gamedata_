@@ -1,0 +1,112 @@
+[static_mg_base]
+cform                                   = skeleton
+GroupControlSection                     = spawn_group
+weapon_rank                             = 0
+
+; Effects
+smoke_particles                         = weapons\generic_shoot_00
+shell_point                             = 0.0, 0.0, 0.0
+shell_particles                         = weapons\generic_shells00
+light_color                             = 0.9, 0.9, 0.5
+light_range                             = 6
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.3
+
+; Sounds
+snd_shoot                               = weapons\pkm_shot
+
+; Upgrade icon
+upgr_icon_x                             = 0
+upgr_icon_y                             = 0
+upgr_icon_width                         = 0
+upgr_icon_height                        = 0
+
+; Cost & Weight
+cost                                    = 0
+
+; Ammo
+ammo_class                              = ammo_pkm_100
+
+; Features
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 1.0
+hit_power_critical                      = 1.0
+hit_impulse                             = 340
+hit_type                                = fire_wound
+
+; Ballistics
+bullet_speed                            = 700
+fire_distance                           = 500
+fire_dispersion_base                    = 1
+fire_dispersion_condition_factor        = 5
+
+; Performance
+rpm                                     = 650
+
+; Recoil
+cam_relax_speed                         = 3.0
+cam_dispersion                          = 0.7
+cam_max_angle                           = 8
+cam_max_angle_horz                      = 9.0
+cam_step_angle_horz                     = 1.8
+
+use_aim_bullet                          = false
+time_to_aim                             = 1.0
+
+
+[mounted_weapon]:static_mg_base
+$spawn                                  = "weapons\mounted\mounted_turret"
+barrel_dir_tollerance                   = 2
+class                                   = W_TURRET
+script_binding                          = bind_turret.init
+
+; Visual
+visual                                  = dynamics\weapons\wpn_mounted\wpn_mounted_pkm_trenoga.ogf
+
+; Effects
+flame_particles                         = weapons\generic_weapon08
+
+; Cost & Weight
+inv_weight                              = 0
+
+; Reliability
+misfire_probability                     = 0.0001
+condition_shot_dec                      = 0.00003
+
+
+[stationary_mgun]:static_mg_base
+$spawn                                  = "weapons\mounted\mounted_mgun"
+class                                   = STMGUN
+tracer_start_length                     = 2
+tracer_trail_scale                      = 0.15
+tracer_width                            = 0.07
+
+; Text
+inv_name                                = MountedWeapon
+inv_name_short                          = MountedWeapon
+
+; Visual
+visual                                  = dynamics\weapons\wpn_mounted\wpn_mounted_pkm_trenoga.ogf
+
+; Effects
+flame_particles                         = weapons\generic_weapon_btr
+
+
+[wpn_mounted]:static_mg_base
+$spawn                                  = "weapons\mounted\mounted_pkm"
+class                                   = W_MOUNTD
+
+; Visual
+visual                                  = dynamics\weapons\wpn_mounted\wpn_mounted_pkm_trenoga.ogf
+
+; Effects
+flame_particles                         = weapons\generic_weapon08
+
+; Reliability
+misfire_probability                     = 0.0001
+condition_shot_dec                      = 0.00003

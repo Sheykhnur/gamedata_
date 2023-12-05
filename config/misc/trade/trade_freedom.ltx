@@ -1,0 +1,107 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = freedom_generic_buy
+sell_condition = freedom_sell_start
+buy_supplies = {+has_freeplay_info}freedom_supplies_freeplay, {+bas_switcher_off +deactivate_radar_done}supplies_before_prip, supplies_start
+discounts = {+out_lukash_task_complete !actor_in_dolg =actor_in_freedom} discount_for_freedom, {+out_lukash_task_complete !actor_in_dolg} discount_after_work, {!actor_in_dolg} discount_start, {=actor_in_dolg} discount_for_duty
+
+buy_item_condition_factor = 0.5
+
+[discount_for_duty]
+buy  = 0.5
+sell = 1.85
+
+[discount_start]
+buy  = 0.9
+sell = 1.2
+
+[discount_after_work]
+buy  = 1.05
+sell = 0.98
+
+[discount_for_freedom]
+buy  = 1.15
+sell = 0.85
+
+[freedom_generic_buy]:buy_ammo_high,buy_outfit_cheap,buy_weapons_normal
+
+
+[supplies_start]:basic_supplies,booster_supplies
+svoboda_light_outfit                 = 3, 0.8
+svoboda_medium_outfit                = 3, 0.7
+svoboda_heavy_outfit                 = 2, 0.45
+
+helm_battle_stalker					 = 2, 0.75
+
+ammo_5.7x28_ap                       = 10, 0.6
+ammo_5.7x28_jhp                      = 10, 0.6
+ammo_.44_reg                         = 10, 0.6
+ammo_11.43x23_fmj                    = 10, 0.5
+ammo_5.56x45_ss190                   = 15, 0.6
+ammo_5.56x45_ap                   	 =  6, 0.5
+ammo_7.62x51_fmj                     = 10, 0.5
+ammo_7.62x51_ap                      = 4, 0.6
+ammo_9x19_fmj                        = 10, 0.6
+ammo_9x19_pbp                        = 10, 0.6
+ammo_5.45x39_fmj                     =
+ammo_7.62x39_s	                     =
+ammo_9x18_fmj                        =
+
+grenade_f1                           = 3, 0.5
+grenade_rgd5                         = 3, 0.5
+
+wpn_usp                              = 2, 0.6
+wpn_p90                              = 1, 0.8
+wpn_fn57                             = 1, 0.7
+wpn_sr25                             = 1, 0.8
+wpn_lom                              = 1, 1.0
+wpn_knife_m9                         = 1, 1.0
+
+wpn_addon_grenade_launcher_m203      = 1, 0.8
+wpn_addon_scope_susat            	 = 1, 0.8
+wpn_addon_scope_susat_x1.6       	 = 1, 0.8
+wpn_addon_silencer_45            	 = 1, 0.8
+wpn_addon_silencer_556           	 = 1, 0.8
+wpn_addon_silencer_918           	 = 1, 0.8
+wpn_addon_silencer_57                = 1, 0.8
+wpn_addon_silencer_76251             = 1, 0.8
+wpn_addon_scope_galil                = 1, 0.8
+wpn_addon_scope_susat_dusk       	 = 1, 0.8
+wpn_addon_silencer_76251           	 = 1, 0.8
+
+
+[supplies_before_prip]:supplies_start
+svoboda_heavy_outfit                 = 3, 0.99
+svoboda_exo_outfit                   = 2, 0.95
+
+helm_battle_heavy_stalker			 = 1, 0.8
+
+wpn_barrett_m98                      = 2, 0.7
+wpn_g36                              = 2, 0.9
+wpn_galil_762                        = 3, 0.7
+wpn_m249                             = 2, 0.7
+wpn_m249_762                         = 1, 0.7
+
+ammo_.44_frag                        = 5, 0.6
+ammo_11.43x23_hydro                  = 12, 0.6
+ammo_7.62x51_fmj                     = 10, 0.7
+ammo_7.62x51_ap                      = 10, 0.6
+ammo_8.6x70_ap                       = 10, 0.7
+ammo_556_200                       	 = 6, 0.7
+ammo_556_200_ap                   	 = 6, 0.7
+ammo_762_100                   	 	 = 6, 0.7
+
+wpn_addon_scope_susat_custom     	 = 1, 0.8
+wpn_addon_scope_susat_night      	 = 1, 0.8
+
+[freedom_supplies_freeplay]:supplies_before_prip
+svoboda_exo_outfit                   = 2, 1
+
+helm_battle_stalker					 = 1, 1
+helm_battle_heavy_stalker			 = 1, 1
+
+wpn_addon_scope_galil_live_var       = 1, 0.8
+wpn_addon_scope_galil_night_var      = 1, 0.8
+
+[freedom_sell_start]:sell_all_normal,sell_device_high

@@ -1,0 +1,390 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_darkscape.script
+ Description: Gulags darkscape
+ Copyright  : 2013 © LA-team
+ Author     : vintar
+ Editors    : vintar, lox(23.02.2013)
+ Last edit  : 11.02.2013 (by vintar) 
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	ds_autostop         	= {comm = {"killer"}},
+	ds_dark_stalker     	= {comm = {"dark_stalker", "dolg"}},
+	ds_military_terrain 	= {comm = {"military", "killer", "bandit"}},
+	ds_dolg_terrain     	= {comm = {"dolg"}},
+	ds_mine_bandit      	= {comm = {"bandit", "stalker"}},
+	ladc_ds_killer_terrain	= {comm = {"stalker", "clear_sky"}},
+	--/ for monsters ------------------------------
+	ds_boar_terrain1    		= {comm = {"boar", "flesh"}},
+	ds_boar_terrain2    		= {comm = {"boar", "flesh"}},
+	ds_dog_terrain1     		= {comm = {"dog", "pseudodog"}},
+	ds_dog_terrain2     		= {comm = {"dog", "pseudodog"}},
+	ds_dog_terrain3     		= {comm = {"dog", "flesh"}},
+	ds_chimera_terrain	 		= {comm = {"chimera"}},
+	ds_chimera_terrain1 		= {comm = {"chimera"}},
+	ds_zombie_terrain1  		= {comm = {"zombie"}},
+	ds_zombie_terrain2  		= {comm = {"zombie"}},
+	ds_zombie_terrain3  		= {comm = {"zombie"}},
+	ds_swampbeast_terrain		= {comm = {"swampbeast"}},
+	ds_bloodsucker_terrain  	= {comm = {"bloodsucker"}},
+	ladc_ds_boar_terrain1   	= {comm = {"boar", "flesh"}},
+	ladc_ds_boar_terrain2   	= {comm = {"boar", "flesh"}},
+	ladc_ds_boar_terrain3   	= {comm = {"boar"}},
+	ladc_ds_boar_terrain4   	= {comm = {"boar"}},
+	ladc_ds_boar_terrain5   	= {comm = {"boar"}},
+	ladc_ds_boar_terrain6   	= {comm = {"boar"}},
+	ladc_ds_burer_terrain1  	= {comm = {"burer"}},
+	ladc_ds_mixed_terrain1		= {comm = {"burer", "pseudodog"}},
+	ladc_ds_chimera_terrain1	= {comm = {"chimera"}},
+	ladc_ds_chimera_terrain2	= {comm = {"chimera"}},
+	ladc_ds_dog_terrain1    	= {comm = {"dog", "pseudodog"}},
+	ladc_ds_flesh_terrain1  	= {comm = {"boar","flesh"}},
+	ladc_ds_flesh_terrain2  	= {comm = {"boar","flesh"}},
+	ladc_ds_fracture_terrain1  	= {comm = {"fracture"}},
+	ladc_ds_giant_terrain   	= {comm = {"pseudo_gigant"}},
+	ladc_ds_pseudodog_terrain1  = {comm = {"pseudodog"}},
+	ladc_ds_pseudodog_terrain2  = {comm = {"pseudodog"}},
+	ladc_ds_swampbeast_terrain  = {comm = {"swampbeast"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/ -----------------------------------------------------------------------------------------------
+--/ Gulags
+--/ -----------------------------------------------------------------------------------------------
+--/ killers
+--/ ---------------------------------------------
+
+gulags.ds_autostop.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader", 0, 4, {0}, squad, groups[1], "", "",   nil, type))
+	table.insert(sj, gulag_tasks.getJob("trader", 0, 4, {0}, squad, groups[1], "", "",   nil, type))
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("guard"..i, 0, 8, {0}, squad, groups[1], "", "",   nil, type))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("patrol"..i, 		 0, 9, {0}, squad, groups[1], "", "",   nil, type))
+		table.insert(sj, gulag_tasks.getJob("outside_patrol"..i, 0, 9, {0}, squad, groups[1], "", "",   nil, type))
+		table.insert(sj, gulag_tasks.getJob("outside_kamper"..i, 0, 5, {0}, squad, groups[1], "", "",   nil, type))
+		table.insert(sj, gulag_tasks.getJob("boat_kamper"..i, 	 0, 4, {0}, squad, groups[1], "", "",   nil, type))
+	end
+	table.insert(sj, gulag_tasks.getJob("boat_sleeper", 0, 3, {0}, squad, groups[1], "", "",   nil, type))
+	table.insert(sj, gulag_tasks.getJob("boat_looker",  0, 4, {0}, squad, groups[1], "", "",   nil, type))
+end
+
+
+--/ ---------------------------------------------
+--/ dark_stalkers
+--/ ---------------------------------------------
+gulags.ds_dark_stalker.leader_pred   = function(info) return info.profile_name == "ds_dark_stalker_boss" end
+gulags.ds_dark_stalker.informer_pred = function(info) return info.name == "ds_dark_stalker_0004" end
+
+gulags.ds_dark_stalker.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader",   0, 7, {0}, squad, groups[1], "", "", nil, type, gulags.ds_dark_stalker.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("informer", 0, 7, {0}, squad, groups[1], "", "", nil, type, gulags.ds_dark_stalker.informer_pred))
+	for i = 1, 7 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("camper" .. i,       0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i,       0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("leader_guard" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ bandits
+--/ ---------------------------------------------
+gulags.ds_mine_bandit.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("camp" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ military
+--/ ---------------------------------------------
+gulags.ds_military_terrain.rpg_pred = function(info) return info.name == "ds_military_rpg" end
+
+gulags.ds_military_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("rpg", 0, 7, {0}, squad, groups[1], "", "", nil, type, gulags.ds_military_terrain.rpg_pred))
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dolg
+--/ ---------------------------------------------
+gulags.ds_dolg_terrain.leader_pred = function(info) return info.name == "ds_dolg_leader" end
+
+gulags.ds_dolg_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("leader_off", 0, 7, {0}, squad, groups[1], "", "", false, type, gulags.ds_dolg_terrain.leader_pred))
+	table.insert(sj, gulag_tasks.getJob("leader",     0, 7, {1}, squad, groups[1], "", "",   nil, type, gulags.ds_dolg_terrain.leader_pred))
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("walk_off" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("walk" .. i,     0, 5, {1}, squad, groups[1], "", "",   nil, type, on_level_pred))
+	end
+end
+
+gulags.ds_dolg_terrain.state = function(gulag)
+	if has_info("gar_dolg_blockpost_attack_ready") then
+		return 1
+	end
+	return 0
+end
+
+
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.ds_dog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ds_dog_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ds_dog_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("flesh" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ boars
+--/ ---------------------------------------------
+gulags.ds_boar_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ds_boar_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.ds_zombie_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "", "ds_zone5", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ds_zombie_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "", "ds_zone5", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ds_zombie_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "", "ds_zombie_terrain3_outrestrictor", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ chimera
+--/ ---------------------------------------------
+gulags.ds_chimera_terrain1.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("chimera1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+--/ ------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ swampbeast
+--/ ---------------------------------------------
+gulags.ds_swampbeast_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("swampbeast" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ bloodsucker
+--/ ---------------------------------------------
+gulags.ds_bloodsucker_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i, 0, 5, {0}, squad, groups[1], "ds_bloodsucker_inrest1", "ds_bloodsucker_restrictor", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ chimera
+--/ ---------------------------------------------
+gulags.ds_chimera_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("chimera" .. i, 0, 5, {0}, squad, groups[1], "", "ds_zone6", nil, type, on_level_pred))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_boar_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_boar_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_boar_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_boar_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_boar_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_boar_terrain6.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_burer_terrain1.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("burer1", 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ------------------------------------------------------------------------------------------------
+
+gulags.ladc_ds_mixed_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("mutant" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_chimera_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("chimera" .. i, 0, 5, {0}, squad, groups[1], "", "ds_zone6", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_chimera_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("chimera" .. i, 0, 5, {0}, squad, groups[1], "", "ds_zone6", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_dog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 12 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_flesh_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("flesh" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_flesh_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("flesh" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_fracture_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 7 do
+		table.insert(sj, gulag_tasks.getJob("fracture" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_giant_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("giant" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_pseudodog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_pseudodog_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_killer_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	table.insert(sj, gulag_tasks.getJob("guard", 0, 6, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+end
+
+--/ ---------------------------------------------
+gulags.ladc_ds_swampbeast_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("beast" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end

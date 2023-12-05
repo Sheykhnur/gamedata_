@@ -1,0 +1,47 @@
+[combat_ignore@sc3]
+
+[danger@bas_sc3]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_sc3]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@sc3_start
+combat_ignore = combat_ignore@sc3
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+
+[remark@sc3_start]
+anim = sit_static_chair_right_clava
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+on_info = {+bas_cs3_info_1} remark@sc3_comp
+meet = no_meet
+
+[remark@sc3_comp]
+anim = sit_static_chair_right_head1
+snd = bas_replics31
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+on_signal = sound_end | %+bas_cs3_info_2%
+on_info = {+bas_cs3_info_3} walker@sc3_out
+meet = no_meet
+
+[walker@sc3_out]
+path_walk = bas_cs3_sci2_walk_away
+path_look = bas_cs3_sci2_walk_away_look
+combat_ignore_cond = always
+danger = danger@bas_sc3
+threshold = threshold@bas_sc3
+def_state_standing = oso_flying
+def_state_moving = sci_ghost_fly
+def_state_moving1 = sci_ghost_fly
+def_state_moving2 = sci_ghost_fly
+def_state_moving3 = sci_ghost_fly
+meet = no_meet
+on_signal = sc32rl | %=release%

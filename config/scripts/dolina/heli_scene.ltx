@@ -1,0 +1,250 @@
+[spawner]
+cond = {=always}
+
+[logic]
+active = heli_move@start
+
+[heli_move@start]
+path_move = dolina_heli_path1
+path_look = dolina_heli_look1
+engine_sound = false
+immortal = true
+combat_use_rocket = false
+combat_use_mgun = true
+combat_safe_altitude = -10
+combat_velocity = 30
+combat_enemy = actor
+velocity = 60
+on_info = {+dol_find_white_niva} heli_move@1 
+;%=heli_set_gulag_enemy(dolina_monolith_base)%
+
+[heli_move@1]
+path_move = dolina_heli_zone1_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone9 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@2]
+path_move = dolina_heli_zone2_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone1|heli_move@1
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone9 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@3]
+path_move = dolina_heli_zone3_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone1|heli_move@1
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone9 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@4]
+path_move = dolina_heli_zone4_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone1|heli_move@1
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone9 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@5]
+path_move = dolina_heli_zone5_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone1|heli_move@1
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone9 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@6]
+path_move = dolina_heli_zone6_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone1|heli_move@1
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone9 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@7]
+path_move = dolina_heli_zone7_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone7 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone8 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_actor_in_zone9 = dolina_heli_zone1|heli_move@1
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@8]
+path_move = dolina_heli_zone8_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone8 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_actor_in_zone9 = dolina_heli_zone1|heli_move@1
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@9]
+path_move = dolina_heli_zone9_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_actor_in_zone9 = dolina_heli_zone1|heli_move@1
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@10]
+path_move = dolina_heli_zone10_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone8 = dolina_heli_zone11|heli_move@11
+on_actor_in_zone9 = dolina_heli_zone1|heli_move@1
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%
+
+[heli_move@11]
+path_move = dolina_heli_zone11_path
+combat_velocity = 30
+combat_safe_altitude = -15
+;combat_enemy = {=is_actor_in_vehicle} 6413, {!is_actor_in_vehicle} actor
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 40
+on_actor_in_zone = dolina_heli_zone2|heli_move@2
+on_actor_in_zone2 = dolina_heli_zone3|heli_move@3
+on_actor_in_zone3 = dolina_heli_zone4|heli_move@4
+on_actor_in_zone4 = dolina_heli_zone5|heli_move@5
+on_actor_in_zone5 = dolina_heli_zone6|heli_move@6
+on_actor_in_zone6 = dolina_heli_zone7|heli_move@7
+on_actor_in_zone7 = dolina_heli_zone8|heli_move@8
+on_actor_in_zone8 = dolina_heli_zone9|heli_move@9
+on_actor_in_zone8 = dolina_heli_zone10|heli_move@10
+on_actor_in_zone9 = dolina_heli_zone1|heli_move@1
+on_info = {+dol_reach_dscape_done} %=release%
+on_info2 = {=is_actor_in_vehicle -dol_reach_dscape_done} %=heli_set_enemy(6413)%, {!is_actor_in_vehicle} %=heli_set_enemy_actor%

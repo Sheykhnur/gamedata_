@@ -1,0 +1,305 @@
+[danger@ros_kamp_lager1]
+;ignore_distance = 0
+
+[threshold@ros_kamp_lager1_megafon]
+ignore_monster = 0
+
+[threshold@ros_kamp_lager1]
+ignore_monster = 3
+
+[combat_ignore@ros_kamp_lager1]
+;**************************MEGAFON************************************
+
+[logic@ros_kamp_lager1_megafon]
+active = walker@ros_kamp_lager1_megafon_default
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore = combat_ignore@ros_kamp_lager1
+
+[walker@ros_kamp_lager1_megafon_default]
+path_walk = megafon_walk0
+path_look = megafon_look0
+danger = danger@ros_kamp_lager1
+on_info = {+bar_megafon_teleported2} %-bar_megafon_teleported2%
+on_info2 = {+bar_arena_start -bar_megafon_teleported} %=teleport_npc_not_seen(ros_kamp_lager1_megafon_walk:bar_megafon_teleported)%
+on_info3 = {+bar_megafon_teleported} walker@ros_kamp_lager1_megafon
+
+[walker@ros_kamp_lager1_megafon]
+path_walk = megafon_walk
+path_look = megafon_look
+danger = danger@ros_kamp_lager1
+meet = no_meet
+on_info = {+bar_megafon_start} remark@ros_kamp_lager1_megafon
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore_cond = {!fighting_actor}
+
+[remark@ros_kamp_lager1_megafon]
+anim = megafon_intro
+target = ros_kamp_lager1_megafon_look, 0
+meet = no_meet
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+on_info = {+bar_arena_fight} remark@ros_kamp_lager1_megafon_action
+combat_ignore_cond = {!fighting_actor}
+
+[remark@ros_kamp_lager1_megafon_action]
+anim = megafon_arena
+target = actor
+meet = no_meet
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore_cond = {!fighting_actor}
+on_info = {+bar_arena_megafon_finished} remark@ros_kamp_lager1_megafon_end
+
+[remark@ros_kamp_lager1_megafon_end]
+anim = sit_ass
+meet = no_meet
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+target = ros_kamp_lager1_walker1_walk, 1
+combat_ignore_cond = {!fighting_actor}
+on_info = {!bar_arena_actor_outside -bar_megafon_teleported2} %-bar_megafon_teleported =teleport_npc_not_seen(ros_kamp_lager1_megafon_walk0:bar_megafon_teleported2)%
+;**************************WALKERS ARENA************************************
+[hit@ros_kamp_arena_croud]
+on_info = {=hit_by_actor} %+bar_actor_attacked_croud%
+
+[logic@ros_kamp_lager1_arena_walker1]
+active = walker@ros_kamp_lager1_arena_walker1
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore = combat_ignore@ros_kamp_lager1
+on_hit = hit@ros_kamp_arena_croud
+
+[walker@ros_kamp_lager1_arena_walker1]
+path_walk = walker1_walk
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+on_info = {+bar_arena_start -bar_arena_megafon_finished -bar_visitor_1_teleported} %=teleport_npc(bar_arena_walk7:bar_visitor_1_teleported)%
+on_info2 = {+bar_visitor_1_teleported} remark@ros_kamp_lager1_arena_walker1_scene
+
+[remark@ros_kamp_lager1_arena_walker1_scene]
+anim = arena_expressions
+target = bar_arena_walk7_look, 0
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight} remark@ros_kamp_lager1_arena_walker1_silence
+
+[remark@ros_kamp_lager1_arena_walker1_silence]
+anim = arena_expressions
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight -bar_arena_monstr_dead} remark@ros_kamp_lager1_arena_walker1
+
+[remark@ros_kamp_lager1_arena_walker1]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_kamp_lager1_arena_walker1_cycle
+on_timer = 5000 | remark@ros_kamp_lager1_arena_walker1_silence
+
+[remark@ros_kamp_lager1_arena_walker1_cycle]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_kamp_lager1_arena_walker1
+on_timer = 5000 | remark@ros_kamp_lager1_arena_walker1_silence
+
+[logic@ros_kamp_lager1_arena_walker2]
+active = walker@ros_kamp_lager1_arena_walker2
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+combat_ignore = combat_ignore@ros_kamp_lager1
+on_hit = hit@ros_kamp_arena_croud
+
+[walker@ros_kamp_lager1_arena_walker2]
+path_walk = walker2_walk
+path_walk = walker2_look
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+on_info = {+bar_arena_start -bar_arena_megafon_finished -bar_visitor_2_teleported} %=teleport_npc(bar_arena_walk6:bar_visitor_2_teleported)%
+on_info2 = {+bar_visitor_2_teleported} remark@ros_kamp_lager1_arena_walker2_scene
+
+[remark@ros_kamp_lager1_arena_walker2_scene]
+anim = arena_expressions
+target = bar_arena_walk6_look, 0
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight} remark@ros_kamp_lager1_arena_walker2_silence
+
+[remark@ros_kamp_lager1_arena_walker2_silence]
+anim = arena_expressions
+target = actor
+meet = no_meet
+danger = danger@ros_bar_lager
+threshold = threshold@ros_bar_lager
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight -bar_arena_monstr_dead} remark@ros_kamp_lager1_arena_walker2
+
+[remark@ros_kamp_lager1_arena_walker2]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_kamp_lager1_arena_walker2_cycle
+on_timer = 5000 | remark@ros_kamp_lager1_arena_walker2_silence
+
+[remark@ros_kamp_lager1_arena_walker2_cycle]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_kamp_lager1_arena_walker2
+on_timer = 5000 | remark@ros_kamp_lager1_arena_walker2_silence
+
+[logic@ros_kamp_lager1_arena_walker3]
+active = walker@ros_kamp_lager1_arena_walker3
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+
+[walker@ros_kamp_lager1_arena_walker3]
+path_walk = walker3_walk
+path_look = walker3_look
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+
+;**************************WALKERS ON************************************
+
+[logic@ros_kamp_lager1_walker1]
+active = walker@ros_kamp_lager1_walker1
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+
+[walker@ros_kamp_lager1_walker1]
+path_walk = walker1_walk
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+on_info = {+bar_arena_start -bar_arena_megafon_finished -bar_visitor_1_teleported} %=teleport_npc(bar_arena_walk7:bar_visitor_1_teleported)%
+on_info2 = {+bar_visitor_1_teleported -bar_arena_megafon_finished} remark@ros_kamp_lager1_walker1_ready
+
+[remark@ros_kamp_lager1_walker1_ready]
+anim = arena_expressions
+target = bar_arena_walk7_look, 0
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+combat_ignore_cond = {!fighting_actor}
+
+[logic@ros_kamp_lager1_walker2]
+active = walker@ros_kamp_lager1_walker2
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+
+[walker@ros_kamp_lager1_walker2]
+path_walk = walker2_walk
+path_walk = walker2_look
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+on_info = {+bar_arena_start -bar_arena_megafon_finished -bar_visitor_2_teleported} %=teleport_npc(bar_arena_walk6:bar_visitor_2_teleported)%
+on_info2 = {+bar_visitor_2_teleported -bar_arena_megafon_finished} remark@ros_kamp_lager1_walker2_ready
+
+[remark@ros_kamp_lager1_walker2_ready]
+anim = arena_expressions
+target = bar_arena_walk6_look, 0
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+combat_ignore_cond = {!fighting_actor}
+
+[logic@ros_kamp_lager1_walker3]
+active = walker@ros_kamp_lager1_walker3
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+
+[walker@ros_kamp_lager1_walker3]
+path_walk = walker3_walk
+path_look = walker3_look
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1
+
+[logic@ros_kamp_lager1_registrator]
+active = walker@ros_kamp_lager1_registrator
+
+[walker@ros_kamp_lager1_registrator]
+path_walk = yard_guard
+path_look = yard_guard_look
+on_info = {+bar_arena_start -bar_arena_actor_afraid} walker@ros_kamp_lager1_registrator_wait
+meet = meet@ros_kamp_lager1_registrator
+
+[walker@ros_kamp_lager1_registrator_wait]
+path_walk = yard_guard_arena
+path_look = yard_guard_arena_look
+def_state_standing = guard
+on_info = {+bar_arena_monstr_dead} walker@ros_kamp_lager1_registrator
+on_info2 = {+bar_arena_actor_afraid} walker@ros_kamp_lager1_registrator
+meet = no_meet
+
+[meet@ros_kamp_lager1_registrator]
+use = true
+use_wpn = true
+victim 	= 5|actor
+victim_wpn = 5|actor
+meet_state = 5|guard
+meet_state_wpn = 5|guard
+meet_dialog = {-bar_arena_guard_dialog_talked} bar_arena_guard_dialog
+
+;**************************WALKERS OFF************************************
+
+[logic@ros_kamp_lager1_off_walker1]
+active = walker@ros_kamp_lager1_off_walker1
+danger = danger@ros_kamp_lager1
+
+[walker@ros_kamp_lager1_off_walker1]
+path_walk = walker1_walk
+
+[logic@ros_kamp_lager1_off_walker2]
+active = walker@ros_kamp_lager1_off_walker2
+
+[walker@ros_kamp_lager1_off_walker2]
+path_walk = walker2_walk
+path_walk = walker2_look
+
+[logic@ros_kamp_lager1_off_walker3]
+active = walker@ros_kamp_lager1_off_walker3
+
+[walker@ros_kamp_lager1_off_walker3]
+path_walk = walker3_walk
+path_look = walker3_look
+
+[logic@ros_kamp_lager1_off_registrator]
+active = walker@ros_kamp_lager1_off_registrator
+
+[walker@ros_kamp_lager1_off_registrator]
+path_walk = yard_guard
+path_look = yard_guard_look
+
+;**************************MEGAFON OFF************************************
+
+[logic@ros_kamp_lager1_megafon_off]
+active = walker@ros_kamp_lager1_megafon_off
+danger = danger@ros_kamp_lager1
+threshold = threshold@ros_kamp_lager1_megafon
+combat_ignore = combat_ignore@ros_kamp_lager1
+
+[walker@ros_kamp_lager1_megafon_off]
+path_walk = megafon_walk0
+path_look = megafon_look0
+danger = danger@ros_kamp_lager1

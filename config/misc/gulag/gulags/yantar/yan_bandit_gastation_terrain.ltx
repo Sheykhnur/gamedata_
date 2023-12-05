@@ -1,0 +1,107 @@
+[death@gastation_bandits]
+on_info = {=gulag_population_active_le(yan_bandit_gastation_terrain:1)} %+yan_bandit_gastation_eliminated%
+on_info2 = {=killed_by_actor -yan_bandit_gas_hit} %+yan_bandit_gas_hit%
+
+[danger_condition@yan_gas_bandit]
+;ignore_distance = 30
+
+[hit@yan_gas_bandit]
+on_info = {=hit_by_actor} %+yan_bandit_gas_hit%
+
+[threshold@yan_gas_bandit]
+ignore_monster = 5
+
+[combat_ignore@gastation_bandits]
+
+[logic@yan_bandit_gastation_terrain_patrol1]
+active = walker@yan_bandit_gastation_terrain_patrol1
+combat_ignore = combat_ignore@gastation_bandits
+on_death = death@gastation_bandits
+on_hit = hit@yan_gas_bandit
+threshold = threshold@yan_gas_bandit
+
+[walker@yan_bandit_gastation_terrain_patrol1]
+path_walk = patrol1_walk
+path_look = patrol1_look
+combat_ignore_cond = {-yan_bandit_gas_hit -bar_dolg_bandits_task_done =fighting_actor}
+danger = danger_condition@yan_gas_bandit
+
+[logic@yan_bandit_gastation_terrain_patrol2]
+active = walker@yan_bandit_gastation_terrain_patrol2
+combat_ignore = combat_ignore@gastation_bandits
+on_death = death@gastation_bandits
+on_hit = hit@yan_gas_bandit
+threshold = threshold@yan_gas_bandit
+
+[walker@yan_bandit_gastation_terrain_patrol2]
+path_walk = patrol2_walk
+path_look = patrol2_look
+combat_ignore_cond = {-yan_bandit_gas_hit -bar_dolg_bandits_task_done =fighting_actor}
+danger = danger_condition@yan_gas_bandit
+
+[logic@yan_bandit_gastation_terrain_guard1]
+active = walker@yan_bandit_gastation_terrain_guard1
+combat_ignore = combat_ignore@gastation_bandits
+on_death = death@gastation_bandits
+on_hit = hit@yan_gas_bandit
+threshold = threshold@yan_gas_bandit
+
+[walker@yan_bandit_gastation_terrain_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+combat_ignore_cond = {-yan_bandit_gas_hit -bar_dolg_bandits_task_done =fighting_actor}
+danger = danger_condition@yan_gas_bandit
+
+[logic@yan_bandit_gastation_terrain_guard2]
+active = walker@yan_bandit_gastation_terrain_guard2
+combat_ignore = combat_ignore@gastation_bandits
+on_death = death@gastation_bandits
+on_hit = hit@yan_gas_bandit
+threshold = threshold@yan_gas_bandit
+
+[walker@yan_bandit_gastation_terrain_guard2]
+path_walk = guard2_walk
+path_look = guard2_look
+combat_ignore_cond = {-yan_bandit_gas_hit -bar_dolg_bandits_task_done =fighting_actor}
+danger = danger_condition@yan_gas_bandit
+
+[logic@yan_bandit_gastation_terrain_kamper1]
+active = kamper@yan_bandit_gastation_terrain_kamper1
+combat_ignore = combat_ignore@gastation_bandits
+on_death = death@gastation_bandits
+on_hit = hit@yan_gas_bandit
+threshold = threshold@yan_gas_bandit
+
+[kamper@yan_bandit_gastation_terrain_kamper1]
+path_walk = kamp1
+path_look = kamp1_look
+combat_ignore_cond = {-yan_bandit_gas_hit -bar_dolg_bandits_task_done =fighting_actor}
+kamp_name = kamp_center
+danger = danger_condition@yan_gas_bandit
+
+[logic@yan_bandit_gastation_terrain_kamper2]
+active = kamper@yan_bandit_gastation_terrain_kamper2
+combat_ignore = combat_ignore@gastation_bandits
+on_death = death@gastation_bandits
+on_hit = hit@yan_gas_bandit
+threshold = threshold@yan_gas_bandit
+
+[kamper@yan_bandit_gastation_terrain_kamper2]
+path_walk = kamp2
+path_look = kamp2_look
+combat_ignore_cond = {-yan_bandit_gas_hit -bar_dolg_bandits_task_done =fighting_actor}
+kamp_name = kamp_center
+danger = danger_condition@yan_gas_bandit
+
+[logic@yan_bandit_gastation_terrain_leader]
+active = walker@yan_bandit_gastation_terrain_leader
+combat_ignore = combat_ignore@gastation_bandits
+on_death = death@gastation_bandits
+on_hit = hit@yan_gas_bandit
+threshold = threshold@yan_gas_bandit
+
+[walker@yan_bandit_gastation_terrain_leader]
+path_walk = leader_walk
+path_look = leader_look
+combat_ignore_cond = {-yan_bandit_gas_hit -bar_dolg_bandits_task_done =fighting_actor}
+danger = danger_condition@yan_gas_bandit

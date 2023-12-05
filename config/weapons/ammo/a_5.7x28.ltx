@@ -1,0 +1,106 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_5.7x28_ap]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_5.7x28_ap"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_57x28_ss190.ogf
+wm_size                     = 0.04
+
+; Icon
+inv_grid_width              = 1
+inv_grid_height             = 1
+inv_grid_x                  = 36
+inv_grid_y                  = 23
+
+; Text
+inv_name                    = ammo-5.7x28-ap
+inv_name_short              = ammo-5.7x28-ap_s
+description                 = enc_weapons1_ammo_ammo-5.7x28-ap
+
+; Economy
+cost                        = 270
+inv_weight                  = .30
+box_size                    = 50
+
+; Impact
+k_hit                       = 0.43
+k_ap                        = 0.86
+k_pierce                    = 0.86
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 1.2
+k_disp                      = 1
+k_dist                      = 1
+k_speed                     = 0.9
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+[ammo_5.7x28_jhp]:ammo_base
+$prefetch                   = 64
+$spawn                      = "weapons\ammo\ammo_5.7x28_jhp"
+cform                       = skeleton
+class                       = AMMO
+discovery_dependency        =
+GroupControlSection         = spawn_group
+
+; Appearance
+visual                      = dynamics\weapons\wpn_ammo\ammo_57x28_ss195lf.ogf
+wm_size                     = 0.02
+
+; Icon
+inv_grid_width              = 1
+inv_grid_height             = 1
+inv_grid_x                  = 35
+inv_grid_y                  = 23
+
+; Text
+inv_name                    = ammo-5.7x28-jhp
+inv_name_short              = ammo-5.7x28-jhp_s
+description                 = enc_weapons1_ammo_ammo-5.7x28-jhp
+
+; Economy
+cost                        = 220
+inv_weight                  = 0.30
+box_size                    = 50
+
+; Impact
+k_hit                       = 0.54
+k_ap                        = 0.45
+k_pierce                    = 0.45
+k_impulse                   = 1
+impair                      = 1
+
+; Ballistics
+k_air_resistance            = 1.2
+k_disp                      = 1
+k_dist                      = 0.85
+k_speed                     = 0.75
+
+
+[weapon_5.7x28]
+; Effects
+shell_particles             = amik\weapons\9x19_shells_r
+flame_particles             = weapons\generic_weapon03
+smoke_particles             = amik\weapons\smoke_particles\p_smoke_particles_00
+silencer_flame_particles    = ; no flame
+silencer_smoke_particles    = amik\weapons\smoke_particles\silencer_smoke_particles_00
+
+; Ammo
+ammo_class                  = ammo_5.7x28_jhp, ammo_5.7x28_ap
+ammo_limit                  = 120
+
+; Features
+silencer_name               = wpn_addon_silencer_57
+
+; Ballistics
+bullet_speed                = 715
+
+; Impact
+hit_impulse                 = 85

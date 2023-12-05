@@ -1,0 +1,178 @@
+[wpn_rg-6]:weapon_base
+$npc                                    = on
+$prefetch                               = 2
+$spawn                                  = "weapons\rg-6"
+animation_slot                          = 10
+class                                   = WP_RG6
+ef_main_weapon_type                     = 4
+ef_weapon_type                          = 9
+hand_dependence                         = 1
+scheduled                               = off
+weapon_class                            = heavy_weapon
+weapon_rank                             = 4
+
+; Inventory icon
+inv_grid_width                          = 4
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 8
+
+; Text
+inv_name                                = wpn-rg-6
+inv_name_short                          = wpn-rg-6
+description                             = enc_weapons1_wpn-rg-6
+
+; Visual
+hud                                     = wpn_rg-6_hud
+position                                = -0.026, -0.111, 0.
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+icon                                    = ui_inGame2_upgrade_weapon_RG6
+strap_position                          = -0.26, -0.11, 0.15
+strap_orientation                       = -15, -9, 110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_rg6\wpn_rg6.ogf
+
+; Effects
+fire_point                              = 0.0, 0.120, 0.452
+fire_point2                             = 0.0, 0.120, 0.452
+flame_particles                         = weapons\generic_weapon05
+smoke_particles                         = weapons\generic_shoot_00
+shell_point                             = 0.0, 0.120, 0.20
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 6.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+
+; Sounds
+snd_add_cartridge                       = weapons\rg6\rg6_reload
+snd_close_weapon                        = weapons\rg6\rg6_reload_end
+snd_draw                                = weapons\rg6\rg6_draw
+snd_empty                               = weapons\rg6\rg6_empty
+snd_holster                             = weapons\generic_holster
+snd_open_weapon                         = weapons\rg6\rg6_reload_start
+snd_reload                              = weapons\rg6\rg6_reload
+snd_shoot                               = weapons\rg6\rg6_shoot
+snd_shoot_duplet                        = weapons\rg6\rg6_shoot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_RG6
+upgr_icon_x                             = 596
+upgr_icon_y                             = 864
+upgr_icon_width                         = 290
+upgr_icon_height                        = 141
+
+; Cost & Weight
+cost                                    = 500000
+inv_weight                              = 6.2
+ph_mass                                 = 3
+
+; Ammo
+ammo_limit                              = 700
+ammo_class                              = ammo_vog-25, ammo_vog-25p
+ammo_mag_size                           = 220
+
+; Features
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+tri_state_reload                        = off
+
+; Impact
+hit_power                               = 8.5
+hit_impulse                             = 210
+hit_type                                = fire_wound
+
+; Ballistics
+bullet_speed                            = 176
+launch_speed                            = 176
+fire_dispersion_base                    = 0.03
+
+; Performance
+rpm_semi                                = 650
+rpm_empty_click                         = 200
+
+; Reliability
+misfire_start_prob                      = 0.001
+misfire_end_prob                        = 0.02
+condition_shot_dec                      = 0.0004
+condition_queue_shot_dec                = 0.0004
+
+; Handling
+PDM_disp_base                           = 0.002
+PDM_disp_vel_factor                     = 0.003
+PDM_disp_accel_factor                   = 0.003
+sprint_allowed                          = true
+
+; Recoil
+cam_relax_speed                         = 4.0
+cam_dispersion                          = 4.0
+cam_dispersion_inc                      = 2.0
+cam_dispersion_frac                     = 0.1
+cam_max_angle                           = 5.0
+cam_max_angle_horz                      = 5.0
+cam_step_angle_horz                     = 0.5
+
+; Aiming
+zoom_enabled                            = true
+
+; AI Params
+min_radius                              = 20
+max_radius                              = 50
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 1.0
+
+
+[wpn_rg-6_hud]:hud_base
+anim_reload                             = pkm_reload, reload
+anim_reload_empty                       = pkm_reload, reload
+aim_hud_offset_pos                      = -0.10955,-0.23635,-0.1
+aim_hud_offset_pos_16x9                 = -0.10955,-0.23635,-0.1
+aim_hud_offset_rot                      = -0.3779,0,0
+aim_hud_offset_rot_16x9                 = -0.3779,0,0
+anim_add_cartridge                      = rg6_reload, rg6_reload_wep, 1.7
+anim_bore                               = rg6_idle_bore
+anim_close                              = rg6_reload_end,, 1.7
+anim_hide                               = rg6_holster,,2.0
+anim_idle                               = rg6_idle
+anim_idle_aim                           = rg6_idle_aim
+anim_idle_moving                        = rg6_idle_moving
+anim_idle_sprint                        = rg6_idle_sprint
+anim_open                               = rg6_reload_start,, 1.7
+anim_shots                              = rg6_shoot
+anim_show                               = rg6_draw
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_point                              = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 0,0,0
+hands_orientation_16x9                  = 0,0,0
+hands_position                          = 0.11,-0.04,0.2
+hands_position_16x9                     = 0.11,-0.04,0.2
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_rg6\wpn_rg6_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+;---------ÐÃ-6 ì209 / RG-6 for M209 grenades
+[wpn_rg6_m1]:wpn_rg-6
+$spawn                                  = "weapons\uniq\wpn_rg6_m1"
+unique_item                             = true
+
+; Text
+inv_name                                = wpn-rg6_m1
+inv_name_short                          = wpn-rg6_m1
+description                             = enc_weapons1_wpn-rg6_m1
+
+; Cost & Weight
+cost                                    = 11600
+
+; Ammo
+ammo_class                              = ammo_m209

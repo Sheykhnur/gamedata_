@@ -1,0 +1,106 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : game_timer.script
+ Description: ...
+ Copyright  : 2008 © LA-team
+ Author     : barin(2009-08-27)
+ Editors    : Gr1ph00n(2010-10-02)
+ Last edit  : 31.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------
+class "GameTimer"
+--/ -----------------------------------------------------------------
+function GameTimer:__init()
+	self.timer = game.get_game_time()
+	self.__expired = false
+end
+
+function GameTimer:__finalize()
+end
+
+function GameTimer:update()
+	if not self.__expired then
+		self.__expired = game.get_game_time() >= self.timer
+	end
+end
+
+function GameTimer:save(packet)
+	utils.w_CTime(packet, self.timer)
+end
+
+function GameTimer:load(reader)
+	self.timer = utils.r_CTime(reader)
+end
+
+function GameTimer:expired()
+	if not self.__expired then
+		self:update()
+	end
+	return self.__expired --/>
+end
+
+function GameTimer:set_expired()
+	self.timer = game.get_game_time()
+end
+
+function GameTimer:Store() --/#?# rudiment
+	return self.timer:diffSec(game.get_game_time()) --/> game-seconds (float)
+end
+
+function GameTimer:Load(time) --/< real-mseconds (game-mseconds/time_factor)
+	self.timer = Set_RestSeconds(time/1000) --/#?# reserve
+	--self.timer = game.get_game_time() + game.convert_time(time) --/#?# again broken... :-(
+end
+
+function GameTimer:diffSec(ctimer)
+	if ctimer then
+		return self.timer:diffSec(ctimer) --/> game-seconds (float)
+	end
+	return self.timer:diffSec(game.get_game_time()) --/> game-seconds (float)
+end
+
+function GameTimer:diff(ctimer)
+	if ctimer then
+		return (self.timer - ctimer) --/> CTime (userdata)
+	end
+	return (self.timer - game.get_game_time()) --/> CTime (userdata)
+end
+
+function GameTimer:set_time(h,m,s, ms)
+	local ctimer = game.get_game_time()
+	ctimer:setHMSms(h,m,s, ms)
+	self.timer:add(ctimer)
+end
+
+function GameTimer:reset(h,m,s, ms)
+	self.timer = game.get_game_time()
+	self:set_time(h,m,s, ms)
+	self.__expired = false
+end
+
+function GameTimer:toString()
+	return self.timer:timeToString(game.CTime.TimeToSeconds) --/> '23:59:59'
+end
+
+function GameTimer:ToString()
+	local Y,M,D, h,m,s, ms = self.timer:get(0,0,0, 0,0,0, 0)
+	return string.format("%02d:%02d:%02d %02d/%02d/%02d", h,m,s, D,M,Y) --/>
+end
+
+function GameTimer:diffString(ctimer,to_day) --/#+#
+	if to_day then
+		return self:diff(ctimer):dateToString(game.CTime.DateToDay) --/> '01/01/2012'
+	end
+	return self:diff(ctimer):timeToString(game.CTime.TimeToSeconds) --/> '23:59:59'
+end
+
+function GameTimer:diffToString(ctimer) --/#+#
+	return self:diffString(ctimer).." "..self:diffString(ctimer,true) --/>
+end
+
+function GameTimer:__tostring()
+	return self.timer:timeToString(game.CTime.TimeToSeconds).." "..self.timer:dateToString(game.CTime.DateToDay) --/>
+end
+--/ -----------------------------------------------------------------------------------------------

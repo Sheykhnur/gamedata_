@@ -1,0 +1,16 @@
+[logic]
+active = sr_idle@0
+
+[sr_idle@0]
+on_info = {+gar_task_to_pass} sr_idle@1
+
+[sr_idle@1]
+on_info = {=gulag_empty(ladc_dump_boar_terrain3) =gulag_empty(ladc_dump_boar_terrain2)} sr_idle@a %+gar_task_to_pass_kill_1%
+on_info2 = {=gulag_empty(ladc_dump_flesh_terrain)} sr_idle@b %+gar_task_to_pass_kill_2%
+on_info3 = {=gulag_empty(ladc_dump_boar_terrain3) =gulag_empty(ladc_dump_boar_terrain2) =gulag_empty(ladc_dump_flesh_terrain)} nil %+gar_task_to_pass_kill_1 +gar_task_to_pass_kill_2 =release%
+
+[sr_idle@a]
+on_info = {=gulag_empty(ladc_dump_flesh_terrain)} nil %+gar_task_to_pass_kill_2 =release%
+
+[sr_idle@b]
+on_info = {=gulag_empty(ladc_dump_boar_terrain3) =gulag_empty(ladc_dump_boar_terrain2)} nil %+gar_task_to_pass_kill_1 =release%

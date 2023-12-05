@@ -1,0 +1,44 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : dialog_radar.script
+ Description: Dialog & InfoPortions functions for Radar
+ Copyright  : 2011 © LA-team
+ Author     : lox
+ Editors    : vintar(08.02.2013)
+ Last edit  : 08.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function actor_has_belonings(oSpeaker1, oSpeaker2)
+	return db.actor:object("hermit_belongings") ~= nil
+end
+
+function actor_has_pass(oSpeaker1, oSpeaker2)
+	return db.actor:object("rad_lab_access_documents") ~= nil
+end
+
+function rad_contribution(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oSpeaker2, 5000, "out")
+	give_info("rad_actor_payment_given")
+end
+
+function has_money_for_outpost(oSpeaker1, oSpeaker2)
+	return db.actor:money() >= 5000
+end
+function give_belongings(oSpeaker1, oSpeaker2)
+	local belong = db.actor:object("hermit_belongings")
+	if belong then
+		alife():release(alife():object(belong:id()), true)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

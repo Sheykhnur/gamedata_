@@ -1,0 +1,193 @@
+[wpn_g36]:weapon_base,weapon_5.56x45,weapon_m209
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\g36"
+animation_slot                          = 2
+class                                   = WP_AK74
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+hand_dependence                         = 1
+repair_compatibility                    = hk
+scheduled                               = off
+weapon_class                            = assault_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 10
+grenade_launcher_x                      = 127
+grenade_launcher_y                      = 32
+silencer_x                              = 218
+silencer_y                              = 16
+
+; Text
+inv_name                                = wpn-g36
+inv_name_short                          = wpn-g36
+description                             = enc_weapons1_wpn-g36
+
+; Visual
+hud                                     = wpn_g36_hud
+position                                = -0.026, -0.132, 0.0
+orientation                             = 0, -8 , 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_g36
+strap_position                          = -0.26,-0.11,0.25
+strap_orientation                       = -15,-9,110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_g36\wpn_g36.ogf
+
+; Effects
+fire_point                              = 0.0, 0.21, 0.58
+fire_point2                             = 0.0, 0.21, 0.71
+shell_point                             = 0.0, 0.21, 0.13
+shell_dir                               = 0.0, 0.0, 0.4
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\g36\g36_draw
+snd_empty                               = weapons\g36\g36_empty,		0.8
+snd_holster                             = weapons\rifle_holster
+snd_reload                              = weapons\g36\g36_reload
+snd_reload_grenade                      = weapons\g36\g36_grenload,
+snd_shoot                               = weapons\g36\g36_shoot
+snd_silncer_shot                        = weapons\g36\g36_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_GP37
+upgr_icon_x                             = 275
+upgr_icon_y                             = 8
+upgr_icon_width                         = 292
+upgr_icon_height                        = 120
+
+; Cost & Weight
+cost                                    = 64000
+inv_weight                              = 3.6
+ph_mass                                 = 4
+
+; Ammo
+ammo_mag_size                           = 30
+
+; Features
+fire_modes                              = 1, 2, -1
+scope_status                            = 1
+scope_zoom_factor                       = 22.222 ; x3.5
+scope_alive_detector					= scope_detector
+silencer_status                         = 2
+grenade_launcher_status                 = 2
+
+; Impact
+hit_power                               = 1.06
+
+; Ballistics
+fire_dispersion_base                    = 0.25
+
+; Performance
+rpm                                     = 750
+rpm_empty_click                         = 200
+
+; Reliability
+condition_shot_dec                      = 0.0002
+condition_queue_shot_dec                = 0.0002
+
+; Handling
+control_inertion_factor                 = 1.0f
+PDM_disp_base                           = 2.5
+PDM_disp_vel_factor                     = 1.
+PDM_disp_accel_factor                   = 1.
+
+; Recoil
+cam_dispersion                          = 1.0
+cam_dispersion_inc                      = 0.4
+cam_dispersion_frac                     = 0.7
+cam_step_angle_horz                     = 2.2
+zoom_cam_dispersion                     = 0.4
+zoom_cam_dispersion_inc                 = 0.25
+zoom_cam_step_angle_horz                = 1.5
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_g36
+upgrades                                = up_gr_firstab_g36, up_gr_seconab_g36, up_gr_thirdab_g36, up_gr_fourtab_g36, up_gr_fourtcd_g36, up_gr_fourtef_g36, up_gr_fifthab_g36
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 100
+holder_range_modifier                   = 1.85
+holder_fov_modifier                     = 0.7
+
+
+[wpn_g36_hud]:hud_base
+aim_hud_offset_pos                      = -0.12185,0.0278,-0.15
+aim_hud_offset_pos_16x9                 = -0.12185,0.0278,-0.15
+aim_hud_offset_rot                      = 0.0415,0.0335,0
+aim_hud_offset_rot_16x9                 = 0.0415,0.0335,0
+anim_bore                               = g36k_idle_aim
+anim_bore_g                             = g36k_idle_aim_grenade, idle_grenade
+anim_bore_w_gl                          = g36k_idle_aim_w_gl, idle_w_gl
+anim_hide                               = g36k_holster,,3.0
+anim_hide_g                             = g36k_holster_grenade, idle_grenade, 3.0
+anim_hide_w_gl                          = g36k_holster_w_gl, idle_w_gl, 3.0
+anim_idle                               = g36k_idle
+anim_idle_aim                           = g36k_idle_aim
+anim_idle_g                             = g36k_idle_grenade, idle_grenade
+anim_idle_g_aim                         = g36k_idle_aim_grenade, idle_grenade
+anim_idle_moving                        = g36k_idle_moving
+anim_idle_moving_crouch                 = g36k_idle_crouch
+anim_idle_moving_crouch_g               = g36k_idle_crouch_grenade, idle_grenade
+anim_idle_moving_crouch_w_gl            = g36k_idle_crouch_w_gl, idle_w_gl
+anim_idle_moving_g                      = g36k_idle_moving_grenade, idle_grenade
+anim_idle_moving_w_gl                   = g36k_idle_moving_w_gl, idle_w_gl
+anim_idle_sprint                        = g36k_idle_sprint
+anim_idle_sprint_g                      = g36k_idle_sprint_grenade, idle_grenade
+anim_idle_sprint_w_gl                   = g36k_idle_sprint_w_gl, idle_w_gl
+anim_idle_w_gl                          = g36k_idle_w_gl, idle_w_gl
+anim_idle_w_gl_aim                      = g36k_idle_aim_w_gl, idle_w_gl
+anim_reload                             = g36k_reload_empty, reload_empty
+anim_reload_g                           = g36k_reload_grenade, reload_grenade
+anim_reload_w_gl                        = g36k_reload_empty_w_gl, reload_empty_w_gl
+anim_shots                              = g36k_shoot, shoot
+anim_shots_g                            = g36k_shoot_grenade, shoot_grenade
+anim_shots_w_gl                         = g36k_shoot_w_gl, shoot_w_gl
+anim_show                               = g36k_draw
+anim_show_g                             = g36k_draw_grenade, idle_grenade
+anim_show_w_gl                          = g36k_draw_w_gl, idle_w_gl
+anim_switch                             = g36k_switch_off, switch_off
+anim_switch_g                           = g36k_switch_on, switch_on
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = muzzle_gl
+fire_point                              = 0,0,0
+fire_point2                             = 0,0,0
+gl_hud_offset_pos                       = -0.12,-0.0975,0
+gl_hud_offset_pos_16x9                  = -0.12,-0.0975,0
+gl_hud_offset_rot                       = -0.125,0.0317,0
+gl_hud_offset_rot_16x9                  = -0.125,0.0317,0
+hands_orientation                       = 2,2,0
+hands_orientation_16x9                  = 2,2,0
+hands_position                          = -0.034,-0.2,0.14
+hands_position_16x9                     = -0.034,-0.2,0.14
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_g36\wpn_g36_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true

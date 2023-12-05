@@ -1,0 +1,15 @@
+[logic]
+active = {-dam_station_entrance_unlock} ph_idle@wait, {+dam_station_entrance_unlock} ph_idle@nil
+
+[ph_idle@wait]
+nonscript_usable = false
+tips = tip_box_unknown
+on_info = {+dam_code_found -dam_station_entrance_unlock} ph_code@dam_entrance_door
+
+[ph_code@dam_entrance_door]
+code = 4134
+on_code = {-dam_station_entrance_unlock} ph_idle@nil %+dam_station_entrance_unlock =scenario_autosave(dam_find_code_task_2)%
+
+[ph_idle@nil]
+nonscript_usable = false
+on_info = nil

@@ -1,0 +1,56 @@
+[combat_ignore@sar_sci5]
+
+[danger@sar_sci5_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sar_sci51
+combat_ignore = combat_ignore@sar_sci5
+danger = danger@sar_sci5_sc4
+
+[remark@sar_sci51]
+anim = stand_wait
+snd = sar_replics1
+target = sar_scene_4_crates_walk2, 1
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@sar_sci51_synth
+
+[remark@sar_sci51_synth]
+anim = stand_wait ;hands together
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 27000 | walker@sar_sci51_walk
+;on_info = {+sar_sc4_crates_away} walker@sar_sci51_walk
+
+[walker@sar_sci51_walk]
+path_walk = sar_scene_4_sci_back
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 5000 | %+sar_scene4_info_1%
+on_signal = doorend | remark@sar_sci52_synth 
+
+
+[remark@sar_sci52_synth]
+anim = sci_laboratory
+target = sar_scene_4_sci1_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+sar_scene4_info_28} remark@sci_5_finale
+
+[remark@sci_5_finale]
+anim = sci_worried
+target = sar_scene4_talk_look2, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_29} walker@sci_5_finale
+
+[walker@sci_5_finale]
+path_walk = sar_scene4_walk_away2
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_30} %=release%

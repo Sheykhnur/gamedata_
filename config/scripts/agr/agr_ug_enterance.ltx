@@ -1,0 +1,13 @@
+[logic]
+active = sr_tip
+
+[sr_tip]
+header = barman_message_header
+name = agr_ratcatcher_message
+sender = barman
+type = tips
+cond = {+agr_gunslinger_flash_have -agr_find_gunslinger_cache_final}
+single = true
+showtime = 20000
+on_signal = tip_sended|nil %+agr_ratcatcher_start +agr_find_gunslinger_cache_final%
+on_info = {+agr_ratcatcher_start +agr_find_gunslinger_cache_final} nil

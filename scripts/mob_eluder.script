@@ -1,0 +1,198 @@
+--[[------------------------------------------------------------------------------------------------
+ File       : mob_eluder.script
+ Description: Схема: "Уклонение от актора"
+ Copyright  : 2004 © GSC Game World
+ Author     : Jim
+ Editors    : 
+ Last edit  : 23.07.2013 [...]
+--]]------------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local iDIST_TO_END = 2.5 --/ расстояние до конца пути
+--/ --------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ------------------------------------------------------------------------------------------------
+class "mob_eluder"
+--/ ------------------------------------------------------------------------------------------------
+function mob_eluder:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/ ------------------------------------------------------------------
+--/ RESET SCHEME
+--/ ------------------------------------------------------------------
+function mob_eluder:reset_scheme()
+	xr_logic.mob_capture(self.object, true) --/ берем под управление скриптом
+	self.st.signals      = {}
+	self.self_distances  = {}
+	self.actor_distances = {}
+	self.prev_point_id      = 0
+	self.time_state_changed = 0
+	if self.log then log("reset_scheme: Mob=[%s]", self.object:name(), "") end --/#~#
+end
+--/ ------------------------------------------------------------------
+--/ UPDATE
+--/ ------------------------------------------------------------------
+function mob_eluder:update(delta)
+	--/ Check for alife control
+	if self:check_script_control() and not xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		if not self.object:action() then
+			self:update_distances() --/ select point here
+			self.path = get_patrol(self.st.path)
+			action(self.object, move(move.run_fwd, self.path:level_vertex_id(self.best_point_id), self.path:point(self.best_point_id), iDIST_TO_END), cond(cond.move_end))
+		end
+	end
+end
+
+--/ ------------------------------------------------------------------
+--/ SERVICE FUNCTIONS
+--/ ------------------------------------------------------------------
+function mob_eluder:update_distances()
+	local max_self_dist  = 0
+	local max_actor_dist = 0
+	self.path = get_patrol(self.st.path)
+	for i=1, self.path:count() do
+		--/ вычислить свое расстояние
+		self.self_distances[i] = self.path:point(i-1):distance_to(self.object:position())
+		
+		--/ запомнить максимальное свое расстояние
+		if self.self_distances[i] > max_self_dist then
+			max_self_dist = self.self_distances[i]
+		end
+		
+		--/ вычислить расстояние от актера
+		self.actor_distances[i] = self.path:point(i-1):distance_to(db.actor:position())
+		
+		--/ запомнить максимальное расстояние от актера
+		if self.actor_distances[i] > max_actor_dist then
+			max_actor_dist = self.actor_distances[i]
+		end
+	end
+	
+	local max_value    = 0
+	self.best_point_id = 0
+	
+	local k_self  = 1
+	local k_actor = 2
+	self.path = get_patrol(self.st.path)
+	--/ пересчитать в соответствии с максимальным расстоянием
+	for i=1, self.path:count() do
+		self.self_distances[i]  = 1 - self.self_distances[i] / max_self_dist
+		self.actor_distances[i] = self.actor_distances[i] / max_actor_dist
+		
+		--/ сохранить результат
+		self.self_distances[i] = self.actor_distances[i]*k_actor + self.self_distances[i]*k_self
+		
+		--/ show
+		if max_value < self.self_distances[i] and self.prev_point_id ~= i-1 then
+			max_value = self.self_distances[i]
+			self.best_point_id = i-1
+		end
+	end
+	
+	self.prev_point_id = self.best_point_id
+end
+
+
+--/----------------------------------------------
+function mob_eluder:check_script_control()
+	local iTime = time_global()
+	local iDist_ToActor = self.object:position():distance_to(db.actor:position())
+	
+	local used_dist_check = (self.st.min_dist ~= 0) and (self.st.max_dist ~= 0)
+	local used_time_check = (self.st.time_capture ~= 0) and (self.st.time_release ~= 0)
+	
+	--/ time_check :: if time is zero - keep under control always
+	if not used_dist_check and not used_time_check then return true end --/>
+
+	if xr_logic.mob_captured(self.object) then --/ под управлением скрипта?
+		--/ check for release conditions
+		--/ if near actor
+		--/ if far from actor and its time to release for a while
+		if (used_dist_check and (iDist_ToActor < self.st.min_dist)) or
+		   (used_time_check and (self.time_state_changed + (self.st.time_capture*1000) < iTime)) then
+			xr_logic.mob_release(self.object) --/ отпускаем в 'alife'
+			self.time_state_changed = iTime
+		end
+	else
+		--/ check for capture conditions
+		--/ if far from actor
+		
+		--/ check for time
+		local time_check_good = not used_time_check
+		if used_time_check and (self.time_state_changed + (self.st.time_release*1000) < iTime) then
+			time_check_good = true
+		end
+		
+		--/ check for distance
+		local dist_check_good = not used_dist_check
+		if used_dist_check and (iDist_ToActor > self.st.max_dist) then
+			dist_check_good = true
+		end
+		
+		--/ check if it can_capture
+		if dist_check_good and time_check_good and self.object:can_script_capture() then
+			xr_logic.mob_capture(self.object, true)
+			self.time_state_changed = iTime
+		end
+	end
+	
+	if xr_logic.mob_captured(self.object) then
+		return true --/>
+	else
+		return false --/>
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	st.action = this.mob_eluder(npc, st)
+	--/ регистрация action, для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Mob=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ SET_SCHEME
+--/ -----------------------------------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--st.path         = Get_Cfg_String(ini, section, "path", "<<Err!>>", true, gulag_name)
+	st.path         = Get_Cfg_String(ini, section, "path", nil, true, gulag_name)
+	--/ время, которое монстр находится под скриптом
+	st.time_capture = Get_Cfg_Number(ini, section, "time_capture", 10)
+	--/ время, которое монстр находится под унисхемой
+	st.time_release = Get_Cfg_Number(ini, section, "time_release", 10)
+	--/ расстояние до актера, меньше которого, монстр переходит в унисхему
+	st.min_dist     = Get_Cfg_Number(ini, section, "min_dist",      5)
+	--/ расстояние до актера, больше которого, монстр может перейти под скрипт
+	st.max_dist     = Get_Cfg_Number(ini, section, "max_dist",     10)
+	if not validate_patrol_path(st.path, npc, true) then
+		log("set_scheme:NPC=[%s],section=[%s],path=[%s]<~NOT_validate:<%s>", npc:name(), section, st.path, "Warning!")
+		xr_gulag.resetJob(npc)
+	elseif st.log then --/ for debug!
+		log("set_scheme: Mob=[%s],scheme=[%s],section=[%s],path=[%s]", npc:name(), scheme, section, st.path, "") --/#~#
+	end
+end
+--/------------------------------------------------------------------
+--/#+# DISABLE SCHEME - отключение схемы
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/< "mob_home"
+	local stor = npc and db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		if st.log then log("disable_scheme:Mob=[%s],scheme=[%s]", npc:name(), scheme, "") end --/#~#
+	end
+end
+--/------------------------------------------------------------------------------------------------

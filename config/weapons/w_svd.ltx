@@ -1,0 +1,197 @@
+[wpn_svd]:weapon_base,weapon_7.62x54r
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\svd"
+animation_slot                          = 2
+class                                   = WP_SVD
+hand_dependence                         = 1
+repair_compatibility                    = svd
+scheduled                               = off
+weapon_class                            = sniper_rifle
+weapon_rank                             = 2
+
+; Inventory icon
+inv_grid_width                          = 6
+inv_grid_height                         = 2
+inv_grid_x                              = 10
+inv_grid_y                              = 2
+
+; Text
+inv_name                                = st_wpn_svd
+inv_name_short                          = st_wpn_svd
+description                             = st_wpn_svd_descr
+
+; Visual
+hud                                     = wpn_svd_hud
+position                                = -0.022, -0.09, 0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair
+strap_position                          = -0.15, -0.15, 0.45
+strap_orientation                       = -25, -189, 65
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_svd\wpn_svd.ogf
+
+; Effects
+fire_point                              = 0, 0.168, 0.755
+fire_point2                             = 0, 0.168, 0.755
+shell_point                             = 0.0, 0.129, 0.192
+shell_dir                               = 0.0, 0.0, 0.4
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 4.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.5
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\svd\svd_draw
+snd_empty                               = weapons\ak_empty, 0.7
+snd_holster                             = weapons\sniper_holster
+snd_reload                              = weapons\svd\svd_reload
+snd_shoot                               = weapons\svd\svd_shoot
+snd_shoot1                              = weapons\svd\svd_shoot
+snd_silncer_shot                        = weapons\svd\svd_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_SVD_M2
+upgr_icon_x                             = 8
+upgr_icon_y                             = 677
+upgr_icon_width                         = 287
+upgr_icon_height                        = 135
+
+; Cost & Weight
+cost                                    = 11500
+inv_weight                              = 4.5
+ph_mass                                 = 4
+
+; Ammo
+ammo_mag_size                           = 10
+
+; Features
+scope_status                            = 1
+scope_zoom_factor                       = 15 ;x4
+silencer_status                         = 2
+grenade_launcher_status                 = 0
+silencer_x                  			= 259
+silencer_y                 				= 18
+
+; Ballistics
+fire_dispersion_base                    = 0.28
+fire_dispersion_condition_factor        = 6
+
+; Performance
+rpm_semi                                = 180
+rpm_empty_click                         = 180
+
+; Reliability
+misfire_start_prob                      = 0.5
+misfire_end_prob                        = 0.15
+condition_shot_dec                      = 0.0004444
+condition_queue_shot_dec                = 0.0004444
+
+; Handling
+control_inertion_factor                 = 1.7f
+PDM_disp_base                           = 4.0
+PDM_disp_vel_factor                     = 1.5
+PDM_disp_accel_factor                   = 1.5
+sprint_allowed                          = true
+
+; Recoil
+cam_return	                         	= 2.5
+cam_relax_speed                         = 4.5
+cam_dispersion                          = 2.4
+cam_dispersion_inc                      = 1.0
+cam_dispersion_frac                     = 1.0
+cam_step_angle_horz                     = 3.0
+zoom_cam_dispersion                     = 1.4
+zoom_cam_dispersion_frac                = 1.0
+zoom_cam_step_angle_horz                = 0.6
+zoom_cam_relax_speed                	= 3.5
+zoom_cam_max_angle						= 2
+
+; Aiming
+zoom_enabled                            = true
+zoom_rotate_time                        = 0.3
+zoom_inertion_factor                    = 1.68
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_svd
+upgrades                                = up_gr_firstab_svd, up_gr_seconab_svd, up_gr_thirdab_svd, up_gr_fourtab_svd, up_gr_fourtc_svd, up_gr_fourtd_svd, up_gr_fourtef_svd
+installed_upgrades                      =
+
+; AI Params
+ef_main_weapon_type                     = 3
+ef_weapon_type                          = 8
+min_radius                              = 30
+max_radius                              = 135
+holder_range_modifier                   = 2.15
+holder_fov_modifier                     = 0.5
+
+
+[wpn_svd_hud]:hud_base
+aim_hud_offset_pos                      = -0.104275,0.061,-0.1
+aim_hud_offset_pos_16x9                 = -0.104275,0.061,-0.15
+aim_hud_offset_rot                      = 0.0305,0.014,0.012
+aim_hud_offset_rot_16x9                 = 0.0305,0.014,0.012
+anim_bore                               = svd_aim
+anim_hide                               = svd_holster,,2.0
+anim_idle                               = svd_idle
+anim_idle_aim                           = svd_aim
+anim_idle_moving                        = svd_move
+anim_idle_sprint                        = svd_sprint
+anim_reload                             = svd_reload, reload
+anim_shots                              = svd_shoot, shoot
+anim_show                               = svd_draw
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_point                              = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 0.65,2.4,0.8
+hands_orientation_16x9                  = 0.65,2.4,0.8
+hands_position                          = 0.0215,-0.01,0.24
+hands_position_16x9                     = 0.0215,-0.02,0.184
+item_orientation                        = 0.1,-0.6,0
+item_position                           = -0.008,0.01,0.002
+item_visual                             = dynamics\weapons\wpn_svd\wpn_svd_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+;---------СВД "Дальнобойщик"
+[wpn_svd_m1]:wpn_svd
+$spawn                                  = "weapons\uniq\wpn_svd_m1"
+unique_item                             = true
+
+; Text
+inv_name                                = st_wpn_svd_m1
+inv_name_short                          = st_wpn_svd_m1
+description                             = st_wpn_svd_m1_descr
+
+; Cost & Weight
+cost                                    = 14000
+
+; Features
+scope_status                            = 1
+scope_zoom_factor                       = 14
+scope_texture                           = wpn_crosshair_svd
+
+; Recoil
+zoom_cam_dispersion                     = 1.15
+
+; Aiming
+zoom_inertion_factor                    = 1.67
+
+; Upgrades
+installed_upgrades                      = up_thirda_svd, up_thirdc_svd, up_thirde_svd, up_fourta_svd

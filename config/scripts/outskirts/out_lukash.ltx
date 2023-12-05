@@ -1,0 +1,24 @@
+[smart_terrains]
+none = true
+
+[combat_ignore@lukash]
+
+[logic]
+active = walker@out_lukash
+combat_ignore = combat_ignore@lukash
+
+[walker@out_lukash]
+path_walk = out_lukash_walk
+path_look = out_lukash_look
+combat_ignore_cond = {!hit_by_actor}
+meet = meet@lukash
+
+[meet@lukash]
+use = true
+use_wpn = true
+victim 	= 15| actor
+victim_wpn = 15| actor
+meet_state = 5|nil
+meet_state_wpn = 5|nil
+;meet_dialog	= 
+combat_ignore_cond = {!hit_by_actor}

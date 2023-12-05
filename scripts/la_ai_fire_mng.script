@@ -1,0 +1,322 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_ai_fire_mng.script [optional]
+ Description: scheme: "NPC - shooting control" (don't fire to friends on fireline)
+ Copyright  : 2008 © LA-team
+ Author     : ... (by materials: ...)
+ Editor     : 
+ Last edit  : 30.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local bEnabled      = true
+local iCheckPrd     = 200
+local tExcludedComm = {}
+local tExcludedNPCs = {}
+--/ --------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+---------------------------------------------------------------------
+--/ SCHEME PARTs
+---------------------------------------------------------------------
+local sSchemeName = "ai_fire_mng" --/ string name of the scheme
+local iEvl_AI_FireMng = 0 --/ property_base
+local iAct_AI_FireMng = 0 --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+local tBindActs = {} --/ array of 'external' actions disconnected in case of the active scheme
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+--	log("init:[>]") --/#~#
+	if bInit then return end --/>
+	iEvl_AI_FireMng,iAct_AI_FireMng = register_ai_module(sModule,sSchemeName)
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ ---------------------------------------------
+function get_ai_evl(idx)
+	return iEvl_AI_FireMng + (idx or 0) --/>
+end
+function get_ai_act(idx)
+	return iAct_AI_FireMng + (idx or 0) --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function PreSets(e)
+--	log("PreSets:[%s]", ">") --/#~#
+	if not bInit then abort(sModule..":Not_initialised!") end
+	local ltx = ini_file("lost_alpha\\ai_schemes\\"..sModule..".ltx")
+	bEnabled  = Get_Cfg_Bool (ltx, "options", "enabled", bEnabled)
+	iCheckPrd = Get_Cfg_Num32(ltx, "options", "check_period", iCheckPrd)
+	tExcludedComm = Get_IniSection(ltx, "excluded_community", "true")
+	tExcludedNPCs = Get_IniSection(ltx, "excluded_npcs", "true")
+	tBindActs = {
+		stalker_ids.action_alife_planner, --/#?#
+		stalker_ids.action_combat_planner
+	}
+	tBindEvls = {
+		[1] = { stalker_ids.property_alive,               true  }, --/ NPC alive
+		[2] = { xr_evaluators_id.sidor_wounded_base,      false }, --/ NPC not injured
+		[3] = { xr_evaluators_id.chugai_heli_hunter_base, false }  --/ don't see helicopters
+	}
+	--/ extra conditions in tBindEvls world_property(v.id, v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout     and xr_blowout.get_ai_evl(0),         flg = false}, --/ no blowout
+		[2] = {id = db.la_ai_grenader and la_ai_grenader.get_ai_evl(1),     flg = false}, --/ 
+		[3] = {id = db.la_ai_facer    and la_ai_facer.get_ai_evl(0),        flg = false}, --/ no facefight
+		[4] = {id = db.la_ai_facer    and la_ai_facer.get_ai_evl(1),        flg = false}, --/ 
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+class "CEvaluator_NotShoot" (property_evaluator)
+--/ ---------------------------------------------
+function CEvaluator_NotShoot:__init(name, st) super (nil, name)
+	self.st  = st
+	self.log = st.log
+end
+
+function CEvaluator_NotShoot:evaluate()
+	if time_global() > (self.timeout or 0) then
+		if self.object:alive() then --/ if NPC NOT killed
+			local item = self.object:active_item()
+			if item and isWpn(item) then --/ in hands weapon
+				self.timeout = time_global() + iCheckPrd
+				self:Check_FireLine() --/ checking line of fire (if we don't have neutrals on it)
+				return self.st.nofire == true --/>
+			end
+			self.timeout = time_global() + 15*iCheckPrd
+		end
+		self.st.nofire = nil
+		self.st.dist = nil
+	end
+	return self.st.nofire == true --/>
+end
+
+function CEvaluator_NotShoot:Check_FireLine()
+	self.st.nofire = nil
+	local oNPC = self.object
+	local oEnemy = oNPC:best_enemy()
+	if oEnemy and oNPC:see(oEnemy) and not xr_wounded.is_wounded(oEnemy) then
+		local idNPC = oNPC:id()
+		local sActiveScheme = db.storage[idNPC].active_scheme
+		if sActiveScheme and sActiveScheme == "mgunner" then
+			self.st.enemy_id = nil
+			return --/>
+		end
+		self.st.enemy_id = oEnemy:id()
+		local vPosNPC = oNPC:bone_position("bip01_l_finger02")
+		local vPosEnm = oEnemy:bone_position("bip01_spine")
+		local iDistEnm = vPosNPC:distance_to(vPosEnm)
+		if iDistEnm > 2 and iDistEnm < 50 then
+			for o in oNPC:memory_visible_objects() do
+				local obj = o:object()
+				if obj and IsStalker(obj) and obj:alive() and oNPC:relation(obj) ~= game_object.enemy then --/ NOT hostile NPC
+--					log("ev_NotShoot:Check_FireLine:NPC=[%s],Enemy=[%s],Dist=[%s/%s],#Neutals=[%s]", oNPC:name(), oEnemy:name(), iDistEnm, #tNeutals, "") --/#~#
+					local vPos = obj:bone_position("bip01_spine") --/ position of neutral
+					local iDst = vPosNPC:distance_to(vPos) --/ distance to neutral
+					if iDst <= iDistEnm +0.5 then --/ neutral closer then enemy
+						local vVecEnm = vector():sub(vPosEnm,vPosNPC) --/ vector from current position of NPC to position of enemy
+						local vVec = vector():sub(vPos,vPosNPC) --/ vector from current position of NPC to position of neutral
+						--/ option 1
+						local iErr = iDst < 2 and 0 or 1 --/ inaccuracy(error)
+						local vVecE = vector():set(vVecEnm):set_length(iDst) --/ equating length of vector copy to enemy (for comparison)
+						local iRes = vVec:similar(vVecE, iErr) --/ comparing vectors (with inaccuracy: iErr)
+						--/ option 2
+						--local iCos = vVec:dotproduct(vVecEnm)/iDst
+						--
+						if iRes == 1 then --/ vectors matches or (or iCos > 0.999) neutral in shooting cone
+							self.st.dist = math.min(25, 4 *iDistEnm/(iDistEnm - iDst))
+							self.st.nofire = true
+--							log("ev_NotShoot:Check_FireLine:NPC=[%s],Enemy=[%s],Neutal=[%s],Dist=(%s)-(%s)=>(%s),Cos=[%s],Res=[%s]:(%s)", oNPC:name(), oEnemy:name(), obj:name(), iDistEnm, iDst, self.st.dist, iCos, iRes, "!!!") --/#~#
+							break
+						end
+					end
+				end
+			end
+		end
+	else
+		self.st.enemy_id = nil
+	end
+--	log("ev_NotShoot:Check_FireLine:NPC=[%s],dist=[%s],fire=[%s]:(%s)", oNPC:name(), self.st.dist, self.st.nofire, "<") --/#~#
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+class "CAction_DoDetour" (action_base)
+--/ ---------------------------------------------
+function CAction_DoDetour:__init (action_name, st) super (nil, action_name)
+	self.st  = st
+	self.log = st.log
+	self.st.tmr_move = time_global() + 1000
+end
+
+function CAction_DoDetour:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_DoDetour:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	local oNPC = self.object
+	oNPC:set_desired_position()
+	oNPC:set_desired_direction()
+	oNPC:set_mental_state(anim.danger)
+	local oActItem = oNPC:active_item()
+	if oActItem and isWpn(oActItem) then
+		oNPC:set_item(object.aim1, oActItem) --/ play animation with active item
+	end
+	local oEnemy = self.st.enemy_id and level.object_by_id(self.st.enemy_id)
+	if oEnemy then
+		oNPC:set_sight(look.fire_point, oEnemy:bone_position("bip01_spine"))
+	else
+		self.st.enemy_id = nil
+	end
+	if state_mgr.get_state(oNPC) ~= "assault" then
+		state_mgr.set_state(oNPC,"assault")
+	end
+	if self.st.dist then
+		self:Get_Vertex() --/ target vertex
+		self.st.tmr_move = time_global() + 800*self.st.dist
+	end
+	self.st.tmr_wait = time_global() + iCheckPrd --/ set timeout
+--	if self.log then log("ac_DoDetour:initialize:NPC=[%s],Dist=[%s],Lvid=[%s]:[%s]", oNPC:name(), self.st.dist, self.st.lvid, "<") end --/#~#
+end
+
+function CAction_DoDetour:execute()
+	action_base.execute(self)
+	if time_global() >= self.st.tmr_wait then
+		self.st.tmr_wait = time_global() + iCheckPrd
+		local oNPC = self.object
+		local oEnemy = self.st.enemy_id and level.object_by_id(self.st.enemy_id)
+		if not (oEnemy and oEnemy:alive()) then --/ and not xr_wounded.is_wounded(oEnemy)
+			self.st.enemy_id = nil
+			self.st.dist     = nil
+			self.st.nofire   = nil
+--			log("ac_DoDetour:exe:NPC=[%s],Enemy=NIL:(%s)", oNPC:name(), "~x~") --/#~#
+			return --/>
+		end
+		oNPC:set_sight(look.fire_point, oEnemy:bone_position("bip01_spine"))
+		local oActItem = oNPC:active_item()
+		if oActItem and isWpn(oActItem) then
+			oNPC:set_item(object.aim1, oActItem) --/ play animation with active item
+		end
+		local bChkLvid = false
+		if self.st.lvid and self.st.lvid ~= oNPC:level_vertex_id() and oNPC:accessible(self.st.lvid) then
+			oNPC:set_dest_level_vertex_id(self.st.lvid)
+			if self.log then log("ac_DoDetour:exe:NPC=[%s],Enemy=[%s],dist=[%s],idLv=[%s]:(%s)", oNPC:name(), oEnemy:name(), self.st.dist, self.st.lvid, ">>") end --/#~#
+		else
+			self:Get_Vertex() --/ target vertex
+			bChkLvid = true
+		end
+		if time_global() > (self.st.tmr_move or 0) then
+			if not bChkLvid then
+				self:Get_Vertex() --/ target vertex
+			end
+			self.st.tmr_move = time_global() + 250 + 500*self.st.dist
+			if self.log then log("ac_DoDetour:exe:NPC=[%s],dist=[%s],idLv=[%s]:(%s)", oNPC:name(), self.st.dist, self.st.lvid, "<") end --/#~#
+		end
+	end
+end
+
+function CAction_DoDetour:Get_Vertex()
+	local oNPC = self.object
+	if not self.st.dist then
+		local vPos = oNPC:bone_position("bip01_l_finger02")
+		local oEnemy = self.st.enemy_id and level.object_by_id(self.st.enemy_id)
+		if oEnemy then
+			local vPosTrg = oEnemy:bone_position("bip01_spine")
+			self.st.dist = math.min(25, vPos:distance_to(vPosTrg) )
+		else
+			self.st.dist = 4.04
+		end
+		log("ac_DoDetour:Get_Vertex:NPC=[%s],Enemy=[%s]<~dist=[%s]:<%s>", oNPC:name(), oEnemy and oEnemy:name(), self.st.dist, "Info!") --/#~#
+	end
+--	log("ac_DoDetour:Get_Vertex:NPC=[%s],dist=[%s]", oNPC:name(), string.short(self.st.dist), "") --/#~#
+	--oNPC:set_path_type(game_object.level_path)
+	local iAngle,iRnd = 0, Random.I(100)
+	if iRnd <= 33 then
+		iAngle = Random.I(50,60)
+	elseif iRnd <= 66 then
+		iAngle = Random.I(160,200)
+	else
+		iAngle = Random.I(300,310)
+	end
+	local vDir = vector_rotate_y(oNPC:direction(), iAngle)
+	self.st.lvid = level.vertex_in_direction(oNPC:level_vertex_id(), vDir, self.st.dist) --/ target vertex
+	if not oNPC:accessible(self.st.lvid) then
+		self.st.lvid = oNPC:accessible_nearest(level.vertex_position(self.st.lvid), vector():set(0,0,0))
+	end
+--	log("ac_DoDetour:Get_Vertex:NPC=[%s],dist=[%s],idLv=[%s]:(%s)", oNPC:name(), string.short(self.st.dist), self.st.lvid, "<") --/#~#
+end
+
+function CAction_DoDetour:finalize()
+--	log("ac_DoDetour:fin:NPC=[%s]", self.object:name(), "") --/#~#
+	self.st.tmr_move = nil
+	self.st.tmr_wait = nil
+	self.st.lvid     = nil
+	self.st.dist     = nil
+	self.st.nofire   = nil
+	self.st.enemy_id = nil
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.enabled = bEnabled and not ( tExcludedComm[npc:character_community()] or tExcludedNPCs[npc:name()] )
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	if not st.enabled then --/ (stub)
+		oPlanner:add_evaluator( iEvl_AI_FireMng, property_evaluator_const(false) )
+	else
+		--/ Evaluator
+		oPlanner:add_evaluator( iEvl_AI_FireMng, this.CEvaluator_NotShoot("ev_ai_fire_mng", st) )
+		--/ NewAction ---------------------------------------------------
+		local oNewAction = this.CAction_DoDetour("ac_ai_fire_mng", st)
+		for _,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) )
+		end
+		oNewAction:add_precondition( world_property( iEvl_AI_FireMng, true) ) --/ don't fire
+		oNewAction:add_effect( world_property( iEvl_AI_FireMng, false) )
+		oPlanner:add_action( iAct_AI_FireMng, oNewAction )
+		--/ Actions (additional preconditions for some standard operators)
+		for _,v in ipairs(tBindActs) do
+			local oAction = oPlanner:action(v)
+			oAction:add_precondition( world_property( iEvl_AI_FireMng, false) )
+		end
+		--/ for debug!
+		if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	--/ for debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st then
+		st.enabled = false
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

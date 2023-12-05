@@ -1,0 +1,58 @@
+;[spawner]
+;cond = {+agr_gunslinger_flash_have}
+
+[threshold@ratty]
+ignore_monster = 0
+
+[logic]
+combat_ignore = combat_ignore
+danger = danger@ratcatcher
+meet = meet
+active = walker
+on_death = death
+threshold = threshold@ratty
+
+[death]
+on_info = %+sar2_death_11 +agr_ratcatcher_dead%
+
+[walker]
+meet = meet
+path_walk = agr_ratcatcher_walk_way
+path_look = agr_ratcatcher_way_look
+on_info = {+agr_help_ratcatcher_done} walker@after_talk
+danger = danger@ratcatcher
+threshold = threshold@ratty
+invulnerable = true
+
+[walker@after_talk]
+meet = meet
+path_walk = agr_ratcatcher_walk_after_talk
+path_look = agr_ratcatcher_walk_after_talk_look
+danger = danger@ratcatcher
+on_info = {+agr_ratcatcher_dialog_finished} walker@after_case
+threshold = threshold@ratty
+invulnerable = true
+
+[walker@after_case]
+path_walk = agr_ratcatcher_walk_after_talk
+path_look = agr_ratcatcher_walk_after_talk_look
+danger = danger@ratcatcher
+meet = no_meet
+threshold = threshold@ratty
+
+[danger@ratcatcher]
+ignore_distance = 0
+
+[meet]
+meet_state     =	15| wait
+meet_state_wpn =	15| wait | 7| wait @ agr_dont_shoot
+victim         =	15| actor
+victim_wpn     =	15| actor
+use            =	true
+use_wpn        =	true
+meet_dialog    =	agr_ratcatcher_start
+
+[combat_ignore]
+
+[spawn]
+agr_nii_security_plan_flash

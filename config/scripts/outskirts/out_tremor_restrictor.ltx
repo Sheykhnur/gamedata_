@@ -1,0 +1,29 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-bas_switcher_off} sr_idle@timer, {+bas_switcher_off} sr_idle@nil
+
+[sr_idle@zone]
+on_info = {+bas_switcher_off} sr_idle@nil
+on_info2 = {!actor_in_zone(out_space_restrictor_0006)} sr_idle
+on_timer = 15000| %=set_weather(af_preblowout)%
+
+[sr_idle@timer]
+on_info = {+bas_switcher_off} sr_idle@nil
+on_info2 = {=actor_in_zone(out_space_restrictor_0006)} sr_idle@zone
+on_timer = 90000| {!actor_in_zone(out_space_restrictor_0006)} sr_psy_antenna@quake %=set_weather(af_preblowout) =rad_psy_basic_clear =run_cam_effector(earthquake) =play_snd(ambient\random\rnd_the_horror2)%
+
+[sr_psy_antenna@quake]
+eff_intensity = +300
+hit_intensity = +5
+phantom_prob = 0
+postprocess = psy_antenna.ppe
+min_phantom_idle = 10000
+max_phantom_idle = 10000
+on_info = {+bas_switcher_off} sr_idle@nil
+on_actor_outside = sr_idle
+on_timer = 40000|sr_idle %=run_cam_effector(earthquake) =play_snd(ambient\random\rnd_the_horror1)%
+
+[sr_idle@nil]
+on_info = nil %=set_weather(la_clear) =release%

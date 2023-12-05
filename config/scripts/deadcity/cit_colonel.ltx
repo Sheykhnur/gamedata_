@@ -1,0 +1,103 @@
+[combat_ignore]
+
+[meet@colonel]
+meet_dialog = cit_colonel_help
+meet_state = 5 | guard
+meet_state_wpn = 5 | threat
+victim = 5 | actor
+victim_wpn = 5 | actor
+use = true
+use_wpn = false
+abuse = true
+precond = visibility
+
+[danger]
+ignore_types 			 = corpse
+ignore_distance 		 = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+
+[hit@cit_colonel]
+on_info = {=hit_by_actor} %+cit_actor_attacked_mil%
+
+[logic]
+active = walker@1
+combat_ignore = combat_ignore
+on_hit = hit@cit_colonel
+
+[walker@1]
+path_walk = cit_colonel_wait_point
+path_look = cit_colonel_wait_look
+combat_ignore_cond = always
+danger = danger
+on_info = {+cit_move_colonel} walker@2
+on_info2 = {+cit_temp_fix} walker@5
+
+[walker@2]
+path_walk = cit_colonel_wait_point
+path_look = cit_colonel_wait_look
+combat_ignore_cond = always
+danger = danger
+on_timer = 2500 | {-cit_temp_fix} walker@3 %+cit_temp_fix%
+
+[walker@3]
+path_walk = cit_colonel_walk
+path_look = cit_colonel_walk_look
+combat_ignore_cond = always
+danger = danger
+meet = no_meet
+on_signal = start | %+cit_jail_scene_start%
+on_signal2 = reached | remark@1
+
+[remark@1]
+combat_ignore_cond = always
+danger = danger
+anim = press
+on_timer = 5000 | %+cit_jail_door_open% walker@4
+meet = no_meet
+
+[walker@4]
+path_walk = cit_colonel_wait_point1
+path_look = cit_colonel_wait_look1
+combat_ignore_cond = always
+danger = danger
+on_info = {+cit_colonel_dialog_start} remark@2
+def_state_standing = ward
+def_state_moving1 = walk
+
+[remark@2]
+combat_ignore_cond = always
+danger = danger
+anim = ward
+snd = cit_colonel_dlg1
+on_timer = 9000 | remark@3
+target = 7203
+
+[remark@3]
+combat_ignore_cond = always
+danger = danger
+anim = ward
+target = 7203
+on_timer = 2000 | remark@4
+
+[remark@4]
+combat_ignore_cond = always
+danger = danger
+anim = ward
+target = 7203
+snd = cit_colonel_dlg3
+on_timer = 24000 | walker@5
+
+[walker@5]
+path_walk = cit_colonel_wait_point1
+path_look = cit_colonel_wait_look1
+combat_ignore_cond = always
+danger = danger
+meet = meet@colonel
+on_info = {+cit_actor_attacked_mil} walker@col_attacked
+
+[walker@col_attacked]
+path_walk = cit_colonel_wait_point1
+combat_ignore_cond = {-cit_actor_attacked_mil}

@@ -1,0 +1,22 @@
+[death@gen_bloodsucker]
+on_info = %+gen_sc4_end%
+
+[logic]
+active = mob_remark@basic
+on_death = death@gen_bloodsucker
+
+[mob_remark@basic]
+state = vis
+anim = sit_eat_0
+target = gen_bloodsucker_walk, 0
+snd = gen_bloodsucker_eat
+on_timer = 11000 | mob_remark@basic_cycle
+on_info = {+gen_sc4_end} %=release%
+
+[mob_remark@basic_cycle]
+state = vis
+anim = sit_idle_0
+snd = gen_bloodsucker_idle
+target = gen_bloodsucker_walk, 0
+on_timer = 3000 | mob_remark@basic
+on_info = {+gen_sc4_end} %=release%

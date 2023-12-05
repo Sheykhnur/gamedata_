@@ -1,0 +1,1045 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_repair_wnd.script
+ Description: Repair window
+ Author     : Gr1ph00n
+ Editors    : Gr1ph00n, valsorim77 (outsourcing with valsorim77's fix)
+ Last edit  : 01.05.2013 [Gr1ph00n]
+--]] ----------------------------------------------------------------------------------------------
+
+local LAMP_GREEN = "ui_inGame2_upgrade_on_icon_lamp_green_upgraded"
+local LAMP_RED = "ui_inGame2_upgrade_on_icon_lamp_red_disabled"
+local LAMP_HIGHLIGHTED = "ui_inGame2_upgrade_on_icon_lamp_yellow_highlighted"
+
+local fixer_profit = parser.read_section("lost_alpha\\lost_alpha_cfg.ltx", "fixer_profit", "parse_num")
+
+local unupgradable_wpns = parser.read_section("lost_alpha\\lost_alpha_cfg.ltx", "unupgradable_wpns", "parse_bool")
+local all_wpns_suits = parser.read_section("lost_alpha\\lost_alpha_cfg.ltx", "all_wpns_suits")
+local reversed_all_wpns_suits = {}
+
+for k, v in pairs(all_wpns_suits) do
+	reversed_all_wpns_suits[v] = k
+end
+	
+class "uiRepairWnd" (CUIScriptWnd)
+
+function uiRepairWnd:__init(fixer_name) super()
+	self.fixer_name = fixer_name
+	self.current_item = nil
+	self.repair_cost = 0
+	self.selected_item = nil
+	self.message_box_id = 0	
+	self.current_upgrade = nil
+	self.object_to_update = nil
+	self:InitControls()
+	self:InitCallBacks()
+	self:FillItemsList()
+	la_utils.custom_ui_usage("show", script_name())
+end
+
+function uiRepairWnd:__finalize()
+	
+end
+
+function uiRepairWnd:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	local dlg, ctrl = nil, nil
+	local xml = CScriptXmlInit()
+	
+	xml:ParseFile("ui_repair_wnd.xml") 
+
+	xml:InitStatic("main_wnd", self)
+	xml:InitStatic("caption", self)
+	--xml:InitStatic("repair_caption", self)
+	
+	self:Register(xml:Init3tButton("btn_quit", self), "btn_quit")
+	dlg = xml:Init3tButton("btn_fix", self)
+	dlg:Enable(false)
+	self:Register(dlg, "btn_fix")
+	dlg = xml:Init3tButton("btn_buy", self)
+	dlg:Enable(false)
+	self:Register(dlg, "btn_buy")
+	self.actor_items = xml:InitStatic("actor_items", self)
+	self:Register(xml:InitListBox("actor_items:items_list", self.actor_items), "items_list")
+	self:Register(xml:InitStatic("actor_items:actor_info", self.actor_items), "actor_info")
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box, "msg_box")	
+	
+	self.upgrade_tree = xml:InitStatic("upgrades_tree", self)
+	self:Register(xml:InitStatic("upgrades_tree:item_icon", self.upgrade_tree), "item_big_icon")
+	local schemes = {}
+	local upgrades = {}
+	for k, v in pairs({"a", "b"}) do
+		schemes[v] = xml:InitStatic("upgrades_tree:scheme_" .. v, self.upgrade_tree)
+		for kk, vv in pairs({"0", "1", "11", "12", "2", "21", "22"}) do
+			upgrades[v .. vv] = xml:InitStatic("upgrades_tree:scheme_" .. v .. ":upgrade_" .. v .. vv, schemes[v])
+			dlg = xml:InitButton("upgrades_tree:scheme_" .. v .. ":upgrade_" .. v .. vv .. ":icon", upgrades[v .. vv])
+			self:Register(dlg, "upgrade_" .. v .. vv)
+			ctrl = xml:InitButton("upgrades_tree:scheme_" .. v .. ":upgrade_" .. v .. vv .. ":icon:lamp", upgrades[v .. vv])
+			self:Register(ctrl, "upgrade_" .. v .. vv .. "_lamp")
+			ctrl:Enable(false)
+		end
+	end
+	
+	self.item_info = xml:InitStatic("item_info", self)
+	self:Register(xml:InitStatic("item_info:item_name", self.item_info), "item_info_name")
+	self:Register(xml:InitStatic("item_info:item_weight", self.item_info), "item_info_weight")
+	self:Register(xml:InitStatic("item_info:item_cost", self.item_info), "item_info_cost")
+	self:Register(xml:InitStatic("item_info:item_condition", self.item_info), "item_info_conditon")
+	self:Register(xml:InitStatic("item_info:repair_price", self.item_info), "repair_price")
+	dlg = xml:InitList("item_info:item_description", self.item_info)
+	dlg:ShowSelectedItem(true)
+	self:Register(dlg, "item_info_description")
+	dlg = xml:InitStatic("item_info:item_st_cond", self.item_info)
+	dlg:Show(false)
+	self:Register(dlg, "item_info_st_cond")
+	self:Register(xml:InitStatic("item_info:actor_money", self.item_info), "actor_money")
+	
+	self.upgrade_info = xml:InitStatic("upgrade_info", self)
+	dlg = xml:InitStatic("upgrade_info:upg_icon", self.upgrade_info)
+	dlg:Show(false)
+	dlg:SetStretchTexture(true)
+	self:Register(dlg, "upgrade_icon")
+	self:Register(xml:InitStatic("upgrade_info:upg_name", self.upgrade_info), "upg_name")
+	self:Register(xml:InitStatic("upgrade_info:upg_cost", self.upgrade_info), "upg_cost")
+	dlg = xml:InitList("upgrade_info:upg_description", self.upgrade_info)
+	dlg:ShowSelectedItem(true)
+	self:Register(dlg, "upg_description")
+	
+end
+
+function uiRepairWnd:InitCallBacks()
+	self:AddCallback("btn_quit", ui_events.BUTTON_CLICKED, self.OnQuit, self)
+	self:AddCallback("btn_fix", ui_events.BUTTON_CLICKED, self.OnFix, self)
+	self:AddCallback("upgrade_a0", ui_events.BUTTON_CLICKED, self.OnUpgradeAClicked, self)
+	self:AddCallback("upgrade_a1", ui_events.BUTTON_CLICKED, self.OnUpgradeA1Clicked, self)
+	self:AddCallback("upgrade_a2", ui_events.BUTTON_CLICKED, self.OnUpgradeA2Clicked, self)
+	self:AddCallback("upgrade_a11", ui_events.BUTTON_CLICKED, self.OnUpgradeA11Clicked, self)
+	self:AddCallback("upgrade_a12", ui_events.BUTTON_CLICKED, self.OnUpgradeA12Clicked, self)
+	self:AddCallback("upgrade_a21", ui_events.BUTTON_CLICKED, self.OnUpgradeA21Clicked, self)
+	self:AddCallback("upgrade_a22", ui_events.BUTTON_CLICKED, self.OnUpgradeA22Clicked, self)
+	self:AddCallback("upgrade_b0", ui_events.BUTTON_CLICKED, self.OnUpgradeBClicked, self)
+	self:AddCallback("upgrade_b1", ui_events.BUTTON_CLICKED, self.OnUpgradeB1Clicked, self)
+	self:AddCallback("upgrade_b2", ui_events.BUTTON_CLICKED, self.OnUpgradeB2Clicked, self)
+	self:AddCallback("upgrade_b11", ui_events.BUTTON_CLICKED, self.OnUpgradeB11Clicked, self)
+	self:AddCallback("upgrade_b12", ui_events.BUTTON_CLICKED, self.OnUpgradeB12Clicked, self)
+	self:AddCallback("upgrade_b21", ui_events.BUTTON_CLICKED, self.OnUpgradeB21Clicked, self)
+	self:AddCallback("upgrade_b22", ui_events.BUTTON_CLICKED, self.OnUpgradeB22Clicked, self)
+	self:AddCallback("items_list", ui_events.LIST_ITEM_CLICKED, self.OnItemsListClicked, self)
+	self:AddCallback("msg_box", ui_events.MESSAGE_BOX_YES_CLICKED, self.OnMsgYes, self)
+	self:AddCallback("msg_box", ui_events.MESSAGE_BOX_NO_CLICKED, self.OnMsgNo,	self)
+	self:AddCallback("btn_buy", ui_events.BUTTON_CLICKED, self.OnBuy, self)
+end
+
+function uiRepairWnd:OnQuit()
+	self:GetHolder():start_stop_menu(self, true)
+	la_utils.custom_ui_usage("hide", script_name())
+end
+
+function uiRepairWnd:OnItemsListClicked()
+	local list = self:GetListBox("items_list")
+	if list:GetSize() ~= 0 then
+		local selected_item = list:GetSelectedItem()
+		if selected_item then
+			if self.selected_item then
+				self.selected_item:UpdateTextColor()
+			end
+			selected_item.item_name:SetTextColor(pcTextViewer.get_colour("full_white"))
+
+			self.selected_item = selected_item
+			self:DeselectAll()
+			self:CleanUp()
+			self:DisplayItemInfo()
+			self:DisplayUpgrades()
+			self:GetStatic("btn_buy"):Enable(false)
+		end
+	end
+end
+
+function uiRepairWnd:DisplayItemInfo()
+	local icon = Get_Cfg_String(system_ini(), self.selected_item.base_section .. "_upg_base", "icon", Get_Cfg_String(system_ini(), self.selected_item.base_section, "icon", ""))
+	self.repair_cost = get_repair_cost(self.fixer_name, self.selected_item.item_cost, self.selected_item.condition)
+	self:GetStatic("item_info_name"):SetText(self.selected_item.inv_name)
+	pcTextViewer.RemoveText(self:GetListWnd("item_info_description"))
+	pcTextViewer.AddText(self:GetListWnd("item_info_description"), 40, GetItemDescription(self.selected_item.section), false, "letterica16", "full_white")
+	self:GetStatic("item_info_weight"):SetText(string.format("%s: %.2f KG", game.translate_string("st_weight"), self.selected_item.item_weight))
+	self:GetStatic("item_info_cost"):SetText(string.format("%s: %d RU", game.translate_string("st_base_cost"), self.selected_item.item_cost))
+	self:GetStatic("item_info_st_cond"):Show(true)
+	self:GetStatic("item_info_conditon"):SetText(string.format("%d%%", math.modf(self.selected_item.condition / 0.01)))
+	if self.selected_item.condition >= 0.75 then
+		self:GetStatic("item_info_conditon"):SetTextColor(pcTextViewer.get_colour("green"))
+	elseif self.selected_item.condition < 0.75 and self.selected_item.condition >= 0.35 then
+		self:GetStatic("item_info_conditon"):SetTextColor(pcTextViewer.get_colour("yellow"))
+	else
+		self:GetStatic("item_info_conditon"):SetTextColor(pcTextViewer.get_colour("red"))
+	end
+	if self.repair_cost > 0 then
+		if db.actor:money() >= self.repair_cost then
+			self:GetStatic("repair_price"):SetText(string.format("%s %d RU", game.translate_string("ui_up_repair_price"), self.repair_cost))
+		else
+			self:GetStatic("repair_price"):SetText(string.format("%s", game.translate_string("st_not_enough_money")))
+		end
+	else
+		self:GetStatic("repair_price"):SetText(string.format("%s", game.translate_string("ui_up_repair_not_needed")))
+	end
+	self:GetStatic("btn_fix"):Enable(db.actor:money() >= self.repair_cost and self.repair_cost > 0)
+	if icon ~= "" then
+		self:GetStatic("item_big_icon"):InitTexture(icon)
+		self:GetStatic("item_big_icon"):SetStretchTexture(false)
+		self:GetStatic("item_big_icon"):Show(true)
+	end
+	self:GetStatic("actor_money"):SetText(string.format("%s: %d RU", game.translate_string("ui_inv_money"), db.actor:money()))	
+end
+
+function uiRepairWnd:DisplayUpgrades()
+	for k, v in pairs(self.selected_item:GetUpgradeTree():GetUpgrades()) do
+		self:GetStatic("upgrade_" .. v.scheme.letter .. v.scheme.number):InitTexture(v.upg_icon)
+		self:GetStatic("upgrade_" .. v.scheme.letter .. v.scheme.number):Show(true)
+		self:SetLamp(self:GetStatic("upgrade_" .. v.scheme.letter .. v.scheme.number .. "_lamp"), v.disabled, v.installed, v.locked)
+--		parser.dbg_print("[%s]::locked=[%s]::disabled=[%s]::installed=[%s]", v.scheme.letter .. v.scheme.number, tostring(v.locked), tostring(v.disabled), tostring(v.installed))
+--		if v.disabled or v.locked or v.installed then
+			self:GetStatic("upgrade_" .. v.scheme.letter .. v.scheme.number):Enable(true)
+--			self:GetStatic("upgrade_" .. v.scheme.letter .. v.scheme.number .. "_lamp"):Enable(false)
+--		end
+	end
+end
+
+function uiRepairWnd:SetLamp(wnd, disabled, installed, locked)
+	wnd:Show(true)
+	if disabled or locked then
+		wnd:InitTexture(LAMP_RED)
+	end
+	if installed then
+		wnd:InitTexture(LAMP_GREEN)
+	end
+	if not disabled and not locked and not installed then
+		wnd:InitTexture("none")
+	end
+end
+
+function uiRepairWnd:OnFix()
+	self.message_box_id = 1	
+	self.message_box:Init("message_box_repair")
+	self.message_box:SetText(string.format(game.translate_string("ui_up_fix_yes_not"), self.repair_cost))
+
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function uiRepairWnd:RepairItem()
+	self.selected_item:MoveToRuck()
+	local object = level.object_by_id(self.selected_item.id)
+--	local sobj, obj = alife():object(self.fixer_name), nil
+	object:set_condition(1)
+	self.selected_item:MoveToSlot()
+	db.actor:give_money(-self.repair_cost)
+	--[[
+	if sobj then
+		obj = level.object_by_id(sobj.id)
+		if obj then
+			obj:give_money(self.repair_cost)
+		end
+	end
+	]]
+	self.selected_item.condition = 1.0
+	self.repair_cost = 0
+	self:GetStatic("item_info_conditon"):SetTextColor(pcTextViewer.get_colour("green"))
+	self:GetStatic("item_info_conditon"):SetText(string.format("%d%%", math.modf(self.selected_item.condition / 0.01)))
+	self:GetStatic("repair_price"):SetText(string.format("%s", game.translate_string("ui_up_repair_not_needed")))
+	self.selected_item:FixPerformed()
+	self:GetStatic("btn_fix"):Enable(false)
+	self:GetStatic("actor_money"):SetText(string.format("%s: %d RU", game.translate_string("ui_inv_money"), db.actor:money()))	
+end
+
+function uiRepairWnd:FillItemsList()
+	local obj = nil
+	local dlg = self:GetListBox("items_list")
+	for index = 0, db.actor:object_count() - 1 do
+		obj = db.actor:object(index)
+		if IsWeaponOrOutfit(GetBaseSection(obj:section())) and obj:section() ~= "wpn_knife" and not unupgradable_wpns[obj:section()] then
+--			dlg:AddItem(ListViewItemWeapon(obj))
+--		elseif la_utils.IsOutfit(GetBaseSection(obj:section())) then
+			dlg:AddItem(ListViewItem(obj))
+		end
+	end
+	self:GetStatic("actor_info"):SetText(string.format("%s: %.2f kg / %.2f kg", game.translate_string("st_weight"), GetActorInvWeight()))	
+	self:GetStatic("actor_money"):Show(true)
+	self:GetStatic("repair_price"):Show(true)
+end
+
+function uiRepairWnd:Update()
+	CUIScriptWnd.Update(self)
+	local obj = nil
+	if self.object_to_update then
+		obj = level.object_by_id(self.object_to_update.id)
+		if obj then
+			parser.dbg_print("updating [%s]", obj:name())
+			self.selected_item:UpdateParams(obj, self.object_to_update.params or {})
+			self.object_to_update = nil
+			self:DisplayUpgrades()
+			self:DisplayItemInfo()
+			self:GetStatic("actor_money"):SetText(string.format("%s: %d RU", game.translate_string("ui_inv_money"), db.actor:money()))
+		end
+	end
+end
+
+function uiRepairWnd:DisplaySelectedUpgradeInfo()
+	local name = game.translate_string(self.selected_upgrade.data.upg_name)
+	local cost = self.selected_upgrade.data.upg_cost * fixer_profit[self.fixer_name]
+	self:GetStatic("upg_name"):SetText(string.format("%s", name))
+	self:GetStatic("upg_cost"):SetText(string.format("%s: %d RU", game.translate_string("st_base_cost"), cost))
+	pcTextViewer.AddDoubleText(self:GetListWnd("upg_description"), 40, GetUpgradeDescription(self.selected_upgrade.section, self.selected_upgrade.data.upg_descr), false, "letterica16", "full_white")
+--	pcTextViewer.AddText(self:GetListWnd("upg_description"), 40, GetUpgradeDescription(self.selected_upgrade.section, self.selected_upgrade.data.upg_descr), false, "letterica16", "full_white")
+	local u = self.selected_upgrade.data;
+	local enable = not(u.disabled or u.locked or u.installed)
+--        parser.dbg_print("DisplaySelectedUpgradeInfo u.disabled=[%s] u.locked=[%s] u.installed=[%s] enable=[%s]", tostring(u.disabled), tostring(u.locked), tostring(u.installed), tostring(enable))
+	self:GetStatic("btn_buy"):Enable(enable)
+end
+
+function uiRepairWnd:OnKeyboard(dik, keyboard_action)  --virtual function
+	CUIScriptWnd.OnKeyboard(self,dik,keyboard_action)
+	local bind = dik_to_bind(dik)
+
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnQuit()
+		end
+	end
+   
+	return true
+end
+
+function uiRepairWnd:SpawnAddons(section, has_scope, has_glauncher, has_silencer)
+	local scope_sect = Get_Cfg_String(system_ini(), section, "scope_name", "")
+	local glauncher_sect = Get_Cfg_String(system_ini(), section, "grenade_launcher_name", "")
+	local silencer_sect = Get_Cfg_String(system_ini(), section, "silencer_name", "")
+	local scope_id = (has_scope and scope_sect ~= "") and Spawn_ItemInInv(scope_sect, db.actor).id or -1
+	local glauncher_id = (has_glauncher and glauncher_sect ~= "") and Spawn_ItemInInv(glauncher_sect, db.actor).id or -1
+	local silencer_id = (has_silencer and silencer_sect ~= "") and Spawn_ItemInInv(silencer_sect, db.actor).id or -1
+	return scope_id, glauncher_id, silencer_id
+end
+
+function uiRepairWnd:UpgradeWeapon()
+	self.selected_item:MoveToRuck()
+	local new_sobj = Spawn_ItemInInv(self.selected_upgrade.section, db.actor) --la_utils.spawn_object_actor(self.selected_upgrade.section)
+	db.actor:give_money(-(self.selected_upgrade.data.upg_cost * fixer_profit[self.fixer_name]))
+	self.object_to_update = {}
+	self.object_to_update.id = new_sobj.id
+	if la_utils.IsOutfit(self.selected_upgrade.section) then
+		la_utils.release_object(self.selected_item.id)
+		return
+	end
+	local prev_obj = level.object_by_id(self.selected_item.id)
+	local has_scope = prev_obj:has_scope_installed()
+	local has_glauncher = prev_obj:has_grenade_launcher_installed()
+	local has_silencer = prev_obj:has_silencer_installed()
+	local ammo_count = prev_obj:get_ammo_in_magazine()
+
+	local _scope_id, _glauncher_id, _silencer_id = self:SpawnAddons(self.selected_upgrade.section, has_scope, has_glauncher, has_silencer)
+	la_utils.release_object(self.selected_item.id)
+	self.object_to_update.params = 
+	{
+		scope_id = _scope_id,
+		glauncher_id = _glauncher_id,
+		silencer_id = _silencer_id,
+		ammo_magazine = ammo_count,
+	}
+end
+
+function uiRepairWnd:OnBuy()
+	local cost = self.selected_upgrade.data.upg_cost * fixer_profit[self.fixer_name]
+	if db.actor:money() >= cost then
+		self.message_box_id = 2
+		self.message_box:Init("message_box_repair")
+		self.message_box:SetText(string.format(game.translate_string("ui_up_buy_upgrade_yes_not"), cost))
+	else
+		self.message_box_id = 0
+		self.message_box:Init("message_box_repair_no_money")
+		self.message_box:SetText(string.format(game.translate_string("ui_up_not_enough_money_cost"), cost - db.actor:money()))
+	end
+
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function uiRepairWnd:CleanUp()
+	for k, v in pairs({"a", "b"}) do
+		for kk, vv in pairs({"0", "1", "11", "12", "2", "21", "22"}) do
+			self:GetStatic("upgrade_" .. v .. vv):Show(false)
+			self:GetStatic("upgrade_" .. v .. vv .. "_lamp"):Show(false)
+		end
+	end
+	self:GetStatic("item_big_icon"):Show(false)
+	self:CleanUpUpgradeInfo()
+end
+
+function uiRepairWnd:CleanUpUpgradeInfo()
+	self:GetStatic("upg_name"):SetText("")
+	self:GetStatic("upg_cost"):SetText("")
+	pcTextViewer.RemoveText(self:GetListWnd("upg_description"))
+end
+
+function uiRepairWnd:OnUpgradeAClicked()
+	self:SelectButton("a0")
+end
+
+function uiRepairWnd:OnUpgradeA1Clicked()
+	self:SelectButton("a1")
+end
+
+function uiRepairWnd:OnUpgradeA2Clicked()
+	self:SelectButton("a2")
+end
+
+function uiRepairWnd:OnUpgradeA11Clicked()
+	self:SelectButton("a11")
+end
+
+function uiRepairWnd:OnUpgradeA12Clicked()
+	self:SelectButton("a12")
+end
+
+function uiRepairWnd:OnUpgradeA21Clicked()
+	self:SelectButton("a21")
+end
+
+function uiRepairWnd:OnUpgradeA22Clicked()
+	self:SelectButton("a22")
+end
+
+function uiRepairWnd:OnUpgradeBClicked()
+	self:SelectButton("b0")
+end
+
+function uiRepairWnd:OnUpgradeB1Clicked()
+	self:SelectButton("b1")
+end
+
+function uiRepairWnd:OnUpgradeB2Clicked()
+	self:SelectButton("b2")
+end
+
+function uiRepairWnd:OnUpgradeB11Clicked()
+	self:SelectButton("b11")
+end
+
+function uiRepairWnd:OnUpgradeB12Clicked()
+	self:SelectButton("b12")
+end
+
+function uiRepairWnd:OnUpgradeB21Clicked()
+	self:SelectButton("b21")
+end
+
+function uiRepairWnd:OnUpgradeB22Clicked()
+	self:SelectButton("b22")
+end
+
+function uiRepairWnd:OnMsgYes()
+	if self.message_box_id == 1 then
+		self:RepairItem()
+	end
+	if self.message_box_id == 2 then
+		self:UpgradeWeapon()
+		self:DeselectAll()
+		for k, v in pairs({"a", "b"}) do
+			for kk, vv in pairs({"0", "1", "11", "12", "2", "21", "22"}) do
+				self:GetStatic("upgrade_" .. v .. vv):Show(false)
+				self:GetStatic("upgrade_" .. v .. vv .. "_lamp"):Show(false)
+			end
+		end
+		self:CleanUpUpgradeInfo()
+		self:GetStatic("btn_buy"):Enable(false)
+	end
+	self.message_box_id = 0
+end
+
+function uiRepairWnd:OnMsgNo()
+	self.message_box_id = 0	
+end
+
+function uiRepairWnd:SelectButton(btn)
+	self:DeselectAll()
+	self:CleanUpUpgradeInfo()
+	self:GetStatic("upgrade_" .. btn .. "_lamp"):InitTexture(LAMP_HIGHLIGHTED)
+	self.selected_upgrade = self.selected_item:GetUpgradeTree():GetUpgradeByIndex(btn)
+	self:DisplaySelectedUpgradeInfo()
+--	log("%d %d", self.selected_upgrade.data.upg_cost * fixer_profit[self.fixer_name], db.actor:money())
+--	self:GetStatic("btn_buy"):Enable(true)
+end
+
+function uiRepairWnd:DeselectAll()
+	if not self.selected_item then
+		return
+	end
+	for k, v in pairs(self.selected_item:GetUpgradeTree():GetUpgrades()) do
+		self:GetStatic("upgrade_" .. v.scheme.letter .. v.scheme.number .. "_lamp"):InitTexture("none")
+		self:SetLamp(self:GetStatic("upgrade_" .. v.scheme.letter .. v.scheme.number .. "_lamp"), v.disabled, v.installed, v.locked)
+	end
+end
+
+-- ***************************************************************** --
+
+
+class "ListViewItem" (CUIListBoxItemEx)
+
+function ListViewItem:__init(object) super()
+	self:SetWndRect(0, 0, 395, 22)
+	self.section = object:section()
+	self.id = object:id()
+	self.condition = object:condition()
+	self.upgrade_tree = nil
+	self.base_section = GetBaseSection(self.section)
+	self.is_upgraded = self.section ~= self.base_section
+	self.item_weight = system_ini():r_float(self.section, "inv_weight")
+	self.item_cost = system_ini():r_u32(self.section, "cost")
+	self.short_name = GetShortName(self.base_section)
+	self.inv_name = game.translate_string(system_ini():r_string(self.section, "inv_name"))
+	self.upgrade_icon = CUIStatic()
+	self.upgrade_icon:SetAutoDelete(true)
+	self:AttachChild(self.upgrade_icon)
+	self.upgrade_icon:SetWndRect(0, 0, 20, 22)
+	self.item_name = CUIStatic()
+	self.item_name:SetAutoDelete(true)
+	self:AttachChild(self.item_name)
+	self.item_name:SetWndRect(18, 0, 377, 22)
+	self.item_name:SetText(string.format("%s", self.inv_name))
+	self.item_name:SetFont(GetFontLetterica18Russian())
+	self:UpdateTextColor()
+
+	if self.is_upgraded then
+		self:MarkUpgraded()
+	end
+
+	self:SetUpgradeTree()
+
+end
+function ListViewItem:UpdateTextColor()
+	if self.condition >= 0.75 then
+		self.item_name:SetTextColor(pcTextViewer.get_colour("green"))
+	elseif self.condition < 0.75 and self.condition >= 0.35 then
+		self.item_name:SetTextColor(pcTextViewer.get_colour("yellow"))
+	else
+		self.item_name:SetTextColor(pcTextViewer.get_colour("red"))
+	end
+end
+
+function ListViewItem:MoveToRuck()
+	local pistol = db.actor:item_in_slot(1)
+	if pistol and pistol:id() == self.id then
+		db.actor:move_to_ruck(pistol)
+		self.wasMovedToRuck = true
+	end
+	local rifle = db.actor:item_in_slot(2)
+	if rifle and rifle:id() == self.id then
+		db.actor:move_to_ruck(rifle)
+		self.wasMovedToRuck = true
+	end
+	local outfit = db.actor:item_in_slot(6)
+	if outfit and outfit:id() == self.id then
+		db.actor:move_to_ruck(outfit)
+		self.wasMovedToRuck = true
+	end
+end
+function ListViewItem:MoveToSlot()
+	if self.wasMovedToRuck then
+		local object = level.object_by_id(self.id)
+		if object then
+			if la_utils.IsOutfit(self.section) then
+				return -- outfit is not repaired when it is immediately moved back to slot
+			end
+			db.actor:move_to_slot(object, true)
+		end
+	end
+end
+
+function ListViewItem:MarkUpgraded()
+	self.upgrade_icon:InitTexture("ui_icon_equipment_green_arrow")
+end
+
+function ListViewItem:FixPerformed()
+	self.condition = 1.0
+	self.item_name:SetTextColor(pcTextViewer.get_colour("green"))
+end
+
+function ListViewItem:SetUpgradeTree()
+	self.upgrade_tree = UpgradeTree(self.section, self.base_section, self.short_name)
+end
+
+function ListViewItem:GetUpgradeTree()
+	return self.upgrade_tree
+end
+
+function ListViewItem:UpdateParams(object, params)
+	self.section = object:section()
+	self.id = object:id()
+	self.condition = object:condition()
+	self.upgrade_tree = nil
+	self.is_upgraded = self.section ~= self.base_section
+	self.item_weight = system_ini():r_float(self.section, "inv_weight")
+	self.item_cost = system_ini():r_u32(self.section, "cost") 
+	if self.is_upgraded then
+		self:MarkUpgraded()
+	end
+	self:SetUpgradeTree()
+	if la_utils.IsOutfit(self.section) then
+		return 
+	end
+	if params.scope_id > -1 then
+		object:attach_addon(params.scope_id)
+	end
+	if params.glauncher_id > -1 then
+		object:attach_addon(params.glauncher_id)
+	end
+	if params.silencer_id > -1 then
+		object:attach_addon(params.silencer_id)
+	end
+
+	object:set_ammo_elapsed(params.ammo_magazine)
+end
+
+-- ***************************************************************** --
+
+class "UpgradeTree"
+
+function UpgradeTree:__init(section, base_section, short_name) -- i.e.: wpn_abakan, wpn_abakan, abk
+	self.section = section
+	self.base_section = base_section
+	self.short_name = short_name
+	self.upgrades = {}
+	if short_name then
+		for k, v in pairs({"a", "b"}) do
+			for kk, vv in pairs({"0", "1", "11", "12", "2", "21", "22"}) do
+				if parser.section_exists(system_ini(), short_name .. "_upg_" .. v .. vv) then
+					self.upgrades[short_name .. "_upg_" .. v .. vv] = {}
+						self.upgrades[short_name .. "_upg_" .. v .. vv].upg_name = Get_Cfg_String(system_ini(), short_name .. "_upg_" .. v .. vv, "upg_name")
+					self.upgrades[short_name .. "_upg_" .. v .. vv].upg_descr = Get_Cfg_String(system_ini(), short_name .. "_upg_" .. v .. vv, "upg_descr")
+					self.upgrades[short_name .. "_upg_" .. v .. vv].upg_icon = Get_Cfg_String(system_ini(), short_name .. "_upg_" .. v .. vv, "upg_icon")
+					self.upgrades[short_name .. "_upg_" .. v .. vv].upg_cost = Get_Cfg_Num32(system_ini(), short_name .. "_upg_" .. v .. vv, "upg_cost")
+					self.upgrades[short_name .. "_upg_" .. v .. vv].scheme = {letter = v, number = tonumber(vv)}
+					self.upgrades[short_name .. "_upg_" .. v .. vv].installed = self:IsInstalled({letter = v, number = tonumber(vv)})
+					self.upgrades[short_name .. "_upg_" .. v .. vv].disabled = self:IsDisabled({letter = v, number = tonumber(vv)})
+					self.upgrades[short_name .. "_upg_" .. v .. vv].locked = self:IsLocked({letter = v, number = tonumber(vv)})
+				end
+			end
+		end
+	else
+		--abort("upgrade error, short name=NIL: section_name=<%s>", self.section)
+		parser.dbg_print("UpgradeTree:__init error, short name=NIL: self.section=<%s>", self.section)
+	end
+
+end
+
+function UpgradeTree:__finalize()
+	self.section = nil
+	self.base_section = nil
+	self.short_name = nil
+	self.upgrades = nil
+end
+
+function UpgradeTree:GetUpgrades()
+	if self.upgrades then
+		return self.upgrades
+	end
+	return nil
+end
+
+function UpgradeTree:IsDisabled(indexes)
+	local current = GetUpgradeIndexes(self.section)
+	if current == nil then 
+		if indexes.number > 0 then 
+			return true
+		else
+			return false
+		end
+	end
+	if current.letter ~= indexes.letter then
+		return true
+	end
+	if (current.number == 1 and indexes.number == 2) or
+		(current.number == 2 and indexes.number == 1) or
+		(current.number == 11 and indexes.number == 12) or
+		(current.number == 12 and indexes.number == 11) or
+		(current.number == 21 and indexes.number == 22) or
+		(current.number == 22 and indexes.number == 21) or
+		(current.number == 1 and indexes.number == 21) or
+		(current.number == 1 and indexes.number == 22) or
+		(current.number == 2 and indexes.number == 11) or
+		(current.number == 2 and indexes.number == 12) or
+		(current.number == 11 and indexes.number == 21) or
+		(current.number == 12 and indexes.number == 21) or
+		(current.number == 11 and indexes.number == 22) or
+		(current.number == 12 and indexes.number == 22) or
+		(current.number == 21 and indexes.number == 11) or
+		(current.number == 21 and indexes.number == 12) or
+		(current.number == 22 and indexes.number == 11) or
+		(current.number == 22 and indexes.number == 12) or
+		(current.number == 21 and indexes.number == 1) or
+		(current.number == 22 and indexes.number == 1) or
+		(current.number == 11 and indexes.number == 2) or
+		(current.number == 12 and indexes.number == 2) 
+	then
+		return true
+	end
+	return false
+end
+
+function UpgradeTree:IsLocked(indexes)
+	local current = GetUpgradeIndexes(self.section)
+	if current == nil then 
+		if indexes.number > 0 then 
+			return true
+		else
+			return false
+		end
+	end
+	if (current.number == 0 and indexes.number == 12) or
+		(current.number == 0 and indexes.number == 11) or
+		(current.number == 0 and indexes.number == 21) or
+		(current.number == 0 and indexes.number == 22) 
+	then
+		return true
+	end
+	return false
+end
+
+function UpgradeTree:IsInstalled(indexes)
+	local current = GetUpgradeIndexes(self.section)
+	if current == nil then 
+		return false
+	end
+	if current.letter == indexes.letter then
+		if (current.number == indexes.number) or
+			(current.number == 11 and indexes.number == 1) or
+			(current.number == 12 and indexes.number == 1) or
+			(current.number == 21 and indexes.number == 2) or
+			(current.number == 22 and indexes.number == 2) or
+			(indexes.number == 0 and current.number >= 0)
+		then
+			return true
+		end
+	end
+	return false
+end
+
+function UpgradeTree:GetUpgradeByIndex(index)
+	local ret = nil
+	local first, last = nil, nil
+	for k, v in pairs(self:GetUpgrades()) do
+		first, last = string.find(k, index)
+		if last == string.len(k) then
+			ret = { section = k, data = v }
+			break
+		end
+	end
+	return ret
+end
+
+-- **************************************************************** --
+
+
+function IsWeaponOrOutfit(section)
+	return la_utils.IsWeapon(section) or la_utils.IsOutfit(section)
+end
+
+function GetItemDescription(section)
+	local descr = game.translate_string(Get_Cfg_String(system_ini(), section, "description"))
+	local params = nil
+	if la_utils.IsOutfit(section) then
+		params = GetOutfitParams(section)
+		descr = descr .. "\n\n"
+		descr = descr .. game.translate_string("ui_inv_outfit_params") .. ":\n"
+		descr = descr .. game.translate_string("ui_inv_outfit_burn_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.burn_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_chemical_burn_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.chemical_burn_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_explosion_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.explosion_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_fire_wound_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.fire_wound_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_radiation_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.radiation_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_telepatic_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.telepatic_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_shock_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.shock_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_strike_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.strike_protection / 0.01)
+		descr = descr .. game.translate_string("ui_inv_outfit_wound_protection") .. ": "
+		descr = descr .. string.format("%d%%\n", params.wound_protection / 0.01)
+	else
+		params = GetWeaponParams(section)
+		descr = descr .. "\n\n"
+		descr = descr .. game.translate_string("ui_inv_outfit_params") .. ":\n"
+		descr = descr .. game.translate_string("ui_inv_handling") .. ": "
+		descr = descr .. string.format("%d%%\n", params.handling)
+		descr = descr .. game.translate_string("ui_inv_damage") .. ": "
+		descr = descr .. string.format("%d%%\n", params.damage)
+		descr = descr .. game.translate_string("ui_inv_rate_of_fire") .. ": "
+		descr = descr .. string.format("%d%%\n", params.rpm)
+		descr = descr .. game.translate_string("ui_inv_accuracy") .. ": "
+		descr = descr .. string.format("%d%%\n", params.accuracy)
+	end
+	return descr
+end
+
+function GetUpgradeDescription(section, st_descr)
+	local descr = game.translate_string(st_descr)
+	local prev_sect = GetPrevSection(section)
+	local params, params_base = nil, nil
+	if la_utils.IsOutfit(section) then
+		params = GetOutfitParams(section)
+		params_base = GetOutfitParams(prev_sect)
+		descr = descr .. "\n\n"
+		descr = descr .. game.translate_string("ui_inv_outfit_params") .. ":\n"
+		if params.burn_protection ~= params_base.burn_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_burn_protection") .. ": "
+			descr = descr .. CheckSign((params.burn_protection - params_base.burn_protection) / 0.01) .. "%\n"
+		end
+		if params.chemical_burn_protection ~= params_base.chemical_burn_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_chemical_burn_protection") .. ": "
+			descr = descr .. CheckSign((params.chemical_burn_protection - params_base.chemical_burn_protection) / 0.01) .. "%\n"
+		end
+		if params.explosion_protection ~= params_base.explosion_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_explosion_protection") .. ": "
+			descr = descr .. CheckSign((params.explosion_protection - params_base.explosion_protection) / 0.01) .. "%\n"
+		end
+		if params.fire_wound_protection ~= params_base.fire_wound_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_fire_wound_protection") .. ": "
+			descr = descr .. CheckSign((params.fire_wound_protection - params_base.fire_wound_protection) / 0.01) .. "%\n" 
+		end
+		if params.radiation_protection ~= params_base.radiation_protection then  
+			descr = descr .. game.translate_string("ui_inv_outfit_radiation_protection") .. ": "  
+			descr = descr .. CheckSign((params.radiation_protection - params_base.radiation_protection) / 0.01) .. "%\n"
+		end
+		if params.telepatic_protection ~= params_base.telepatic_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_telepatic_protection") .. ": "
+			descr = descr .. CheckSign((params.telepatic_protection - params_base.telepatic_protection) / 0.01) .. "%\n"
+		end
+		if params.shock_protection ~= params_base.shock_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_shock_protection") .. ": "
+			descr = descr .. CheckSign((params.shock_protection - params_base.shock_protection) / 0.01) .. "%\n"
+		end
+		if params.strike_protection ~= params_base.strike_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_strike_protection") .. ": "
+			descr = descr .. CheckSign((params.strike_protection - params_base.strike_protection) / 0.01) .. "%\n"
+		end
+		if params.wound_protection ~= params_base.wound_protection then
+			descr = descr .. game.translate_string("ui_inv_outfit_wound_protection") .. ": "
+			descr = descr .. CheckSign((params.wound_protection - params_base.wound_protection) / 0.01) .. "%\n"
+		end
+		if params.nightvision ~= params_base.nightvision then
+			if params.nightvision == "effector_nightvision_bad" then
+				descr = descr .. game.translate_string("st_up_resp_a1_name") .. "\n"
+			elseif params.nightvision == "effector_nightvision_good" then
+				descr = descr .. game.translate_string("st_up_resp_b1_name") .. "\n"
+			else
+				descr = descr .. game.translate_string("ui_inv_outfit_nightvision") .. "\n"
+			end
+		end
+	else
+		params = GetWeaponParams(section)
+		params_base = GetWeaponParams(prev_sect)
+		descr = descr .. "\n\n"
+		descr = descr .. game.translate_string("ui_inv_outfit_params") .. ":\n"
+		if params.handling ~= params_base.handling then
+			descr = descr .. game.translate_string("ui_inv_handling") .. ": "
+			descr = descr .. CheckSign(params.handling - params_base.handling).. "%\n"
+		end
+		if params.damage ~= params_base.damage then
+			descr = descr .. game.translate_string("ui_inv_damage") .. ": "
+			descr = descr .. CheckSign(params.damage - params_base.damage) .. "%\n"
+		end
+		if params.rpm ~= params_base.rpm then
+			descr = descr .. game.translate_string("ui_inv_rate_of_fire") .. ": "
+			descr = descr .. CheckSign(params.rpm - params_base.rpm) .. "%\n"
+		end
+		if params.accuracy ~= params_base.accuracy then
+			descr = descr .. game.translate_string("ui_inv_accuracy") .. ": "
+			descr = descr .. CheckSign(params.accuracy - params_base.accuracy) .. "%\n"
+		end
+		if params.magazine ~= params_base.magazine then
+			descr = descr .. game.translate_string("ammo_magazine") .. ": " 
+			descr = descr .. CheckSign(params.magazine - params_base.magazine) .. "\n"
+		end
+		if params.weight ~= params_base.weight then
+			descr = descr .. game.translate_string("st_prop_weight") .. ": "
+			local weight = params_base.weight - params.weight
+			if weight > 0 then
+				weight = string.format("%%c[green]-%.2f\n", weight) --skyloader: i didnt use CheckSign() because weight should be %f value, not %d
+			elseif weight < 0 then
+				weight = string.format("%%c[red]+%.2f\n", weight)
+			else
+				weight = string.format("%%c[default] %.2f\n", weight)
+			end
+			descr = descr .. weight
+		end
+		if params.reliability ~= params_base.reliability then
+			descr = descr .. game.translate_string("prop_reliability") .. ": "
+			descr = descr .. CheckSign((params.reliability - params_base.reliability)/0.01) .. "%\n"
+		end
+		if params.dispertion ~= params_base.dispertion then
+			descr = descr .. game.translate_string("st_prop_recoil") .. ": " 
+			descr = descr .. CheckSignInv(100/params.dispertion*(params.dispertion-params_base.dispertion)) .. "%\n" --skyloader: need to think about it
+		end
+		--/skyloader: addons
+		if params.silenser ~= params_base.silenser then
+			descr = descr .. game.translate_string("st_up_add_a1_name") .. "\n" 
+		end
+		if params.scope ~= params_base.scope then
+			descr = descr .. game.translate_string("st_up_add_a2_name") .. "\n" 
+		end
+		if params.grenade_launcher ~= params_base.grenade_launcher then
+			descr = descr .. game.translate_string("st_up_add_a3_name") .. "\n" 
+		end
+	end
+	return descr
+end
+
+function CheckSign(num)
+	if num > 0 then
+		return string.format("%%c[green]+%d", num)
+	elseif num < 0 then
+		return string.format("%%c[red]%d", num)
+	else
+		return string.format("%%c[default] %d", num)
+	end
+end
+
+function CheckSignInv(num)
+	if num > 0 then
+		return string.format("%%c[green]-%d", num)
+	elseif num < 0 then
+		return string.format("%%c[red]+%d", -num)
+	else
+		return string.format("%%c[default] %d", num)
+	end
+end
+
+function GetOutfitParams(section)
+	local ini = system_ini()
+	local tbl =
+	{
+		burn_protection = Get_Cfg_Number(ini, section, "burn_protection"),
+		chemical_burn_protection = Get_Cfg_Number(ini, section, "chemical_burn_protection"),
+		explosion_protection = Get_Cfg_Number(ini, section, "explosion_protection"),
+		fire_wound_protection = Get_Cfg_Number(ini, section, "fire_wound_protection"),
+		radiation_protection = Get_Cfg_Number(ini, section, "radiation_protection"),
+		telepatic_protection = Get_Cfg_Number(ini, section, "telepatic_protection"),
+		shock_protection = Get_Cfg_Number(ini, section, "shock_protection"),
+		strike_protection = Get_Cfg_Number(ini, section, "strike_protection"),
+		wound_protection = Get_Cfg_Number(ini, section, "wound_protection"),
+		nightvision = Get_Cfg_String(ini, section, "nightvision_sect")
+	}
+	return tbl
+end
+
+function GetWeaponParams(section)
+	local ini = system_ini()
+	local tbl = 
+	{
+		handling = ui_wpn_params.GetHandling(section),
+		damage = ui_wpn_params.GetDamage(section),
+		rpm = ui_wpn_params.GetRPM(section),
+		accuracy = ui_wpn_params.GetAccuracy(section),
+		magazine = Get_Cfg_Num32(ini, section, "ammo_mag_size", 0),
+		weight = Get_Cfg_Number(ini, section, "inv_weight"),
+		silenser = Get_Cfg_Num32(ini, section, "silenser_status", 0),
+		scope = Get_Cfg_Num32(ini, section, "scope_status", 0),
+		grenade_launcher = Get_Cfg_Num32(ini, section, "grenade_launcher_status", 0),
+		dispertion = ((Get_Cfg_Number(ini, section, "cam_dispersion", 0.0)+Get_Cfg_Number(ini, section, "cam_dispersion_inc", 0.0)+Get_Cfg_Number(ini, section, "cam_step_angle_horz", 0.0))/3)
+	}
+	return tbl
+end
+
+function GetBaseSection(section) 
+	local ret = nil
+	local first, last = string.find(section, "_upg_")
+	if first and last then
+		ret = string.sub(section, 0, first - 1)
+	end
+	if ret then
+		if all_wpns_suits[ret] == nil then
+			ret = reversed_all_wpns_suits[ret]
+		end
+	end
+	return ret or section
+end
+
+function get_repair_cost(fixer_name, cost, cond)
+	return math.floor((1 - cond) * cost * fixer_profit[fixer_name])
+end
+
+function GetPrevSection(section)
+	local indexes = GetUpgradeIndexes(section)
+	local ret = nil
+	if not indexes then
+		ret = section
+	else
+		if indexes.number == 0 then
+			ret =  GetBaseSection(section)
+		elseif indexes.number == 1 or indexes.number == 2 then
+			ret = GetShortName(section) .. "_upg_" .. indexes.letter .. "0"
+		elseif indexes.number == 11 or indexes.number == 12 then
+			ret = GetShortName(section) .. "_upg_" .. indexes.letter .. "1"
+		elseif indexes.number == 21 or indexes.number == 22 then
+			ret = GetShortName(section) .. "_upg_" .. indexes.letter .. "2"
+		end
+	end
+	return ret
+end
+
+function GetShortName(sect)
+	local first, last = nil
+	if unupgradable_wpns[sect] then
+		return sect
+	elseif all_wpns_suits[sect] then
+		return all_wpns_suits[sect]
+	else
+		first, last = string.find(sect, "_upg_")
+		if first then
+			return string.sub(sect, 0, first - 1)
+		end
+	end
+	abort("upgrade weapon error, section missing from config = %s", sect)
+	--parser.dbg_print("returning nil for %s", sect)
+	return nil
+end
+
+function GetActorInvWeight()
+	local obj = nil
+	local sum = 0
+	local max_weight = Get_Cfg_Number(system_ini(), "actor", "max_item_mass", 50.0)
+	for index = 0, db.actor:object_count() - 1 do
+		obj = db.actor:object(index)
+		sum = sum + Get_Cfg_Number(system_ini(), obj:section(), "inv_weight", 0.0)
+	end
+	return sum, max_weight
+end
+
+function GetUpgradeIndexes(sect)
+	local first, last = string.find(sect, "_upg_")
+	local l, n = "", ""
+	if first == nil and last == nil or string.find(sect, "_upg_base") then
+		return nil
+	end
+	local s = string.sub(sect, last + 1, string.len(sect))
+	for a in string.gmatch(s, "%a") do
+		l = a
+	end
+	for d in string.gmatch(s, "%d") do
+		n = n .. d
+	end
+	return {letter = l, number = tonumber(n)}
+end
+
+-- ******************************************* --
+
+function init_gui(first, second)
+	local npc = if_then_else(first:id() ~= db.actor:id(), first, second)
+	dialogs.break_dialog(first, second)
+	level.start_stop_menu(uiRepairWnd(npc:name()), true)
+end
+
+function test()
+	level.start_stop_menu(uiRepairWnd("test"), true)
+end

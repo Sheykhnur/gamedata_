@@ -1,0 +1,383 @@
+;*********************agr fake battle off*********************************
+
+[danger@agr_fake_battle_ignore_corpses]
+ignore_distance_corpse = 0
+ignore_distance_sound = 0
+ignore_distance = 0
+danger_inertion_time_grenade = 0
+danger_inertion_time_hit = 4000
+danger_inertion_time_ricochet = 0
+danger_inertion_time_corpse = 0
+danger_inertion_time_sound = 0
+
+[logic@agr_fake_battle_soldier_off1]
+active = walker@agr_fake_battle_soldier_off1
+
+[walker@agr_fake_battle_soldier_off1]
+path_walk = soldier_off1
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_soldier_off2]
+active = walker@agr_fake_battle_soldier_off2
+
+[walker@agr_fake_battle_soldier_off2]
+path_walk = soldier_off2
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_soldier_off3]
+active = walker@agr_fake_battle_soldier_off3
+
+[walker@agr_fake_battle_soldier_off3]
+path_walk = soldier_off3
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_soldier_off9]
+active = walker@agr_fake_battle_soldier_off9
+
+[walker@agr_fake_battle_soldier_off9]
+path_walk = soldier_off9
+danger = danger@agr_fake_battle_ignore_corpses
+
+;************************************************************
+
+[logic@agr_fake_battle_soldier_off4]
+active = walker@agr_fake_battle_soldier_off4
+
+[walker@agr_fake_battle_soldier_off4]
+path_walk = soldier_walk4
+path_look = soldier_look4
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_soldier_off5]
+active = walker@agr_fake_battle_soldier_off5
+
+[walker@agr_fake_battle_soldier_off5]
+path_walk = soldier_walk5
+path_look = soldier_look5
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_soldier_off6]
+active = walker@agr_fake_battle_soldier_off6
+
+[walker@agr_fake_battle_soldier_off6]
+path_walk = soldier_walk6
+path_look = soldier_look6
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_soldier_off7]
+active = walker@agr_fake_battle_soldier_off7
+
+[walker@agr_fake_battle_soldier_off7]
+path_walk = soldier_walk7
+path_look = soldier_look7
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_soldier_off8]
+active = walker@agr_fake_battle_soldier_off8
+
+[walker@agr_fake_battle_soldier_off8]
+path_walk = soldier_walk8
+path_look = soldier_look8
+danger = danger@agr_fake_battle_ignore_corpses
+
+;************************************************************
+
+[logic@agr_fake_battle_stalker_off1]
+active = walker@agr_fake_battle_stalker_off1
+
+[walker@agr_fake_battle_stalker_off1]
+path_walk = stalker_walk1
+path_look = stalker_look1
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_stalker_off2]
+active = walker@agr_fake_battle_stalker_off2
+
+[walker@agr_fake_battle_stalker_off2]
+path_walk = stalker_walk2
+path_look = stalker_look2
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_stalker_off3]
+active = walker@agr_fake_battle_stalker_off3
+
+[walker@agr_fake_battle_stalker_off3]
+path_walk = stalker_walk3
+path_look = stalker_look3
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_stalker_off4]
+active = walker@agr_fake_battle_stalker_off4
+
+[walker@agr_fake_battle_stalker_off4]
+path_walk = stalker_walk4
+path_look = stalker_look4
+danger = danger@agr_fake_battle_ignore_corpses
+
+;************************************************************
+
+[logic@agr_fake_battle_stalker_off5]
+active = walker@agr_fake_battle_stalker_off5
+
+[walker@agr_fake_battle_stalker_off5]
+path_walk = stalker_walk5
+path_look = stalker_look5
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_stalker_off6]
+active = walker@agr_fake_battle_stalker_off6
+
+[walker@agr_fake_battle_stalker_off6]
+path_walk = stalker_walk6
+path_look = stalker_look6
+danger = danger@agr_fake_battle_ignore_corpses
+
+[logic@agr_fake_battle_stalker_off7]
+active = walker@agr_fake_battle_stalker_off7
+
+[walker@agr_fake_battle_stalker_off7]
+path_walk = stalker_walk7
+path_look = stalker_look7
+danger = danger@agr_fake_battle_ignore_corpses
+
+
+;*********************agr fake battle first soldier group*********************************
+
+[danger@agr_fake_battle]
+ignore_distance = 100
+ignore_distance_sound = 100
+ignore_distance_corpse = 0
+danger_inertion_time_grenade = 2000
+danger_inertion_time_hit = 4000
+danger_inertion_time_ricochet = 1000
+danger_inertion_time_corpse = 0
+
+[logic@agr_fake_battle_soldier1]
+active = walker@agr_fake_battle_soldier_wait1
+combat_ignore = true
+
+[walker@agr_fake_battle_soldier_wait1]
+path_walk = soldier_off1
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_timer = 9000 | walker@agr_fake_battle_soldier_go1
+
+[walker@agr_fake_battle_soldier_go1]
+path_walk = walk1
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_signal = s | walker@agr_fake_battle_soldier1
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[walker@agr_fake_battle_soldier1]
+path_walk = skirmish_walk1
+danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_soldier2]
+active = walker@agr_fake_battle_soldier_wait2
+combat_ignore = true
+
+[walker@agr_fake_battle_soldier_wait2]
+path_walk = soldier_off2
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_timer = 9000 | walker@agr_fake_battle_soldier_go2
+
+[walker@agr_fake_battle_soldier_go2]
+path_walk = walk2
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_signal = s | walker@agr_fake_battle_soldier2
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[walker@agr_fake_battle_soldier2]
+path_walk = skirmish_walk2
+danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_soldier3]
+active = walker@agr_fake_battle_soldier_wait3
+combat_ignore = true
+
+[walker@agr_fake_battle_soldier_wait3]
+path_walk = soldier_off3
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_timer = 9000 | walker@agr_fake_battle_soldier_go3
+
+[walker@agr_fake_battle_soldier_go3]
+path_walk = walk3
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_signal = s | walker@agr_fake_battle_soldier3
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[walker@agr_fake_battle_soldier3]
+path_walk = skirmish_walk3
+danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_soldier9]
+active = walker@agr_fake_battle_soldier_wait9
+combat_ignore = true
+
+[walker@agr_fake_battle_soldier_wait9]
+path_walk = soldier_off9
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_timer = 6500 | walker@agr_fake_battle_soldier_go9
+
+[walker@agr_fake_battle_soldier_go9]
+path_walk = walk4
+combat_ignore_cond = always
+invulnerable = true
+team = agr_fake_battle
+danger = danger@agr_fake_battle_ignore_corpses
+soundgroup = agr_fake_battle
+on_signal = s | walker@agr_fake_battle_soldier9
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[walker@agr_fake_battle_soldier9]
+path_walk = skirmish_walk4
+danger = danger@agr_fake_battle
+
+;********************agr fake battle second soldier group*********************************
+
+[logic@agr_fake_battle_soldier4]
+active = walker@agr_fake_battle_soldier4
+danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_soldier4]
+path_walk = soldier_walk4
+path_look = soldier_look4
+danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_soldier5]
+active = walker@agr_fake_battle_soldier5
+danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_soldier5]
+path_walk = soldier_walk5
+path_look = soldier_look5
+danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_soldier6]
+active = walker@agr_fake_battle_soldier6
+danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_soldier6]
+path_walk = soldier_walk6
+path_look = soldier_look6
+danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_soldier7]
+active = walker@agr_fake_battle_soldier7
+danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_soldier7]
+path_walk = soldier_walk7
+path_look = soldier_look7
+danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_soldier8]
+active = walker@agr_fake_battle_soldier8
+danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_soldier8]
+path_walk = soldier_walk8
+path_look = soldier_look8
+danger = danger@agr_fake_battle
+
+;*************************agr fake battle first stalker group*******************************
+
+[logic@agr_fake_battle_stalker1]
+active = walker@agr_fake_battle_stalker1
+;danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_stalker1]
+path_walk = stalker_walk1
+path_look = stalker_look1
+;danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_stalker2]
+active = walker@agr_fake_battle_stalker2
+;danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_stalker2]
+path_walk = stalker_walk2
+path_look = stalker_look2
+;danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_stalker3]
+active = walker@agr_fake_battle_stalker3
+;danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_stalker3]
+path_walk = stalker_walk3
+path_look = stalker_look3
+;danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_stalker4]
+active = walker@agr_fake_battle_stalker4
+;danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_stalker4]
+path_walk = stalker_walk4
+path_look = stalker_look4
+;danger = danger@agr_fake_battle
+
+
+;***************************agr fake battle second stalker group*********************************
+
+[logic@agr_fake_battle_stalker5]
+active = walker@agr_fake_battle_stalker5
+;danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_stalker5]
+path_walk = stalker_walk5
+path_look = stalker_look5
+;danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_stalker6]
+active = walker@agr_fake_battle_stalker6
+;danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_stalker6]
+path_walk = stalker_walk6
+path_look = stalker_look6
+;danger = danger@agr_fake_battle
+
+[logic@agr_fake_battle_stalker7]
+active = walker@agr_fake_battle_stalker7
+;danger = danger@agr_fake_battle
+
+[walker@agr_fake_battle_stalker7]
+path_walk = stalker_walk7
+path_look = stalker_look7

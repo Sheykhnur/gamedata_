@@ -1,0 +1,190 @@
+;*************************************state 0************************************************
+
+[logic@swamp_doc_terrain_doc_off]
+active = walker@swamp_doc_off
+
+[walker@swamp_doc_off]
+path_walk = doc_start
+path_look = doc_start_look
+
+
+;************************************state 1**************************************************
+[danger@doc]
+ignore_distance = 40
+
+[death@swamp_doc]
+on_info = {+swamp_doc_dead}
+
+[combat_ignore@swamp_doc]
+
+[meet@swamp_doc]
+meet_state		= 6| hello| 4| nil
+meet_state_wpn	= 6| hello| 4| nil
+victim			= 5| actor
+victim_wpn		= 5| actor
+meet_dialog		= swamp_doc_start
+use				= true
+use_wpn			= false
+
+[logic@swamp_doc_terrain_doc]
+active = walker@swamp_doc
+combat_ignore = combat_ignore@swamp_doc
+on_death = death@swamp_doc
+danger = danger@doc
+
+[walker@swamp_doc]
+path_walk = doc_start
+path_look = doc_start_look
+combat_ignore_cond = always
+meet = meet@swamp_doc
+on_info = {+swamp_scene_start -swamp_scene_end} walker@swamp_doc_scene
+danger = danger@doc
+
+[walker@swamp_doc_scene]
+path_walk = doc_meet
+path_look = doc_meet_look
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_info = {+swamp_actor_reached} remark@swamp_doc
+danger = danger@doc
+
+[remark@swamp_doc]
+anim = wait_long
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_info = {+swamp_actor_reached} remark@swamp_doc_start
+danger = danger@doc
+
+[remark@swamp_doc_start]
+anim = swa_doc_meet
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_signal = anim_end | remark@swamp_doc_synth %+swamp_actor_talk1%
+danger = danger@doc
+
+[remark@swamp_doc_synth]
+anim = wait
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+on_info = {+swamp_actor_talk2} remark@swamp_doc_talk
+danger = danger@doc
+
+[remark@swamp_doc_talk]
+anim = ordinary_talk5
+snd = swa_replics3
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_signal = sound_end | %+swamp_actor_talk3%
+on_info = {+swamp_actor_talk4} remark@swamp_doc_talk2
+danger = danger@doc
+
+[remark@swamp_doc_talk2]
+anim = swa_doc_hear
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_signal = anim_end | remark@swamp_doc_end
+danger = danger@doc
+
+[remark@swamp_doc_end]
+anim = swa_doc_hear
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_timer = 2000 | %+swamp_actor_end% remark@swamp_doc_end_synth
+danger = danger@doc
+
+[remark@swamp_doc_end_synth]
+anim = wait
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_timer = 500 | remark@swamp_doc_shock
+danger = danger@doc
+
+[remark@swamp_doc_shock]
+anim = sci_suprised
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_timer = 7000 | remark@swamp_doc_shock2
+danger = danger@doc
+
+[remark@swamp_doc_shock2]
+anim = sci_fear_new
+combat_ignore_cond = always
+target = swamp_actor_way, 2
+meet = no_meet
+on_timer = 11000 | walker@swamp_doc_end
+danger = danger@doc
+
+[walker@swamp_doc_end]
+path_walk = doc_start
+path_look = doc_start_look
+combat_ignore_cond = always
+meet = meet@swamp_doc
+danger = danger@doc
+
+;*******************************************state 0,1*************************************************
+[danger@dochouse]
+ignore_distance = 40
+
+[combat_ignore@swamp_dochouse]
+
+[logic@swamp_doc_terrain_kamper1]
+active = kamper@swamp_doc_terrain1
+
+[kamper@swamp_doc_terrain1]
+path_walk = kamper1_walk
+path_look = kamper1_look
+kamp_name = kamp1
+danger = danger@dochouse
+combat_ignore_cond = always
+combat_ignore = combat_ignore@swamp_dochouse
+
+[logic@swamp_doc_terrain_kamper2]
+active = kamper@swamp_doc_terrain2
+
+[kamper@swamp_doc_terrain2]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+danger = danger@dochouse
+combat_ignore_cond = always
+combat_ignore = combat_ignore@swamp_dochouse
+
+[logic@swamp_doc_terrain_sleeper1]
+active = sleeper@swamp_doc_terrain_sleeper1
+
+[sleeper@swamp_doc_terrain_sleeper1]
+path_main = sleeper1
+wakeable = false
+danger = danger@dochouse
+combat_ignore_cond = always
+combat_ignore = combat_ignore@swamp_dochouse
+
+[logic@swamp_doc_terrain_sleeper2]
+active = sleeper@swamp_doc_terrain_sleeper2
+
+[sleeper@swamp_doc_terrain_sleeper2]
+path_main = sleeper2
+wakeable = false
+danger = danger@dochouse
+combat_ignore_cond = always
+combat_ignore = combat_ignore@swamp_dochouse
+
+[logic@swamp_doc_terrain_sleeper3]
+active = sleeper@swamp_doc_terrain_sleeper3
+
+[sleeper@swamp_doc_terrain_sleeper3]
+path_main = sleeper3
+wakeable = false
+danger = danger@dochouse
+combat_ignore_cond = always
+combat_ignore = combat_ignore@swamp_dochouse

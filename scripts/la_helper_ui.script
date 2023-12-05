@@ -1,0 +1,90 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_helper_ui.script
+ Description: "UI HELPERs" - diffent autonomic 'common' functions
+ Copyright  : 2013 © STALKER-community
+ Author     : (miscellany / pack)
+ Last edit  : 23.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local FontByName = {
+	["small"]       = GetFontSmall,
+	["medium"]      = GetFontMedium,
+	["letterica16"] = GetFontLetterica16Russian,
+	["letterica18"] = GetFontLetterica18Russian,
+	["letterica25"] = GetFontLetterica25,
+	["graffiti19"]  = GetFontGraffiti19Russian,
+	["graffiti22"]  = GetFontGraffiti22Russian,
+	["graffiti32"]  = GetFontGraffiti32Russian,
+	["graffiti50"]  = GetFontGraffiti50Russian,
+	["default"]     = GetFontLetterica16Russian
+}
+local ColourByName = {
+	["full_white"] = {255, 255, 255, 255},
+	["white"]      = {255, 240, 217, 182},
+	["yellow"]     = {255, 238, 155,  23},
+	["orange"]     = {255, 238, 153,  26},
+	["red"]        = {255, 255,   0,   0},
+	["green"]      = {255,   0, 255,   0},
+	["light_blue"] = {255,  70, 150, 180},
+	["blue"]       = {255,   0,   0, 255},
+	["light_grey"] = {255, 150, 150, 180},
+	["dark_grey"]  = {255, 128, 128, 128},
+	["default"]    = {255, 238, 155,  23}
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function fGetFontByName(name)
+	return name and FontByName[name]() or FontByName["default"]() --/>
+end
+
+function fGetColourByName(name)
+	if name and ColourByName[name] then
+		return unpack(ColourByName[name]) --/>
+	end
+	return unpack(ColourByName["default"]) --/>
+end
+--/ ---------------------------------------------
+function fGet_3tButton(x,y,w,h)
+	local btn = CUI3tButton()
+	btn:Init("ui_button_ordinary",x,y,w,h)
+	btn:SetStretchTexture(true)
+	btn:SetTextAlign(2) --/ alLeft|alRight|alCenter: 0|1|2
+	btn:SetAutoDelete(true)
+	return btn --/>
+end
+
+function fGet_CheckButton(x,y,w,h)
+	local btn = CUICheckButton()
+	btn:Init("ui_checker",x,y,w,h)
+	btn:SetTextureOffset(5,0)
+	btn:SetTextAlign(CGameFont.alLeft)
+	btn:SetAutoDelete(true)
+	return btn --/>
+end
+--/------------------------------------------------------------------------------------------------
+--/ Integrating function synonyms from current module to module '_G'
+--/------------------------------------------------------------------------------------------------
+local bFuncG = false --/ flag of functions integration to module '_G'
+
+if not bFuncG then
+	local tFuncG = {
+		["GetFontByName"]   = fGetFontByName,
+		["GetColourByName"] = fGetColourByName,
+	}
+	local oModule = _G
+	setfenv(1,oModule)
+	for k,v in pairs(tFuncG) do
+		oModule[k] = v
+		setfenv(oModule[k],oModule)
+	end
+	bFuncG = true
+end
+--/ -----------------------------------------------------------------------------------------------

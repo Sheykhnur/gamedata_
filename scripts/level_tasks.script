@@ -1,0 +1,261 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : level_tasks.script
+ Description: Level Tasks
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin(2010-08-22), dezodor(2011-05-15)
+ Last edit  : 31.05.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--[[
+ Reason: added level changer icons for prip ug, and all levels where its connected
+--]]
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+level_scripts = {
+	--escape_tasks, -- remove this before release
+	--tasks_general, --/#?#
+	tasks_escape,
+	tasks_garbage,
+	tasks_agroprom,
+	tasks_darkdolina,
+	tasks_darklab,
+	tasks_bar_rostok,
+	tasks_yantar,
+	tasks_military,
+	tasks_deadcity,
+	tasks_swamp,
+	tasks_radar,
+	tasks_bunker,
+	tasks_pripyat,
+	tasks_stancia,
+	tasks_sarcofag,
+	tasks_generators,
+	tasks_warlab,
+	tasks_oso,
+	tasks_rostok_factory,
+	tasks_secret_lab,
+	tasks_darkscape,
+	tasks_lost_factory,
+	tasks_labx16,
+	tasks_outskirts,
+	tasks_labx7,
+	tasks_damned,
+	tasks_country,
+	tasks_forgotten,
+	tasks_forest,
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if not obj then return end --/>
+	for _,v in ipairs(level_scripts) do
+		v.proceed(obj, sEvent)
+	end
+end
+
+function process_info_portion(info_id)
+	this.proceed(db.actor, nil)
+	for _,v in ipairs(level_scripts) do
+		if v.process_info_portion(info_id) then
+			return --/>
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function jump_to_level(level_name)
+	if level_name then
+		get_console():execute("flush")
+		get_console():execute("jump_to_level " .. level_name)
+	end
+end
+
+function add_location(sid, location, hint)
+	if alife() then
+		local se_obj = alife():story_object(sid)
+		if se_obj then
+			level.map_add_object_spot(se_obj.id, location, hint or "")
+		end
+	end
+end
+
+function remove_location(sid, location)
+	if alife() then
+		local se_obj = alife():story_object(sid)
+		if se_obj and level.map_has_object_spot(se_obj.id, location) then
+			level.map_remove_object_spot(se_obj.id, location)
+		end
+	end
+end
+
+function remove_location_safe(sid, location)
+	if alife() then
+		local se_obj = alife():story_object(sid)
+		if se_obj then
+			for i=1, level.map_has_object_spot(se_obj.id, location), 1 do
+				level.map_remove_object_spot(se_obj.id, location)
+			end
+		end
+	end
+end
+
+function is_map_spot_present(sid, location)
+	if alife() then
+		local se_obj = alife():story_object(sid)
+		if se_obj and level.map_has_object_spot(se_obj.id, location) ~= 0 then
+			return true
+		end
+	end
+	return false
+end
+
+function set_task_state(id_state, id_task, id_subtask) --/#~#
+	if db.actor then
+		local tasks = {
+			[task.in_progress] = true,
+			[task.completed]   = true,
+			[task.fail]        = true
+		}
+		if tasks[id_state] then
+			db.actor:set_task_state(id_state, id_task, id_subtask)
+		else
+			abort("%s:set_task_state: wrong task id_state, got %s", sModule, tostring(id_state))
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+local lchangers = {
+	{sid = 6001, icon = "level_changer", hint = "to_la02_garbage"},        -- cordon -> garbage
+	{sid = 6007, icon = "level_changer", hint = "to_la15_darkscape"},      -- cordon -> darkscape
+	{sid = 6015, icon = "level_changer", hint = "to_la14_rostok_factory"}, -- cordon -> rostok factory
+	
+	{sid = 6100, icon = "level_changer", hint = "to_la01_escape"},         -- garbage -> cordon
+	{sid = 6101, icon = "level_changer", hint = "to_la03_agroprom"},       -- garbage -> agroprom
+	{sid = 6102, icon = "level_changer", hint = "to_la14_rostok_factory"}, -- garbage -> rostok factory
+	{sid = 6103, icon = "level_changer", hint = "to_la04_darkdolina"},     -- garbage -> dark valley
+	{sid = 6104, icon = "level_changer", hint = "to_la04_darkdolina"},     -- garbage -> dark valley
+	{sid = 6105, icon = "level_changer", hint = "to_la04_darkdolina"},     -- garbage -> dark valley
+	{sid = 6106, icon = "level_changer", hint = "to_la05_bar_rostok"},     -- garbage -> bar-rostok
+	
+	{sid = 6300, icon = "level_changer", hint = "to_la20_forgotten"},      -- agroprom -> forgotten
+	{sid = 6301, icon = "level_changer", hint = "to_la14_rostok_factory"}, -- agroprom -> rostok factory
+	{sid = 6302, icon = "level_changer", hint = "to_la02_garbage"},        -- agroprom -> garbage
+	{sid = 6400, icon = "level_changer", hint = "to_la02_garbage"},        -- dark valley 1st exit -> garbage
+	{sid = 6401, icon = "level_changer", hint = "to_la02_garbage"},        -- dark valley 2nd exit -> garbage
+	{sid = 6402, icon = "level_changer", hint = "to_la02_garbage"},        -- dark valley 3rd exit -> garbage
+	{sid = 6404, icon = "level_changer", hint = "to_la04u_darklab"},       -- dark valley -> x-18
+	{sid = 6405, icon = "level_changer", hint = "to_la15_darkscape"},      -- dark valley -> darkscape
+	{sid = 6500, icon = "level_changer", hint = "to_la02_garbage"},        -- bar-rostok -> garbage
+	{sid = 6501, icon = "level_changer", hint = "to_la07_military"},       -- bar-rostok -> army warehouses
+	{sid = 6502, icon = "level_changer", hint = "to_la20_forgotten"},      -- bar-rostok -> forgotten
+	{sid = 6503, icon = "level_changer", hint = "to_la06_yantar"},         -- bar-rostok -> yantar
+	{sid = 6525, icon = "level_changer", hint = "to_la22_forest"},         -- bar-rostok -> forest
+	{sid = 6700, icon = "level_changer", hint = "to_la05_bar_rostok"},     -- army warehouses -> bar-rostok
+	{sid = 6701, icon = "level_changer", hint = "to_la10_radar"},          -- army warehouses -> radar
+	{sid = 6702, icon = "level_changer", hint = "to_la08_deadcity"},       -- army warehouses -> dead city
+	{sid = 6800, icon = "level_changer", hint = "to_la10_radar"},          -- pripyat -> radar
+	{sid = 6801, icon = "level_changer", hint = "to_la12_stancia"},        -- pripyat -> stancia
+	{sid = 6802, icon = "level_changer", hint = "to_la17_outskirts"},      -- pripyat -> outskirts
+	{sid = 6803, icon = "level_changer", hint = "to_la18_damned"},         -- pripyat -> sewers
+	{sid = 6900, icon = "level_changer", hint = "to_la20_forgotten"},      -- yantar -> forgotten
+	{sid = 6901, icon = "level_changer", hint = "to_la05_bar_rostok"},     -- yantar -> bar-rostok
+	{sid = 6902, icon = "level_changer", hint = "to_la09_swamp"},          -- yantar -> swamp
+	{sid = 6903, icon = "level_changer", hint = "to_la08_deadcity"},       -- yantar -> dead city
+	{sid = 6904, icon = "level_changer", hint = "to_la05_bar_rostok"},     -- yantar -> bar-rostok
+	
+	{sid = 7001, icon = "level_changer", hint = "to_la07_military"},       -- radar -> army warehouses
+	{sid = 7002, icon = "level_changer", hint = "to_la10u_bunker"},        -- radar -> bunker
+	{sid = 7003, icon = "level_changer", hint = "to_la12_stancia"},        -- radar -> stancia
+	{sid = 7004, icon = "level_changer", hint = "to_la08_deadcity"},       -- radar -> dead city
+	{sid = 7005, icon = "level_changer", hint = "to_la19_country"},        -- radar -> backcountry roads
+	{sid = 7006, icon = "level_changer", hint = "to_la18_damned"},         -- radar -> sewers
+	{sid = 7007, icon = "level_changer", hint = "to_la17_outskirts"},      -- radar -> outskirts
+	{sid = 7029, icon = "level_changer", hint = "to_la23_oldroad"},			-- radar -> oldroad
+	
+	{sid = 7100, icon = "level_changer", hint = "to_la10_radar"},          -- stancia -> radar
+	{sid = 7101, icon = "level_changer", hint = "to_la11_pripyat"},        -- stancia -> pripyat
+	{sid = 7102, icon = "level_changer", hint = "to_la13_generators"},     -- stancia -> generators
+	{sid = 7103, icon = "level_changer", hint = "to_la12u_sarcofag"},      -- stancia -> sarcophagus
+	{sid = 7104, icon = "level_changer", hint = "to_la10_radar"},          -- stancia -> radar
+	{sid = 7150, icon = "level_changer", hint = "to_la16_lost_factory"},   -- stancia -> metal factory
+	
+	{sid = 7200, icon = "level_changer", hint = "to_la07_military"},       -- dead city -> army warehouses
+	{sid = 7201, icon = "level_changer", hint = "to_la09_swamp"},          -- dead city -> swamp
+	{sid = 7202, icon = "level_changer", hint = "to_la06_yantar"},         -- dead city -> yantar
+	{sid = 7209, icon = "level_changer", hint = "to_la10_radar"},          -- dead city -> radar
+	{sid = 7300, icon = "level_changer", hint = "to_la12_stancia"},        -- sarcofag -> stancia
+	{sid = 7400, icon = "level_changer", hint = "to_la13_generators"},     -- x-2 -> generators
+	{sid = 7500, icon = "level_changer", hint = "to_la01_escape"},         -- darkscape -> escape
+	{sid = 7501, icon = "level_changer", hint = "to_la04_darkdolina"},     -- darkscape -> dark valley
+	{sid = 7600, icon = "level_changer", hint = "to_la03_agroprom"},       -- rostok factory -> agroprom
+	{sid = 7601, icon = "level_changer", hint = "to_la14u_secret_lab"},    -- rostok factory -> x-14
+	{sid = 7602, icon = "level_changer", hint = "to_la01_escape"},         -- rostok factory -> cordon
+	{sid = 8652, icon = "level_changer", hint = "to_la13u_warlab"},        -- generators -> x-2
+	{sid = 7701, icon = "level_changer", hint = "to_la12_stancia"},        -- generators -> stancia
+	{sid = 7800, icon = "level_changer", hint = "to_la10_radar"},          -- x-10 -> radar
+	{sid = 7900, icon = "level_changer", hint = "to_la04_darkdolina"},     -- x-18 -> dark valley
+	{sid = 8000, icon = "level_changer", hint = "to_la14_rostok_factory"}, -- x-14 -> rostok factory
+	{sid = 8101, icon = "level_changer", hint = "to_la06_yantar"},         -- swamp -> yantar
+	{sid = 8102, icon = "level_changer", hint = "to_la08_deadcity"},       -- swamp -> dead city
+	{sid = 8103, icon = "level_changer", hint = "to_la17_outskirts"},      -- swamp -> outskirts
+	{sid = 8201, icon = "level_changer", hint = "to_la09_swamp"},          -- outskirts -> swamp
+	{sid = 8202, icon = "level_changer", hint = "to_la11_pripyat"},        -- outskirts -> pripyat
+	{sid = 8203, icon = "level_changer", hint = "to_la10_radar"},          -- outskirts -> radar
+	{sid = 8212, icon = "level_changer", hint = "to_la17u_labx7"},         -- outskirts -> lab x7 (outsk ug)
+	{sid = 8301, icon = "level_changer", hint = "to_la19_country"},        -- metal factory -> backcountry roads
+	{sid = 8302, icon = "level_changer", hint = "to_la16u_labx16"},        -- metal factory -> x-16
+	{sid = 8322, icon = "level_changer", hint = "to_la12_stancia"},        -- metal factory -> stancia
+	{sid = 8401, icon = "level_changer", hint = "to_la16_lost_factory"},   -- x16 1st exit -> metal factory
+	{sid = 8402, icon = "level_changer", hint = "to_la16_lost_factory"},   -- x16 2nd exit -> metal factory
+	{sid = 8501, icon = "level_changer", hint = "to_la17_outskirts"},      -- lab x7 -> outskirts
+	{sid = 8601, icon = "level_changer", hint = "to_la10_radar"},          -- sewers -> radar
+	{sid = 8602, icon = "level_changer", hint = "to_la11_pripyat"},        -- sewers -> pripyat
+	{sid = 8603, icon = "level_changer", hint = "to_la17_outskirts"},      -- sewers -> outskirts
+	{sid = 8701, icon = "level_changer", hint = "to_la16_lost_factory"},   -- backcountry roads -> lost factory
+	{sid = 8702, icon = "level_changer", hint = "to_la10_radar"},          -- backcountry roads -> radar
+	
+	{sid = 8901, icon = "level_changer", hint = "to_la03_agroprom"},       -- forgotten -> agroprom
+	{sid = 8902, icon = "level_changer", hint = "to_la06_yantar"},         -- forgotten -> yantar
+	{sid = 8903, icon = "level_changer", hint = "to_la05_bar_rostok"},     -- forgotten -> bar-rostok
+	{sid = 9001, icon = "level_changer", hint = "to_la04_darkdolina"},     -- forest -> darkdolina
+	{sid = 6429, icon = "level_changer", hint = "to_la22_forest"},         -- dakrdolina -> forest
+	{sid = 9012, icon = "level_changer", hint = "to_la05_bar_rostok"},     -- forest -> bar
+	{sid = 9014, icon = "level_changer", hint = "to_la23_oldroad"},     	-- forest -> oldroad
+	
+	{sid = 9100, icon = "level_changer", hint = "to_la22_forest"},			-- oldroad -> forest
+	{sid = 9101, icon = "level_changer", hint = "to_la10_radar"},     		-- oldroad -> radar
+	
+}
+
+function add_lchanger_location() --/#~#
+	local sim,se_obj = alife(),nil
+	if sim then
+		for _,v in ipairs(lchangers) do
+			se_obj = sim:story_object(v.sid)
+			if se_obj then
+				--level.map_add_object_spot(se_obj.id, v.icon, string.format("%s [%d]", v.hint, v.sid))
+				level.map_add_object_spot(se_obj.id, v.icon, v.hint)
+			end
+		end
+	end
+end
+
+function get_sid_lchangers() --/#~#
+	local tLvCh = {}
+	for _,v in ipairs(lchangers) do
+		tLvCh[v.sid]= v.hint
+	end
+	return tLvCh --/>
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,36 @@
+[smart_terrains]
+none = true
+
+[hit@blockpost_soldier2]
+on_info = {=hit_by_actor} %+cordon_military_hostile%
+
+[death@blockpost_soldier2]
+on_info = {=killed_by_actor} %+cordon_military_hostile%
+
+[logic]
+active = follower@escape_blockpost_soldier2
+combat_ignore = combat_ignore
+on_hit = hit@blockpost_soldier2
+on_death = death@blockpost_soldier2
+
+[follower@escape_blockpost_soldier2]
+formation_line = true
+leader = 6029
+distance = 2
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+on_info = {!is_day} kamper@escape_blockpost_patrol_kamper1
+on_info2 = {+cordon_military_hostile} follower@escape_blockpost_soldier2_1
+
+[kamper@escape_blockpost_patrol_kamper1]
+path_walk = escape_blockpost_patrol_kamper1_walk
+path_look = escape_blockpost_patrol_kamper1_look
+kamp_name = kamp1
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+on_info = {=is_day} follower@escape_blockpost_soldier2
+on_info2 = {+cordon_military_hostile} follower@escape_blockpost_soldier2_1
+
+
+[follower@escape_blockpost_soldier2_1]
+formation_line = true
+leader = 6029
+distance = 2

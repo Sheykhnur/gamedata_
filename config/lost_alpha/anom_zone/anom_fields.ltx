@@ -1,0 +1,880 @@
+
+
+;-- spawn_af_on_zone_spawn = <boolean> whether spawn artefact when zone is being spawned, or not
+;-- af_on_zone_spawn = <string> artefact section name which will be spawned on zone spawn; you can skip this if spawn_af_on_zone_spawn = false
+
+;-- spawn_anomalies = <boolean> whether spawn anomalies on zone spawn, or not
+;-- anom_pos = <string> anomalies spawn positions (waypoint name); you can skip this if spawn_anomalies = false
+;-- anoms = <string_list> list with anomalies section names and quantities; you can skip this if spawn_anomalies = false
+
+;-- idle_time = <number> time to spawn artefacts (game minutes)
+;-- cond = <condition_list> conditions for spawning artefacts
+;-- on_blowout = <always|never|use_cond> wheter spawn artefact after blowout or not
+
+;-- artefacts = <list> list with aretafacts section names and probabilities
+;-- af_paths = <string> artefacts jump paths (waypoint name)
+;-- af_jump_speed = <number> speed of movement (force)
+
+;-- postprocess = <string> name of ppe file or scripted pp
+;-- hit_type = <const> type of hit when actor is inside zone
+
+;-- npc_accessible = <boolean> whether npc can search anom zone for artefacts
+;-- actor_first_visit = <string> infoportion, will be given when actor enters anom zone for a first time (can be used for achievement or stats)
+
+;-- good vanilla postprocess effectors: dead_zone, psy_antenna, psy_antenna_indoor, radiation
+
+[anomaly_zone_base]
+npc_accessible = true
+
+;=====================================================================================================
+;=======================================TIER 1========================================================
+;=====================================================================================================
+
+;------------------------------------ Escape ----------------------------------------------
+
+[escape_anom_zone_grabber]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_rusty_thorn
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_rusty_thorn, 8
+af_paths = escape_anom_zone_grabber_path1,escape_anom_zone_grabber_path2,escape_anom_zone_grabber_path3
+af_jump_speed = 500
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+npc_accessible = false
+
+[escape_anom_zone_acidic]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_rock
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_slime, 1, af_rock, 1, af_glass_ball, 1
+af_paths = escape_anom_zone_acidic_path1,escape_anom_zone_acidic_path2,escape_anom_zone_acidic_path3
+af_jump_speed = 500
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.02
+npc_accessible = false
+
+[escape_anom_zone_trampoline]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_cake
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_medusa, 1, af_cake, 1
+af_paths = escape_anom_zone_trampoline_path1
+af_jump_speed = 600
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+;------------------------------------ Garbage ----------------------------------------------
+
+[gar_anomaly_zone_gravy]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_bouquet
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_medusa, 1, af_cake, 1, af_bouquet, 1, af_vyvert, 1
+af_paths = gar_anomaly_zone_gravy_path1,gar_anomaly_zone_gravy_path2
+af_jump_speed = 500
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+[gar_anomaly_zone_carousel]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_blood
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_blood, 1
+af_paths = gar_anomaly_zone_carousel_path1,gar_anomaly_zone_carousel_path2
+af_jump_speed = 500
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+[gar_anomaly_zone_electric]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_electra_sparkler
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_electra_sparkler, 1, af_accumulator, 1
+af_paths = gar_anomaly_zone_electric_path1,gar_anomaly_zone_electric_path2
+af_jump_speed = 200
+postprocess = anomaly_zone\psy_zone.ppe
+hit_type = telepatic
+hit_power = 0.02
+
+;------------------------------------ RosFactory ----------------------------------------------
+
+[rosf_anomaly_zone_grabber_acidic]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_rusty_thorn
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_rusty_thorn, 1, af_ameba_slime, 1, af_rock, 1, af_glass_ball,1
+af_paths = rosf_anomaly_zone_grabber_acidic_path1,rosf_anomaly_zone_grabber_acidic_path2
+af_jump_speed = 600
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.02
+
+[rosf_anomaly_zone_carousel_burner]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_red_beads
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_drops, 1, af_quartz, 1, af_red_beads, 1, af_blood, 1
+af_paths = rosf_anomaly_zone_carousel_burner_path1,rosf_anomaly_zone_carousel_burner_path2,rosf_anomaly_zone_carousel_burner_path3,rosf_anomaly_zone_carousel_burner_path4
+af_jump_speed = 600
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.01
+
+;------------------------------------ Agroprom ----------------------------------------------
+
+[agr_anomaly_zone_bfuzz]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fuzz_bagel
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fuzz_bagel, 1
+af_paths = agr_anomaly_zone_bfuzz_path1,agr_anomaly_zone_bfuzz_path2
+af_jump_speed = 300
+postprocess = anomaly_zone\fuzz_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.025
+
+[agr_anomaly_zone_burner_trampo]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_quartz
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_medusa, 1, af_cake, 1, af_bouquet, 1, af_drops, 1, af_quartz, 1, af_red_beads, 1
+af_paths = agr_anomaly_zone_burner_trampo_path1,agr_anomaly_zone_burner_trampo_path2
+af_jump_speed = 700
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.01
+
+;------------------------------------ Darkscape ----------------------------------------------
+
+[ds_anomaly_zone_electro_acidic]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_glass_ball
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_slime,1, af_rock,1, af_glass_ball,1, af_electra_sparkler,1, af_accumulator,1
+af_paths = ds_anomaly_zone_electro_acidic_path1,ds_anomaly_zone_electro_acidic_path2,ds_anomaly_zone_electro_acidic_path3
+af_jump_speed = 1000
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.02
+
+;------------------------------------ DOLINA ----------------------------------------------
+
+[dol_anomaly_zone1]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_vyvert
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_vyvert, 1, af_drops, 1, af_quartz, 1, af_red_beads, 1
+af_paths = dol_anomaly_zone1_path
+af_jump_speed = 800
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.01
+
+[dol_anomaly_zone2]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_bouquet
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_bouquet,1,af_medusa,1, af_cake,1
+af_paths = dol_anomaly_zone2_path
+af_jump_speed = 1200
+postprocess = dead_zone.ppe
+hit_type = radiation
+hit_power = 0.0
+
+[dol_anomaly_zone3]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_accumulator
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_electra_sparkler, 1, af_accumulator, 1
+af_paths = dol_anomaly_zone3_path
+af_jump_speed = 800
+postprocess = anomaly_zone\psy_zone.ppe
+hit_type = telepatic
+hit_power = 0.02
+
+;=====================================================================================================
+;=======================================TIER 2========================================================
+;=====================================================================================================
+
+;------------------------------------ FOREST ----------------------------------------------
+
+[fore_anomaly_zone_carousel]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_mincer_meat
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_mincer_meat, 1, af_devils_guts, 1
+af_paths = fore_anomaly_zone_carousel_path1
+af_jump_speed = 500
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+[fore_anomaly_zone_electra_bfuzz]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_ivory
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fuzz_kolobok, 1, af_ivory, 1, af_twinkle, 1, af_jewel, 1
+af_paths = fore_anomaly_zone_electra_bfuzz_path1
+af_jump_speed = 500
+postprocess = anomaly_zone\psy_zone.ppe
+hit_type = telepatic
+hit_power = 0.06
+
+;------------------------------------ Forgotten ----------------------------------------------
+
+[forg_anomaly_zone_burner_carousel]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_devils_guts
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fireball, 1, af_eye, 1, af_mincer_meat, 1, af_devils_guts, 1
+af_paths = forg_anomaly_zone_burner_carousel_path
+af_jump_speed = 300
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.05
+
+
+[forg_anomaly_zone_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_twinkle
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_jewel, 1, af_twinkle, 1
+af_paths = forg_anomaly_zone_electra_path
+af_jump_speed = 500
+postprocess = anomaly_zone\electric_zone.ppe
+hit_type = shock
+hit_power = 0.06
+
+
+[forg_anomaly_zone_electra_2]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_jewel
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_twinkle, 1, af_jewel, 1
+af_paths = forg_anomaly_zone_electra_2_path1,forg_anomaly_zone_electra_2_path2,forg_anomaly_zone_electra_2_path3,forg_anomaly_zone_electra_2_path4
+af_jump_speed = 300
+postprocess = anomaly_zone\psy_zone.ppe
+hit_type = telepatic
+hit_power = 0.06
+
+
+;------------------------------------ YANTAR ----------------------------------------------
+
+[yan_anomaly_zone1]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_mincer_meat
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_crescent,1,af_twine,1,af_mincer_meat,1,af_devils_guts,1,af_gravi,1
+af_paths = yan_anomaly_zone1_path
+af_jump_speed = 500
+postprocess = dead_zone.ppe
+hit_type = radiation
+hit_power = 0.0
+npc_accessible = true
+
+[yan_anomaly_zone2]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_gravi
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_crescent,1,af_twine,1,af_mincer_meat,1,af_devils_guts,1,af_gravi,1
+af_paths = yan_anomaly_zone2_path,yan_anomaly_zone2_path2,yan_anomaly_zone2_path3,yan_anomaly_zone2_path4
+af_jump_speed = 500
+postprocess = dead_zone.ppe
+hit_type = radiation
+hit_power = 0.0
+npc_accessible = true
+
+[yan_burning_fuzz_tunnel_zone]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_ivory
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ivory,1,af_fuzz_kolobok,1
+af_paths = yan_burning_fuzz_tunnel_zone_path1,yan_burning_fuzz_tunnel_zone_path2,yan_burning_fuzz_tunnel_zone_path3
+af_jump_speed = 300
+postprocess = anomaly_zone\fuzz_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.07
+npc_accessible = true
+
+;------------------------------------ MILITARY ----------------------------------------------
+
+[army_anomaly_zone_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_jewel
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_twinkle,1,af_jewel,1
+af_paths = army_anomaly_zone_electra_path1,army_anomaly_zone_electra_path2,army_anomaly_zone_electra_path3
+af_jump_speed = 300
+postprocess = anomaly_zone\psy_zone.ppe
+hit_type = telepatic
+hit_power = 0.06
+
+[army_anomaly_zone_acidic_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_liver
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_slug,1,af_liver,1
+af_paths = army_anomaly_zone_acidic_electra_path1,army_anomaly_zone_acidic_electra_path2,army_anomaly_zone_acidic_electra_path3
+af_jump_speed = 300
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.06
+
+;------------------------------------ DEADCITY ----------------------------------------------
+
+[cit_anomaly_zone_burner]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_eye
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fireball,1,af_eye,1
+af_paths = cit_anomaly_zone_burner_path1,cit_anomaly_zone_burner_path2,cit_anomaly_zone_burner_path3
+af_jump_speed = 300
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.05
+
+[cit_anomaly_zone_gravy]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_cristall_flower
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_cristall_flower,1,af_gravi,1,af_twine,1,af_crescent,1
+af_paths = cit_anomaly_zone_gravy_path1,cit_anomaly_zone_gravy_path2,cit_anomaly_zone_gravy_path3
+af_jump_speed = 300
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+[cit_anomaly_zone_acidic]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_ameba_slug
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_slug,1,af_liver,1
+af_paths = cit_anomaly_zone_acidic_path1
+af_jump_speed = 300
+postprocess = anomaly_zone\acid_zone
+hit_type = chemical_burn
+hit_power = 0.06
+
+[cit_anomaly_zone_acidic_trampo]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_liver
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_slug,1,af_liver,1,af_cristall_flower,1
+af_paths = cit_anomaly_zone_acidic_trampo_path1,cit_anomaly_zone_acidic_trampo_path2
+af_jump_speed = 300
+postprocess = anomaly_zone\acid_zone
+hit_type = chemical_burn
+hit_power = 0.06
+
+;------------------------------------ SWAMP ----------------------------------------------
+
+[swamp_anomaly_zone_bfuzz_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fuzz_kolobok
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_twinkle,1,af_jewel,1,af_fuzz_kolobok,1,af_ivory,1
+af_paths = swamp_anomaly_zone_bfuzz_electra_path1,swamp_anomaly_zone_bfuzz_electra_path2
+af_jump_speed = 300
+postprocess = anomaly_zone\psy_zone.ppe
+hit_type = telepatic
+hit_power = 0.06
+
+
+[swamp_anomaly_zone_burner]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fireball
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fireball,1,af_eye,1
+af_paths = swamp_anomaly_zone_burner_path1,swamp_anomaly_zone_burner_path2
+af_jump_speed = 300
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.05
+
+
+[swamp_anomaly_zone_grabber]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_rusty_kristall
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_rusty_kristall,1
+af_paths = swamp_anomaly_zone_grabber_path1,swamp_anomaly_zone_grabber_path2,swamp_anomaly_zone_grabber_path3
+af_jump_speed = 300
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+
+;=====================================================================================================
+;=======================================TIER 3========================================================
+;=====================================================================================================
+
+;---------------------------------------- OUTSKIRTS ---------------------------------------------
+
+[out_anomaly_zone_gravy]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_soother
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_soother,1,af_night_star,1
+af_paths = out_anomaly_zone_gravy_path1
+af_jump_speed = 500
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+
+[out_anomaly_zone_carousel]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_cuttlefish
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_cuttlefish,1,af_soul,1
+af_paths = out_anomaly_zone_carousel_path1,out_anomaly_zone_carousel_path2
+af_jump_speed = 500
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+
+[out_anomaly_zone_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_ice
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_electra_flash,1,af_electra_moonlight,1,af_ice,1
+af_paths = out_anomaly_zone_electra_path1,out_anomaly_zone_electra_path2,out_anomaly_zone_electra_path3
+af_jump_speed = 500
+postprocess = anomaly_zone\psy_zone.ppe
+hit_type = telepatic
+hit_power = 0.10
+
+;---------------------------------------- OLDROAD ---------------------------------------------
+
+[old_anomaly_zone_acidic_1]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_ameba_mica
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_baloon,1,af_ameba_mica,1
+af_paths = old_anomaly_zone_acidic_1_path1,old_anomaly_zone_acidic_1_path2,old_anomaly_zone_acidic_1_path3,old_anomaly_zone_acidic_1_path4
+af_jump_speed = 1000
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.10
+
+[old_anomaly_zone_acidic_2]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_ameba_mica
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_mica,1,af_baloon,1
+af_paths = old_anomaly_zone_acidic_2_path1
+af_jump_speed = 2000
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.10
+
+[old_anomaly_zone_trampo]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_night_star
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_night_star,1
+af_paths = old_anomaly_zone_trampo_path1,old_anomaly_zone_trampo_path2,old_anomaly_zone_trampo_path3,old_anomaly_zone_trampo_path4
+af_jump_speed = 300
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+;---------------------------------------- RADAR ---------------------------------------------
+
+[radar_anomaly_zone_mix]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fire
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_mica,1,af_baloon,1,af_fire,1,af_electra_flash,1,af_electra_moonlight,1,af_ice,1,af_night_star,1
+af_paths = radar_anomaly_zone_mix_path1,radar_anomaly_zone_mix_path2,radar_anomaly_zone_mix_path3
+af_jump_speed = 300
+postprocess = dead_zone.ppe
+hit_type = radiation
+hit_power = 0.0
+
+;---------------------------------------- NORTHHILLS ---------------------------------------------
+
+[bcr_anomaly_zone_burner]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fire
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fire,1
+af_paths = bcr_anomaly_zone_burner_path1,bcr_anomaly_zone_burner_path2,bcr_anomaly_zone_burner_path3,bcr_anomaly_zone_burner_path4
+af_jump_speed = 300
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.09
+
+[bcr_anomaly_zone_carousel_vortex]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_soul
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_cuttlefish,1,af_soul,1,af_soother,1
+af_paths = bcr_anomaly_zone_carousel_vortex_path1,bcr_anomaly_zone_carousel_vortex_path2,bcr_anomaly_zone_carousel_vortex_path3,bcr_anomaly_zone_carousel_vortex_path4
+af_jump_speed = 300
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+[bcr_anomaly_zone_fuzz]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_spine
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fuzz_cupcake,1,af_spine,1,af_glass,1
+af_paths = bcr_anomaly_zone_fuzz_path1,bcr_anomaly_zone_fuzz_path2,bcr_anomaly_zone_fuzz_path3
+af_jump_speed = 300
+postprocess = anomaly_zone\fuzz_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.12
+
+[bcr_anomaly_zone_grabber]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_dummy_battery
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_rusty_sea_urchin,1,af_dummy_battery,1
+af_paths = bcr_anomaly_zone_grabber_path1,bcr_anomaly_zone_grabber_path2
+af_jump_speed = 300
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+;---------------------------------------- LOSTFACTORY ---------------------------------------------
+
+[lost_anomaly_zone_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_electra_flash
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_electra_flash,1,af_electra_moonlight,1,af_ice,1
+af_paths = lost_anomaly_zone_electra_path1
+af_jump_speed = 300
+postprocess = anomaly_zone\electric_zone.ppe
+hit_type = shock
+hit_power = 0.09
+
+[lost_anomaly_zone_acidic_burner]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fire
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_ameba_mica,1,af_baloon,1,af_fire,1
+af_paths = lost_anomaly_zone_acidic_burner_path1,lost_anomaly_zone_acidic_burner_path2,lost_anomaly_zone_acidic_burner_path3
+af_jump_speed = 300
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.09
+
+[lost_anomaly_zone_fuzz]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fuzz_cupcake
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_fuzz_cupcake,1,af_spine,1,af_glass,1
+af_paths = lost_anomaly_zone_fuzz_path1,lost_anomaly_zone_fuzz_path2,lost_anomaly_zone_fuzz_path3
+af_jump_speed = 300
+postprocess = anomaly_zone\fuzz_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.12
+
+;=====================================================================================================
+;=======================================TIER 4========================================================
+;=====================================================================================================
+
+;------------------------------------ PRIPYAT ----------------------------------------------
+
+[pry_anomaly_zone_carousel]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_pupil
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_gold_beads,6,af_pupil,6
+af_paths = pry_anomaly_zone_carousel_path1,pry_anomaly_zone_carousel_path2
+af_jump_speed = 300
+postprocess = dead_zone.ppe
+hit_type = radiation
+hit_power = 0.0
+
+[pry_anomaly_zone_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_white_sun
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_white_sun,6,af_electra,6
+af_paths = pry_anomaly_zone_electra_path1,pry_anomaly_zone_electra_path2
+af_jump_speed = 300
+postprocess = anomaly_zone\electric_zone.ppe
+hit_type = shock
+hit_power = 0.14
+
+;------------------------------------ CHAES ----------------------------------------------
+
+[npp_anomaly_zone_acidic]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_dummy_pellicle
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_dummy_pellicle,1
+af_paths = npp_anomaly_zone_acidic_path1
+af_jump_speed = 800
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.17
+
+[npp_anomaly_zone_burner]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_mercury_ball
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_mercury_ball,1,af_cristall,1
+af_paths = npp_anomaly_zone_burner_path1,npp_anomaly_zone_burner_path2,npp_anomaly_zone_burner_path3,npp_anomaly_zone_burner_path4,npp_anomaly_zone_burner_path5,npp_anomaly_zone_burner_path6
+af_jump_speed = 800
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.14
+
+[npp_anomaly_zone_electra]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_electra
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_white_sun,1,af_electra,1
+af_paths = npp_anomaly_zone_electra_path1,npp_anomaly_zone_electra_path2,npp_anomaly_zone_electra_path3
+af_jump_speed = 1000
+postprocess = anomaly_zone\electric_zone.ppe
+hit_type = shock
+hit_power = 0.14
+
+[npp_anomaly_zone_fuzz]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_blue_beads
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_blue_beads,1,af_chestnut,1
+af_paths = npp_anomaly_zone_fuzz_path1
+af_jump_speed = 300
+postprocess = anomaly_zone\fuzz_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.2
+
+[npp_anomaly_zone_grabber]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_fungus
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_green_beads,1,af_fungus,1
+af_paths = npp_anomaly_zone_grabber_path1,npp_anomaly_zone_grabber_path2
+af_jump_speed = 550
+postprocess =
+hit_type = radiation
+hit_power = 0.0
+
+[npp_anomaly_zone_trampo_1]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_dummy_spring
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_dummy_dummy,1,af_dummy_spring,1
+af_paths = npp_anomaly_zone_trampo_1_path1
+af_jump_speed = 550
+postprocess = dead_zone.ppe
+hit_type = radiation
+hit_power = 0.0
+
+[npp_anomaly_zone_trampo_2]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_dummy_dummy
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_dummy_dummy,1,af_dummy_spring,1
+af_paths = npp_anomaly_zone_trampo_2_path1
+af_jump_speed = 550
+postprocess = dead_zone.ppe
+hit_type = radiation
+hit_power = 0.0
+
+;------------------------------------ GENERATORS ----------------------------------------------
+
+[gen_anomaly_zone_acidic]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_dummy_pellicle
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_dummy_pellicle,1
+af_paths = gen_anomaly_zone_acidic_path1
+af_jump_speed = 500
+postprocess = anomaly_zone\acid_zone.ppe
+hit_type = chemical_burn
+hit_power = 0.17
+
+[gen_anomaly_zone_vortex_burner]:anomaly_zone_base
+spawn_af_on_zone_spawn = true
+af_on_zone_spawn = af_dummy_glassbeads
+spawn_anomalies = false
+idle_time = 172800
+cond = 45
+on_blowout = use_cond
+artefacts = af_mercury_ball,1,af_cristall,1,af_gold_fish,1,af_dummy_glassbeads,1
+af_paths = gen_anomaly_zone_vortex_burner_path1
+af_jump_speed = 500
+postprocess = anomaly_zone\burn_zone.ppe
+hit_type = burn
+hit_power = 0.14

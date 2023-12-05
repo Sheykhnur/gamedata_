@@ -1,0 +1,16 @@
+[combat_ignore@shooter]
+
+[logic]
+active = remark@gen_shooter
+combat_ignore = combat_ignore@shooter
+
+[walker@gen_shooter]
+path_walk = gen_execution2
+on_timer = 5 | remark@gen_shooter
+combat_ignore_cond = always
+
+[remark@gen_shooter]
+anim = shooter
+target = gen_execution2, 0
+combat_ignore_cond = always
+on_info = {+gen_sc1_end} %=release%

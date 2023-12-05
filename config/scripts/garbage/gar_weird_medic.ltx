@@ -1,0 +1,34 @@
+[spawner]
+cond = {+has_freeplay_info}
+
+[smart_terrains]
+none = true
+
+[combat_ignore@gar_weird_medic]
+
+[logic]
+active = walker@gar_weird_medic
+combat_ignore = combat_ignore@gar_weird_medic
+
+[walker@gar_weird_medic]
+path_walk = gar_weird_medic_walk
+path_look = gar_weird_medic_look
+def_state_standing = ward
+meet = meet@gar_weird_medic
+on_info = {+gar_weird_died} walker@gar_weird_hostile %=actor_enemy%
+;on_info = {+gar_weird_died} %=actor_enemy%
+on_info2 = {+gar_weird_reward_have} %=release_not_seen%
+
+[meet@gar_weird_medic]
+meet_state		= 25|hello |5|nil
+meet_state_wpn	= 25|hello |5|nil
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog	= gar_weird_medic_dialog
+
+[walker@gar_weird_hostile]
+path_walk = gar_weird_medic_walk
+path_look = gar_weird_medic_look
+meet = no_meet

@@ -1,0 +1,129 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_combat.script
+ Description: Switching combat schemes
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Last edit  : 19.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATORs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_check_combat" (property_evaluator)
+--/ -----------------------------------------------------------------
+--/ Evaluator of switching between script and engine combat
+--/ false - engine combat, true - script combat
+--/ ---------------------------------------------
+function evaluator_check_combat:__init(name, st) super (nil, name)
+	self.st = st
+end
+
+function evaluator_check_combat:evaluate()
+	if self.st.enabled and self.object:best_enemy() and db.actor then
+		return self.st.script_combat_type ~= nil --/>
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------
+class "evaluator_enemy" (property_evaluator)
+--/ -----------------------------------------------------------------
+--/ Dublicating evaluator of enemies for planner of script combat
+--/ ---------------------------------------------
+function evaluator_enemy:__init(name) super (nil, name)
+end
+
+function evaluator_enemy:evaluate()
+	return self.object:best_enemy() ~= nil --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:add_evaluator( xr_evaluators_id.script_combat, this.evaluator_check_combat("script_combat", st) )
+	--/ New Action ----------------------------------------------------
+	local oNewAction = oPlanner:action(stalker_ids.action_combat_planner)
+	oNewAction:add_precondition( world_property( xr_evaluators_id.script_combat, false) )
+	--/ ---------------------------------------------------------------
+	xr_combat_zombied.add_to_binder( npc, ini, st, oPlanner )
+	--xr_combat_monolith.add_to_binder( npc, ini, st, oPlanner )
+	xr_combat_camper.add_to_binder ( npc, ini, st, oPlanner )
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+	local is_zombied = npc:section() == "stalker_zombied" or npc:character_community() == "zombied"
+--	log("set_scheme:NPC=[%s/%s],comm=[%s],section=[%s]:(%s)", npc:name(), npc:section(), npc:character_community(), section, ">") --/#~#
+	if section or is_zombied then
+		local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+		st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+		st.enabled = true
+		st.combat_type = xr_logic.cfg_get_condlist(ini, section, "combat_type", npc)
+		--/#?# from SCoP
+		if st.combat_type == "monolith" then st.combat_type = nil end
+		--/ zombied fight by default on zombied combat scheme
+		if is_zombied and not st.combat_type then
+			st.combat_type = { condlist = xr_logic.parse_condlist(npc, section, "", "zombied") }
+		end
+		if st.combat_type then
+			this.set_combat_type(npc, st)
+		end
+		if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],is_zombied=[%s]", npc:name(), scheme, section, is_zombied, "") end --/#~#
+	end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = npc and db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st then
+		st.enabled = false
+	end
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs
+--/------------------------------------------------------------------
+function set_combat_checker(...)
+	set_scheme(...)
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function set_combat_type(npc, st)
+	if not (npc and st) then return false end --/>
+	local script_combat_type_section = nil
+	if st.combat_type then
+		script_combat_type_section = xr_logic.pick_section_from_condlist( db.actor, npc, st.combat_type.condlist )
+		if script_combat_type_section == "nil" or script_combat_type_section == "monolith" then
+			script_combat_type_section = nil
+		end
+	end
+	st.script_combat_type = script_combat_type_section
+	local stor = db.storage[npc:id()]
+	if stor then
+		stor.script_combat_type = script_combat_type_section
+		local enemy = npc:best_enemy()
+		if stor.log and (enemy and enemy:id() or -1) ~= (stor.enemy_id or -1) then
+			log("set_combat_type: NPC=[%s] <= best_enemy=[%s],id=[%s] %s", npc:name(), enemy and enemy:name(), enemy and enemy:id(), stor.enemy_id or "", "") --/#~#
+		end
+		stor.enemy_id = enemy and enemy:id() --/#!# 'enemy' => 'enemy_id' for xr_conditions.script
+	end
+	return script_combat_type_section ~= nil --/>
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,793 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : smart_dyn_ltx.script
+ Description: 
+ Copyright  : 2009 © LA-team
+ Author     : barin (16.09.2009)
+ Editors    : Gr1ph00n(23.09.2012), Vintar(11.07.2012)
+ Last edit  : 23.07.2013 [...]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+function waypoint_exists(way_name, flag_need_exist, scheme) --/#~#
+	if flag_need_exist then
+		return type( get_patrol(way_name) ) == 'userdata' --/>
+	elseif level.patrol_path_exists(way_name) then
+		return type( get_patrol(way_name) ) == 'userdata' --/>
+	elseif la_patrols and la_patrols.get_replace_way_name(way_name) then
+		return type( get_patrol(way_name) ) == 'userdata' --/>
+	end
+	log("waypoint_exists: way=[%s] for scheme=[%s] not exists :<%s>", way_name, scheme, "Error!")
+	return false --/>
+end
+
+function get_way(way_name, scheme) --/#+#
+	if level.patrol_path_exists(way_name) then
+		return get_patrol(way_name) --/>
+	elseif la_patrols and la_patrols.get_replace_way_name(way_name) then
+		return get_patrol(way_name) --/>
+	end
+	log("get_way:=[%s] for scheme=[%s] not exists :<%s>", way_name, scheme, "Error!")
+	return nil --/>
+end
+
+function add_assault()
+	return "def_state_moving1 = assault\n"
+	    .. "def_state_moving2 = assault\n"
+	    .. "def_state_moving3 = assault\n"
+end
+
+function add_def_state_moving(move_type)
+	return "def_state_moving1 = " .. move_type .. "\n"
+	    .. "def_state_moving2 = " .. move_type .. "\n"
+	    .. "def_state_moving3 = " .. move_type .. "\n"
+end
+
+function get_meet(gname, meet)
+	if type(meet) == 'string' then
+		return "meet = meet@" .. gname .. "_" .. meet .. "\n"
+	elseif type(meet) == 'boolean' then
+		if meet then
+			return "meet = meet@" .. gname .. "\n"
+		end
+		return ""
+	end
+	return "meet = no_meet\n"
+end
+
+function add_treshold(gname, max_ignore_dist, ignore_monster)
+	local str = "[threshold@" .. gname .. "]\n"
+	if type(max_ignore_dist) == 'number' then
+		str = str .. "max_ignore_distance = " .. max_ignore_dist .. "\n"
+	end
+	if type(ignore_monster) == 'number' then
+		str = str .. "ignore_monster = " .. ignore_monster .. "\n"
+	end
+	return str
+end
+
+function add_monsters_threshold(gname, val)
+	if type(val) ~= 'number' then
+		val = 5
+	end
+	return "[threshold@" .. gname .. "]\n"
+	    .. "max_ignore_distance = " .. val .. "\n"
+	    .. "ignore_monster = 0\n"
+end
+
+function get_way_name(prefix, postfix, way_type)
+	local name = prefix
+	if postfix then
+		name = name .. string.char(postfix)
+	end
+	return name .. "_" .. way_type
+end
+--/ ----------------------------------
+--/ 'walker': проверка путей брожения внутри лагеря (#?# с таймаутом?)
+--/ ----------------------------------
+function add_walker_section(gname, quantity, header, assault, danger, start_index, meet, threshold)
+	local ltx, scheme = "", "walker"
+	if threshold then
+		scheme = "walker_extra"
+	end
+	if type(start_index) ~= 'number' then
+		start_index = 1
+	end
+	if not quantity then
+		quantity = 1
+	end
+	if quantity < start_index then
+		quantity = quantity - 1 + start_index
+	end
+	
+	local job_name, job_section, way_name, way
+	for i = start_index, quantity do
+		job_name = "walker" .. i
+		job_section = gname .. "_" .. job_name
+		way_name = job_name .. "_walk"
+		
+		way = get_way(job_section .. "_walk", "walker")
+		if not way then
+			return ltx --/>
+		end
+		
+		if header then
+			ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			ltx = ltx .. "active = walker@" .. job_section .. "\n"
+		end
+		
+		ltx = ltx .. "[walker@" .. job_section .. "]\n"
+		ltx = ltx .. "path_walk = " .. way_name .. "\n"
+		
+		if way:count() > 1 then --/ dont_check_existance
+			if level.patrol_path_exists(job_section .. "_look") then
+				ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+			end
+		elseif waypoint_exists(job_section .. "_look", false, "walker") then
+			ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+		end
+		
+		if assault then
+			ltx = ltx .. add_assault()
+		end
+		
+		ltx = ltx .. get_meet(gname, meet)
+		
+		if danger then
+			ltx = ltx .. "danger = danger@" .. gname .. "\n"
+		end
+		--/#!# walker_extra
+		if threshold then
+			ltx = ltx .. "threshold = threshold@" .. gname .. "\n"
+		end
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'walker': проверка путей брожения внутри лагеря (+threshold)
+--/ ----------------------------------
+function add_walker_section_extra(...)
+	return add_walker_section(...)
+end
+--/ ----------------------------------
+--/ 'patrol': патрули в лагере
+--/ ----------------------------------
+function add_patrol_section(gname, index, header, danger, meet, use_signal_for_last_point)
+	local postfix = 97 --/ 97...121 => a..y
+	local job_section = gname .. "_patrol" .. index
+	local way_name = get_way_name(job_section, postfix, "walk")
+	local ltx, current_section = "", ""
+	
+	if header and waypoint_exists(way_name, true, "patrol") then
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+		          .. "active = walker@" .. job_section .. string.char(postfix) .. "\n"
+	end
+	
+	while waypoint_exists(way_name, true, "patrol") do
+		ltx = ltx .. "[walker@" .. job_section .. string.char(postfix) .. "]\n"
+		          .. "path_walk = patrol" .. index .. string.char(postfix) .. "_walk\n"
+		
+		if waypoint_exists(get_way_name(job_section, postfix, "look"), false, "patrol") then
+			ltx = ltx .. "path_look = patrol" .. index .. string.char(postfix) .. "_look\n"
+		end
+		
+		ltx = ltx .. "def_state_moving1 = patrol\n"
+		          .. "def_state_moving2 = patrol\n"
+		          .. "def_state_moving3 = patrol\n"
+		
+		ltx = ltx .. get_meet(gname, meet)
+		
+		if danger then
+			ltx = ltx .. "danger = danger@" .. gname .. "\n"
+		end
+		
+		if postfix < 122 then
+			postfix = postfix + 1
+			way_name = get_way_name(job_section, postfix, "walk")
+		else
+			break
+		end
+		
+		if waypoint_exists(way_name, false, "patrol") then
+			ltx = ltx .. "on_info = {=npc_stay_on_point(120:ready)} walker@" .. job_section .. string.char(postfix) .. "\n"
+		else
+			if use_signal_for_last_point then
+				ltx = ltx .. "on_signal = ready|walker@" .. job_section .. "a\n"
+			elseif postfix > 98 then
+				ltx = ltx .. "on_info = {=npc_stay_on_point(120:ready)} walker@" .. job_section .. "a\n"
+			end
+			break
+		end
+	end
+	
+	return ltx
+end
+--/ ----------------------------------
+--/ 'camper': часовые в лагере
+--/ ----------------------------------
+function add_camper_section(gname, index, header, sniper, no_retreat, radius, danger, meet)
+	local job_name = "camper" .. index
+	local job_section = gname .. "_" .. job_name
+	if     not waypoint_exists(job_section .. "_walk", true, "camper") then
+		return "" --/>
+	elseif not waypoint_exists(job_section .. "_look", true, "camper") then
+		return "" --/>
+	end
+	
+	local ltx = ""
+	local str_radius = tostring(radius or 20)
+	local str_sniper = tostring(sniper == true)
+	local str_retreat = tostring(no_retreat == true)
+	if sniper and no_retreat then
+		log("add_camper_section:no_retreat is not available for sniper!")
+		str_retreat = "false"
+	end
+	
+	if header then
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+		          .. "active = camper@" .. job_section .. "\n"
+	end
+	
+	ltx = ltx .. "[camper@" .. job_section .. "]\n"
+	          .. "path_walk = " .. job_name .. "_walk\n"
+	          .. "path_look = " .. job_name .. "_look\n"
+	          .. "sniper = " .. str_sniper .. "\n"
+	          .. "no_retreat = " .. str_retreat .. "\n"
+	          .. "radius = " .. str_radius .. "\n"
+	ltx = ltx .. get_meet(gname, meet)
+	
+	if danger then
+		ltx = ltx .. "danger = danger@" .. gname .. "\n"
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'kamp':
+--/ ----------------------------------
+function add_kamp_section(gname, header, radius, def_state_moving, danger, quantity, treshold)
+	if     not waypoint_exists(gname .. "_kamp", true, "kamp") then
+		return "" --/>
+	elseif not waypoint_exists(gname .. "_kamp_task", true, "kamp") then
+		return "" --/>
+	end
+	
+	local ltx = ""
+	
+	for i = 1, quantity do
+		if header then
+			ltx = ltx .. "[logic@" .. gname .. "_kamp" .. i .. "]\n"
+			          .. "active = kamp@" .. gname .. i .. "\n"
+		end
+		ltx = ltx .. "[kamp@" .. gname .. i .. "]\n"
+		          .. "center_point = kamp\n"
+		          .. "path_walk = kamp_task\n"
+		if def_state_moving then
+			ltx = ltx .. "def_state_moving = " .. def_state_moving .. "\n"
+		end
+		if radius then
+			ltx = ltx .. "radius = " .. radius .. "\n"
+		end
+		if danger then
+			ltx = ltx .. "danger = danger@" .. gname .. "\n"
+		end
+		if treshold then
+			ltx = ltx .. "threshold = threshold@" .. gname .. "\n"
+		end
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'kamper':
+--/ ----------------------------------
+function add_kamper_section(gname, kamp_name, quantity, header, danger, start_index, meet)
+	local kamp_center = tonumber(kamp_name) and "kamp" .. tostring(kamp_name) or kamp_name or "kamp"
+--	if not waypoint_exists(gname .. "_".. kamp_center, false, "kamper") then
+--		log("add_kamper_section: way kamp_name=[%s]/[%s] ~ not exists :<%s>", gname .. "_".. kamp_center, kamp_name, "Warning!")
+		--return "" --/>
+--	end
+	
+	start_index = tonumber(start_index) or 1
+	quantity = quantity or 1
+	if quantity < start_index then
+		quantity = quantity - 1 + start_index
+	end
+	local ltx = ""
+	local job_section
+	
+	for i = start_index, quantity do
+		job_section = gname .. "_kamper" .. i
+		if not waypoint_exists(job_section .. "_walk", true, "kamper") then
+			return ltx --/>
+		end
+		
+		if header then
+			ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			          .. "active = kamper@" .. job_section .. "\n"
+		end
+		
+		ltx = ltx .. "[kamper@" .. job_section .. "]\n"
+		          .. "kamp_name = " .. kamp_center .. "\n"
+		          .. "path_walk = kamper" .. i .. "_walk\n"
+		
+		if waypoint_exists(job_section .. "_look", false, "kamper") then
+			ltx = ltx .. "path_look = kamper" .. i .. "_look\n"
+		end
+		
+		ltx = ltx .. get_meet(gname, meet)
+		
+		if danger then
+			ltx = ltx .. "danger = danger@" .. gname .. "\n"
+		end
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'offline':remark:
+--/ ----------------------------------
+function add_offline_section(gname, section, idx)
+	if not waypoint_exists(gname .. "_off_point" .. idx, true, "off_point") then
+		return "" --/>
+	end
+	
+	--"anim = wait_na\n"
+	local job_section = gname .. "_" .. section
+	local ltx = "[logic@" .. job_section .. "]\n"
+	         .. "active = remark@" .. job_section .. "\n"
+	         .. "combat_ignore = combar_ignore@" .. gname .. "\n"
+	ltx = ltx .. "[remark@" .. job_section .. "]\n"
+	          .. "path_walk = off_point" .. tostring(idx) .. "\n"
+	          .. "anim = guard\n"
+	          .. "combat_ignore_cond = always\n"
+	ltx = ltx .. "[combar_ignore@" .. gname .. "]\n"
+	
+	return ltx --/>
+end
+
+function add_pointless_offline_section(gname, section, idx)
+	--"anim = wait_na\n"
+	local job_section = gname .. "_off_" .. section .. tostring(idx)
+	if section == "sleeper" then
+		local ltx = "[logic@" .. job_section .. "]\n"
+		         .. "active = sleeper@" .. job_section .. "\n"
+		ltx = ltx .. "[sleeper@" .. job_section .. "]\n"
+		          .. "path_main = sleeper" .. tostring(idx) .. "\n"
+		return ltx --/>
+	end
+	--/ 'remark'
+	local ltx = "[logic@" .. job_section .. "]\n"
+	         .. "active = remark@" .. job_section .. "\n"
+	ltx = ltx .. "[remark@" .. job_section .. "]\n"
+	          .. "path_walk = " .. section .. tostring(idx) .. "_walk\n"
+	return ltx --/>
+end
+
+function add_def_danger_section(gname)
+	return "[danger@" .. gname .. "]\n"
+	    .. "danger_expiration_time = 60000\n" --/#?# не используется!
+	    .. "danger_inertion_time = 90000\n"
+end
+
+function add_ignore_corpse(gname)
+	return "[danger@" .. gname .. "]\n"
+	    .. "ignore_types = corpse\n"
+end
+
+function add_ignore_distance(gname, val)
+	return "[danger@" .. gname .. "]\n"
+	    .. "ignore_distance = " .. val .. "\n"
+end
+
+function add_def_danger_sect(gname, val)
+	return "[danger@" .. gname .. "]\n"
+	    .. "danger_expiration_time = 60000\n" --/#?# не используется!
+	    .. "danger_inertion_time = 90000\n"
+	    .. "ignore_types = corpse\n"
+	    .. "ignore_distance = " .. val .. "\n"
+end
+
+function enable_meet(gname)
+	return "[meet@" .. gname .. "]\n"
+	    .. "meet_state = 3|wait@wait\n"
+	    .. "meet_state_wpn = 3|wait@wait\n"
+	    .. "victim = 3|actor\n"
+	    .. "victim_wpn = 3|actor\n"
+	    .. "use = true\n"
+	    .. "use_wpn = false\n"
+	    .. "abuse = true\n"
+	    .. "precond = visibility\n"
+	    .. "meet_talk_enabled = true\n"
+end
+
+function meet_on_use(gname)
+	return "[meet@" .. gname .. "]\n"
+	    .. "meet_state = 3|wait@wait\n"
+	    .. "meet_state_wpn = 3|wait@wait\n"
+	    .. "victim = 3|actor\n"
+	    .. "victim_wpn = 3|actor\n"
+	    .. "use = true\n"
+	    .. "use_wpn = false\n"
+	    .. "abuse = true\n"
+	    .. "precond = usability\n"
+	    .. "meet_talk_enabled = true\n"
+end
+
+function guard_meet(gname)
+	return "[meet@" .. gname .. "_guard]\n"
+	    .. "meet_state = 3|guard@val_puncher_village_busy\n"
+	    .. "meet_state_wpn = 3|threat@val_puncher_village_keep_moving\n"
+	    .. "use = false\n"
+	    .. "use_wpn = false\n"
+	    .. "victim = nil\n"
+	    .. "victim_wpn = actor\n"
+	    .. "abuse = false\n"
+	    .. "precond = visibility\n"
+end
+--/ ----------------------------------
+--/ 'sleeper':
+--/ ----------------------------------
+function add_sleeper(gname, quantity, header, weakable, danger, meet)
+	quantity = quantity or 1
+	local str_weakable = tostring(not weakable ~= false )
+	
+	local ltx = ""
+	local job_section
+	
+	for i = 1, quantity do
+		job_section = gname .. "_sleeper" .. i
+		if not waypoint_exists(job_section, true, "sleeper") then
+			return ltx --/>
+		end
+		if header then
+			ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			          .. "active = sleeper@" .. job_section .. "\n"
+		end
+		ltx = ltx .. "[sleeper@" .. job_section .. "]\n"
+		          .. "path_main = sleeper" .. i .. "\n"
+		          .. "wakeable = " .. str_weakable .. "\n"
+		ltx = ltx .. get_meet(gname, meet)
+		if danger then
+			ltx = ltx .. "danger = danger@" .. gname .. "\n"
+		end
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'walker':raid:
+--/ ----------------------------------
+function add_raid_walker(gname, state, quantity)
+	quantity = quantity or 1
+	local ltx = ""
+	local job_section, job_name
+	
+	for i = 1, quantity do
+		job_name = "walker" .. i .. "_state_" .. state
+		if not waypoint_exists(gname .. "_" .. job_name .. "_walk", true, "raid_walker") then
+			return ltx --/>
+		end
+		job_section = gname .. "_state_" .. state .. "_" .. "walker" .. i
+		
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+		          .. "active = walker@" .. job_section .. "\n"
+		          .. "[walker@" .. job_section .. "]\n"
+		          .. "path_walk = " .. job_name .. "_walk\n"
+		
+		if waypoint_exists(gname .. "_" .. job_name .. "_look", false, "raid_walker") then
+			ltx = ltx .. "path_look = " .. job_name .. "_look\n"
+		end
+		ltx = ltx .. "def_state_moving1 = rush\n"
+		          .. "def_state_moving2 = rush\n"
+		          .. "def_state_moving3 = rush\n"
+		ltx = ltx .. "meet = no_meet\n"
+		ltx = ltx .. "danger = danger@" .. gname .. "_raid\n"
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'kamp':raid:
+--/ ----------------------------------
+function add_raid_kamp(gname, state, quantity, radius, def_state_moving)
+	if not waypoint_exists(gname .. "_kamp_state_" .. state, true, "raid_kamp") then
+		return "" --/>
+	elseif not waypoint_exists(gname .. "_kamp_task_state_" .. state, true, "raid_kamp") then
+		return "" --/>
+	end
+	
+	quantity = quantity or 1
+	local str_radius = tostring(radius or 2)
+	local str_def_state_moving = tostring(def_state_moving or "walk")
+	
+	local ltx = ""
+	local job_name = gname .. "_state_" .. state
+	local job_section
+	
+	for i = 1, quantity do
+		job_section = job_name .. "_" .. "kamper" .. i
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+		          .. "active = kamp@" .. job_name .. "\n"
+	end
+	
+	ltx = ltx .. "[kamp@" .. job_name .. "]\n"
+	          .. "center_point = kamp_state_" .. state .. "\n"
+	          .. "path_walk = kamp_task_state_" .. state .. "\n" --/#?#
+	          .. "def_state_moving = " .. str_def_state_moving .. "\n"
+	          .. "radius = " .. str_radius .. "\n"
+	ltx = ltx .. "danger = danger@" .. gname .. "\n"
+	
+	return ltx --/>
+end
+
+--/ ------------------------------------------------------------------------------------------------
+--/ Monsters:
+--/ ------------------------------------------------------------------------------------------------
+function check_min_max_radius(min_radius, max_radius)
+	if not min_radius then
+		min_radius = 5
+	elseif min_radius >= 100 then
+		min_radius = min_radius % 100
+		if min_radius < 2 then
+			min_radius = 4
+		end
+	end
+	
+	if not max_radius then
+		max_radius = 35
+	elseif max_radius >= 100 then
+		max_radius = max_radius % 100
+		if max_radius < 10 then
+			max_radius = 15
+		end
+	end
+	return min_radius, max_radius --/>
+end
+
+--/ ----------------------------------
+--/ 'mob_home':
+--/ ----------------------------------
+function add_mob_home(gname, quantity, min_radius, max_radius, aggressive_home, death, offline)
+	quantity = quantity or 1
+	this.check_min_max_radius(min_radius, max_radius)
+	
+	local ltx = ""
+	local job_name, job_section, job_off
+
+	for i = 1, quantity do
+		job_name = "home" .. i
+		job_section = gname .. "_" .. job_name
+		job_off = gname .. "_home_off" .. i
+		if waypoint_exists(job_section, true, "mob_home") then
+			ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			          .. "active = mob_home@" .. job_section .. "\n"
+			if death then
+				ltx = ltx .. "on_death = death@" .. gname .. "\n"
+			end
+			ltx = ltx .. "[mob_home@" .. job_section .. "]\n"
+			          .. "path_home = " .. job_name .. "\n"
+			          .. "home_min_radius = " .. min_radius .. "\n"
+			          .. "home_max_radius = " .. max_radius .. "\n"
+			          .. "on_signal = attacked | mob_combat@"..job_section.."\n"
+			          .. "[mob_combat@"..job_section.."]\n"
+			          .. "on_timer = ".. Random.I(30,60)*1000 .." | mob_home@"..job_section.."\n"
+			if aggressive_home then
+				ltx = ltx .. "aggressive_home\n"
+			end
+			if offline then
+				ltx = ltx .. "[logic@" .. job_off .. "]\n"
+			          .. "active = mob_home@" .. job_off .. "\n"
+					  .. "[mob_home@" .. job_off.. "]\n"
+			          .. "path_home = " .. job_name .. "\n"
+			end
+		end
+	end
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'mob_home':new: аналог general_lair!
+--/ ----------------------------------
+function add_mob_home_new(gname, quantity, min_radius, max_radius, aggressive_home, death)
+	quantity = quantity or 1
+	this.check_min_max_radius(min_radius, max_radius)
+	
+	local ltx = ""
+	local job_name, job_section
+	
+	for i = 1, quantity do
+		job_name = "home_" .. i
+		job_section = gname .. "_" .. job_name
+		if waypoint_exists(job_section, true, "mob_home") then
+			ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			          .. "active = mob_home@" .. job_section .. "\n"
+			if death then
+				ltx = ltx .. "on_death = death@" .. gname .. "\n"
+			end
+			ltx = ltx .. "[mob_home@" .. job_section .. "]\n"
+			          .. "path_home = " .. job_name .. "\n"
+			          .. "home_min_radius = " .. min_radius .. "\n"
+			          .. "home_max_radius = " .. max_radius .. "\n"
+			          .. "on_signal = attacked | mob_combat@"..job_section.."\n"
+			          .. "[mob_combat@"..job_section.."]\n"
+			          .. "on_timer = ".. Random.I(30,60)*1000 .." | mob_home@"..job_section.."\n"
+			if aggressive_home then
+				ltx = ltx .. "aggressive_home\n"
+			end
+		end
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'mob_home':pointless:
+--/ ----------------------------------
+function add_mob_home_pointless(gname, quantity, min_radius, max_radius, aggressive_home)
+	if not waypoint_exists(gname .. "_home1", true, "mob_home") then
+		return "" --/>
+	end
+	
+	quantity = quantity or 1
+	
+	if not min_radius then
+		min_radius = 20
+	elseif min_radius >= 100 then
+		min_radius = min_radius % 100
+		if min_radius < 10 then
+			min_radius = 20
+		end
+	end
+	
+	if not max_radius then
+		max_radius = 35
+	elseif max_radius >= 100 then
+		max_radius = max_radius % 100
+		if max_radius < 10 then
+			max_radius = 35
+		end
+	end
+	
+	local ltx = ""
+	local job_section
+	
+	for i = 1, quantity do
+		job_section = gname .. "_home" .. i
+		
+		ltx = ltx .. "[logic@" .. job_section .. "]\n"
+		          .. "active = mob_home@" .. job_section .. "\n"
+		ltx = ltx .. "[mob_home@" .. job_section .. "]\n"
+		          .. "path_home = home1" .. "\n"
+		          .. "home_min_radius = " .. min_radius .. "\n"
+		          .. "home_max_radius = " .. max_radius .. "\n"
+		if aggressive_home then
+			ltx = ltx .. "aggressive_home\n"
+		end
+	end
+	
+	return ltx --/>
+end
+--/ ----------------------------------
+--/ 'mob_home':raid: проверка наличия возможности вырулить в рейд (наличие путей, алгоритм переключения)
+--/ ----------------------------------
+--...
+--/ ----------------------------------
+--/ 'mob_fake_death'+'mob_home':
+--/ ----------------------------------
+function add_fake_home(gname, quantity, dist, min_radius, max_radius)
+	quantity = quantity or 1
+	
+	if not dist then
+		dist = 10
+	elseif dist >= 100 then
+		dist = dist % 100
+		if dist < 10 then
+			dist = 10
+		end
+	end
+	
+	if not min_radius then
+		min_radius = 20
+	elseif min_radius >= 100 then
+		min_radius = min_radius % 100
+		if min_radius < 10 then
+			min_radius = 20
+		end
+	end
+	
+	if not max_radius then
+		max_radius = 35
+	elseif max_radius >= 100 then
+		max_radius = max_radius % 100
+		if max_radius < 10 then
+			max_radius = 35
+		end
+	end
+	
+	local ltx = ""
+	local job_section, job_section2
+	
+	for i = 1, quantity do
+		job_section2 = gname .. "_home" .. i
+		if waypoint_exists(job_section2, true, "mob_fake_death") then
+			job_section = gname .. "_fake_death" .. i
+			ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			          .. "active = mob_fake_death@" .. job_section .. "\n"
+			ltx = ltx .. "[mob_fake_death@" .. job_section .. "]\n"
+			          .. "path_walk = home" .. i .. "\n"
+			          .. "on_actor_dist_le_nvis = " .. dist .. " |  mob_home@" .. job_section2 .. "\n"
+			ltx = ltx .. "[mob_home@" .. job_section2 .. "]\n"
+			          .. "path_home = home" .. i .. "\n"
+			          .. "home_min_radius = " .. min_radius .. "\n"
+			          .. "home_max_radius = " .. max_radius .. "\n"
+			          .. "on_actor_dist_ge_nvis = " .. dist .. " |  mob_fake_death@" .. job_section .. "\n"
+		end
+	end
+	
+	return ltx
+end
+
+function add_fake_home_classic(gname, number, quantity, dist, min_radius, max_radius)
+	quantity = quantity or 1
+	
+	if not number then
+		number = 1
+	end
+	
+	if not dist then
+		dist = 10
+	elseif dist >= 100 then
+		dist = dist % 100
+		if dist < 10 then
+			dist = 10
+		end
+	end
+	
+	if not min_radius then
+		min_radius = 20
+	elseif min_radius >= 100 then
+		min_radius = min_radius % 100
+		if min_radius < 10 then
+			min_radius = 20
+		end
+	end
+	
+	if not max_radius then
+		max_radius = 35
+	elseif max_radius >= 100 then
+		max_radius = max_radius % 100
+		if max_radius < 10 then
+			max_radius = 35
+		end
+	end
+	
+	local ltx = ""
+	local job_section, job_section2
+	
+	for i = number, quantity do
+		job_section2 = gname .. "_home" .. i
+		if waypoint_exists(job_section2, true, "mob_fake_death") then
+			job_section = gname .. "_fake_death" .. i
+			ltx = ltx .. "[logic@" .. job_section .. "]\n"
+			          .. "active = mob_fake_death@" .. job_section .. "\n"
+			ltx = ltx .. "[mob_fake_death@" .. job_section .. "]\n"
+			          .. "path_walk = home" .. i .. "\n"
+			          .. "on_actor_dist_le = " .. dist .. " |  mob_home@" .. job_section2 .. "\n"
+			ltx = ltx .. "[mob_home@" .. job_section2 .. "]\n"
+			          .. "path_home = home" .. i .. "\n"
+			          .. "home_min_radius = " .. min_radius .. "\n"
+			          .. "home_max_radius = " .. max_radius .. "\n"
+			          .. "on_actor_dist_ge = " .. dist .. " |  mob_fake_death@" .. job_section .. "\n"
+		end
+	end
+	
+	return ltx
+end
+--/ -----------------------------------------------------------------------------------------------

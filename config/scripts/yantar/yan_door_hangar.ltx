@@ -1,0 +1,29 @@
+;BRAIN VAT DOOR #1 COPY (FROM HANGAR SIDE TO THE UNDERGROUND)
+[logic]
+active = ph_door@closed
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed
+on_info = {+yan_pribor_task_start -yan_pribor_task_tochka3_done} ph_door@locked_story
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+on_info = {+yan_pribor_task_start -yan_pribor_task_tochka3_done} ph_door@locked_story
+
+[ph_door@locked_story]
+closed = true
+locked = true
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_info = {+yan_pribor_task_tochka3_done} ph_door@open

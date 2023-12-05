@@ -1,0 +1,69 @@
+[combat_ignore@dar_scene2]
+
+[danger@dar_scene2]
+ignore_distance = 0
+
+[logic]
+active = remark@darklab_sci_scene2_sci3
+combat_ignore = combat_ignore@dar_scene2
+
+[walker@darklab_sci_scene2_sci3_on]
+path_walk = darklab_sci_scene2_walk1_on
+combat_ignore_cond = always
+danger = danger@dar_scene2
+meet = no_meet
+on_info = {+dar_cutscene_activate2} remark@darklab_sci_scene2_sci3
+
+[remark@darklab_sci_scene2_sci3]
+anim = sci_panel2
+snd = dar_replics11
+combat_ignore_cond = always
+danger = danger@dar_scene2
+target = darklab_sci_scene2_walk1_look, 0
+meet = no_meet
+on_signal = sound_end | remark@darklab_sci_scene2_sci4
+
+[remark@darklab_sci_scene2_sci4]
+anim = sci_panel_running
+;snd = dar_replics12
+combat_ignore_cond = always
+danger = danger@dar_scene2
+target = darklab_sci_scene2_walk1_look, 0
+on_signal = anim_end | %+dar_sci2_info_0%
+meet = no_meet
+on_info = {+dar_sci2_info_1} remark@darklab_sci_scene2_sci5
+
+
+[remark@darklab_sci_scene2_sci5]
+anim = sci_talk
+snd = dar_replics14
+combat_ignore_cond = always
+danger = danger@dar_scene2
+target = darklab_sci_scene2_walk1_look, 0
+on_signal = sound_end | %+dar_sci2_info_2%
+meet = no_meet
+on_info = {+dar_sci2_info_3} remark@darklab_sci_scene2_sci6
+
+[remark@darklab_sci_scene2_sci6]
+anim = stand_wait
+snd = dar_replics16
+combat_ignore_cond = always
+danger = danger@dar_scene2
+on_signal = sound_end | walker@darklab_sci_scene2_sci_generator
+meet = no_meet
+target = darklab_sci_scene2_walk1_look, 0
+
+[walker@darklab_sci_scene2_sci_generator]
+path_walk = darklab_sci_scene2_walk3
+combat_ignore_cond = always
+danger = danger@dar_scene2
+meet = no_meet
+on_signal = sc2end | remark@darklab_sci_scene2_sci7 %+dar_cutscene2_sync%
+
+[remark@darklab_sci_scene2_sci7]
+anim = probe
+combat_ignore_cond = always
+danger = danger@dar_scene2
+target = dar_generator_way, 0
+meet = no_meet
+on_info = {+dar_cutscene2_end} %=release%

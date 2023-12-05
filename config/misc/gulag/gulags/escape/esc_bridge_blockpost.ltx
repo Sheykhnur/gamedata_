@@ -1,0 +1,99 @@
+[danger@esc_bridge_blockpost]
+
+[threshold@esc_bridge_blockpost_soldiers]
+
+[threshold@esc_bridge_blockpost_commander]
+
+[combat_ignore@esc_bridge_blockpost]
+
+[hit@esc_bridge_blockpost]
+on_info = {=hit_by_actor} %+actor_attacked_bridge%
+
+[death@esc_bridge_blockpost]
+on_info = {=killed_by_actor} %+actor_attacked_bridge%
+
+[logic@esc_bridge_blockpost_soldier1]
+active = walker@esc_bridge_blockpost_soldier1
+combat_ignore = combat_ignore@esc_bridge_blockpost
+on_hit = hit@esc_bridge_blockpost
+threshold = threshold@esc_bridge_blockpost_soldiers
+on_death = death@esc_bridge_blockpost
+
+[walker@esc_bridge_blockpost_soldier1]
+path_walk = way1
+path_look = look1
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge -esc_factory_cleaned}
+;danger = danger@esc_bridge_blockpost
+
+
+[logic@esc_bridge_blockpost_soldier2]
+active = walker@esc_bridge_blockpost_soldier2
+combat_ignore = combat_ignore@esc_bridge_blockpost
+on_hit = hit@esc_bridge_blockpost
+threshold = threshold@esc_bridge_blockpost_soldiers
+on_death = death@esc_bridge_blockpost
+
+[walker@esc_bridge_blockpost_soldier2]
+path_walk = way2
+path_look = look2
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge -esc_factory_cleaned}
+;danger = danger@esc_bridge_blockpost
+
+
+[logic@esc_bridge_blockpost_soldier3]
+active = walker@esc_bridge_blockpost_soldier3
+combat_ignore = combat_ignore@esc_bridge_blockpost
+on_hit = hit@esc_bridge_blockpost
+threshold = threshold@esc_bridge_blockpost_soldiers
+on_death = death@esc_bridge_blockpost
+
+[walker@esc_bridge_blockpost_soldier3]
+path_walk = way3
+path_look = look3
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge -esc_factory_cleaned}
+;danger = danger@esc_bridge_blockpost
+
+
+[logic@esc_bridge_blockpost_soldier4]
+active = walker@esc_bridge_blockpost_soldier4
+combat_ignore = combat_ignore@esc_bridge_blockpost
+on_hit = hit@esc_bridge_blockpost
+threshold = threshold@esc_bridge_blockpost_soldiers
+on_death = death@esc_bridge_blockpost
+
+[walker@esc_bridge_blockpost_soldier4]
+path_walk = way5
+path_look = look5
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge -esc_factory_cleaned}
+;danger = danger@esc_bridge_blockpost
+
+
+[logic@esc_bridge_blockpost_commander]
+active = walker@esc_bridge_blockpost_commander
+combat_ignore = combat_ignore@esc_bridge_blockpost
+on_hit = hit@esc_bridge_blockpost
+threshold = threshold@esc_bridge_blockpost_commander
+on_death = death@esc_bridge_blockpost
+
+[walker@esc_bridge_blockpost_commander]
+path_walk = way4
+path_look = look4
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge -esc_factory_cleaned}
+
+
+[logic@esc_bridge_blockpost_sniper]
+active = camper@esc_bridge_blockpost_sniper
+combat_ignore = combat_ignore@esc_bridge_blockpost
+on_hit = hit@esc_bridge_blockpost
+on_death = death@esc_bridge_blockpost
+
+[camper@esc_bridge_blockpost_sniper]
+path_walk = sniper_walk
+path_look = sniper_look
+def_state_moving = raid
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+sniper = true
+combat_ignore_cond = {=fighting_actor -actor_attacked_bridge -esc_factory_cleaned}
+;danger = danger@esc_bridge_blockpost
+

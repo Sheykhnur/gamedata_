@@ -1,0 +1,40 @@
+if you open pc first time, you need to type password top_secret
+then if you open pc again it should be locked
+then if you open it again it should be bsoded
+
+[logic]
+active = ph_computer@unlocked
+
+[ph_computer@unlocked]
+availability = accessible
+pc_type = desktop
+user_name = ;ui_pc_user_name
+password = top_secret
+password_info = pc_on_use_callback
+icons_alignment = horizontal
+wallpaper = wallpaper3
+show_tips = true
+tetris = true
+puzzle = true
+solitare = true
+known_info = esc_tut_pc_to_all, esc_tut_pc_about_anoms
+known_code = pc_test_code_1, pc_test_code_2, pc_test_code_3, pc_test_code_4, pc_test_code_5, pc_test_code_6
+known_image = test_pc_known_image_001, test_pc_known_image_002
+known_galleries = test_pc_known_gallery_001, test_pc_known_gallery_002, test_pc_known_gallery_003
+known_audio = test_pc_known_audio_001, test_pc_known_audio_002
+known_video =
+known_hex = 5
+on_info = {+pc_lock_now} ph_computer@locked, {+pc_bsod_now} ph_computer@bsod
+on_use = ;%+pc_on_use_callback%
+
+[ph_computer@locked]
+availability = locked
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+pc_unlock_now} ph_computer@unlocked
+
+[ph_computer@bsod]
+availability = malfunction
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+pc_fix_now} ph_computer@unlocked

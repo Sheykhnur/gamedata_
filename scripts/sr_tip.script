@@ -1,0 +1,82 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : sr_tip.script
+ Description: 
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 23.06.18 (tomilovsenya) Ц PDA messages fix + modified sr_tip itself
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_tip"
+--/ -----------------------------------------------------------------------------------------------
+function action_tip:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_tip:reset_scheme()
+	if self.log then log("ac:reset_scheme:Obj=[%s],section=[%s]", self.object:name(), self.st.section, "") end --/#~#
+	self.st.tips_sended = false
+	self.st.signals = {}
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_tip:update(delta)
+	--if not xr_logic.is_active(self.object, self.st) then return end --/>
+	if self.st.tips_sended == false then
+		local oActor = db.actor
+		if oActor and self.object:inside( oActor:position() ) then
+			if not self.st.conditions or xr_logic.pick_section_from_condlist(oActor, nil, self.st.conditions.condlist) then
+				if self.log then log("ac:update:Obj=[%s],section=[%s],info=[%s]", self.object:name(), self.st.section, self.st.info, "") end --/#~#
+				news_manager.send_tip_hud(game.translate_string(self.st.header), game.translate_string(self.st.info), self.st.sender, self.st.showtime/1000) --/ send_tip > send_tip_hud so it can display headers; dividing by 1000 for compatibility
+				if self.st.single then
+					self.st.tips_sended = true
+					self.st.signals["tip_sended"] = true
+				end
+			end
+		end
+	end
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, ">") --/ #~#
+	st.action = this.action_tip(obj, st)
+	--/ регистраци€ action, дл€ вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+end
+
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.header   = Get_Cfg_String(ini, section, "header") --/ Added header
+	st.info     = Get_Cfg_String(ini, section, "name", "")
+	st.sender   = Get_Cfg_String(ini, section, "sender")
+	--st.type     = Get_Cfg_String(ini, section, "type", "news") --/#?# rudiment?
+	--st.timeout  = Get_Cfg_Number(ini, section, "timeout") --/ Removed as it isn't a thing in send_tip_hud
+	st.showtime = Get_Cfg_Number(ini, section, "showtime")
+	st.single   = Get_Cfg_Bool  (ini, section, "single", false)
+	
+	st.conditions = xr_logic.cfg_get_condlist(ini, section, "cond", obj)
+	
+	ASSERT(st.info ~= "", "set_scheme:Obj=[%s],section=[%s],info=[%s]:<%s>", obj:name(), section, st.info, "Wrong!")
+	--/ for debug!
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

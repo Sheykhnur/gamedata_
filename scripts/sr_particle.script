@@ -1,0 +1,250 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_particles.script
+ Description: space restrictor with particles effect player
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : gr1ph00n: added mode 3 (multi-paths)
+ Last edit  : 07.09.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CLASS CONSTRUCTION
+--/ -----------------------------------------------------------------------------------------------
+class "action_particle"
+--/ -----------------------------------------------------------------------------------------------
+function action_particle:__init (obj, st)
+	self.object = obj
+	self.st = st
+	self.particles = {}
+	self.path      = nil
+	self.last_update = 0
+	self.started      = false
+	self.first_played = false
+	self.log = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_particle:reset_scheme()
+	if self.st.mode == 2 then
+		self:setup_mode_2()
+	elseif self.st.mode == 3 then
+		self:setup_mode_3()
+	else
+		self.particles[1] = {
+			particle = particles_object(self.st.name),
+			snd      = nil,
+			delay    = 0,
+			time     = time_global(),
+			played   = false
+		}
+		self.path = nil
+	end
+	if self.log then log("ac:reset_scheme: %s  setup done [%s]", self.object:name(), self.particles) end --/#~#
+	self.st.signals   = {}
+	self.last_update  = 0
+	self.started      = false
+	self.first_played = false
+end
+------------------------
+function action_particle:setup_mode_2()
+	self.path = get_patrol(self.st.path)
+	local flags = utils.path_parse_waypoints(self.st.path)
+	local count = self.path:count()
+	for i=0, count-1 do
+		local delay = flags[i]["d"] and tonumber(flags[i]["d"]) or 0
+		local snd_name = flags[i]["s"] and flags[i]["s"] or ""
+		local snd_obj = snd_name ~= "" and xr_sound.get_sound_object(snd_name, "random") or nil
+		self.particles[i+1] = {
+			particle = particles_object(self.st.name),
+			snd      = snd_obj,
+			delay    = delay,
+			time     = time_global(),
+			played   = false
+		}
+	end
+end
+------------------------
+function action_particle:setup_mode_3()
+	self.path = nil
+	for i=1, self.st.path_count do
+		local p = get_patrol(self.st.path .. i)
+		if not p then
+			abort("action_particle:setup_mode_3:path=[%s] does not exist", self.st.path .. i)
+		end
+		local flags = utils.path_parse_waypoints(self.st.path .. i)
+		local delay = flags[0]["d"] and tonumber(flags[0]["d"]) or 0
+		local snd_name = flags[0]["s"] and flags[0]["s"] or ""
+		local snd_obj = snd_name ~= "" and xr_sound.get_sound_object(snd_name, "random") or nil
+		self.particles[i] =  {
+			particle = particles_object(self.st.name),
+			snd      = snd_obj,
+			delay    = delay,
+			time     = time_global(),
+			played   = false,
+			point    = p:point(0)
+		}
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_particle:update(delta)
+	local iTime = time_global()
+	if self.last_update ~= 0 and self.last_update + 50 > iTime then
+		return --/>
+	end
+	self.last_update = iTime
+	
+	if self.started == false then
+		self.started = true
+		if self.st.mode == 1 then
+			if self.log then log ("ac:update: obj=[%s] load_path=[%s]",  self.object:name(), self.st.path, "") end --/#~#
+			self.particles[1].particle:load_path(self.st.path)
+			self.particles[1].particle:start_path(self.st.looped)
+			self.particles[1].particle:play()
+			self.particles[1].played = true
+			self.first_played = true
+			if self.log then log("ac:update: obj=[%s] mode=1 first update", self.object:name(), "") end --/#~#
+		end
+	else
+		if self.st.mode == 1 then
+			self:update_mode_1()
+		elseif self.st.mode == 2 then
+			self:update_mode_2()
+		else
+			self:update_mode_3()
+		end
+		self:is_end()
+		
+		xr_logic.try_switch_to_another_section (self.object, self.st, db.actor)
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SERVICE FUNCTION
+--/ -----------------------------------------------------------------
+function action_particle:is_end()
+	if self.log then log("ac:is_end: %s :(%s)", self.object:name(), ">") end --/#~#
+	if self.st.looped == true or self.first_played == false then
+		return false --/>
+	end
+	local size = #self.particles
+	if self.log then log("ac:is_end: %s  #self.particles=[%d]", self.object:name(), size) end --/#~#
+	if size == 0 then
+		return true --/>
+	end
+	for i=1,size do
+		if self.particles[i].particle:playing() == true then
+			if self.log then log("action_particle:is_end: %s  particle #%d still playing", self.object:name(), i) end --/#~#
+			return false --/>
+		end
+	end
+	self.st.signals["particle_end"] = true
+	if self.log then log("ac:is_end: %s  signal given :(%s)", self.object:name(), "<") end --/#~#
+	return true --/>
+end
+------------------------
+function action_particle:update_mode_1()
+	if self.st.looped and not self.particles[1].particle:playing() then
+		self.particles[1].particle:play()
+		if self.log then log("ac:update_mode_1: %s ", self.object:name(), "") end --/#~#
+	end
+end
+------------------------
+function action_particle:update_mode_2()
+	if #self.particles == 0 then return end --/>
+	local iTime = time_global()
+	for idx,v in ipairs(self.particles) do
+		if iTime > v.time + v.delay and v.particle:playing() == false then
+			if v.played == false then
+				v.particle:play_at_pos(self.path:point(idx-1))
+				if v.snd then
+					v.snd:play_at_pos(self.object, self.path:point(idx-1), 0)
+				end
+				v.played = true
+				self.first_played = true
+			elseif self.st.looped then
+				v.particle:play_at_pos(self.path:point(idx-1))
+				if v.snd then
+					v.snd:play_at_pos(self.object, self.path:point(idx-1), 0)
+				end
+			end
+		end
+	end
+end
+------------------------
+function action_particle:update_mode_3()
+	if #self.particles == 0 then return end --/>
+	local iTime = time_global()
+	for _,v in ipairs(self.particles) do
+		if iTime > v.time + v.delay and not v.particle:playing() then
+			if v.played == false then
+				v.particle:play_at_pos(v.point)
+				if v.snd then
+					v.snd:play_at_pos(self.object, v.point, 0)
+				end
+				v.played = true
+				self.first_played = true
+			elseif self.st.looped then
+				v.particle:play_at_pos(v.point)
+				if v.snd then
+					v.snd:play_at_pos(self.object, v.point, 0)
+				end
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/ -----------------------------------------------------------------
+function action_particle:deactivate ()
+	for _,v in ipairs(self.particles) do
+		if v.particle:playing() then
+			v.particle:stop()
+		end
+		v.particle = nil
+		if v.snd and v.snd:playing() then
+			v.snd:stop()
+		end
+		v.snd = nil
+	end
+	if self.log then log("ac:deactivate: %s", self.object:name(), "") end --/#~#
+end
+
+--/------------------------------------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder (obj, ini, scheme, section, st)
+	if st.log then log("add_to_binder: obj=[%s], scheme=[%s], section=[%s]", obj:name(), scheme, section) end --/#~#
+	st.action = this.action_particle(obj, st)
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme (obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.path       = Get_Cfg_String(ini, section, "path", nil, true)
+	st.name       = Get_Cfg_String(ini, section, "name", nil, true)
+	st.mode       = Get_Cfg_Number(ini, section, "mode", 2)
+	st.looped     = Get_Cfg_Bool  (ini, section, "looped", false)
+	st.path_count = st.mode == 3 and Get_Cfg_Number(ini, section, "path_count") or -1
+	if not st.name or st.name == "" then
+		abort(sModule..":set_scheme:Obj=[%s],section=[%s],name=[%s]~wrong!:<%s>", obj:name(), section, st.name, "Error!")
+	elseif not st.path or st.path == "" then
+		abort(sModule..":set_scheme:Obj=[%s],section=[%s],path=[%s]~wrong!:<%s>", obj:name(), section, st.path, "Error!")
+	elseif st.mode < 1 or st.mode > 3 then
+		abort(sModule..":set_scheme:Obj=[%s],section=[%s],mode=[%s]~wrong!:<%s>", obj:name(), section, st.mode, "Error!")
+	elseif st.log then --/#~# for debug
+		log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "")
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

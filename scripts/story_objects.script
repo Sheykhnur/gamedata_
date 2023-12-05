@@ -1,0 +1,110 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : story_objects.script
+ Description: Lua class for managing story_objects
+ Copyright  : 2009 © GSC Game World
+ Author     : GSC Game World
+ Editors    : Gr1ph00n
+--]] ----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local story_obj_registry = nil
+
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Class "Story Objects Registry"
+--/------------------------------------------------------------------------------------------------
+class "story_objects_registry"
+--/------------------------------------
+function story_objects_registry:__init ()
+	self.id_by_story_id = {}
+	self.story_id_by_id = {}
+end
+
+function story_objects_registry:register(idObj , sStoryObjId, on_register)
+	if self.id_by_story_id[sStoryObjId] ~= nil then
+		if idObj ~= self.id_by_story_id[sStoryObjId] then
+			local exist_obj_name = alife():object(self.id_by_story_id[sStoryObjId]):name()
+			local adding_obj_name = alife():object(idObj):name()
+			abort("%s:Trying to spawn two or more objects with the same story_id=[%s]->[%s],try to add=[%s]", sModule, sStoryObjId, exist_obj_name, adding_obj_name )
+		end
+	elseif self.story_id_by_id[idObj] ~= nil then
+		if self.story_id_by_id[idObj] ~= sStoryObjId then
+			local sName = alife():object(self.id_by_story_id[sStoryObjId]):name()
+			abort("%s:Obj=[%s] is already in story_objects_registry with story_id=[%s]->[%s]", sModule, tostring(idObj), sStoryObjId, sName)
+		end
+	end
+	self.id_by_story_id[sStoryObjId] = idObj
+	self.story_id_by_id[idObj] = sStoryObjId
+end
+
+function story_objects_registry:unregister_by_id(idObj)
+	if self.story_id_by_id[idObj] ~= nil then
+		self.id_by_story_id[self.story_id_by_id[idObj]] = nil
+		self.story_id_by_id[idObj] = nil
+	end
+end
+
+function story_objects_registry:unregister_by_story_id(sStoryId)
+	if self.id_by_story_id[sStoryId] ~= nil then
+		self.story_id_by_id[self.id_by_story_id[sStoryId]] = nil
+		self.id_by_story_id[sStoryId] = nil
+	end
+end
+
+function story_objects_registry:get(sStoryObjId)
+	return self.id_by_story_id[sStoryObjId] --/>
+end
+
+function story_objects_registry:get_id(sStoryObjId) --/#+#
+	return self.id_by_story_id[sStoryObjId] --/>
+end
+
+function story_objects_registry:get_story_id(idObj)
+	return self.story_id_by_id[idObj] --/>
+end
+
+--/#+# statistic (for tests)
+function story_objects_registry:stats()
+	log("stats:[%s]", ">") --/#~#
+	log("---table:id_by_story_id---")
+	table.print(self.id_by_story_id)
+	log("--------end table--------")
+	log("---table:story_id_by_id---")
+	table.print(self.story_id_by_id)
+	log("--------end table--------")
+end
+
+--/ ------------------------------------------------------------------
+--/
+--/-------------------------------------------------------------------
+function get_story_objects_registry()
+	if not story_obj_registry then
+		story_obj_registry = story_objects_registry()
+	end
+	return story_obj_registry --/>
+end
+
+function check_spawn_ini_for_story_id(soObj)
+--	log("check_spawn_ini_for_story_id:Obj=[%s/%s]%s", soObj:name(), soObj:name(), "") --/#~#
+	local ini = soObj:spawn_ini()
+	if ini:section_exist("story_object") then --/ check in custom-data:
+		local result,idx,value = ini:r_line("story_object",0,"","")
+		if idx ~= "story_id" then
+			abort("%s:Obj=[%s]:There is no 'story_id' field in [story_object] section:<%s>", sModule, soObj:name(), "Error!")
+		elseif value == "" then
+			abort("%s:Obj=[%s]:Field 'story_id' in [story_object] section got no value:<%s>", sModule, soObj:name(), "Error!")
+		else --/ registering in database
+			get_story_objects_registry():register(soObj.id , value, true)
+		end
+	else --/ check in spawn-section:
+		local sStoryId = utils.cfg_get_string(system_ini(), soObj:section_name(), "story_id", nil, false, "", nil)
+		if sStoryId then --/ registering in database
+			get_story_objects_registry():register(soObj.id, sStoryId, true)
+		--elseif soObj.m_story_id ~= db.iMax_s32 then --/#+#
+			--get_story_objects_registry():register(soObj.id, tostring(soObj.m_story_id), true)
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

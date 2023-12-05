@@ -1,0 +1,782 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_patrol.script
+ Description: Patrol scheme. Guys in partrol.
+ Copyright  : 2004 © GSC Game World
+ Author     : Tunduck Vladimir aka Sidorovich
+ Last edit  : 06.2018[07]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs (TODO: settings in ltx)
+--/ -----------------------------------------------------------------
+local bTalesMgr_Enabled = false
+--/ --------------------------
+--/ Tales
+--/ --------------------------
+local tTales = {
+	[1]  = {theme = "story_01",                min = 1, max = 2, type = "narrator",
+	next = {theme = "story_reac_cool_info",    min = 1, max = 1, type = "all",
+	next = {theme = "story_reac_continue",     min = 2, max = 3, type = "narrator",
+	next = {theme = "story_reac_laughter", type = "all", next = nil}}}},
+	[2]  = {theme = "story_02",                min = 1, max = 2, type = "narrator",
+	next = {theme = "story_reac_yes",          min = 1, max = 2, type = "all",
+	next = {theme = "story_reac_continue",     min = 1, max = 1, type = "narrator",
+	next = {theme = "story_reac_action_right", min = 1, max = 1, type = "all",
+	next = {theme = "story_reac_cool_teller",  min = 1, max = 1, type = "narrator",
+	next = {theme = "story_reac_continue",     min = 1, max = 1, type = "all",
+	next = {theme = "story_reac_belief_story, story_reac_final_happy, story_reac_yes", min = 2, max = 4, type = "narrator", next = nil}}}}}}},
+	[3]  = {theme = "story_03",                min = 1, max = 2, type = "narrator",
+	next = {theme = "story_reac_continue",     min = 1, max = 1, type = "all",
+	next = {theme = "story_reac_final_tragic", min = 1, max = 1, type = "narrator",
+	next = {theme = "story_reac_belief_story", min = 2, max = 3,  type = "all", next = nil}}}},
+	[4]  = {theme = "story_04",                min = 1, max = 2, type = "narrator",
+	next = {theme = "story_reac_continue",     min = 1, max = 1,  type = "all",
+	next = {theme = "story_reac_final_tragic", min = 1, max = 1, type = "narrator",
+	next = {theme = "story_reac_belief_story", min = 2, max = 3,  type = "all", next = nil}}}},
+	[5]  = {theme = "story_05",                min = 1, max = 2, type = "narrator",
+	next = {theme = "story_reac_advice_sceptic, story_reac_advice_support", min = 1, max = 1, type = "all", next = nil}},
+	[6]  = {theme = "story_06",                min = 1, max = 2, type = "narrator",
+	next = {theme = "story_reac_continue",     min = 1, max = 1, type = "all",
+	next = {theme = "story_reac_cool_teller",  min = 1, max = 1, type = "narrator",
+	next = {theme = "story_reac_action_right", min = 1, max = 1, type = "all",
+	next = {theme = "story_reac_yes",          min = 1, max = 1, type = "narrator",
+	next = {theme = "story_reac_disbelief_teller, story_reac_belief_story", min = 2, max = 3, type = "all",
+	next = {theme = "story_reac_cool_teller",  min = 1, max = 1,  type = "narrator",
+	next = {theme = "story_reac_wonder",       min = 1, max = 1, type = "all",
+	next = {theme = "story_reac_disbelief_story, story_reac_belief_story, story_reac_yes", min = 2, max = 4,  type = "narrator", next = nil}}}}}}}}}
+}
+--/ --------------------------
+local bInit   = false --/ module initialization flag
+local sModule = script_name() --/ string name of file-module
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+--local iEvl_Event       = xr_evaluators_id.reaction
+local iEvl_NoActive    = xr_evaluators_id.sidor_patrol_base +0
+local iEvl_IsCommander = xr_evaluators_id.sidor_patrol_base +1
+local iAct_Patrol      = xr_actions_id.sidor_act_patrol +0
+local iAct_Commander   = xr_actions_id.sidor_act_patrol +1
+local tBindEvls = {} --/ array of 'extra' conditions for scheme activation
+
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+--	log("init:[>]") --/#~#
+	if bInit then return end --/>
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Load/Set Variables
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+--	log("PreSets:[%s]", ">") --/#~#
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.la_ai_blowout and la_ai_blowout.get_ai_evl(0),      flg = false}, --/ no blowout
+		[2] = {id = db.la_ai_watcher and la_ai_watcher.get_ai_evl(0),      flg = false}, --/ no gathering
+		[3] = {id = not db.no_gather_items and stalker_ids.property_items, flg = false}, --/#?# no items to gather
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "TalesManager"
+--/ -----------------------------------------------------------------------------------------------
+function TalesManager:__init()
+	self.npc_list     = {}
+	self.npc_list_id  = {}
+	self.current_tale = 0
+	self.narrator     = -1
+	self.tale         = nil
+	self.timeout      = time_global () + Random.I (5,11)*1000
+end
+
+function TalesManager:add_npc(npc)
+	local npc_id = npc and npc:id()
+	if npc_id and self.npc_list[npc_id] == nil and npc:alive() then
+		self.npc_list[npc_id] = npc
+		table.insert(self.npc_list_id, npc_id)
+	end
+end
+
+function TalesManager:remove_npc(npc)
+	local npc_id = npc and npc:id()
+	if npc_id and self.npc_list[npc_id] then
+		self.npc_list[npc_id] = nil
+		for idx,v in ipairs(self.npc_list_id) do
+			if v == npc_id then
+				table.remove(self.npc_list_id, idx)
+				return --/>
+			end
+		end
+	end
+end
+
+function TalesManager:stop_tale()
+	for _,_ in ipairs(self.npc_list) do
+		xr_sound:set_sound(nil, true)
+	end
+	self.narrator = -1
+	self.tale = nil
+end
+
+function TalesManager:start_tale()
+	if #self.npc_list_id > 1 then
+		if self.narrator == -1 then
+			self.narrator = self.npc_list_id[math.random(#self.npc_list_id)]
+		end
+		
+		local c = self.current_tale
+		while c == self.current_tale do
+			self.current_tale = math.random(#tTales)
+		end
+		
+		self.tale = tTales[self.current_tale]
+		if self.tale then --log("tm:start_tale:theme=[%s],narrator=[%s]", self.tale.theme, self.npc_list[self.narrator]:name(), "") --/#~#
+			xr_sound.set_sound_play(self.npc_list[self.narrator], self.tale.theme)
+		else
+			abort(sModule.."xr_patrol:start_tale:Invalid tale")
+		end
+	end
+end
+
+function TalesManager:update()
+	if self.tale == nil then
+		if time_global() > self.timeout then
+			self.narrator = -1
+			self:start_tale()
+		end
+	elseif self.tale.type == "narrator" then
+		if self.narrator == -1 then
+			abort(sModule..":update:Narrator not defined")
+		end
+		if self.npc_list[self.narrator]:active_sound_count () ~= 0 then
+			return --/>
+		end
+		self:set_next_tale()
+	else
+		for idx,v in ipairs(self.npc_list_id) do
+			if v ~= self.narrator then
+				if self.npc_list[v] and self.npc_list[v]:active_sound_count() ~= 0 then
+					return --/>
+				end
+			end
+		end
+		self:set_next_tale()
+	end
+end
+
+function TalesManager:set_next_tale()
+	if self.tale == nil then
+		self.timeout = time_global() + Random.I(5000, 10000)
+		return --/>
+	else
+		self.tale = self.tale.next
+	end
+	if self.tale.type == "narrator" then
+--		log("set_next_tale:NARRATOR THEME=%s", self.tale.theme) --/#~#
+		xr_sound.set_sound_play(self.npc_list[self.narrator], self.tale.theme)
+	else
+--		log("set_next_tale:REACTIONER THEME=%s", self.tale.theme) --/#~#
+		for _,v in ipairs(self.npc_list_id) do
+			if v ~= self.narrator then
+				xr_sound.set_sound_play (self.npc_list[v], self.tale.theme, Random.I(1000, 1500) )
+			end
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ VARIABLEs Patrol States
+--/ -----------------------------------------------------------------------------------------------
+local iPatrolMove   = 0 --/ just a move
+local iPatrolHide   = 1 --/ hide move
+local iPatrolSprint = 2 --/ running really fast
+local iPatrolRun    = 3 --/ just run like moose to corn
+local iPatrolStop   = 4 --/ stand
+
+local tPatrols    = {}
+local tFormations = {}
+tFormations["line"] = {
+	{ dir = vector():set(-1, 0, 0), dist = 2 },
+	{ dir = vector():set(-1, 0, 0), dist = 4 },
+	{ dir = vector():set(-1, 0, 0), dist = 6 },
+	{ dir = vector():set( 1, 0, 0), dist = 2 },
+	{ dir = vector():set( 1, 0, 0), dist = 4 },
+	{ dir = vector():set( 1, 0, 0), dist = 6 }
+}
+
+tFormations["back"] = {
+	{ dir = vector():set(-0.89442718, 0, -0.44721359), dist = 2.2360680 },
+	{ dir = vector():set( 0.89442718, 0, -0.44721359), dist = 2.2360680 },
+	{ dir = vector():set(-0.37139067, 0, -0.92847669), dist = 5.3851647 },
+	{ dir = vector():set( 0.37139067, 0, -0.92847669), dist = 5.3851647 },
+	{ dir = vector():set(-0.55470020, 0, -0.83205032), dist = 3.6055512 },
+	{ dir = vector():set( 0.55470020, 0, -0.83205032), dist = 3.6055512 }
+}
+tFormations["around"] = {
+	{ dir = vector():set( 0.44721359, 0, -0.89442718), dist = 2.2360680 },
+	{ dir = vector():set(-0.44721359, 0, -0.89442718), dist = 2.2360680 },
+	{ dir = vector():set( 1.0000000,  0,  0         ), dist = 2         },
+	{ dir = vector():set(-1,          0,  0         ), dist = 2         },
+	{ dir = vector():set( 0.44721359, 0,  0.89442718), dist = 2.2360680 },
+	{ dir = vector():set(-0.44721359, 0,  0.89442718), dist = 2.2360680 }
+}
+--/ -----------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "PatrolManager"
+--/ -----------------------------------------------------------------------------------------------
+function PatrolManager:__init (path_name)
+	self.path_name     = path_name
+	self.npc_list      = {}
+	self.npc_count     = 0
+	self.commander_id  = -1
+	self.commander_lid = -1
+	self.commander_dir = vector():set(0, 0, 1)
+	self.current_state = "patrol"
+	self.formation     = "back"
+	tPatrols[path_name] = self
+	if bTalesMgr_Enabled then
+		self.tm = TalesManager()
+	end
+end
+
+--/ Adding new character(npc)
+function PatrolManager:add_npc(npc, leader)
+	--/validate npc
+	local npc_id = npc and npc:id()
+	if not (npc_id and self.npc_list[npc_id] == nil and npc:alive()) then
+		return --/>
+	end
+	--/ Check that in patrol no more then 7 stalkers (otherwise will crash)
+	if self.npc_count == 7 then
+		abort("%s:xr_patrol:attempt to add more then 7 npc. [%s]", sModule, npc:name())
+		return --/>
+	end
+	
+	self.npc_list[npc_id] = {soldier = npc, dir = vector():set(1,0,0), dist = 0}
+	
+	self.npc_count = self.npc_count + 1
+	--/ if guy is first or considering a leader, let's set him as leader
+	if self.npc_count == 1 or leader == true then
+		self.commander_id = npc_id
+--		log("pm:add_npc:=[%s] AS PATROL COMMANDER", npc:name(), "") --/#~#
+	end
+	
+	if bTalesMgr_Enabled then
+		self.tm:add_npc(npc)
+		if self.npc_count == 2 then
+			self.tm:start_tale()
+		end
+	end
+--	log("pm:add_npc:=[%s] added to patrol=[%s]", npc:name(), self.path_name, "") --/#~#
+	self:reset_positions()
+end
+
+--/ Deleting character
+function PatrolManager:remove_npc(npc)
+	local npc_id = npc and npc:id()
+	if not (npc and self.npc_list[npc_id]) then
+		return --/>
+	end
+--	log("pm:remove_npc:=[%s] removed from patrol=[%s]", npc:name(), self.path_name, "") --/#~#
+	self.npc_list[npc_id] = nil
+	self.npc_count = self.npc_count - 1
+	
+	if npc_id == self.commander_id then
+		self.commander_id = -1
+		self:reset_positions()
+	end
+	if bTalesMgr_Enabled then
+		self.tm:remove_npc(npc)
+		if self.npc_count < 2 then
+		  self.tm:stop_tale()
+		end
+	end
+end
+
+--/ Recalculation of occupied positions
+function PatrolManager:reset_positions()
+	local t = tFormations[self.formation]
+	local idx,id = 1,nil
+	for k,v in pairs(self.npc_list) do
+		id = v.soldier:id()
+		--/ let's set comannder, if it's not done yet
+		if idx == 1 and self.commander_id == -1 then
+			self.commander_id = id
+		end
+		--/ recalculating positions
+		if id ~= self.commander_id then
+--			log("pm:reset_positions:key=[%s],idx=[%s]", k, idx, "") --/#~#
+			v.dir  = t[idx].dir
+			v.dist = t[idx].dist
+			v.vertex_id = -1
+			v.accepted = true
+			idx = idx +1
+		end
+	end
+end
+
+--/ Setting formations
+function PatrolManager:set_formation(sFormation)
+	if sFormation then
+		if sFormation == "around" or sFormation == "back" or sFormation == "line" then
+			self.formation = sFormation
+			self:reset_positions()
+		else
+			abort("%s:Invalid formation (%s) for PatrolManager[%s]", sModule, sFormation, self.path_name)
+		end
+	else
+		abort("%s:Invalid formation (nil) for PatrolManager[%s]", sModule, self.path_name)
+	end
+end
+
+--/ Get commander of patrol
+function PatrolManager:get_commander(npc)
+	--/ cache id of npc
+	local npc_id = npc and npc:id()
+	if not npc_id then
+		abort("%s:Invalid NPC on call PatrolManager:get_npc_command in PatrolManager[%s]", sModule, self.path_name)
+	elseif not self.npc_list[npc_id] then --/ check if npc present in list
+		abort("%s:NPC with name %s can't present in PatrolManager[%s]", sModule, npc:name(), self.path_name)
+	elseif npc_id == self.commander_id then --/ check that commander didn't ask stupid questions
+		abort("%s:Patrol commander called function PatrolManager:get_npc_command in PatrolManager[%s]", sModule, self.path_name)
+	end
+	--/ get commander data
+	local oCommander = self.npc_list[self.commander_id].soldier
+	if oCommander then
+		return oCommander --/>
+	end
+	abort("%s:Patrol commander not present in PatrolManager[%s]", sModule, self.path_name)
+end
+--
+--/ Get parameters of NPC action
+function PatrolManager:get_npc_command(npc)
+	--/ cache id of npc
+	local npc_id = npc and npc:id()
+	if not npc_id then
+		abort("%s:Invalid NPC on call PatrolManager:get_npc_command in PatrolManager[%s]", sModule, self.path_name)
+		return --/>
+	elseif self.npc_list[npc_id] == nil then --/ check if npc present in list
+		abort("%s:NPC with name %s can't present in PatrolManager[%s]", sModule, npc:name (), self.path_name)
+		return --/>
+	elseif npc_id == self.commander_id then --/ check that commander didn't ask stupid questions
+		abort("%s:Patrol commander called function PatrolManager:get_npc_command in PatrolManager[%s]", sModule, self.path_name)
+		return --/>
+	end
+	--/ get commander data
+	local oCommander = self.npc_list[self.commander_id].soldier
+	
+	local vDirC = oCommander:direction ()
+	local vPosC = vector():set (0, 0, 0)
+	local idVertex = oCommander:location_on_path (15, vPosC)
+	--/ If commander still didnt reach way himself (distance to vertex more then 5 metres)
+	--/ then take for main point vertex of commander
+	if level.vertex_position(idVertex):distance_to(self.npc_list[npc_id].soldier:position()) > 5 then
+		idVertex = oCommander:level_vertex_id()
+	end
+	--/ removing influence of vertex component
+	vDirC.y = 0
+	vDirC:normalize ()
+	--/ get data of dogface
+	local vDirS  = self.npc_list[npc_id].dir
+	local iDistS = self.npc_list[npc_id].dist
+	
+	--/ calculate position for dogface
+	--/ let's get direction first
+	local iAngle = yaw_degree(vDirS, vector():set(0,0,1)) --/ divergence from direction (angle in degrees)
+	local vVec = vector_cross(vDirS, vector():set(0,0,1))
+	if vVec.y < 0 then
+		iAngle = -iAngle --/ reverse
+	end
+	vDirS = vector_rotate_y(vDirC, iAngle)
+	--/ in condition movenment type we will change target ai-node
+	local iNum = 2
+	--[[
+	if self.current_state == iPatrolMove or self.current_state == iPatrolHide or self.current_state == iPatrolStop then
+		iNum = 2
+	elseif self.current_state == iPatrolRun then
+		iNum = 2.5
+	else
+		iNum = 3
+	end
+	--]]
+	--/ now ai-node relatively to commander of our temple knights
+	local idLv = level.vertex_in_direction(level.vertex_in_direction(idVertex, vDirS, iDistS), vDirC, iNum)
+	self.npc_list[npc_id].vertex_id = idLv
+	
+	--/ let's check, is there a point for npc to correct his position
+	local bNeedCorrect = false
+	local iDistance = level.vertex_position(idLv):distance_to(level.vertex_position(self.npc_list[npc_id].soldier:level_vertex_id()))
+	if iDistance > 5 then
+		bNeedCorrect = true
+	end
+	return idLv, vDirC, self.current_state, bNeedCorrect --/>
+end
+--
+--/ Set NPC action
+function PatrolManager:set_command(npc, command, sFormation)
+	--/ caching id of npc
+	local npc_id = npc and npc:id()
+	if not (npc_id and npc:alive()) then
+		abort("%s:NPC commander possible dead in PatrolManager[%s]", sModule, self.path_name)
+		return --/>
+	elseif npc_id ~= self.commander_id then
+		--abort("%s:NPC %s is not commander in PatrolManager[%s]", sModule, npc:name(), self.path_name)
+		return --/>
+	end
+	self.current_state = command
+	if self.formation ~= sFormation then
+		self.formation = sFormation
+		self:set_formation(sFormation)
+	end
+	self.commander_lid = npc:level_vertex_id()
+	self.commander_dir = npc:direction()
+	self:update()
+end
+
+--/ Is specified NPC a commander.
+function PatrolManager:is_commander(npc_id)
+	return npc_id == self.commander_id
+end
+
+--/ commander of patrol is in scheme XR_MEET?
+function PatrolManager:is_commander_in_meet()
+	if self.commander_id ~= -1 then
+		local npc = self.npc_list[self.commander_id].soldier
+		if npc and npc:alive() then
+			return xr_meet.is_meet(npc)
+		end
+	end
+	return false
+end
+
+--/ update
+function PatrolManager:update()
+	if bTalesMgr_Enabled then
+		self.tm:update()
+	end
+end
+
+
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATORs
+--/ -----------------------------------------------------------------------------------------------
+class "evaluator_patrol_end" (property_evaluator)
+--/------------------------------------------------------------------
+function evaluator_patrol_end:__init (name, st) super (nil, name)
+	self.st = st
+end
+
+function evaluator_patrol_end:evaluate()
+	return not xr_logic.is_active (self.object, self.st) --/>
+end
+
+--/------------------------------------------------------------------
+class "evaluator_patrol_comm" (property_evaluator)
+--/------------------------------------------------------------------
+function evaluator_patrol_comm:__init (name, st) super (nil, name)
+	self.st = st
+end
+
+function evaluator_patrol_comm:evaluate()
+	return tPatrols[self.st.path_name]:is_commander( self.object:id() ) --/>
+end
+
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+class "action_commander" (action_base)
+--/------------------------------------------------------------------
+function action_commander:__init (action_name, st) super(nil, action_name)
+	self.st        = st
+	self.log       = st.log
+	self.move_mgr  = st.move_mgr
+	self.was_reset = false
+	self.cur_state = "patrol"
+end
+
+function action_commander:initialize()
+	action_base.initialize (self)
+	if self.log then log("ac_commander:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self:activate_scheme()
+end
+
+function action_commander:activate_scheme()
+	self.st.signals = {}
+	if self.log then log("action_commander:activate_scheme:NPC=[%s],path_walk=[%s]", self.object:name(), self.st.path_walk) end --/#~#
+	if not self.st.path_walk_info then
+		self.st.path_walk_info = utils.path_parse_waypoints(self.st.path_walk)
+	end
+	if not self.st.path_look_info then
+		self.st.path_look_info = utils.path_parse_waypoints(self.st.path_look)
+	end
+	self.move_mgr:reset(self.st.path_walk, self.st.path_walk_info, self.st.path_look, self.st.path_look_info, self.st.team, self.st.suggested_state, { obj = self, func = self.callback })
+	tPatrols[self.st.path_walk]:set_command(self.object, self.cur_state, self.st.formation)
+end
+--[[
+function action_commander:reset_scheme()
+end
+--]]
+function action_commander:execute()
+	action_base.execute(self)
+	self.move_mgr:update()
+	if db.actor and xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	tPatrols[self.st.path_walk]:set_command (self.object, state_mgr.get_state (self.object), self.st.formation)
+end
+
+function action_commander:finalize()
+	if self.object:alive() then
+--		log("action_commander:finalize:") --/#~#
+		tPatrols[self.st.path_walk]:set_command (self.object, "guard", self.st.formation)
+		self.move_mgr:finalize()
+	end
+	action_base.finalize(self)
+end
+
+function action_commander:deactivate(npc)
+	tPatrols[self.st.path_name]:remove_npc(npc)
+end
+
+function action_commander:death_callback(npc)
+	tPatrols[self.st.path_name]:remove_npc(npc)
+end
+
+function action_commander:net_destroy(npc)
+	self:deactivate(npc)
+end
+
+function action_commander:callback(mode, iNumber, idx)
+	log("ac_commander:callback: num=[%s], idx=[%s]", iNumber, idx, "") --/#~#
+	if     iNumber == 0 then
+		self.st.formation = "line"
+	elseif iNumber == 1 then
+		self.st.formation = "around"
+	else
+		self.st.formation = "back"
+	end
+	--[[
+	if idx and self.st.path_walk_info and self.st.path_walk_info[idx] and self.st.path_walk_info[idx]["f"] then
+		self.st.formation = self.st.path_walk_info[idx]["f"]
+	end
+	--]]
+end
+
+--/------------------------------------------------------------------
+class "action_patrol" (action_base)
+--/------------------------------------------------------------------
+function action_patrol:__init (action_name, st) super (nil, action_name)
+	self.st        = st
+	self.log       = st.log
+	self.lvid      = -1
+	self.dist      = 0
+	self.dir       = vector():set(0, 0, 1)
+	self.cur_state = "patrol"
+	self.on_point  = false
+	self.was_reset = false
+	self.time_to_update = time_global() + 2000
+end
+
+function action_patrol:initialize()
+	action_base.initialize (self)
+	if self.log then log("ac_patrol:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self.on_point = false
+end
+
+function action_patrol:activate_scheme()
+	self.st.signals = {}
+end
+--[[
+function action_patrol:reset_scheme()
+end
+--]]
+function action_patrol:execute()
+	action_base.execute (self)
+	
+	if db.actor and xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return --/>
+	end
+	
+	if self.time_to_update - time_global() > 0 then
+		return --/>
+	end
+	self.time_to_update = time_global() + 5000
+	
+	self.lvid, self.dir, self.cur_state, reset = tPatrols[self.st.path_name]:get_npc_command(self.object)
+	
+	if self.lvid == self.object:level_vertex_id() then
+		utils.send_to_nearest_accessible_vertex(self.object, level.vertex_in_direction(self.lvid, self.object:direction(), 1))
+	else
+		self.lvid = utils.send_to_nearest_accessible_vertex(self.object, self.lvid)
+	end
+	
+	self.object:set_desired_direction(self.dir)
+	self.object:set_path_type(game_object.level_path)
+	
+	--/ moving on way
+	--if self.on_point == false then  --/ if position not reached yet, run to it
+		--local dist = level.vertex_position (self.lvid):distance_to (level.vertex_position (self.object:level_vertex_id ()))
+		--self.on_point = dist < 3
+		--if dist > 5 then
+			--if self.st.animation ~= nil and self.st.animation ~= "" then
+				--state_mgr.set_state(self.object, self.st.animation)
+			--else
+				--state_mgr.set_state(self.object, "assault") --/ simply run up
+			--end
+		--elseif dist < 2 then
+			--if self.st.animation ~= nil and self.st.animation ~= "" then
+				--state_mgr.set_state(self.object, self.st.animation)
+			--else
+				--state_mgr.set_state(self.object, "patrol")
+			--end
+		--end
+	--else
+		if self.st.animation ~= nil and self.st.animation ~= "" then
+			state_mgr.set_state(self.object, self.st.animation)
+		else
+			state_mgr.set_state(self.object, self.cur_state)
+		end
+		--self.on_point = level.vertex_position (self.lvid):distance_to (level.vertex_position (self.object:level_vertex_id ())) < 5
+	--end
+	
+	--if self.on_point == true and tPatrols[self.st.path_name]:is_commander_in_meet () == true then
+		--state_mgr.set_state (self.object, "guard")
+	--end
+end
+
+function action_patrol:deactivate(npc)
+	tPatrols[self.st.path_name]:remove_npc(npc)
+end
+
+function action_patrol:finalize ()
+	action_base.finalize(self)
+end
+
+function action_patrol:death_callback(npc)
+	tPatrols[self.st.path_name]:remove_npc(npc)
+end
+
+function action_patrol:net_destroy(npc)
+	self:deactivate(npc)
+end
+
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Patrol Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder (npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.move_mgr = db.storage[npc:id()].move_mgr
+	--/ Planner -------------------------------------------------------
+	local oManager = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	oManager:add_evaluator( iEvl_NoActive,    this.evaluator_patrol_end ("ev_patrol_end",  st))
+	oManager:add_evaluator( iEvl_IsCommander, this.evaluator_patrol_comm("ev_patrol_comm", st))
+	--/ New Action(1) - 'commander' -----------------------------------
+	local oNewAction = this.action_commander("ac_commander", st)
+	xr_motivator.addGeneralPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) )
+	end
+	oNewAction:add_precondition( world_property( iEvl_NoActive,    false) )
+	oNewAction:add_precondition( world_property( iEvl_IsCommander, true ) )
+	oNewAction:add_effect( world_property( iEvl_NoActive, true ) )
+	oManager:add_action(iAct_Commander, oNewAction)
+	--/ registration of action to call method 'reset_scheme' when settings of scheme changed:
+	xr_logic.subscribe_action_for_events(npc, st, oNewAction)
+	--/ New Action(2) - 'patrol' --------------------------------------
+	oNewAction = this.action_patrol("ac_patrol", st)
+	xr_motivator.addGeneralPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) )
+	end
+	oNewAction:add_precondition( world_property(iEvl_NoActive,    false ) )
+	oNewAction:add_precondition( world_property(iEvl_IsCommander, false ) )
+	oNewAction:add_effect( world_property( iEvl_NoActive, true ) )
+	oManager:add_action( iAct_Patrol, oNewAction )
+	--/ registration of action to call method 'reset_scheme' when settings of scheme changed:
+	xr_logic.subscribe_action_for_events(npc, st, oNewAction)
+	
+	--/ Action --------------------------------------------------------
+	local oAction = oManager:action(xr_actions_id.alife)
+	oAction:add_precondition( world_property( iEvl_NoActive, true ) )
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+--	log("set_scheme:NPC=[%s]:[%s]", npc:name(), ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions (ini, section, npc)
+	
+	st.path_walk = Get_Cfg_String(ini, section, "path_walk", nil, true,  gulag_name)
+	st.path_look = Get_Cfg_String(ini, section, "path_look", nil, false, gulag_name)
+	st.formation = Get_Cfg_String(ini, section, "formation", "back")
+	st.animation = Get_Cfg_String(ini, section, "animation")
+	st.move_type = Get_Cfg_String(ini, section, "move_type", "patrol")
+	st.suggested_state = {
+		moving1  = Get_Cfg_String(ini, section, "def_state_moving1"),
+		moving2  = Get_Cfg_String(ini, section, "def_state_moving2"),
+		moving3  = Get_Cfg_String(ini, section, "def_state_moving3"),
+		standing = Get_Cfg_String(ini, section, "def_state_standing")
+	}
+	st.commander = Get_Cfg_Bool(ini, section, "commander", false)
+	
+	st.path_walk_info = nil --/ will be initialized with reset(),
+	st.path_look_info = nil --/ now ways still can be not loaded.
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s]", npc:name(), scheme, section, gulag_name, "") end --/#~#
+	if not (st.path_walk and validate_patrol_path(st.path_walk, npc)) then
+		log("set_scheme:NPC=[%s],section=[%s],gulag=[%s],path_walk=[%s]<~NOT_validate:<%s>", npc:name(), section, gulag_name, st.path_walk, "Warning!")
+		this.disable_scheme(npc, scheme)
+		smart_terrain.unregister_npc(npc)
+		xr_logic.initialize_obj(npc, db.storage[npc:id()], false, db.actor, modules.stype_stalker)
+	end
+	if st.path_look and not validate_patrol_path(st.path_look) then
+		log("set_scheme:NPC=[%s],section=[%s],gulag=[%s],path_look=[%s]<~NOT_validate:<%s>", npc:name(), section, gulag_name, st.path_look, "Info!") --/#~#
+	end
+	
+	st.path_name = st.path_walk
+	if st.path_name then
+		if not tPatrols[st.path_name] then
+			tPatrols[st.path_name] = PatrolManager(st.path_name)
+		end
+		tPatrols[st.path_name]:add_npc(npc, st.commander)
+	end
+	--/ for debug!
+	if st.log then --/#~#
+		log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],walk=[%s],look=[%s],gulag=[%s]", npc:name(), scheme, section, st.path_walk, st.path_look, gulag_name, "")
+	end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/< "patrol"
+	local stor = npc and db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]", npc:name(), scheme, "") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+if not bInit then this.init() end --/ initialize Module
+--/ -----------------------------------------------------------------------------------------------

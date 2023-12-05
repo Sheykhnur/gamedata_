@@ -1,0 +1,19 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+gen_activate_tip} sr_tip %+gen_tip_sent%
+
+[sr_tip]
+header = ghost_message_header
+name = gen_distraction
+sender = ghost
+showtime = 5000
+single = true
+on_signal = tip_sended | sr_idle@2
+
+[sr_idle@2]
+on_info = {+gen_disable_restrictor} sr_idle@3 
+
+[sr_idle@3]
+on_actor_inside = %+gen_check_actor% sr_idle@2

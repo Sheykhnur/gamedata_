@@ -1,0 +1,185 @@
+
+;--------------------------------------------------------------------------------
+;--- Dreams ---------------------------------------------------------------------
+;--------------------------------------------------------------------------------
+[dreams]
+regular_probability = 50
+scenario            = scenario1, scenario2, scenario3, scenario4, scenario5
+regular             = regular_dream1, regular_dream2, regular_dream3, regular_dream4, regular_dream5
+dream_types         = nightmare, normal, happy
+
+;--------------------------------------------------------------------------------
+;--- Regular dreams -------------------------------------------------------------
+;--------------------------------------------------------------------------------
+[regular_dream1]
+dream = aes_sky_red
+probability = 10
+type        = nightmare
+cond = {+radar_hermit_find_done}
+
+[regular_dream2]
+dream = esc_sky_01
+probability = 10
+type        = happy
+cond = {+esc_rescue_fox_done}
+
+[regular_dream3]
+dream = rats_movie_dream
+probability = 6
+type        = normal
+cond = {+yan_scientist_package_have}
+
+[regular_dream4]
+dream = bloodsucker_kiss
+probability = 8
+type = nightmare
+cond = {+yan_scientist_package_have}
+
+[regular_dream5]
+dream = heli_hide
+probability = 8
+type = normal
+cond = {+esc_rescue_fox_done}
+
+;--------------------------------------------------------------------------------
+;--- Scenario dreams ---------------------------------------------------------------
+;--------------------------------------------------------------------------------
+[scenario1]
+dream = x18_dream_regular
+to_regular  = 3,normal
+cond		= {+secret_bloodsuckers_dead -dar_for_admin_pc}
+
+[scenario2]
+dream       = doctor_dream_regular
+to_regular  = 3,normal
+cond        = {+dar_for_admin_pc -ds_sin_blackout}
+
+[scenario3]
+dream       = rats_movie_dream
+to_regular  = 3,normal
+cond        = {+ds_sin_blackout -mil_blowout_effects}
+
+[scenario4]
+dream       = military_dream
+to_regular  = 3,normal
+cond         = {+mil_blowout_effects -radar_blowout_scripted_start}
+
+[scenario5]
+dream       = radar_cabin_dream
+to_regular  = 3,normal
+cond        = {+radar_blowout_scripted_start -radar_blowout_finished}
+
+[scenario6]
+dream       = oso_final_dream
+to_regular  = 3,normal
+cond        = {+oso_death -esc_freeplay_teleport_finished}
+
+;--------------------------------------------------------------------------------
+;--- Level specific -------------------------------------------------------------
+;--------------------------------------------------------------------------------
+
+[LA01_Escape]
+probability = 5
+types = happy,normal
+
+[LA02_Garbage]
+probability = 5
+types = happy,normal
+
+[LA03_Agroprom]
+probability = 10
+types = happy,normal
+
+[LA04_darkvalley]
+probability = 30
+types = happy,normal
+
+[LA04u_darklab]
+probability = 15
+types = happy,normal,nightmare
+
+[LA05_Bar_Rostok]
+probability = 15
+types = happy,normal
+
+[la06_yantar]
+probability = 50
+types = happy,normal
+
+[la07_military]
+probability = 20
+types = happy,normal
+
+[la08_deadcity]
+probability = 70
+types = happy,normal
+
+[LA09_swamp]
+probability = 40
+types = happy,normal
+
+[L10_radar]
+probability = 30
+types = happy,normal,nightmare
+
+[L10u_bunker]
+probability = 30
+types = happy,normal,nightmare
+
+[la11_pripyat]
+probability = 70
+types = happy,normal,nightmare
+
+[la12_stancia]
+probability = 90
+types = normal,nightmare
+
+[la12u_sarcofag]
+probability = 70
+types = nightmare
+
+[la13_generators]
+probability = 60
+types = nightmare
+
+[la13u_warlab]
+probability = 40
+types = nightmare
+
+[la14_rostok_factory]
+probability = 30
+types = happy,normal
+
+[la14u_secret_lab]
+probability = 10
+types = happy,normal
+
+[la15_darkscape]
+probability = 20
+types = happy,normal
+
+[L16_lost_factory]
+probability = 35
+types = happy,normal,nightmare
+
+[la16u_labx16]
+probability = 70
+types = happy,normal,nightmare
+
+[l17_outskirts]
+probability = 30
+types = happy,normal,nightmare
+
+[l17u_labx7]
+probability = 75
+types = normal,nightmare
+
+[La18_damned]
+probability = 85
+types = happy,normal,nightmare
+
+[La19_country]
+probability = 70
+types = happy,normal,nightmare
+
+;eot

@@ -1,0 +1,19 @@
+[death@bar_arena_savage]
+on_info = %+bar_arena_monstr_dead +bar_arena_savage_defeated +bar_arena_door_1_open%
+
+[combat_ignore@bar_arena_savage]
+
+[logic]
+active = remark@bar_arena_savage
+on_death = death@bar_arena_savage
+combat_ignore = combat_ignore@bar_arena_savage
+
+[remark@bar_arena_savage]
+anim = claim
+target = bar_arena_point2, 0
+combat_ignore_cond = always
+on_info = {+bar_arena_fight} walker@bar_arena_savage
+
+[walker@bar_arena_savage]
+path_walk = bar_arena_mutants_home2
+combat_ignore_cond = {!fighting_actor}

@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle
+ 
+[sr_idle]
+on_actor_inside = {+fore_wounded_mine} sr_sound@shooting
+on_info = {+fore_trap_free} nil %=release%
+ 
+[sr_sound@shooting]
+snd = ambient\random\rnd_moan4, ambient\lava1, ambient\random\rnd_moan2, ambient\earthquake, ambient\dropinpool1, ambient\dropinpool2
+play_at_actor = true
+on_signal = sound_end| sr_idle
+on_info = {+fore_trap_free} nil %=release%

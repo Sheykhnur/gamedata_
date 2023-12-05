@@ -1,0 +1,40 @@
+;DOOR INTO THE DUTY POST WHEN GOING TO THE BAR
+[logic]
+active = ph_door@open
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+on_info = {+yan_bar_help_start} ph_door@open
+on_info2 = {+bar_lock_door} ph_door@locked
+
+[ph_door@open]
+closed = false
+locked = true
+snd_open_start = metal_small_locked
+;on_use = ph_door@closed
+on_info = {+bar_lock_door} ph_door@locked
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = metal_small_locked
+on_info = {+bar_attack_helis_dead} ph_door@open_after
+
+[ph_door@closed_after]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open_after
+
+[ph_door@open_after]
+closed = false
+locked = true
+snd_open_start = metal_small_locked
+;on_use = ph_door@closed_after

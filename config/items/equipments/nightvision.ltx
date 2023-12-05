@@ -1,0 +1,83 @@
+[night_vision_base]:identity_immunities
+
+slot                            = 12
+auto_attach                     = true
+attach_bone_name                = bip01_head
+attach_angle_offset             = 0, -3.14, 1.6
+attach_position_offset          = 0.115, 0.00, 0.07
+attach_to_owner                 = 1
+$prefetch                       = 64
+cform                           = skeleton
+class                           = IS_ATTCH
+default_to_ruck                 = false
+inv_weight                      = 1.2
+cost                            = 5000
+visual                          = dynamics\devices\nightivision_1\night_vision.ogf
+nightvision_sect                = effector_nightvision_bad
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 16
+inv_grid_y         = 11
+
+snd_night_vision_on             = weapons\nv_start
+snd_night_vision_off            = weapons\nv_off
+snd_night_vision_idle           = ambient\silence, 0.0
+snd_night_vision_broken         = weapons\nv_off
+
+
+[night_vision_worst]:night_vision_base
+
+visual                          = dynamics\devices\nightivision_1\night_vision.ogf
+
+inv_name                        = st_nightvis_0
+inv_name_short                  = st_nightvis_0
+description                     = st_nightvis_0_descr
+cost                            = 500
+inv_weight                      = 1.6
+
+nightvision_sect                = effector_nightvision_worst
+
+night_vision_recharge_time      = 5
+night_vision_recharge_time_min  = 2
+night_vision_discharge_time     = 7
+snd_night_vision_idle           = weapons\nv_loop
+
+[night_vision_bad]:night_vision_base
+
+visual                          = dynamics\devices\nightivision_1\night_vision.ogf
+
+inv_name                        = st_nightvis_1
+inv_name_short                  = st_nightvis_1
+description                     = st_nightvis_1_descr
+cost                            = 2400
+
+nightvision_sect                = effector_nightvision_bad
+
+night_vision_recharge_time      = 2
+night_vision_recharge_time_min  = 1
+night_vision_discharge_time     = 5
+
+snd_night_vision_idle           = weapons\nv_loop
+
+[night_vision_good]:night_vision_base
+
+visual                          = dynamics\devices\nightivision_1\night_vision_m1.ogf
+
+inv_name                        = st_nightvis_2
+inv_name_short                  = st_nightvis_2
+description                     = st_nightvis_2_descr
+cost                            = 10000
+
+nightvision_sect                = effector_nightvision_good
+
+[night_vision_best]:night_vision_base
+
+visual                          = dynamics\devices\nightivision_1\night_vision_m1.ogf
+
+inv_name                        = st_nightvis_3
+inv_name_short                  = st_nightvis_3
+description                     = st_nightvis_3_descr
+cost                            = 20000
+inv_weight                      = 0.9
+
+nightvision_sect                = effector_nightvision_best

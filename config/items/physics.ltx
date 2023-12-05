@@ -1,0 +1,44 @@
+[inventory_box]
+$spawn               = "devices\inventory box"
+class                = O_INVBOX
+cform                = skeleton
+visual               = physics\box\expl_dinamit.ogf
+script_binding       = bind_physic_object.init
+
+;--------------------------------------------------------------------
+
+[physic_object]
+GroupControlSection = spawn_group
+$spawn              = "physics\object"
+$prefetch           = 8
+class               = O_PHYS_S
+remove_time         = 60
+script_binding      = bind_physic_object.init
+
+[physic_destroyable_object]
+GroupControlSection = spawn_group
+$spawn              = "physics\destroyable_object"
+;$prefetch          = 8
+class               = P_DSTRBL
+remove_time         = 60 ;-- after this time  unbreaked removable bone will be removed
+script_binding      = bind_physic_object.init
+
+[physic_object_barrel_1]:physic_object
+$spawn              = "physics\objects\physic_object_barrel_1"
+visual				= physics\balon\bochka_close_1.ogf
+ph_mass				= 50
+
+[physic_object_barrel_2]:physic_object
+$spawn              = "physics\objects\physic_object_barrel_2"
+visual				= physics\balon\bochka_close_2.ogf
+ph_mass				= 50
+
+[physic_object_box_small_1]:physic_object
+$spawn              = "physics\objects\physic_object_box_small_1"
+visual				= physics\box\box_1a.ogf
+ph_mass				= 25
+
+[physic_object_box_small_2]:physic_object
+$spawn              = "physics\objects\physic_object_box_small_2"
+visual				= physics\box\box_1b.ogf
+ph_mass				= 25

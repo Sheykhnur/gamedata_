@@ -1,0 +1,48 @@
+[combat_ignore@sar_sc4_kargo1]
+
+[danger@sar_kargo1]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sar_sci4_wait
+combat_ignore = combat_ignore@sar_sc4_kargo1
+danger = danger@sar_kargo1
+
+[remark@sar_sci4_wait]
+anim = wait
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@sar_kargo1
+on_timer = 2600 | walker@sar_sci4_walk
+
+[walker@sar_sci4_walk]
+path_walk = sar_scene_4_crates_walk1
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@sar_kargo1
+on_signal = crate1 | walker@sar_sci4_walk1
+;on_signal2 = wt1 | %+sar_cargo_reached%
+;on_signal3 = cargstarted | %+sar_cargo_synth%
+def_state_moving1 = sar_loader
+def_state_moving2 = sar_loader
+def_state_moving3 = sar_loader
+
+;[remark@sar_sci4_walk]
+;anim = wait
+;anim_reset = false
+;meet = no_meet
+;combat_ignore_cond = always
+
+[walker@sar_sci4_walk1]
+path_walk = sar_scene_4_crates_walk11
+meet = no_meet
+combat_ignore_cond = always
+target = sar_scene_4_crates_look1, 0
+on_timer = 1500 | walker@sar_sci4_walk2 %+sar_crates_uploaded%
+
+[walker@sar_sci4_walk2]
+path_walk = sar_scene4_walk_away
+meet = no_meet
+combat_ignore_cond = always
+on_signal = kleft1 | %=release%

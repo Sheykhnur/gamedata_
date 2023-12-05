@@ -1,0 +1,60 @@
+[combat_ignore@loader2]
+
+[danger@bas_loader2]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_loader2]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@loader2_wait1
+combat_ignore = combat_ignore@loader2
+danger = danger@bas_loader2
+threshold = threshold@bas_loader2
+
+[remark@loader2_wait1]
+anim = stand_wait
+combat_ignore_cond = always
+danger = danger@bas_loader2
+threshold = threshold@bas_loader2
+on_info = {+bas_loader_rotate} remark@loader2_rotate2
+meet = no_meet
+
+[remark@loader2_rotate2]
+anim = ordinary_talk2
+snd = bas_replics22
+combat_ignore_cond = always
+danger = danger@bas_loader2
+threshold = threshold@bas_loader2
+target = bas_sc5_loader2_see, 0
+on_signal = sound_end | %+bas_cs5_info_0%
+on_info = {+bas_cs5_info_1} remark@loader2_talk1
+
+[remark@loader2_talk1]
+anim = ordinary_talk
+snd = bas_replics24
+combat_ignore_cond = always
+danger = danger@bas_loader2
+threshold = threshold@bas_loader2
+on_signal = sound_end | %+bas_cs5_info_2%
+target = bas_sc5_loader2_see, 0
+on_info = {+bas_cs5_info_3} remark@loader2_talk2
+meet = no_meet
+
+[remark@loader2_talk2]
+anim = stand_wait
+combat_ignore_cond = always
+danger = danger@bas_loader2
+threshold = threshold@bas_loader2
+on_signal = sound_end | %+bas_cs5_info_4% walker@loader2_walk_away
+target = bas_sc5_loader2_see, 0
+meet = no_meet
+
+[walker@loader2_walk_away]
+path_walk = bas_sc5_loader2_away
+combat_ignore_cond = always
+danger = danger@bas_loader2
+threshold = threshold@bas_loader2
+meet = no_meet

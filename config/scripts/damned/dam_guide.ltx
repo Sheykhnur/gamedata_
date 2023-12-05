@@ -1,0 +1,79 @@
+;[spawner]
+;cond = {+dam_guide_spawn}
+
+;[smart_terrains]
+;none = true
+
+[combat_ignore@dam_guide]
+
+[threshold@dam_guide]
+max_ignore_distance = 5
+ignore_monster = 0
+
+[danger@dam_guide]
+ignore_types = corpse, sound   
+ignore_distance = 0  
+
+[logic]
+active = walker@dam_guide_camp
+combat_ignore = combat_ignore@dam_guide
+threshold = threshold@dam_guide
+danger = danger@dam_guide
+
+[walker@dam_guide_camp]
+path_walk = dam_guide_camp_way
+path_look = dam_guide_camp_look
+on_actor_dist_le_nvis = 6 | remark@dam_guide_before_route
+combat_ignore_cond = always
+threshold = threshold@dam_guide
+danger = danger@dam_guide
+
+[remark@dam_guide_before_route]
+target = actor
+meet = meet@dam_guide_before_route
+combat_ignore_cond = always
+on_info = {+dam_guide_start_spoke} walker@dam_guide_to_caves
+threshold = threshold@dam_guide
+danger = danger@dam_guide
+
+[meet@dam_guide_before_route]
+meet_state		= 10|hello |3|nil
+meet_state_wpn	= 10|hello |3|nil
+victim		= 25|actor
+victim_wpn	= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog	= dam_guide_before_route
+combat_ignore_cond = always
+
+[walker@dam_guide_to_caves]
+path_walk = dam_guide_route_to_caves
+;def_state_moving1 = run
+;def_state_moving2 = run
+;def_state_moving3 = run
+invulnerable = true
+on_signal = reached| remark@dam_guide_cave_entrance
+meet = no_meet
+threshold = threshold@dam_guide
+danger = danger@dam_guide
+
+[remark@dam_guide_cave_entrance]
+target = actor
+combat_ignore_cond = {=fighting_actor}
+meet = meet@dam_guide_cave_entrance
+on_info = {+dam_guide_cave_spoke} %=teleport_npc_not_seen(dam_guide_camp_way:dam_guide_teleported)%
+on_info2 = {+dam_guide_teleported} %=release +dam_guide_released%
+threshold = threshold@dam_guide
+danger = danger@dam_guide
+
+[meet@dam_guide_cave_entrance]
+meet_state		= 3|nil
+meet_state_wpn	= 3|nil
+victim		= 10|actor
+victim_wpn	= 10|actor
+use			= true
+use_wpn		= true
+meet_dialog	= dam_guide_cave_entrance
+combat_ignore_cond = {=fighting_actor}
+
+

@@ -1,0 +1,35 @@
+
+;-- blockpost_rupor
+
+[logic]
+active = ph_sound@humor
+on_hit = hit
+
+[ph_sound@humor]
+snd = humor
+on_signal = sound_end|ph_idle@wait
+
+[ph_idle@wait]
+on_timer = 10000| ph_sound@epic
+
+[ph_sound@epic]
+snd = humor ;epic
+on_signal = sound_end|ph_idle@wait2
+
+[ph_idle@wait2]
+on_timer = 10000| ph_sound@music
+
+[ph_sound@music]
+snd = music
+on_signal = sound_end| ph_idle@wait_3
+
+[ph_sound@alarm]
+snd = siren_1
+on_timer = 30000| ph_sound@wait3
+
+[ph_idle@wait_3]
+on_timer = 10000|ph_sound@humor
+
+[hit]
+snd = siren_1
+on_timer = 30000|ph_sound@alarm

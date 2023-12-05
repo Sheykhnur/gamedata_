@@ -1,0 +1,142 @@
+[combat_ignore]
+
+[logic]
+active = walker@war_sc3_rebell
+combat_ignore = combat_ignore
+
+[walker@war_sc3_rebell]
+path_walk = war_sc3_rebell_run
+path_look = war_sc3_rebell_run_look
+meet = no_meet
+combat_ignore_cond = always 
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_signal = rebreached | remark@war_sc3_rebell_timer %+war_rebel_reached%
+
+[remark@war_sc3_rebell_timer]
+anim = assault
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc3_rebell_look, 0
+on_timer = 2200 | remark@war_sc3_rebell
+
+[remark@war_sc3_rebell]
+anim = claim
+snd = war_replics23
+target = war_sc3_rebell_look, 0
+meet = no_meet
+no_rotate = true
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc3_talk2% remark@war_sc3_rebell_synth
+
+[remark@war_sc3_rebell_synth]
+anim = guard
+target = war_sc3_rebell_look, 0
+meet = no_meet
+no_rotate = true
+combat_ignore_cond = always
+on_info = {+war_sc3_talk3} remark@war_sc3_rebell2
+
+[remark@war_sc3_rebell2]
+anim = guard
+snd = war_replics25
+target = war_sc3_rebell_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc3_talk4%
+on_info = {+war_sc3_talk5} remark@war_sc3_rebell3
+
+[remark@war_sc3_rebell3]
+anim = backoff
+snd = war_replics27
+target = war_sc3_rebell_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | %+war_sc3_talk6% walker@war_sc3_rebell2
+
+[walker@war_sc3_rebell2]
+path_walk = war_sc3_rebell_ready
+meet = no_meet
+combat_ignore_cond = always
+on_signal = rebellready | remark@war_sc3_rebell_fw
+
+[remark@war_sc3_rebell_fw]
+anim = assault
+snd = war_replics28
+target = war_sc3_look_final, 0
+combat_ignore_cond = always
+on_signal = sound_end | remark@war_sc3_rebell_fire %+war_sc3_assault%
+
+[remark@war_sc3_rebell_fire]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire1, 0
+on_timer = 1500 | remark@war_sc3_rebell_fire2 %+war_sc3_falture%
+
+[remark@war_sc3_rebell_fire2]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire1, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire3
+
+[remark@war_sc3_rebell_fire3]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire2, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire4
+
+[remark@war_sc3_rebell_fire4]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire3, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire5 
+
+[remark@war_sc3_rebell_fire5]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire4, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire6
+
+[remark@war_sc3_rebell_fire6]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire1, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire7 %+war_sc3_wake_up%
+
+[remark@war_sc3_rebell_fire7]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire2, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire8 
+on_info = {+war_sc3_explode} nil %=kill_npc%
+
+[remark@war_sc3_rebell_fire8]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire3, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire9
+on_info = {+war_sc3_explode} nil %=kill_npc%
+
+[remark@war_sc3_rebell_fire9]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire4, 0
+on_timer = 2000 | remark@war_sc3_rebell_fire10
+on_info = {+war_sc3_explode} nil %=kill_npc%
+
+[remark@war_sc3_rebell_fire10]
+anim = assault_fire
+meet = no_meet
+combat_ignore_cond = always
+target = war_fire4, 0
+on_info = {+war_sc3_explode} nil %=kill_npc%

@@ -1,0 +1,30 @@
+[logic@gar_bandit_sniper_terrain_sniper]
+active = camper@gar_bandit_sniper
+combat_ignore = combat_ignore@sniper
+on_hit = hit@sniper
+on_death = death@sniper
+;danger = danger@sniper
+
+[death@sniper]
+on_info = {!is_npc_alive} %+gar_sniper_killed +gar_cutscene_end%
+
+[combat_ignore@sniper]
+
+[camper@gar_bandit_sniper]
+path_walk = point
+path_look = look
+def_state_moving = raid
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+sniper = true
+radius = 100
+
+[danger@sniper]
+;ignore_distance = 5
+
+[hit@sniper]
+on_info = walker@gar_bandit_sniper
+
+[walker@gar_bandit_sniper]
+path_walk = point
+path_look = look

@@ -1,0 +1,22 @@
+[combat_ignore@ghost]
+
+[logic]
+active = remark@ghost_waiting
+combat_ignore = combat_ignore@ghost
+
+[remark@ghost_waiting]
+anim = ghost_blowout
+no_move = true
+no_rotate = true
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+bun_creepy_activate} remark@ghost_screaming
+
+[remark@ghost_screaming]
+snd = bun_replics3
+anim = ghost_blowout
+no_move = true
+no_rotate = true
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+bun_ghost_activate} %=release%

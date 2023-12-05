@@ -1,0 +1,50 @@
+[logic]
+active = {+third_wave_contr_dead} mob_walker@zom1, mob_walker@zom
+
+[mob_walker@zom]
+braindead = false
+path_walk = blockpost_atack
+path_look = country_soldier_major_look
+on_info = {+third_wave_contr_dead} mob_walker@zom1
+
+[mob_walker@zom1]
+braindead = true
+path_walk = blockpost_atack
+path_look = country_soldier_major_look
+friendly = true
+actor_friendly = true
+npc_friendly = true
+
+
+
+
+
+
+
+
+
+[mob_fake_death@zom]
+braindead = true
+friendly = true
+actor_friendly = true
+npc_friendly = true
+
+[mob_home@zom]
+path_home = blockpost_atack
+home_min_radius = 2
+home_max_radius = 20
+panic = 0
+aggressive_home
+on_info = {+third_wave_contr_dead} | mob_fake_death@zom 
+
+[mob_walker@zomx]
+path_walk = blockpost_atack
+path_look = country_soldier_major_look
+braindead = true
+
+[mob_remark@zom]
+braindead = true
+anim = stand_idle_0
+friendly = true
+actor_friendly = true
+npc_friendly = true

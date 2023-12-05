@@ -1,0 +1,61 @@
+[combat_ignore@ghost]
+
+[danger_condition@ghost]
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+
+[logic]
+active = remark@start
+combat_ignore = combat_ignore@ghost
+danger = danger_condition@ghost
+
+[remark@start]
+no_move = true
+no_rotate = true
+meet = no_meet
+on_timer = 1000 | remark@ghost_timeout
+combat_ignore_cond = always
+danger = danger_condition@ghost
+target = bunker_ghost_56_walk1_look, 0
+
+;zaglushka
+on_info = {+bun_ghost_3_done} remark@ghost_med %-bun_ghost_3_done%
+on_info2 = {+bun_ghost_3_1_done} remark@ghost_timeout %-bun_ghost_3_1_done%
+on_info3 = {+deactivate_radar_done} %=release%
+
+[remark@ghost_timeout]
+anim = press
+snd = bun_replics4
+no_move = true
+no_rotate = true
+meet = no_meet
+combat_ignore_cond = always
+danger = danger_condition@ghost
+on_signal = action_end | walker@ghost_syth
+target = bunker_ghost_56_walk1_look, 0
+on_info = {+deactivate_radar_done} %=release%
+
+[walker@ghost_syth]
+path_walk = bunker_ghost_5_walk1
+path_look = bunker_ghost_56_walk1_look
+on_timer = 15000 | %+bun_ghost_3_done -bun_ghost_3%
+on_info = {+bun_ghost_3_done -bun_ghost_3} %=teleport_npc(bunker_ghost_5_walk2:bun_ghost_3)%
+on_info2 = {+deactivate_radar_done} %=release%
+danger = danger_condition@ghost
+combat_ignore_cond = always
+meet = no_meet
+
+[remark@ghost_med]
+anim = probe_2n1
+on_info = {+bun_ghost_3_1_done -bun_ghost_3_1} %=teleport_npc(bunker_ghost_5_walk1:bun_ghost_3_1)%
+on_info2 = {+deactivate_radar_done} %=release%
+on_signal = action_end | %+bun_ghost_3_1_done -bun_ghost_3_1%
+target = bunker_ghost_56_walk2_look, 0
+combat_ignore_cond = always
+danger = danger_condition@ghost
+meet = no_meet
+no_move = true
+no_rotate = true

@@ -1,0 +1,9 @@
+[logic]
+active = sr_idle@mutant_rush
+
+[sr_idle@mutant_rush]
+on_actor_inside = {-rad_monsters_help_start +radar_monolith_base_quest_start} sr_idle@delay
+
+[sr_idle@delay]
+on_info = {-rad_monsters_help_start_message} %+rad_monsters_help_start_message%
+on_timer = 3000| %+rad_monsters_help_start%

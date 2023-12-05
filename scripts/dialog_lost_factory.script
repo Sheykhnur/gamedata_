@@ -1,0 +1,25 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : dialog_lost_factory.script
+ Description: Dialog & InfoPortions Function for lost_factory
+ Copyright  : 2011 © LA-team
+ Author     : vintar
+ Editors    : vintar (11.09.2011)
+ Last edit  : 05.04.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function scientist_give_meds(oSpeaker1, oSpeaker2)
+	if not has_info("lost_scientist_talked") then
+		dialogs.give_items("antirad", 2)
+		dialogs.give_items("medkit_army", 2)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,166 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_rostok_factory.script
+ Description: Tasks rostok factory
+ Copyright  : 2010 © LA-team
+ Author     : vintar
+ Editors    : vintar, lox
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"rosf_pda1_have",
+	"rosf_pda2_have",
+	"rosf_pda3_have"
+}
+
+local sucker_tbl = {
+	"rosf_bloodsucker1_dead",
+	"rosf_bloodsucker2_dead",
+	"rosf_bloodsucker3_dead"
+}
+--/--------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if db.sMapNow == "la14_rostok_factory" then
+		if not has_info("rosf_actor_reached_level") and has_alife_info("get_sin_docs") then
+			give_info("rosf_actor_reached_level")
+		end
+	end
+	if sEvent == "item_take" then
+		local iStoryID  = obj:story_id()
+		if iStoryID == 7607 then
+			give_info("rosf_pda1_have")
+		elseif iStoryID == 7608 then
+			give_info("rosf_pda2_have")
+		elseif iStoryID == 7609 then
+			give_info("rosf_pda3_have")
+		end
+	end
+	if info_tbl and has_info_portions(info_tbl) then
+		give_info("rosf_pdas_have")
+		info_tbl = nil --/ clear
+	end
+	if sucker_tbl and has_info_portions(sucker_tbl) then
+		give_info("rosf_bloodsuckers_dead")
+		sucker_tbl = nil --/ clear
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^rosf_') then
+		return false --/>
+	end
+	if info_id == "rosf_barman_meet_duty" then
+		news_manager.send_tip_hud(game.translate_string("barman_message_header"), game.translate_string("rosf_meet_duty"), "barman")
+		return true --/>
+	end
+	if info_id == "rosf_bloodsucker_duty_task" then
+		level_tasks.add_location(7610, "crlc_big", "rosf_duty_hq_mark")
+		return true --/>
+	end
+	if info_id == "rosf_body_fallen" then
+		local snd = xr_sound.get_safe_sound_object("monsters\\bloodsucker\\die_0")
+		snd:play(db.actor, 1, sound_object.s2d)
+		return true --/>
+	end
+	if info_id == "rosf_pda2_have" then
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\rosf\\rosf_pda_message_code")
+		snd:play(db.actor, 1, sound_object.s2d)
+		news_manager.send_tip_hud(game.translate_string("pda_info_header"), game.translate_string("rosf_safe_code"), "safe")
+		return true --/>
+	end
+	if info_id == "rosf_pda3_have" then
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\rosf\\rosf_pda_message_last")
+		snd:play(db.actor, 1, sound_object.s2d)
+		if has_info("rosf_pda1_have") and not has_info("rosf_pda2_have") then
+			start_real_timer(28, sModule .. ".send_pda_message")
+		end
+		return true --/>
+	end
+	if info_id == "rosf_pda1_have" then
+		if has_info("rosf_pda3_have") and not has_info("rosf_pda2_have") then
+			this.send_pda_message()
+		end
+		return true
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function send_pda_message(t)
+	news_manager.send_tip_hud(game.translate_string("dima_message_header"), game.translate_string("rosf_find_pda2"), "dima")
+end
+
+function hit_obj_no_sid(p)
+	local se_obj = alife():object("rosf_bloodsucker_body")
+	local obj = se_obj and level.object_by_id(se_obj.id)
+	if obj and p then
+		local ptr = get_patrol(p)
+		if ptr then
+			local dir = ptr:point(0):sub(obj:position())
+			dir.x = dir.x - 0.5
+			dir.y = dir.y - 1
+			local h = hit()
+			h.power     = 6000
+			h.direction = dir
+			h.draftsman = obj
+			h.impulse   = 3000
+			h.type      = hit.strike
+			obj:hit(h)
+			log("[%s] was hit", obj:name())
+		end
+	end
+end
+
+function move_corpse(p)
+	local se_obj = alife():object("rosf_bloodsucker_body")
+	local obj = se_obj and level.object_by_id(se_obj.id)
+	local ph_shell = obj and obj:get_physics_shell()
+	if ph_shell and p then
+		local bone = ph_shell:get_element_by_bone_name("bip01_head")
+		local ptr = get_patrol(p)
+		if bone and ptr then
+			local dir = ptr:point(0):sub(obj:position())
+			dir:mul(100)
+			dir:add(vector():set(0, -1, 0))
+			log("applying force to [%s], towards way point [%s] at a direction of %s%s", obj:name(), p, dir, "")
+			bone:apply_force(dir.x, dir.y, dir.z)
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--[[
+--/ looped partciles
+
+local gas_particle_name = "la_particles\\toxic_gas_rost"
+local path_prefix = "fx_gas"
+
+function gas_effect_callback(p)
+	local path = get_patrol(path_prefix .. p.idx)
+	local particle = particles_object(gas_particle_name)
+	particle:play_at_pos(path:point(0))
+	if not has_info("rosf_gaszone_cleared") then
+		start_real_timer(240 * p.idx - 1, "tasks_rostok_factory.gas_effect_callback", {idx = p.idx})
+	end
+end
+
+function start_gas_effect()
+	log("starting")
+	if db.sMapNow ~= "la14_rostok_factory" or 
+		has_info("rosf_gaszone_cleared") then
+		return 
+	end
+	for i = 1, 62 do
+		start_real_timer(2 * i - 1, "tasks_rostok_factory.gas_effect_callback", {idx = i})
+	end
+end
+--]]
+--/ -----------------------------------------------------------------------------------------------

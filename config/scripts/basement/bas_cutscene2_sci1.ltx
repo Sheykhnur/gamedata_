@@ -1,0 +1,84 @@
+[combat_ignore@scene2]
+
+[danger@bas_scene2]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_scene2]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@scene_lab_checking
+combat_ignore = combat_ignore@scene2
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+
+[remark@scene_lab_checking]
+anim = sci_think
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+meet = no_meet
+on_timer = 5000 | remark@scene2_lab_dialog1
+
+[remark@scene2_lab_dialog1]
+anim = ordinary_talk
+snd = bas_replics26
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+target = bas_cs2_look,0
+meet = no_meet
+on_signal = sound_end | remark@scene2_lab_dialog2
+
+[remark@scene2_lab_dialog2]
+anim = wait
+snd = bas_replics27
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+target = bas_cs2_look,0
+meet = no_meet
+on_signal = sound_end | %+bas_scene2_info1%
+on_info = {+bas_scene2_info2} %+bas_scene2_seq_start =lab_gen_on% remark@scene2_lab_seq1
+
+[remark@scene2_lab_seq1]
+anim = press
+target = bas_cs2_look1, 0
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+on_timer = 6000 | %+bas_scene2_seq1%
+meet = no_meet
+on_info = {+bas_scene2_seq1} %-bas_scene2_seq2% remark@scene2_lab_seq2
+on_info2 = {+bas_cutscene2_finale_end} remark@scene_lab_end
+
+[remark@scene2_lab_seq2]
+anim = stand_wait
+target = bas_cs2_look1, 0
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+on_timer = 6000 | %+bas_scene2_seq2%
+meet = no_meet
+on_info = {+bas_scene2_seq2} %=lab_gen_on -bas_scene2_seq1% remark@scene2_lab_seq1
+on_info2 = {+bas_cutscene2_finale_end} remark@scene_lab_end
+
+[remark@scene_lab_end]
+anim = laughing
+snd = rad_replics_13
+target = actor
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@bas_scene2
+meet = no_meet
+threshold = threshold@bas_scene2
+on_timer = 5000 | %=rad_psy_basic =play_snd(ambient\underground\hit_1)% remark@scene_lab_snd
+
+[remark@scene_lab_snd]
+combat_ignore_cond = always
+danger = danger@bas_scene2
+threshold = threshold@bas_scene2
+meet = no_meet
+on_timer = 5 | %=release%

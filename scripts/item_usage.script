@@ -1,0 +1,790 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : item_usage.script
+ Description: ...
+ Copyright  : 2010 © LA-team
+ Author     : barin (11.05.2008)
+ Editors    : barin, griphoon, vintar, SkyLoader
+ Last edit  : 28.10.2013 [SkyLoader]
+--]] ----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local item_action = {
+	repair_kit   = "ui_repair_kit.init_menu"
+}
+
+local param_ini = system_ini()
+local animated_use_time = 10
+local detector = nil
+item_anim = nil
+
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialization and preset module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ --------------------------
+function PreSets(e)
+	event("item_use"):register(item_used)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------------------------------------
+function item_used(e)
+	local section = e.section
+	local action = nil
+	if section == "repair_kit" or section == "gunsmith_kit" then
+		if GetVarA("safe_zone", "in") ~= "in" then
+			this.dont_use_portion(e.item)
+			local tip = {"hmm", "st_not_safe"}
+			news_manager.send_tip_hud( unpack(tip) )
+		else
+			action = "repair_kit"
+		end
+	elseif section == "item_battery" then
+		local oItem = db.actor:item_in_slot(9)
+		if oItem then
+			action = "battery"
+		else
+			local tip = {"hmm", "havent_torch"}
+			news_manager.send_tip_hud( unpack(tip) )
+		end
+	end
+	if db.actor:has_info("torch") then return end
+	if param_ini:line_exist(section, "use_prolonged_effect") then
+        --log("item used: %s",section)
+        if (db.actor:active_slot()) ~= -1 then
+			SetVarA("active_slot", (db.actor:active_slot()))
+		end
+		this.use_anim_item(section) --Вызов анимации
+		item_anim = section
+	end
+	
+	if action and item_action[action] then
+		local script, func = la_utils.get_script_func_name(item_action[action])
+		if script and func then
+			if _G[script] then
+				if _G[script][func] then
+					_G[script][func](e.item)
+				else
+					abort("%s:item_used: script '%s' does not contain function '%s'", sModule, script, func, "")
+				end
+			else
+				abort("%s:item_used: script '%s' does not exist!", sModule, script, "")
+			end
+		else
+			abort("%s:item_used: cannot trigger callback for %s", sModule, action, "")
+		end
+	end
+end
+
+--/ not usable items with portions
+function dont_use_portion(item)
+	item:set_portions_num(item:get_portions_num() + 1)
+end
+
+--/ Manually eat 1 portion of EatableItem and delete if needed, without actually using the item
+function eat_portion(user, item)
+	local portions = item:get_portions_num()
+	item:set_portions_num(portions - 1)
+	if portions == 1 then
+		user:mark_item_dropped(item)
+		local sItem = alife():object(item:id())
+		if sItem then
+			alife():release(sItem, true)
+		end
+	end
+end
+
+--/ Очистка слота
+function clear_slot()
+	if not db.actor:item_in_slot(10) then return end
+	db.actor:iterate_inventory(function (dummy, item) if string.find(item:section(), "anm_") then release_item = item:section() end end, nil)
+	alife():release(alife():object(db.actor:object(release_item):id()))
+	--log("clear slot")
+end
+
+--/ Вызов анимации предмета	
+function use_anim_item(section)
+	local window = level.main_input_receiver()
+	local anim_item = "anm_"..section
+	if (param_ini:line_exist(anim_item, "use_time")) then
+		--log("read use_time param")
+		animated_use_time = param_ini:r_float(anim_item, "use_time")
+	end
+	db.actor:block_slots_and_inventory(true)
+	--log("use time is %s",animated_use_time)
+	alife():create(anim_item,db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+	--log("spawn anim item in rukzak")
+	db.actor:give_info_portion("anim_starts")
+	--log("give portion anim starts")
+	if window ~= nil then
+		level.start_stop_menu(window, false)
+	end
+	if not db.actor:active_item() then
+		db.actor:give_info_portion("no_weapon")
+		--log("give portion no weapon")
+		start_real_timer(0.25, "item_usage.use_anim_item_activate")
+		--log("0.25")
+	else
+		db.actor:deactivate_slot()
+		start_real_timer(1, "item_usage.use_anim_item_activate")
+		deactivate_detector()
+		--log("1")
+	end
+end
+
+--/ Дективация детектора
+function deactivate_detector()
+	detector = db.actor:item_in_slot(8)
+	if detector then
+		db.actor:move_to_ruck(detector)
+		db.actor:move_to_slot(detector, true)
+	end
+end
+
+--/ Отключение вызова детектора
+function disable_detector()
+    if detector then
+        db.actor:move_to_ruck(detector)
+		if db.actor:has_info("torch") and not db.actor:has_info("gasmask") then
+			start_real_timer(1, "item_usage.return_detector")
+			--log("torch/pnv")
+		elseif db.actor:has_info("gasmask") and db.actor:has_info("torch") then
+			start_real_timer(0.7, "item_usage.return_detector")
+			--log("gasmask")
+		elseif db.actor:has_info("harvest") then
+			start_real_timer(1.4, "item_usage.return_detector")
+			--log("harvest")
+		else	
+			start_real_timer(animated_use_time, "item_usage.return_detector")
+			--log("anim item")
+		end
+	end
+end
+
+--/ Возвращение детектора по окончанию анимации
+function return_detector()
+	db.actor:move_to_slot(detector, true)
+	--log("return detector")
+	detector = nil
+end
+
+--/ Менеджер ppe эффектов
+function ppe_manager()
+	--log("manager ppe")
+	if item_anim == "antirad" then
+		start_real_timer(2.85, "item_usage.ppe_duality")
+		--log("antirad")
+	elseif item_anim == "medkit" or item_anim == "medkit_army" or item_anim == "medkit_scientic" then
+		start_real_timer(2.55, "item_usage.ppe_duality")
+		--log("medkit")
+	elseif item_anim == "vodka" or item_anim == "hemupob_vodka" or item_anim == "cmuphob_vodka" or item_anim == "wine" then
+		start_real_timer(2.12, "item_usage.ppe_duality_long")
+		--log("vodka")
+	elseif item_anim == "chmielnitskoe_beer" then
+		start_real_timer(1.1, "item_usage.ppe_duality_long")
+		--log("pivo banka")
+	elseif item_anim == "pripiat_beer" then
+		start_real_timer(1.7, "item_usage.ppe_duality_long")
+		--log("pivo steklo")
+	end
+	item_anim = nil
+end
+
+--/ ppe duality
+function ppe_duality()
+	level.add_pp_effector("duality.ppe", 9005, false);
+end
+
+--/ ppe duality долгий
+function ppe_duality_long()
+	level.add_pp_effector("duality_long.ppe", 9006, false);
+end
+
+--/ Активация анимации
+function use_anim_item_activate(section)
+	disable_detector()
+	ppe_manager()
+    if not (db.actor:active_slot() == 10) then
+        db.actor:activate_slot(10)
+		--log("activate slot only if it isn't active now")
+	end
+	--log("timer anim start")
+	start_real_timer(animated_use_time, "item_usage.use_anim_item_end")
+end
+
+--/ Завершение анимации
+function use_anim_item_end()
+	--log("timer anim end")
+	db.actor:deactivate_slot()
+	db.actor:disable_info_portion("anim_starts")
+	--log("disable portion anim starts")
+	db.actor:give_info_portion("anim_end")
+	--log("give portion anim end")
+	this.clear_slot()
+	start_real_timer(0.2, "item_usage.use_anim_item_turnback")
+end
+
+--/ Получение переменной слота/Завершение работы
+function use_anim_item_turnback()
+	db.actor:block_slots_and_inventory(false)
+	db.actor:disable_info_portion("anim_end")
+	--log("disable portion anim end")
+	if db.actor:has_info("no_weapon") and not db.actor:has_info("anim_outside") then
+		db.actor:disable_info_portion("no_weapon")
+		--log("disable portion no weapon")
+		--log("ti kto")
+		return
+	end
+	if db.actor:has_info("anim_outside") then
+		db.actor:disable_info_portion("no_weapon")
+		--log("disable portion no weapon")
+		start_real_timer(0.2, "item_usage.use_anim_item_turnback_outside")
+		return
+	end
+	if db.actor:has_info("anim_to_zone") then
+		db.actor:disable_info_portion("no_weapon")
+		--log("disable portion no weapon")
+		--log("anim to zone end")
+		return
+	end
+	local active_slot = GetVarA("active_slot", nil)
+	if active_slot ~= nil then
+		db.actor:activate_slot(active_slot)
+        SetVarA("active_slot", nil)
+	end
+	--log("konec ebat")
+end
+
+--/ Получение переменной слота если гг использовал предмет в сейв зоне и во время анимации вышел из неё
+function use_anim_item_turnback_outside()
+	local active_slot2 = GetVarA("active_slot2", nil)
+	if active_slot2 ~= nil then
+		db.actor:activate_slot(active_slot2)
+        SetVarA("active_slot2", nil)
+		db.actor:disable_info_portion("anim_outside")
+		--log("disable portion anim outside")
+		--log("set weapon actor")
+		--log("ya kto?")
+	end
+end
+
+--/ Получение переменной слота если гг использовал анимацию вне сейв зоны и зашел в нее во время анимации
+function use_anim_item_turnback_sr()
+	local active_slot = GetVarA("active_slot", nil)
+	if active_slot ~= nil then
+		db.actor:activate_slot(active_slot)
+        SetVarA("active_slot", nil)
+	end
+	db.actor:disable_info_portion("anim_to_zone")
+	--log("disable portion anim to zone")
+	db.actor:disable_info_portion("torch")
+	--log("disable portion torch")
+	--log("konec ebat 2")
+end
+
+--/ Вызов анимации фонаря
+function use_torch()
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	if db.actor:item_in_slot(9) then
+		db.actor:block_slots_and_inventory(true)
+		if (db.actor:active_slot()) ~= -1 then
+			SetVarA("active_slot", (db.actor:active_slot()))
+		end
+		if db.actor:get_torch_state(true) and not db.actor:has_info("torch_on") then
+			--log("torch on")
+			db.actor:set_torch_state(false)
+			db.actor:give_info_portion("torch_off")
+			--log("give portion torch off")
+			if not db.actor:active_item() then
+				start_real_timer(0.6, "item_usage.torch_off")
+			else
+				start_real_timer(1.5, "item_usage.torch_off")
+			end
+		end
+		if not db.actor:get_torch_state(true) and not db.actor:has_info("torch_off") then
+			--log("torch off")
+			db.actor:set_torch_state(true)
+			db.actor:give_info_portion("torch_on")
+			--log("give portion torch on")
+			if not db.actor:active_item() then
+				start_real_timer(0.6, "item_usage.torch_on")
+			else
+				start_real_timer(1.5, "item_usage.torch_on")
+			end
+		end
+		db.actor:give_info_portion("anim_starts")
+		--log("give portion anim starts")
+		db.actor:give_info_portion("torch")
+		--log("give portion torch")
+		alife():create("anm_torch",db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+		--log("spawn anim item in rukzak")
+		if not db.actor:active_item() then
+			db.actor:give_info_portion("no_weapon")
+			--log("give portion no weapon")
+			start_real_timer(0.25, "item_usage.use_torch_activate")
+			--log("0.25")
+		else
+			db.actor:deactivate_slot()
+			start_real_timer(1, "item_usage.use_torch_activate")
+			deactivate_detector()
+			--log("1")
+		end
+	end
+end
+
+--/ Активация анимации фонаря/ПНВ
+function use_torch_activate()
+	disable_detector()
+    if not (db.actor:active_slot() == 10) then
+        db.actor:activate_slot(10)
+		--log("activate slot only if it isn't active now")
+	end
+	--log("timer anim start")
+	start_real_timer(1, "item_usage.use_hand_end")
+end
+
+--/ Включение фонаря
+function torch_on()
+	db.actor:set_torch_state(true)
+	db.actor:disable_info_portion("torch_on")
+	db.actor:give_info_portion("torch_vkluchen")
+	--log("disable portion torch on")
+	--log("vkluchaetsa")
+end
+
+--/ Выключение фонаря
+function torch_off()
+	db.actor:set_torch_state(false)
+	db.actor:disable_info_portion("torch_off")
+	db.actor:give_info_portion("torch_vikluchen")
+	--log("disable portion torch off")
+	--log("vikluchaetsa")
+end
+
+--/ Завершение анимации фонаря/ПНВ/Маски
+function use_hand_end()
+	db.actor:disable_info_portion("anim_starts")
+	--log("disable portion anim starts")
+	--log("timer anim end")
+	db.actor:deactivate_slot()
+	this.clear_slot()
+	db.actor:give_info_portion("anim_end")
+	--log("give portion anim end")
+	start_real_timer(0.2, "item_usage.hand_turnback")
+end
+
+--/ Получение переменной слота у фонаря/ПНВ/Маски
+function hand_turnback()
+	db.actor:disable_info_portion("torch_vkluchen")
+	db.actor:disable_info_portion("torch_vikluchen")
+	db.actor:block_slots_and_inventory(false)
+	db.actor:disable_info_portion("torch")
+	--log("disable portion torch")
+	db.actor:disable_info_portion("anim_end")	
+	--log("disable portion anim end")
+	db.actor:disable_info_portion("gasmask")
+	--log("disable portion gasmask")
+	if db.actor:has_info("no_weapon") then
+		SetVarA("active_slot", nil)
+		db.actor:disable_info_portion("no_weapon")
+		--log("disable portion no weapon")
+		return
+	end
+	if db.actor:has_info("anim_outside") then
+		db.actor:disable_info_portion("no_weapon")
+		--log("disable portion no weapon")
+		start_real_timer(0.2, "item_usage.use_anim_item_turnback_outside")
+		return
+	end
+	if db.actor:has_info("anim_to_zone") then
+		db.actor:disable_info_portion("no_weapon")
+		--log("disable portion no weapon")
+		--log("anim to zone end")
+		return
+	end
+	local active_slot = GetVarA("active_slot", nil)
+	if active_slot ~= nil then
+		db.actor:activate_slot(active_slot)
+		SetVarA("active_slot", nil)
+	end
+end
+
+--/ Вызов анимации ПНВ
+function use_nightvision()
+	local outfit = db.actor:item_in_slot(6)
+	local outfit_nvd = false
+	local helmet = db.actor:item_in_slot(11)
+	local helmet_nvd = false
+	local nightvision = db.actor:item_in_slot(12)
+	local nightvision_nvd = false
+	if outfit then
+		outfit_nvd = param_ini:line_exist(outfit:section(), "nightvision_sect")
+	end
+	if helmet then
+		helmet_nvd = param_ini:line_exist(helmet:section(), "nightvision_sect")
+	end
+	if nightvision then
+		nightvision_nvd = param_ini:line_exist(nightvision:section(), "nightvision_sect")
+	end
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	if (outfit_nvd or helmet_nvd or nightvision_nvd) then
+		db.actor:block_slots_and_inventory(true)
+        if (db.actor:active_slot()) ~= -1 then
+			SetVarA("active_slot", (db.actor:active_slot()))
+		end
+		db.actor:give_info_portion("anim_starts")
+		--log("give portion anim starts")
+		db.actor:give_info_portion("torch")
+		--log("give portion torch")
+		alife():create("anm_torch",db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+		--log("spawn anim item in rukzak")
+		if not db.actor:active_item() then
+			db.actor:give_info_portion("no_weapon")
+			--log("give portion no weapon")
+			start_real_timer(0.25, "item_usage.use_torch_activate")
+			--log("0.25")
+		else
+			db.actor:deactivate_slot()
+			start_real_timer(1, "item_usage.use_torch_activate")
+			deactivate_detector()
+			--log("1")
+		end
+	end
+end
+
+--/ Вызов анимации протирания шлема
+function gasmask()
+	local outfit = db.actor:item_in_slot(6)
+	local helmet = db.actor:item_in_slot(11)
+	local outfit_glass = false
+	local helmet_glass = false
+	if outfit then
+		if param_ini:line_exist(outfit:section(), "casts_visor_effects") then
+			outfit_glass = param_ini:r_bool(outfit:section(), "casts_visor_effects")
+		end
+	end
+	if helmet then
+		if param_ini:line_exist(helmet:section(), "casts_visor_effects") then
+			helmet_glass = param_ini:r_bool(helmet:section(), "casts_visor_effects")
+		end
+	end
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	if (outfit_glass or helmet_glass) then
+		db.actor:block_slots_and_inventory(true)
+        if (db.actor:active_slot()) ~= -1 then
+			SetVarA("active_slot", (db.actor:active_slot()))
+		end
+		db.actor:give_info_portion("anim_starts")
+		--log("give portion anim starts")
+		db.actor:give_info_portion("torch")
+		--log("give portion torch")
+		db.actor:give_info_portion("gasmask")
+		--log("give portion gasmask")
+		alife():create("anm_gasmask",db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+		--log("spawn anim item in rukzak")
+		if not db.actor:active_item() then
+			db.actor:give_info_portion("no_weapon")
+			--log("give portion no weapon")
+			clear_drops()
+			start_real_timer(0.25, "item_usage.use_gasmask_cam")
+			start_real_timer(0.03, "item_usage.deactivate_gasmask")
+			--log("0.25")
+		else
+			db.actor:deactivate_slot()
+			start_real_timer(1, "item_usage.use_gasmask_cam")
+			start_real_timer(0.7, "item_usage.clear_drops")
+			deactivate_detector()
+			--log("1")
+		end
+	end
+end
+
+--/ Деактивация преждевременной анимации если она была вызвана с пустыми руками
+function deactivate_gasmask()
+	db.actor:deactivate_slot()
+end
+
+--/ Активация камеры и вызов активации анимации протирания шлема
+function use_gasmask_cam()
+	level.add_cam_effector("camera_effects\\gasmask.anm",80110,false,"")
+	db.actor:deactivate_slot()
+	start_real_timer(0.6, "item_usage.use_gasmask_activate")
+end
+
+--/ Активация анимации протирания шлема
+function use_gasmask_activate()
+	disable_detector()
+    if not (db.actor:active_slot() == 10) then
+        db.actor:activate_slot(10)
+		--log("activate slot only if it isn't active now")
+	end
+	--log("timer anim start")
+	start_real_timer(0.7, "item_usage.use_hand_end")
+end
+
+--/ Менеджер очистки капель
+function clear_drops()
+	local outfit = db.actor:item_in_slot(6)
+	local outfit_glass = false
+	local helmet = db.actor:item_in_slot(11)
+	if outfit then
+		if param_ini:line_exist(outfit:section(), "casts_visor_effects") then
+			outfit_glass = param_ini:r_bool(outfit:section(), "casts_visor_effects")
+		end
+	end
+	if helmet then
+		start_real_timer(1.2, "item_usage.clear_helmet")
+		--log("helmet")
+	end
+	if outfit_glass then
+		db.actor:move_to_ruck(outfit)
+		db.actor:move_to_slot(outfit, true)
+		--log("outfit")
+	end
+end
+
+--/ Очистка шлема
+function clear_helmet()
+	local helmet = db.actor:item_in_slot(11)
+	db.actor:move_to_ruck(helmet)
+	db.actor:move_to_slot(helmet, true)
+	--log("helmet end")
+end
+
+--/ Вызов анимации свежевания
+function use_monster()
+	--log("1")
+	level.disable_input()
+	start_real_timer(1, "item_usage.use_monster_activate")
+	level.add_cam_effector("camera_effects\\crouch_forward_short_alt.anm",8010,false,"")
+	db.actor:give_info_portion("anim_starts")
+	--log("give portion anim starts")
+	alife():create("anm_harv_"..db.actor:item_in_slot(0):section(),db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+	db.actor:deactivate_slot()
+	start_real_timer(0.7, "item_usage.cam_meat_activate")
+	deactivate_detector()
+end
+	
+--/ Активация анимации свежевания
+function use_monster_activate()
+	local soObj
+	start_real_timer(3.5, "item_usage.use_meat")
+	--log("2")
+	if not (db.actor:active_slot() == 10) then
+		db.actor:activate_slot(10)
+	end
+	soObj = alife():create( "fake_item", db.actor:position():add(db.actor:direction():mul(1)), db.actor:level_vertex_id(), db.actor:game_vertex_id() ) --Костыль против вечно зажатой клавиши подбора
+end
+
+--/ Активация камеры свежевания
+function cam_meat_activate()
+	--log("3")
+	level.add_cam_effector("camera_effects\\harvest_lean_down_main.anm",8559,false,"")
+end
+
+--/ Работа анимации свежевания
+function use_meat()
+	level.enable_input()
+	--log("4")
+	db.actor:disable_info_portion("anim_starts")
+	--log("disable portion anim starts")
+	db.actor:deactivate_slot()
+	this.clear_slot()
+	if db.actor:has_info("bad_meat") then
+		start_real_timer(0.2, "item_usage.use_meat_end")
+		news_manager.send_tip(db.actor,"st_bad_meat")
+		db.actor:disable_info_portion("bad_meat")
+		--log("disable portion bad meat")
+		SetVarA("looted_monster", nil)
+		return
+	end
+	db.actor:block_slots_and_inventory(true)
+	local looted_monster = GetVarA("looted_monster", nil)
+	db.actor:give_info_portion("harvest")
+	disable_detector()
+	if not db.actor:has_info("not_monster_item") then
+	if looted_monster ~= nil then
+		alife():create("anm_meat_"..looted_monster.."_pickup",db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+		SetVarA("looted_monster", nil)
+	else
+		alife():create("anm_meat_pickup",db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+			SetVarA("looted_monster", nil)
+		end
+	else
+		alife():create("anm_meat_non_visible",db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+		SetVarA("looted_monster", nil)
+	end
+	if not (db.actor:active_slot() == 10) then
+		db.actor:activate_slot(10)
+	end
+	start_real_timer(1.2, "item_usage.use_meat_end")
+end
+
+--/ Завершение анимации свежевения
+function use_meat_end()
+	--log("5")
+	db.actor:deactivate_slot()
+	this.clear_slot()
+	db.actor:give_info_portion("anim_end")
+	--log("give portion anim end")
+	start_real_timer(0.2, "item_usage.meat_turnback")
+	--if db.actor:object("fake_item") then
+		--db.actor:iterate_inventory(function (dummy, item) if string.find(item:section(), "fake_item") then release_item = item:section() end end, nil)
+		--alife():release(alife():object(db.actor:object(release_item):id()))
+		----log("fake item")
+	--end
+end
+
+--/ Активация ножа после свежевания
+function meat_turnback()
+	--log("6")
+	db.actor:block_slots_and_inventory(false)
+	db.actor:disable_info_portion("anim_end")
+	db.actor:disable_info_portion("harvest")
+	db.actor:activate_slot(0)
+	--log("disable portion anim end")
+end
+
+--/ Вызов анимации подбора
+function pickup()
+	db.actor:block_slots_and_inventory(true)
+	if (db.actor:active_slot()) ~= -1 then
+		SetVarA("active_slot", (db.actor:active_slot()))
+	end
+	db.actor:give_info_portion("anim_starts")
+	--log("give portion anim starts")
+	alife():create("anm_pickup",db.actor:position(),db.actor:level_vertex_id(),db.actor:game_vertex_id(),db.actor:id())
+	if not db.actor:active_item() then
+		db.actor:give_info_portion("no_weapon")
+		--log("give portion no weapon")
+		start_real_timer(0.25, "item_usage.pickup_activate")
+		--log("0.25")
+	else
+		db.actor:deactivate_slot()
+		start_real_timer(1, "item_usage.pickup_activate")
+		deactivate_detector()
+		--log("1")
+	end
+end
+
+--/ Активация анимации подбора
+function pickup_activate()
+	disable_detector()
+    if not (db.actor:active_slot() == 10) then
+        db.actor:activate_slot(10)
+		--log("activate slot only if it isn't active now")
+	end
+	--log("timer anim start")
+	start_real_timer(0.7, "item_usage.pickup_end")
+end
+
+--/ Завершение анимации подбора
+function pickup_end()
+	db.actor:disable_info_portion("anim_starts")
+	--log("disable portion anim starts")
+	--log("timer anim end")
+	db.actor:deactivate_slot()
+	this.clear_slot()
+	db.actor:give_info_portion("anim_end")
+	--log("give portion anim end")
+	start_real_timer(0.2, "item_usage.pickup_turnback")
+end
+
+--/ Получение переменной слота у анимации подбора
+function pickup_turnback()
+	db.actor:block_slots_and_inventory(false)
+	db.actor:disable_info_portion("anim_end")
+	--log("disable portion anim end")
+	if db.actor:has_info("no_weapon") then
+		SetVarA("active_slot", nil)
+		db.actor:disable_info_portion("no_weapon")
+		--log("disable portion no weapon")
+		return
+	end
+	local active_slot = GetVarA("active_slot", nil)
+	if active_slot ~= nil then
+		db.actor:activate_slot(active_slot)
+		SetVarA("active_slot", nil)
+	end
+end
+
+--/ Надевание брони
+function has_outfit()
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	db.actor:deactivate_slot()
+    level.add_cam_effector("camera_effects\\item_use.anm",8010,false,"")
+	level.add_pp_effector("transfer_outfit.ppe", 9000, false);
+	db.actor:disable_info_portion("no_outfit")
+	db.actor:disable_info_portion("no_helmet")
+	db.actor:give_info_portion("outfit_actor")
+	item_activation_snd = sound_object("interface\\inv_outfit")
+	item_activation_snd:play(db.actor, 0, sound_object.s2d)
+	--log("outfit actor")
+end
+
+--/ Снятие брони
+function no_outfit()
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	db.actor:deactivate_slot()
+	level.add_cam_effector("camera_effects\\item_use.anm",8020,false,"")
+	level.add_pp_effector("transfer_outfit.ppe", 9001, false);
+	db.actor:give_info_portion("no_outfit")
+	db.actor:disable_info_portion("outfit_actor")
+	db.actor:disable_info_portion("helmet_actor")
+	item_activation_snd = sound_object("interface\\inv_outfit")
+	item_activation_snd:play(db.actor, 0, sound_object.s2d)
+	--log("no outfit actor")
+end
+
+--/ Надевание шлема
+function has_helmet()
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	db.actor:deactivate_slot()
+    level.add_cam_effector("camera_effects\\item_use.anm",8010,false,"")
+	level.add_pp_effector("transfer_outfit.ppe", 9000, false);
+	db.actor:disable_info_portion("no_helmet")
+	db.actor:give_info_portion("helmet_actor")
+	item_activation_snd = sound_object("interface\\gasmask_on")
+	item_activation_snd:play(db.actor, 0, sound_object.s2d)
+	--log("outfit actor")
+end
+
+--/ Снятие шлема
+function no_helmet()
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	db.actor:deactivate_slot()
+	level.add_cam_effector("camera_effects\\item_use.anm",8020,false,"")
+	level.add_pp_effector("transfer_outfit.ppe", 9001, false);
+	db.actor:disable_info_portion("helmet_actor")
+	db.actor:give_info_portion("no_helmet")
+	item_activation_snd = sound_object("interface\\gasmask_off")
+	item_activation_snd:play(db.actor, 0, sound_object.s2d)
+	--log("no outfit actor")
+end
+
+--/ Апдейт в 1 секунду
+function update_anim()
+	if db.actor:item_in_slot(6) and not db.actor:has_info("outfit_actor") then
+		has_outfit()
+	end
+	if not db.actor:item_in_slot(6) and not db.actor:has_info("no_outfit") then
+		no_outfit()
+	end
+	if not db.actor:item_in_slot(11) and not db.actor:has_info("no_helmet") then
+		db.actor:give_info_portion("no_helmet")
+		no_helmet()
+	end
+	if db.actor:item_in_slot(11) and not db.actor:has_info("helmet_actor") then
+		db.actor:give_info_portion("helmet_actor")
+		has_helmet()
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------

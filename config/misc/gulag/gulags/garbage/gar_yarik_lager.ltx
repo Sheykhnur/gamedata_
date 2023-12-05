@@ -1,0 +1,59 @@
+[death@small_hangar_guard]
+on_info = %+small_hangar_guard_dead%
+
+[combat_ignore@gar_yarik_lager]
+
+[hit@gar_yarik_lager]
+on_info = {=hitted_by_gulag(gar_bandit_hangar)} %+yarik_start_fight%
+on_info2 = {+gar_seriy_go !hit_by_actor} %+yarik_start_fight%, {+bandits_start_fight !hit_by_actor} %+yarik_start_fight%
+
+[threshold@gar_yarik_lager_wait]
+ignore_monster = 1
+
+[meet@gar_yarik_lager_wait]
+meet_state     = 5 | hello_wpn@talk_hello
+meet_state_wpn = 5 | hello_wpn@talk_hello
+victim = actor
+victim_wpn = actor
+use = true
+use_wpn = true
+threshold = threshold@gar_yarik_lager_wait
+
+[danger@gar_yarik_lager1]
+ignore_distance = 0
+
+[danger@gar_yarik_lager2]
+ignore_types = corpse, sounds
+ignore_distance = 0
+
+[logic@gar_yarik_lager_wait]
+active = {+bandits_start_fight} walker@gar_yarik_lager_assault2, {+gar_seriy_go} walker@gar_yarik_lager_assault2, {+gar_yarik_talked -bandits_start_fight -gar_seriy_go} walker@gar_yarik_lager_assault, {-gar_yarik_talked} walker@gar_yarik_lager_wait
+combat_ignore = combat_ignore@gar_yarik_lager
+on_hit = hit@gar_yarik_lager
+on_death = death@small_hangar_guard
+
+[walker@gar_yarik_lager_wait]
+path_walk = wait_point
+path_look = wait_look
+meet = meet@gar_yarik_lager_wait
+combat_ignore_cond = always
+danger = danger@gar_yarik_lager1
+on_info = {+gar_yarik_talked} walker@gar_yarik_lager_assault
+
+[walker@gar_yarik_lager_assault]
+path_walk = assault_path
+combat_ignore_cond = {-yarik_start_fight}
+meet = no_meet
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+gar_seriy_go} walker@gar_yarik_lager_assault2, {+bandits_start_fight} walker@gar_yarik_lager_assault2
+
+[walker@gar_yarik_lager_assault2]
+path_walk = assault_path2
+combat_ignore_cond = {-yarik_start_fight -bandits_start_fight}
+danger = danger@gar_yarik_lager2
+on_info = {+gar_seriy_give_info} %=smart_terrain_force_update(gar_small_hangar)%
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault

@@ -1,0 +1,19 @@
+[logic]
+active = {=tasks_agroprom.agr_help_stalkers_check} nil, sr_sound
+
+[sr_sound]
+snd = ambient\gunfire_2
+position = agr_factory_gunfire
+on_actor_inside = %+agr_help_stalkers_start% sr_idle@sos
+
+[sr_idle@sos]
+on_timer = 100 | sr_idle %=agr_krot_sos%
+
+[sr_idle]
+on_info = {+agr_help_stalkers_done} sr_idle@help_krot
+
+[sr_idle@help_krot]
+on_info = {-agr_sosed} %=agr_krot_sos_1_2 +agr_sosed% sr_idle@nil
+
+[sr_idle@nil]
+on_info = nil %=release%

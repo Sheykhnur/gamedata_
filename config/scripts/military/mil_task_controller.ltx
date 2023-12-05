@@ -1,0 +1,30 @@
+[spawner]
+cond = {+mil_task_mad_guy_spawn_rats}
+
+[smart_terrains]
+none = true
+
+[hit@mil_task_controller]
+on_info = {=hit_by_actor} %+mil_task_controller_unfriendly%
+
+[logic]
+active = mob_trader@mil_task_controller
+on_hit = hit@mil_task_controller
+
+[mob_trader@mil_task_controller]
+anim_global = mutant_idle
+can_talk = true
+;on_actor_dist_le_nvis = 3| %=play_snd(characters_voice\scenario\mil\mil_controller_call) +mil_task_controller_seen%
+on_actor_dist_le_nvis = 4| {-mil_task_controller_seen} %+mil_task_controller_seen%
+on_info = {+mil_task_controller_unfriendly} %=actor_enemy%
+on_info2 = {-mil_task_controller_seen +mil_task_mad_guy_done} %=release%
+on_info3 = {-mil_task_controller_wait +mil_task_rats_converted} mob_trader@mil_task_controller_wait %+mil_task_controller_wait%
+on_info4 = {+mil_task_controller_done} mob_trader@mil_task_controller_wait
+on_info5 = {-mil_task_controller_seen +mil_task_rats_dead} %+mil_task_controller_seen +mil_task_controller_cant_call =play_snd(characters_voice\scenario\mil\mil_controller_call)%
+
+[mob_trader@mil_task_controller_wait]
+anim_global = mutant_idle
+can_talk = false
+on_timer = 3000| {-mil_task_controller_done} mob_trader@mil_task_controller
+on_info = {+mil_task_controller_unfriendly} %=actor_enemy%
+on_info2 = {-mil_task_controller_seen +mil_task_mad_guy_done} %=release%

@@ -1,0 +1,43 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : mob_state_mgr.script
+ Description: Схема: "Mob state mgr"
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : ...
+ Last edit  : 09.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function get_state(ini, section, npc)
+	local state = Get_Cfg_String(ini, section, "state")
+	if state and state ~= "" then
+--		log("get_state:Mob=[%s],section=[%s],state=[%s]", npc and npc:name(), section, state, "") --/#~#
+		return state --/>
+	end
+	return nil --/>
+end
+
+function set_state(npc, actor, state)
+	if state and npc then
+--		log("set_state:Mob=[%s],clsid=[%s],state=[%s]", npc:name(), npc:clsid(), state, "") --/#~#
+		if npc:clsid() == clsid.bloodsucker_s then
+			if state == "invis" then
+				npc:set_invisible(true)
+			elseif state == "vis" then
+				npc:set_invisible(false)
+			else
+				abort("%s:mob_state_mgr:Obj=[%s],unknown state=[%s]~requested", sModule, npc:name(), state)
+			end
+		--else --/ у неопознанных монстров пустая строка ("") является допустимым (заодно и дефолтным) состоянием
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

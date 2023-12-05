@@ -1,0 +1,415 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_country.script
+ Description: Gulags country
+ Copyright  : 2013 © LA-team
+ Author     : vintar
+ Editors    : vintar(02.10.2011), lox(23.02.2013)
+ Last edit  : 23.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	country_bandit_terrain1 = {comm = {"bandit"}},
+	country_blockpost       = {comm = {"military", "milstalker"}},
+	--/ for monsters ------------------------------
+	bcr_boar_terrain1          = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain2          = {comm = {"boar"}},
+	bcr_boar_terrain3          = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain4          = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain5          = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain6          = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain7          = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain8          = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain9          = {comm = {"boar"}},
+	bcr_boar_terrain10         = {comm = {"boar"}},
+	bcr_boar_terrain11         = {comm = {"boar"}},
+	bcr_boar_terrain12         = {comm = {"boar"}},
+	bcr_boar_terrain13         = {comm = {"boar"}},
+	bcr_boar_terrain14         = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain15         = {comm = {"boar"}},
+	bcr_boar_terrain16         = {comm = {"boar"}},
+	bcr_boar_terrain17         = {comm = {"boar", "flesh"}},
+	bcr_boar_terrain18         = {comm = {"boar"}},
+	bcr_boar_terrain19         = {comm = {"boar"}},
+	bcr_dog_terrain1           = {comm = {"dog", "pseudodog"}},
+	bcr_dog_terrain2           = {comm = {"dog", "pseudodog"}},
+	bcr_dog_terrain3           = {comm = {"dog", "pseudodog"}},
+	bcr_dog_terrain4           = {comm = {"dog", "pseudodog"}},
+	bcr_dog_terrain5           = {comm = {"dog", "pseudodog"}},
+	bcr_dog_terrain6           = {comm = {"dog", "pseudodog"}},
+	bcr_bloodsucker_terrain1   = {comm = {"bloodsucker"}},
+	bcr_bloodsucker_terrain2   = {comm = {"bloodsucker"}},
+	bcr_bloodsucker_terrain3   = {comm = {"bloodsucker"}},
+	bcr_swampbeast_terrain1    = {comm = {"swampbeast"}},
+	bcr_poltergeist_terrain1   = {comm = {"poltergeist"}},	--/polter_tele_indoor
+	bcr_fracture_terrain1      = {comm = {"fracture"}},
+	bcr_fracture_terrain2      = {comm = {"fracture"}},
+	bcr_ug_rats_terrain        = {comm = {"rat"}},
+	bcr_ug_zombie_terrain      = {comm = {"zombie"}},
+	bcr_ug_bloodsucker_terrain = {comm = {"bloodsucker"}},
+	ladc_bcr_chimera_terrain1  = {comm = {"chimera"}},
+	ladc_bcr_flesh_terrain1	   = {comm = {"flesh"}},
+	bcr_ug_snork_terrain       = {comm = {"snork"}}
+}
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ -----------------------------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ country_bandit_terrain1
+--/ ---------------------------------------------
+gulags.country_bandit_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("patrol" .. i,  0, 7, {0, 1}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i,  0, 6, {0, 1}, squad, groups[1], "", "", nil, type, on_level_pred))
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 5,    {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 3, 4 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i,  0, 6, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.country_bandit_terrain1.state = function(gulag)
+	if not xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ country_blockpost
+--/ ---------------------------------------------
+gulags.country_blockpost.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("guard" .. i, 0, 5, {0,1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("kamper" .. i, 0, 3, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("sleeper" .. i, 0, 2, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.country_blockpost.state = function(gulag)
+	if not xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ boars
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain6.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain7.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain8.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain9.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain10.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain11.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain12.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain13.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain14.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain15.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain16.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain17.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain18.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor,country_correct_entrance", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_boar_terrain19.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("boar" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ dogs
+--/ ---------------------------------------------
+gulags.bcr_dog_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_dog_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_dog_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_dog_terrain4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_dog_terrain5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor,country_correct_entrance", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_dog_terrain6.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("dog" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ poltergeists
+--/ ---------------------------------------------
+gulags.bcr_poltergeist_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("poltergeist" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_swampbeast_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 10 do
+		table.insert(sj, gulag_tasks.getJob("swampbeast" .. i, 0, 5, {0}, squad, groups[1], "", "bcr_swamp_restrictor", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ bloodsuckers
+--/ ---------------------------------------------
+gulags.bcr_bloodsucker_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_bloodsucker_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_bloodsucker_terrain3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_ug_bloodsucker_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("bloodsucker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ fractures
+--/ ---------------------------------------------
+gulags.bcr_fracture_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("fracture" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.bcr_fracture_terrain2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("fracture" .. i, 0, 5, {0}, squad, groups[1], "bcr_church_restrictor", "", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.bcr_ug_zombie_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("zombie" .. i, 0, 5, {0}, squad, groups[1], "", "bcr_ug_weather_restrictor", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ rats
+--/ ---------------------------------------------
+gulags.bcr_ug_rats_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 12 do
+		table.insert(sj, gulag_tasks.getJob("rat" .. i, 0, 5, {0}, squad, groups[1], "", "bcr_rats_restrictor", nil, type, on_level_pred))
+	end
+end
+
+--/ ---------------------------------------------
+--/ snorks
+--/ ---------------------------------------------
+gulags.bcr_ug_snork_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("snork" .. i, 0, 5, {0}, squad, groups[1], "", "bcr_ug_snork_restrictor", nil, type, on_level_pred))
+	end
+end
+--/ ---------------------------------------------
+--/ Chimeras
+--/ ---------------------------------------------
+gulags.ladc_bcr_chimera_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("sleep" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.country_blockpost.state = function(gulag)
+	if not xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+--/ ---------------------------------------------
+--/ Fleshes
+--/ ---------------------------------------------
+gulags.ladc_bcr_flesh_terrain1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 11 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

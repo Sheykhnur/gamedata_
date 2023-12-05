@@ -1,0 +1,1399 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_gulag.script
+ Description: Gulag scheme
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe), Chugai Alexander (Chugai)
+ Editors    : barin(08.08.2010), gr1ph00n(25.09.2012), 31.08.2013 [SkyLoader], 13.05.2017 [Rafa]
+ Last edit  : 14.12.2017 [Maximless]
+--]]-----------------------------------------------------------------------------------------------
+-- test levels removed for release to avoid any problems
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+level_gulags = {
+	["gulag_general"]        = gulag_general,
+	["gulag_escape"]         = gulag_escape,
+	["gulag_garbage"]        = gulag_garbage,
+	["gulag_agroprom"]       = gulag_agroprom,
+	["gulag_darkdolina"]     = gulag_darkdolina,
+	["gulag_darklab"]        = gulag_darklab,
+	["gulag_bar_rostok"]     = gulag_bar_rostok,
+	["gulag_yantar"]         = gulag_yantar,
+	["gulag_military"]       = gulag_military,
+	["gulag_deadcity"]       = gulag_deadcity,
+	["gulag_swamp"]          = gulag_swamp,
+	["gulag_radar"]          = gulag_radar,
+	["gulag_bunker"]         = gulag_bunker,
+	["gulag_pripyat"]        = gulag_pripyat,
+	["gulag_stancia"]        = gulag_stancia,
+	["gulag_sarcofag"]       = gulag_sarcofag,
+	["gulag_generators"]     = gulag_generators,
+	["gulag_warlab"]         = gulag_warlab,
+	["gulag_rostok_factory"] = gulag_rostok_factory,
+	["gulag_secret_lab"]     = gulag_secret_lab,
+	["gulag_darkscape"]      = gulag_darkscape,
+	["gulag_lost_factory"]   = gulag_lost_factory,
+	["gulag_labx16"]         = gulag_labx16,
+	["gulag_outskirts"]      = gulag_outskirts,
+	["gulag_labx7"]          = gulag_labx7,
+	["gulag_damned"]         = gulag_damned,
+	["gulag_country"]        = gulag_country,
+	["gulag_forgotten"]      = gulag_forgotten,
+	["gulag_forest"]         = gulag_forest,
+	["gulag_oldroad"]        = gulag_oldroad
+}
+local level_groups = {
+	["la01_escape"]         = 1,
+	["la02_garbage"]        = 2,
+	["la03_agroprom"]       = 3,
+	["la04_darkdolina"]     = 4,
+	["la04u_darklab"]       = 5,
+	["la05_bar_rostok"]     = 6,
+	["la06_yantar"]         = 7,
+	["la07_military"]       = 8,
+	["la08_deadcity"]       = 9,
+	["la09_swamp"]          = 10,
+	["la10_radar"]          = 11,
+	["la10u_bunker"]        = 12,
+	["la11_pripyat"]        = 13,
+	["la12_stancia"]        = 14,
+	["la12u_sarcofag"]      = 15,
+	["la13_generators"]     = 16,
+	["la13u_warlab"]        = 17,
+	["la13u_oso"]           = 18, --/#+#
+	["la14_rostok_factory"] = 19,
+	["la14u_secret_lab"]    = 20,
+	["la15_darkscape"]      = 21,
+	["la16_lost_factory"]   = 22,
+	["la16u_labx16"]        = 23,
+	["la17_outskirts"]      = 24,
+	["la17u_labx7"]         = 25,
+	["la18_damned"]         = 26,
+	["la19_country"]        = 27,
+	["la20_forgotten"]      = 28,
+	["la22_forest"]         = 29,
+	["la23_oldroad"]        = 30
+}
+gulag_tasks_file_name = "gulag_tasks.ltx" --"misc\\gulag_tasks.ltx"
+local gulag_tasks_ltx = nil --/#!# not to load before game start!
+
+local job_position_threshold = 120 --/ 50 - distance(m) till place of job with which character in online considered as reached place of job
+local job_idle_after_death   = 600 --/ period of time (game-seconds) in which after death of character his job will be not avaliable
+
+idle_nil = nil
+idle_once = -1 --/ flag once time given job (after death of character his job will be not avaliable)
+idle_none = -2 --/ flag of given job, which will be not avaliable for repeat giving after death of character
+
+local path_fields = { "path_walk", "path_main", "path_home", "center_point" }
+--/ --------------------------
+local bDebug  = false
+local tDbgJob = nil --/ for debug
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ NOTE: in jobs field object store id of object (job.object == idObj)
+--/ -----------------------------------------------------------------
+--/ CLASS CONSTRUCTION
+---/ ----------------------------------------------------------------------------------------------
+class "gulag"
+---/ ----------------------------------------------------------------------------------------------
+function gulag:__init(oSmrtTrn, sType, iSquad, tGroups, tbl_npc_info, iCapacity)
+	self.smrttrn  = oSmrtTrn
+	self.name     = oSmrtTrn:name()
+	self.type     = sType
+	self.squad    = iSquad
+	self.groups   = tGroups or {}
+	self.npc_info = tbl_npc_info
+	
+	self.capacity               = iCapacity
+	self.capacity_non_exclusive = 0
+	
+	self.population               = 0
+	self.population_comed         = 0
+	self.population_non_exclusive = 0
+	
+	self.Object                 = {}
+	self.Object_begin_job       = {}
+	self.Object_didnt_begin_job = {}
+	self.ObjectJob              = {}
+	self.JobLoaded              = {}
+	self.Job_avail_in_state     = nil
+	
+	self.state = 0
+	self.stateBegin = nil
+	self.casualities = 0
+	--/ for debug
+	self.log = bDebug and oSmrtTrn.log
+	--if self.log and db.bGameLoaded then log("(%s):init: type=[%s], capacity=[%s]", self.name, sType, iCapacity, "") end --/#~#
+end
+
+function gulag:load_jobs()
+	self.Job = {}
+	self.Job_avail_in_state_0 = {}
+	
+	gulag_tasks.loadJob(self.Job, self.name, self.type, self.squad, self.groups, self)
+	self:init_ltx(self.name, self.type)
+	
+	table.sort(self.Job, function(a, b) return a.prior > b.prior end)
+	
+	self:prepare_jobs_for_new_state()
+	
+	local capacity = 0
+	for _,job in ipairs(self.Job) do
+		if self:job_exists_in_state_0(job) then
+			table.insert(self.Job_avail_in_state_0, job)
+			capacity = capacity + 1
+		end
+		if type(job.online) == 'string' then
+		--	if self.log then log("(%s):load_jobs: job.online=[%s]", self.name, job.online, "") end --/#~#
+			job.online_condlist = job.online
+			job.online = xr_logic.parse_condlist(self.smrttrn, "gulag:setup_job_online", "job_online", job.online_condlist)
+		end
+	end
+	
+	self.capacity = math.min(capacity, self.capacity)
+	self.capacity_non_exclusive = self.capacity
+	--if self.log then --/#~# for debug
+	--	log("(%s):load_jobs:[%s]:cnt=[%s]", self.name, self.type, table.size(self.Job), "")
+	--	table.print( self.Job, sModule..":Job| ="..table.size(self.Job)..":Gulag="..tostring(self.name) )
+	--	--table.print( self.Job_avail_in_state_0, sModule..":Job_state_0|"..tostring(self.name) )
+	--end
+end
+
+function gulag:validate_jobs()
+	local jobs_avail_in_states = {}
+	
+	for _,job in ipairs(self.Job) do
+		if not ( job.predicate and job.timeout and job.fill_idle ) and job.idle == 0 then
+			for _,state in ipairs(job.state) do
+				jobs_avail_in_states[state] = (jobs_avail_in_states[state] or 0) + 1
+			end
+		end
+	end
+	
+	for state,sum in pairs(jobs_avail_in_states) do
+		if sum < self.capacity then
+			abort("(%s):validate_jobs:[%s]: state=[%d] sum=[%d]<[%d]=capacity: too few absolutely available jobs", self.name, self.type, state, sum, self.capacity, "")
+		end
+	end
+end
+
+function gulag:initialize()
+	self.ObjectJobPathName = {}
+	self.restrictors = {}
+	
+	self:prepare_jobs()
+	
+	self.calculateStates = gulag_tasks.loadStates(self.name, self.type)
+	
+	local ini = self.smrttrn:spawn_ini()
+	local section = "smart_terrain"
+	if not ini:section_exist(section) then
+		section = "gulag1"
+	end
+	
+	local filename = nil
+	
+	if not editor() then
+		filename = Get_Cfg_String(ini, section, "cfg")
+	end
+	
+	if filename then
+		ini = ini_file(filename)
+		if not ini:section_exist(section) then
+			abort("[%s] file '%s' does not exist or invalid!", self.smrttrn:name(), filename)
+			return
+		end
+		--log("gulag:initialize: %s  %s [cfg=%s]", section, tostring(self.smrttrn:name()), tostring(filename))
+	end
+	--log("gulag:initialize: %s  %s [cfg=%s]", section, tostring(self.smrttrn:name()), tostring(filename))
+
+	local switch = Get_Cfg_String(ini, section, "switch_0", nil)
+	self.state_switch_0 = (switch and xr_logic.parse_condlist(self.smrttrn, section, "switch_0", switch)) or nil --/#?# {}
+	switch       = Get_Cfg_String(ini, section, "switch_1", nil)
+	self.state_switch_1 = (switch and xr_logic.parse_condlist(self.smrttrn, section, "switch_1", switch)) or nil --/#?# {}
+	
+	self.JobLoaded = nil
+end
+
+function gulag:prepare_jobs()
+	local idx,job,patrol_path,jobLoaded
+	for idx,job in ipairs(self.Job) do
+		--/ for debug
+		if tDbgJob then
+			log("(%s):prepare_jobs:<%s>", self.name, "Error!")
+			table.print(tDbgJob, sModule..":Job|"..self.name)
+		end
+		tDbgJob = job
+		--/<
+		job.num            = idx
+		job.path_name      = self:get_job_path_name(job)
+		
+		patrol_path = get_patrol(job.path_name)
+		if patrol_path then
+			job.position       = patrol_path:point(0)
+			self.position = job.position
+			job.game_vertex_id = patrol_path:game_vertex_id(0)
+			job.level_id       = game_graph():vertex(job.game_vertex_id):level_id()
+			
+			if not (game_graph():valid_vertex_id(job.game_vertex_id)) then
+				log("prepare_jobs: invalid vertex id for %s, path_name %s, level_id %d", self.name, job.path_name, job.level_id)
+			end
+			
+			jobLoaded                = (self.JobLoaded and self.JobLoaded[idx]) or {}
+			job.begin                = jobLoaded.begin
+			job.fill_idle            = jobLoaded.fill_idle
+			job.idle_after_death_end = jobLoaded.idle_after_death_end
+			tDbgJob = nil --/ for debug: clear
+		else
+			log("(%s):prepare_jobs: Wrong job.path_name = '%s' :<%s>", self.name, job.path_name, "Error!")
+			table.print(job, sModule..":job|"..self.name)
+			abort("gulag:prepare_jobs: Wrong parameters :<%s>", self.name, "Error!")
+		end
+	end
+	for npc_id,idx in pairs(self.ObjectJob) do
+		if self.Job[idx] then --/#fix#
+			self.Job[idx].object = npc_id --/ ID  to whom job was given
+			self.ObjectJobPathName[npc_id] = self.Job[idx].path_name
+		elseif self.npc_info[npc_id] then
+			if idx > #self.Job then
+				log("(%s):prepare_jobs:NPC=[%s],id=[%s],JobIdx=[%s] ~ not Job => reinit :<%s>", self.name, self.npc_info[npc_id].name, npc_id, idx, "Info!")
+				if self.npc_info[npc_id].se_obj then
+					self:free_obj_and_reinit(npc_id)
+				else
+					smart_terrain.unregister_npc(nil,npc_id)
+				end
+			else
+				log("(%s):prepare_jobs:idNPC(%s)=[%s],JobIdx=[%s] ~ not Job :<%s>", self.name, self.npc_info[npc_id].name, npc_id, idx, "Warning!")
+			end
+		else
+			log("(%s):prepare_jobs:JobIdx=[%s],npc_id=[%s] ~ not NPC :<%s>", self.name, idx, npc_id, "Warning!")
+		end
+	end
+end
+
+--/ create a list of existing jobs in current condition of gulag.
+--/ releasing NPC from jobs, not existing in current condition.
+--/ nulling fill_idle for all jobs.
+function gulag:prepare_jobs_for_new_state()
+	local jobs = {}
+	for _,job in ipairs(self.Job) do
+		if self:availState(job.state, self.state) then
+			table.insert(jobs, job)
+		elseif job.object then
+			--if self.log then log("(%s):prepare_jobs_for_new_state:(%s):NPC=[%s]%s", self.name, self.state, alife():object(job.object) and alife():object(job.object):name(), "") end
+			self:free_obj_and_reinit(job.object)
+		end
+		if job.fill_idle == idle_none then
+			job.fill_idle = idle_once
+		end
+	end
+	self.Job_avail_in_state = jobs
+end
+
+function gulag:job_exists_in_state_0(job)
+	for _,v in ipairs(job.state) do
+		if v == 0 then
+			return true
+		end
+	end
+	return false
+end
+
+function gulag:init_ltx(gname, gtype)
+	local ltx, ltx_name = gulag_tasks.loadLtx(gname, gtype)
+	if ltx then
+		self.ltx_name = ltx_name
+		self.ltx = ltx
+	else
+		if not gulag_tasks_ltx then
+			gulag_tasks_ltx = ini_file(gulag_tasks_file_name)
+			if not gulag_tasks_ltx then
+				gulag_tasks_file_name = "misc\\gulag_tasks.ltx"
+				ini_file(gulag_tasks_file_name)
+			end --/ old file
+		end
+		self.ltx_name = gulag_tasks_file_name
+		self.ltx = gulag_tasks_ltx
+	end
+end
+
+function gulag:get_job_path_name(job)
+	local section = job.section
+	
+	if not self.ltx:line_exist(section, "active") then
+		log("(%s):get_job_path_name: Wrong section=[%s] :<%s>", self.name, section, "Error!")
+		table.print(job, sModule..":job|"..self.name)
+		if self.ltx:section_exist(section) then
+			abort("%s: ltx=[%s] no 'active' in section=[%s]", sModule, self.ltx_name, section, "")
+		else
+			abort("%s: ltx=[%s] no section=[%s]", sModule, self.ltx_name, section, "")
+		end
+	end
+	
+	local active_section = xr_logic.determine_section_to_activate(self, self.ltx, section, db.actor)
+	--local active_section = self.ltx:r_string(section, "active")
+	local path_field = nil
+	for _,v in ipairs(path_fields) do
+		if self.ltx:line_exist(active_section, v) then
+			path_field = v
+			break
+		end
+	end
+	if not path_field then
+		abort("%s: ltx=[%s], there is no path in section=[%s]", sModule, self.ltx_name, active_section, "")
+	end
+	--/ check for mismatching paths
+	local path_name = self.name .. "_" .. self.ltx:r_string(active_section, path_field)
+	if path_field == "center_point" then
+		--/ fix for npcs respawning in firebins!
+		if level.patrol_path_exists(path_name .. "_task") then
+			return path_name .. "_task" --/>
+		end
+	end
+	if not level.patrol_path_exists(path_name) then
+		if not validate_patrol_path(path_name) then
+			abort("%s: gulag=[%s] section=[%s] field=[%s] path=[%s]~doesn't exist!", sModule, self.name, active_section, path_field, path_name, "")
+		end
+	end
+	--/ logging for specified "gulag_name" logic
+	--if self.name == "esc_village_lager" then
+	--	log("(%s):get_job_path_name:logic=[%s],active=[%s],path=[%s]", self.name, section, active_section, self.ltx:r_string(active_section, path_field))
+	--end
+	return path_name --/>
+end
+
+function gulag:save_common(packet)
+	packet:w_u8(self.casualities)
+	packet:w_u8(self.state)
+	utils.w_CTime(packet, self.stateBegin or game.CTime())
+	
+	packet:w_u8(self.population)
+	packet:w_u8(self.population_comed)
+	packet:w_u8(self.population_non_exclusive)
+	
+	packet:w_u8(#self.Job)
+	
+	for _,job in ipairs(self.Job) do
+		packet:w_u32(math.ceil(job.begin or 0)) --/#!# saving game-secons
+		packet:w_u32(math.ceil(job.fill_idle or 0)) --/#!# saving game-secons
+		packet:w_u32(math.ceil(job.idle_after_death_end or 0)) --/#!# saving game-secons
+	end
+end
+
+function gulag:load_common(packet)
+	self.casualities = packet:r_u8()
+	self.state       = packet:r_u8()
+	self.stateBegin  = utils.r_CTime(packet)
+	
+	self.population               = packet:r_u8()
+	self.population_comed         = packet:r_u8()
+	self.population_non_exclusive = packet:r_u8()
+	
+	local n = packet:r_u8()
+	local job = nil
+	for i=1, n do
+		job = {}
+		job.begin                = packet:r_u32() --/#!# ñgame-secons
+		job.fill_idle            = packet:r_u32() --/#!# ñgame-secons
+		job.idle_after_death_end = packet:r_u32() --/#!# ñgame-secons
+		
+		if job.fill_idle == 0 then
+			job.fill_idle = nil
+		end
+		if job.idle_after_death_end == 0 then
+			job.idle_after_death_end = nil
+		end
+		if self.JobLoaded then --/#+#
+			table.insert(self.JobLoaded, job)
+		end
+	end
+end
+
+function gulag:save_obj(packet, npc_id)
+	packet:w_bool(self.Object_begin_job[npc_id])
+	packet:w_bool(self.Object_didnt_begin_job[npc_id])
+	packet:w_u8(self.ObjectJob[npc_id] or 0)
+end
+	
+function gulag:load_obj(packet, npc_id)
+	self.Object[npc_id] = true
+	
+	self.Object_begin_job[npc_id]       = packet:r_bool()
+	self.Object_didnt_begin_job[npc_id] = packet:r_bool()
+	local job_index                     = packet:r_u8()
+	if job_index ~= 0 then
+		self.ObjectJob[npc_id] = job_index
+	end
+end
+
+function gulag:addObject(npc_id)
+	self.Object_begin_job[npc_id] = false
+	self.Object_didnt_begin_job[npc_id] = true
+	
+	self:object_setup_offline(npc_id)
+	
+	self.population = self.population + 1
+	if not self.npc_info[npc_id].exclusive then
+		self.population_non_exclusive = self.population_non_exclusive + 1
+	end
+end
+
+function gulag:object_setup_offline(npc_id, was_online)
+	self.Object[npc_id] = true
+	
+	self:clear_restrictors_info(npc_id)
+	
+	if not was_online then
+		local npc = level.object_by_id(npc_id)
+		if npc then
+			self:object_setup_online(npc_id, npc, true)
+		end
+	end
+end
+
+--/ set character for work in online.
+--/ called from characters from net_spawn() and from gulag:object_setup_offline()
+--/ if he came to job already, set logic to him and restrictors (if necessary).
+--/ npc=game_object
+function gulag:object_setup_online(npc_id, npc, need_logic_setup, need_restrictors_setup)
+	--
+	--if self.log then log("(%s):object_setup_online:NPC=[%s/%s]:logic=[%s],restrictors=[%s]%s", self.name, npc:name(), npc_id, need_logic_setup, need_restrictors_setup, "") end
+	--
+	self.Object[npc_id] = npc
+	if self.ObjectJob[npc_id] then
+		if npc then
+			local job = self.Job and self.Job[ self.ObjectJob[npc_id] ]
+			if job then --/#fix#
+				if need_logic_setup then
+					self:setup_logic(npc, job.section)
+				end
+				if need_restrictors_setup and not (restrictor_manager) then
+					self:set_restrictions(npc, job.out_rest, job.in_rest, job.info_rest)
+				end
+			else
+				--log("(%s):object_setup_online:NPC=[%s] ~ not job :(%s):<%s>", self.name, self.npc_info[npc_id].name, type(job), "Warning!")
+				--abort("%s:object_setup_online:smart_terrain=[%s]~NOT_job", self.name )
+				--self.Job[ self.ObjectJob[npc_id] ] = nil
+				clearJob(npc)
+			end
+		else
+			--log("(%s):object_setup_online:NPC=[%s/%s]=NIL:<%s>", self.name, self.npc_info[npc_id].name, npc_id, "Warning!")
+		end
+	end
+end
+
+function gulag:removeObject(npc_id)
+	self:free_obj_and_reinit(npc_id)
+	--self:free_obj(npc_id) --###smarts change logic won't work!!!!
+	self.Object[npc_id] = nil
+	
+	self:clear_restrictors_info(npc_id)
+	
+	self.population = self.population - 1
+	if not self.npc_info[npc_id].exclusive then
+		self.population_non_exclusive = self.population_non_exclusive - 1
+	end
+end
+
+function gulag:update()
+	if not self.stateBegin then
+		self.stateBegin = game.get_game_time()
+	end
+	
+	self:update_objs()
+	self:update_beginning_jobs()
+	
+	if self.calculateStates and db.actor then
+		self:changeState( self.calculateStates(self) )
+	end
+	
+	self:updateJob()
+	self:update_beginning_jobs()
+end
+
+function gulag:update_objs()
+	for npc_id, npc_info in pairs(self.npc_info) do
+		if self.Object[npc_id] ~= true and not level.object_by_id(npc_id) then
+			self:object_setup_offline(npc_id)
+		end
+	end
+end
+
+function gulag:clear_dead(npc_id)
+	if self.ObjectJob[npc_id] then
+		self:changeCasualities(1)
+		local job = self.Job and self.Job[self.ObjectJob[npc_id]]
+		if job then
+			job.idle_after_death_end = Get_PastSeconds() + (job.idle_after_death or job_idle_after_death) --/#!# game-seconds
+		end
+	end
+	if self.npc_info[npc_id] then
+		self.smrttrn:unregister_npc(self.npc_info[npc_id].se_obj)
+	end
+end
+
+function gulag:update_beginning_jobs()
+	for npc_id, npc in pairs(self.Object) do
+		if self:can_obj_begin_job(npc_id) then
+			self:beginJob(npc_id)
+		end
+	end
+end
+
+function gulag:can_obj_begin_job(npc_id)
+	local jobN = self.ObjectJob[npc_id]
+	if jobN and not self.Object_begin_job[npc_id] then
+		local job = self.Job[jobN]
+		if job then
+			if job.position_threshold and type(job.position_threshold_) == 'string' and job.position_threshold == "graph" then
+				local npc_gv, npc_pos = self:get_obj_game_vertex_and_position(npc_id)
+				--local job_gv = game_graph():vertex(job.game_vertex_id)
+				--if npc_gv:level_vertex_id() == job_gv:level_vertex_id() then
+				if npc_gv:level_vertex_id() == job.game_vertex_id then
+					return true
+				end
+				return false
+			end
+			return self:distance_to_job_location(npc_id, job) < (job.position_threshold or job_position_threshold)
+		end
+	end
+	return false
+end
+
+function gulag:changeState(state)
+	if self.state ~= state then
+		--if self.log then log("changeState:gulag=[%s]: state=[%s] => [%s]", self.name, self.state, state, "") end --/#~#
+		--log("changeState:gulag=[%s]: state=[%s] => [%s]", self.name, self.state, state, "") --/#~#
+		self.state = state
+		self.stateBegin = game.get_game_time()
+		self:prepare_jobs_for_new_state()
+	end
+end
+
+function gulag:is_there_any_suitable_job(npc_info, exclusive)
+	for _, job in ipairs(self.Job_avail_in_state) do
+		if (not job.predicate or job.predicate(npc_info, self)) and self:availJob(job) then
+			if job.object then
+				if exclusive and not self.npc_info[job.object].exclusive then
+					return true
+				end
+			else
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function gulag:obj1_job_suits_obj2(npc_id, npc_info)
+	local job = self.Job[self.ObjectJob[npc_id]]
+	return not job.predicate or job.predicate(npc_info, self)
+end
+
+function gulag:availState(st, state)
+	for _, v in ipairs(st) do
+		if v == state then
+			return true --/>
+		end
+	end
+	return false --/>
+end
+
+--/ job avaliable, when time idle expired (not setted) (and job busy from which depends this job)
+function gulag:availJob(job)
+	local past_seconds = Get_PastSeconds() --/ time (game-seconds) which last from game start moment
+	if not job.begin or job.begin + job.idle < past_seconds then
+		if not job.idle_after_death_end or job.idle_after_death_end < past_seconds then
+			if job.fill_idle then
+				if job.fill_idle == idle_none then
+					return false --/>
+				elseif job.fill_idle ~= idle_once and (not job.begin or job.begin + job.fill_idle < past_seconds) then
+					return false --/>
+				end
+			end
+			return true --/>
+		end
+	end
+	return false --/> pause
+end
+
+--/ Current job avaliable, if it's time not elapsed, (and job busy, from which it depends)
+function gulag:availCurrent(job)
+	if job and not ( job.timeout and job.begin and job.begin + job.timeout < Get_PastSeconds() ) then
+		return true --/>
+	end
+	return false --/>
+end
+
+function gulag:prepare_available_jobs()
+	local Job_avail = {}
+	for i,job in ipairs(self.Job_avail_in_state) do
+		if self:availJob(job) then
+			if not self:availCurrent(job) or not self.Object_begin_job[job.object] then
+				self:free_obj_and_reinit(job.object)
+			end
+			table.insert(Job_avail, job)
+		end
+	end
+	return Job_avail --/>
+end
+
+function gulag:get_available_objs()
+	local npc_avail = {}
+	for npc_id, npc in pairs(self.Object) do
+		if self:getJob(npc_id) == nil then
+			npc_avail[npc_id] = true
+		end
+	end
+	return npc_avail --/>
+end
+
+function gulag:distance_to_job_location(npc_id, job)
+	local npc_gv, npc_pos = self:get_obj_game_vertex_and_position(npc_id)
+	local job_gv = game_graph():vertex(job.game_vertex_id)
+	
+	if npc_gv:level_id() == job_gv:level_id() then
+		return npc_pos:distance_to(job.position)
+	end
+	return 10000
+end
+
+function gulag:get_obj_game_vertex_and_position(npc_id)
+	local obj = self.Object[npc_id]
+	if obj == true then
+		obj = self.npc_info[npc_id].se_obj
+		return game_graph():vertex(obj.m_game_vertex_id), obj.position
+	else
+		return game_graph():vertex(obj:game_vertex_id()), obj:position()
+	end
+end
+
+function gulag:find_nearest_suitable_obj(objs, job)
+	local predicate = job.predicate
+	local min_dist = 1000000
+	local dist, obj_nearest = nil, nil
+	
+	for npc_id, v in pairs(objs) do
+		if not predicate or predicate(self.npc_info[npc_id], self) then
+			dist = self:distance_to_job_location(npc_id, job)
+			if dist < min_dist then
+				min_dist = dist
+				obj_nearest = npc_id
+			end
+		end
+	end
+	return obj_nearest
+end
+
+function gulag:calc_distance_table(jobs, objs, prior_block_start)
+	local block_priority = jobs[prior_block_start].prior
+	local predicate = nil
+	local dists = {}
+	local t = nil
+	local i = prior_block_start
+	
+	while i <= #jobs and jobs[i].prior == block_priority do
+		if jobs[i].object == nil then
+			predicate = jobs[i].predicate
+			for npc_id, v in pairs(objs) do
+				if self.npc_info[npc_id]==nil then
+					--ERROR DESCRIPTION
+					--JUST FOR DEBUGGING
+				--	log("GOING TO ERROR  self.npc_info[npc_id]==nil")
+				--	log("gulag name '%s' npc_id '%s'",self.name,tostring(npc_id))
+					if not level.object_by_id(npc_id) then
+				--		log("game_object with that id doesn't exist")
+					end
+					if not alife():object(npc_id) then
+				--		log("server_object with that id doesn't exist")
+					end
+				--	log("---------------------------------")
+				--	table.print(self.npc_info)
+				--	log("---------------------------------")
+					
+				end
+				if not predicate or predicate(self.npc_info[npc_id], self) then
+					dist = self:distance_to_job_location(npc_id, jobs[i])
+					t = {}
+					t.job = jobs[i]
+					t.npc_id = npc_id
+					t.dist = dist
+					table.insert(dists, t)
+				end
+			end
+		end
+		i = i + 1
+	end
+	return dists, i - 1
+end
+
+--/ set characters on closest jobs using distance table
+function gulag:assign_jobs_using_distance_table(jobs, objs, dists)
+	for i,v in ipairs(dists) do
+		if objs[v.npc_id] and not v.job.object then
+			self:setJob(v.npc_id, v.job)
+			objs[v.npc_id] = nil
+		end
+	end
+end
+
+--/ find busy characters, who can occupy specified job.
+--/ search starts from the lowest-priority jobs
+function gulag:find_obj_on_jobLow_for_jobHigh(Job_avail, job_high)
+	local predicate = job_high.predicate
+	local job_high_num = job_high.num
+	local job_low = nil
+	local priority = nil
+	local obj_suitable = nil
+	
+	local i = #Job_avail
+	while i > job_high_num and (not priority or priority == Job_avail[i].prior) and (Job_avail[i].prior < job_high.prior) do
+		job_low = Job_avail[i]
+		if job_low.object ~= nil and (not predicate or predicate(self.npc_info[job_low.object], self)) then
+			if not obj_suitable then
+				obj_suitable = {}
+				priority = job_low.prior
+			end
+			obj_suitable[job_low.object] = true
+		end
+		i = i - 1
+	end
+	
+	if obj_suitable then
+		return self:find_nearest_suitable_obj(obj_suitable, job_high)
+	end
+	return nil
+end
+
+function gulag:try_to_fill_free_high_prior_jobs(jobs, prior_block_start, prior_block_end)
+	local npc_id = nil
+	for i = prior_block_start, prior_block_end do
+		if not jobs[i].object then
+			npc_id = self:find_obj_on_jobLow_for_jobHigh(jobs, jobs[i])
+			if npc_id then
+				self:free_obj_and_reinit(npc_id)
+				self:setJob(npc_id, jobs[i])
+			end
+		end
+	end
+end
+
+function gulag:updateJob()
+	local Job_avail = self:prepare_available_jobs()
+	local obj_avail = self:get_available_objs()
+	
+	local prior_block_start = 1
+	local prior_block_end = nil
+	local dists = nil
+	
+	while prior_block_start <= #Job_avail do
+		dists, prior_block_end = self:calc_distance_table(Job_avail, obj_avail, prior_block_start)
+		table.sort(dists, function(a, b) return a.dist < b.dist end)
+		self:assign_jobs_using_distance_table(Job_avail, obj_avail, dists)
+		self:try_to_fill_free_high_prior_jobs(Job_avail, prior_block_start, prior_block_end)
+		prior_block_start = prior_block_end + 1
+	end
+end
+
+function gulag:get_population()
+	return self.population
+end
+
+function gulag:get_population_comed()
+	return self.population_comed
+end
+
+function gulag:get_non_exclusive_population()
+	return self.population_non_exclusive
+end
+
+function gulag:get_stype(npc_id)
+	if IsStalker(nil, self.npc_info[npc_id].class_id) then
+		return modules.stype_stalker
+	elseif IsMonster(nil, self.npc_info[npc_id].class_id) then
+		return modules.stype_mobile
+	end
+	abort("[smart_terrain=[%s] obj=%s clsid=%d: gulag supports stalkers and monsters only!", self.name, self.npc_info[npc_id].name, self.npc_info[npc_id].class_id)
+end
+
+function gulag:setup_logic(npc, section)
+	xr_logic.configure_schemes(npc, self.ltx, self.ltx_name, self:get_stype(npc:id()), section, self.name)
+	if utils.get_scheme_by_section(section) ~= "nil" then
+		local active_section = xr_logic.determine_section_to_activate(npc, self.ltx, section, db.actor)
+		xr_logic.activate_by_section(npc, self.ltx, active_section, false)
+		--if self.log then log("(%s):setup_logic:NPC=[%s]: [%s] => [%s]", self.name, npc:name(), section, active_section, "") end
+	else
+		abort("%s:setup_logic:Gulag=[%s] npc=[%s], sections=[%s] don't use scheme 'nil'!", sModule, self.name, npc and npc:name(), section, "")
+	end
+end
+
+function gulag:setup_squad_and_group(npc_id, job)
+	local npc_info = self.npc_info[npc_id]
+	if self.Object[npc_id] ~= true then
+		local npc = self.Object[npc_id]
+		if npc and npc:alive() then
+			local squad = level_groups[level.name()]
+--			log("(%s):setup_squad_and_group:NPC=[%s] team=[%s]/[%s],squad=[%s]/[%s],group=[%s]/[%s]:<%s>", self.name, npc:name(), npc_info.team, job.team, squad, npc_info.o_squad, job.group, npc_info.o_group, "?")
+			npc:change_team(npc_info.team, squad or npc_info.o_squad, job.group or npc_info.o_group)
+			npc_info.squad = npc:squad()
+			npc_info.group = npc:group()
+		else
+			self:clear_dead(npc_id)
+		end
+	else
+		local se_obj = npc_info.se_obj
+		se_obj.squad = job.squad or npc_info.o_squad
+		se_obj.group = job.group or npc_info.o_group
+		
+		npc_info.squad = se_obj.squad
+		npc_info.group = se_obj.group
+	end
+end
+
+function gulag:setJob(npc_id, job)
+	job.object = npc_id
+	job.idle_after_death_end = nil
+	
+	self.ObjectJob[npc_id]         = job.num
+	self.ObjectJobPathName[npc_id] = job.path_name
+	self.Object_begin_job[npc_id]  = false
+	
+	self:setup_squad_and_group(npc_id, job)
+end
+
+function gulag:beginJob(npc_id)
+	local job = self.Job[self.ObjectJob[npc_id]]
+	if job then --/#fix#
+		job.begin = Get_PastSeconds() --/ time (game-seconds) came from start game moment
+		if job.fill_idle == idle_once then
+			job.fill_idle = idle_none
+		end
+		
+		self.Object_begin_job[npc_id] = true
+		
+		local se_obj = self.npc_info[npc_id].se_obj
+		self:setup_job_online(se_obj, job)
+		
+		if self:get_stype(npc_id) == modules.stype_mobile then --/ is monster
+			se_obj:smart_terrain_task_activate()
+		end
+		
+		if self.Object[npc_id] ~= true then
+			local obj = level.object_by_id(npc_id) --self.Object[npc_id]
+			if obj then
+				if not (restrictor_manager) then
+					self:set_restrictions(obj, job.out_rest, job.in_rest, job.info_rest)
+				end
+				self:setup_logic(obj, job.section)
+			end
+		end
+		
+		if self.Object_didnt_begin_job[npc_id] then
+			--self.smrttrn:call_respawn() --lox: temp
+			self.Object_didnt_begin_job[npc_id] = false
+		end
+		
+		self.population_comed = self.population_comed + 1
+	--	if self.log then log("beginJob:(%s):npc_id=[%s],population_comed=[%s]%s", self.name, npc_id, self.population_comed, "") end --/#~#
+	else
+		log("beginJob:smrt=[%s],npc_id=[%s]~job=NIL:<%s>", self.name, npc_id, "Error!")
+	end
+end
+
+function gulag:setup_job_online(se_obj, job)
+	if job then
+		se_obj.job_online_condlist = job.online_condlist
+		se_obj.job_online = job.online
+	else
+		se_obj.job_online_condlist = nil
+		se_obj.job_online = nil
+	end
+end
+
+function gulag:set_restrictions(obj, r_out, r_in, r_info)
+	local restr = self.restrictors[obj:id()]
+	if not restr then
+		self.restrictors[obj:id()] = {}
+		restr = self.restrictors[obj:id()]
+	end
+	
+	local r_in_old = restr.r_in  or ""
+	local r_out_old = restr.r_out or ""
+	local change_r_in, change_r_out = "", ""
+	
+	if r_in_old ~= "" and r_in_old ~= r_in then
+		change_r_in = r_in_old
+		restr.r_in  = nil
+	end
+	if r_out_old ~= "" and r_out_old ~= r_out then
+		change_r_out = r_out_old
+		restr.r_out = nil
+	end
+	
+	if change_r_in ~= "" or change_r_out ~= "" then
+		obj:remove_restrictions(change_r_out, change_r_in)
+	end
+	
+	change_r_in, change_r_out = "", ""
+	
+	if r_in ~= "" and r_in_old ~= r_in then
+		change_r_in = r_in
+		restr.r_in  = r_in
+	end
+	if r_out ~= "" and r_out_old ~= r_out then
+		change_r_out = r_out
+		restr.r_out  = r_out
+	end
+	
+	if change_r_in ~= "" or change_r_out ~= "" then
+		obj:add_restrictions(change_r_out, change_r_in)
+	end
+	
+	db.info_restr[obj:id()] = r_info
+end
+
+function gulag:clear_restrictors_info(npc_id)
+	if self.restrictors and self.restrictors[npc_id] then
+		self.restrictors[npc_id] = nil
+	end
+	db.info_restr[npc_id] = nil
+end
+
+function gulag:getJob(npc_id)
+	local jobN = self.ObjectJob[npc_id]
+	return jobN and self.Job[jobN]
+end
+
+function gulag:get_obj_job_path_name(npc_id)
+	return self.ObjectJobPathName[npc_id]
+end
+
+function gulag:free_obj(npc_id)
+	local jobN = self.ObjectJob[npc_id]
+	if jobN then
+		self.ObjectJob[npc_id] = nil
+		if self.Job and self.Job[jobN] then
+			self.Job[jobN].object = nil
+		end
+		if self.ObjectJobPathName then
+			self.ObjectJobPathName[npc_id] = nil
+		else
+			log("free_obj:gulag=[%s],NPC=[%s/%s]]~NOT JobPath:<%s>", self.name, self.npc_info[npc_id] and self.npc_info[npc_id].name, npc_id, "Info!") --/#~#
+			return false --/>
+		end
+		local se_obj = self.npc_info[npc_id].se_obj
+		if se_obj then
+			self:setup_job_online(se_obj, nil)
+			if self:get_stype(npc_id) == modules.stype_mobile then
+				se_obj:smart_terrain_task_deactivate()
+			end
+		end
+		if self.Object[npc_id] ~= true and self.Object_begin_job[npc_id] == true then
+			local obj = level.object_by_id(npc_id)
+			if obj then
+				if (restrictor_manager) then
+					restrictor_manager.get_restrictor_manager(obj):clear_restrictions()
+				else
+					self:set_restrictions( obj, "", "", nil )
+				end
+			end
+		end
+		if self.Object_begin_job[npc_id] == true then
+			self.population_comed = self.population_comed - 1
+		end
+	end
+end
+
+function gulag:free_obj_and_reinit(npc_id)
+	self:free_obj(npc_id)
+	
+	local t = self.Object[npc_id]
+	if t ~= true and self.Object_begin_job[npc_id] then
+		xr_logic.initialize_obj(t, nil, false, db.actor, self:get_stype(npc_id))
+	end
+end
+
+function gulag:npc_idOnJob(job_name)
+	for _, v in ipairs(self.Job) do
+		if v.section == job_name then
+			if v.object ~= nil then
+				return v.object
+			end
+		end
+	end
+	return nil
+end
+
+function gulag:getCasualities()
+	return self.casualities
+end
+
+function gulag:changeCasualities(delta)
+	--log("%s:changeCasualities(%d, %d)", self.name, self.casualities, delta)
+	self.casualities = self.casualities + delta
+end
+
+function gulag:set_relation(relation, target_obj)
+	for npc_id, obj in pairs(self.Object) do
+		if obj ~= true and is_object_online(npc_id) then
+			obj:set_relation(relation, target_obj)
+		end
+	end
+end
+
+function gulag:set_goodwill(relation, target_npc)
+	for npc_id, npc in pairs(self.Object) do
+		if npc ~= true and is_object_online(npc_id) then
+			--npc:set_community_goodwill(goodwill, target_npc) -- relation_registry ???
+		end
+	end
+end
+
+function gulag:npc_is_enemy_to_anybody(target_npc)
+	for npc_id, npc in pairs(self.Object) do
+		if npc ~= true and is_object_online(npc_id) then
+			if npc:relation(target_npc) == game_object.enemy then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function gulag:get_nearest_online_obj(pos)
+	local min_dist = 100000000
+	local nearest_obj = nil
+	local d = nil
+	
+	for npc_id, obj in pairs(self.Object) do
+		obj = level.object_by_id(npc_id)
+		if obj then
+			d = obj:position():distance_to_sqr(pos)
+			if d < min_dist then
+				min_dist = d
+				nearest_obj = obj
+			end
+		end
+	end
+	return nearest_obj
+end
+
+--skyloader: now it works with offline npc-s too
+function gulag:kill_entities()
+	local obj = nil
+	for npc_id,_ in pairs(self.Object) do
+		obj = level.object_by_id(npc_id)
+		if obj then
+			if obj:alive() then
+--				log("kill_entities: gulag=[%s], Obj=[%s]/[%d] => (%s)", self.name, obj:name(), npc_id, "x") --/#~#
+				obj:kill(obj)
+			end
+		elseif (EngineBuildId() > 5311) then
+			obj = alife():object(npc_id)
+			if obj then
+--				log("kill_entities: gulag=[%s], soObj=[%s]/[%d] alive=(%s) :[%s]", self.name, obj:name(), npc_id, obj:alive(), "Info") --/#~#
+				if obj:alive() then
+					obj:kill(obj.id) -- sky: added method creature:kill(killer_id) for alife():objects.
+				end
+			else
+				log("kill_entities: gulag=[%s], ID=[%d] ~> not object :<%s>", self.name, npc_id, "Info") --/#~#
+			end
+		end
+	end
+end
+
+function gulag:kill_all_but_one()
+	local obj = nil
+	for npc_id,_ in pairs(self.Object) do
+		obj = level.object_by_id(npc_id)
+		if obj then
+			if obj:alive() and obj:name() ~= "army_stalker_killer_leader" then
+--				log("kill_entities: gulag=[%s], Obj=[%s]/[%d] => (%s)", self.name, obj:name(), npc_id, "x") --/#~#
+				obj:kill(obj)
+			end
+		elseif (EngineBuildId() > 5311) then
+			obj = alife():object(npc_id)
+			if obj and obj:name() ~= "army_stalker_killer_leader" then
+--				log("kill_entities: gulag=[%s], soObj=[%s]/[%d] alive=(%s) :[%s]", self.name, obj:name(), npc_id, obj:alive(), "Info") --/#~#
+				if obj:alive() then
+					obj:kill(obj.id) -- sky: added method creature:kill(killer_id) for alife():objects.
+				end
+			else
+				log("kill_entities: gulag=[%s], ID=[%d] ~> not object :<%s>", self.name, npc_id, "Info") --/#~#
+			end
+		end
+	end
+end
+
+function gulag:pos_job()
+    --log("DEBUG!!!path_job %s ", self.position)
+    return self.position
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ HELPERs (functions, which can be called outside)
+--/ -----------------------------------------------------------------------------------------------
+--/ set logic and report to smart, that object gone to online.
+--/ calls from net_spawn() objects
+function setup_gulag_and_logic_on_spawn(npc, st, se_npc, stype, is_loaded)
+	--if bDebug then log("setup_gulag_and_logic_on_spawn:NPC=[%s]:[%s]", npc:name(), ">") end --/#~#
+	local se_smart = smart_terrain.get_smart_terrain(se_npc) --/#fix#
+	if se_smart then
+	--	if bDebug then log("setup_gulag_and_logic_on_spawn:NPC=[%s],Strn=[%s/%s]%s", npc:name(), se_smart:name(), se_smart.id, "") end --/#~#
+		local npc_id = npc:id()
+		local need_restrictors_setup = se_smart.gulag.Object_begin_job[npc_id]
+		local need_logic_setup       = need_restrictors_setup and not is_loaded
+		
+		se_smart:initialize_if_needed()
+		se_smart.gulag:object_setup_online(npc_id, npc, need_logic_setup, need_restrictors_setup)
+	----	if bDebug then log("setup_gulag_and_logic_on_spawn:NPC=[%s],strn=[%s]%s", npc:name(), se_smart:name(), "") end --/#~#
+		if need_logic_setup then
+			return --/>
+		end
+	end
+	xr_logic.initialize_obj(npc, st, is_loaded, db.actor, stype)
+	---if bDebug then log("setup_gulag_and_logic_on_spawn:obj=[%s]:[%s]", npc:name(), "<") end --/#~#
+end
+--/ get gulag by smart name.
+--/ works only for smarts, which are online.
+--/ sky: now works for offline smarts
+function get_gulag_by_name(name)
+	local cl_smart = db.zone_by_name[name]
+	if cl_smart then
+		local se_smart = alife():object(cl_smart:id())
+		if se_smart and se_smart:clsid() == clsid.smart_terrain then
+			se_smart:initialize_if_needed()
+			return se_smart.gulag --/>
+		end
+	else
+		local se_smart = alife():object(name)
+		if se_smart and se_smart:clsid() == clsid.smart_terrain then
+			se_smart:initialize_if_needed()
+			return se_smart.gulag --/>
+		end
+	end
+	return nil --/>
+end
+--/ get gulag by story_id of smart (works always)
+function get_gulag_by_sid(iStoryId)
+	local se_smart = alife():story_object(iStoryId)
+	if se_smart and se_smart:clsid() == clsid.smart_terrain then
+		se_smart:initialize_if_needed()
+		return se_smart.gulag --/>
+	end
+	return nil --/>
+end
+--/ get gulag by name or story_id of smart
+function get_gulag(name_or_sid)
+	if type(name_or_sid) == 'number' then
+		return get_gulag_by_sid(name_or_sid) --/>
+	end
+	return get_gulag_by_name(name_or_sid) --/>
+end
+--/ get character gulag (npc=game_object/server_object)
+function get_npc_gulag(npc,id)
+	local sim = alife()
+	if not sim then return nil end --/>
+	local npc_id = id or npc.id
+	if type(npc_id) == 'function' then
+		npc_id = npc:id()
+	end
+	local se_npc = npc_id and sim:object(npc_id)
+	if se_npc then
+		local se_smart = smart_terrain.get_smart_terrain(se_npc) --/#fix#
+		if se_smart then
+			--log("get_npc_gulag:NPC=[%s]", npc and npc:name(), "")- --/#~#
+			se_smart:initialize_if_needed()
+			return se_smart.gulag --/>
+		end
+	end
+	return nil --/>
+end
+
+--/ get quantity of smart population by name
+function getGulagPopulation(name_or_sid)
+	local g = get_gulag(name_or_sid)
+	return (g ~= nil and g:get_population()) or 0 --/>
+end
+
+--/ get quantity of smart population by name (only newcomers)
+function getGulagPopulationComed(name_or_sid)
+	local g = get_gulag(name_or_sid)
+	return (g ~= nil and g:get_population_comed()) or 0 --/>
+end
+
+function kill_gulag_entities(gulag_name)
+	local gulag = get_gulag(gulag_name)
+	if gulag then
+		gulag:kill_entities()
+	end
+end
+
+function kill_all_but_one()
+	local gulag = get_gulag("army_killer_base")
+	if gulag then
+		gulag:kill_all_but_one()
+	end
+end
+
+function setGulagRelation(name_or_sid, relation, target_obj)
+	local gulag = get_gulag(name_or_sid)
+	if gulag then
+		gulag:set_relation(relation, target_obj)
+	end
+end
+
+function setGulagGoodwill(name_or_sid, goodwill, target_obj)
+	local gulag = get_gulag(name_or_sid)
+	if gulag then
+		gulag:set_goodwill(goodwill, target_obj)
+	end
+end
+
+function setGulagEnemy(name_or_sid, target_obj)
+	setGulagRelation(name_or_sid, game_object.enemy, target_obj)
+end
+
+function setGulagNeutral(name_or_sid, target_obj)
+	setGulagRelation(name_or_sid, game_object.neutral, target_obj)
+end
+
+function setGulagFriend(name_or_sid, target_obj)
+	setGulagRelation(name_or_sid, game_object.friend, target_obj)
+end
+
+--/ get number of smart condition by name
+function getGulagState(name_or_sid)
+	local g = get_gulag(name_or_sid)
+	return (g ~= nil and g.state) or 0 --/>
+end
+
+--/ release character from job (npc=game_object)
+function resetJob(npc,id)
+--	log( "resetJob:NPC=[%s]:[%s]", npc and npc:name(), ">") --/#~#
+	local npc_id = id or npc.id
+	if type(npc_id) == "function" then
+		npc_id = npc:id()
+	end
+	local g = get_npc_gulag(npc,npc_id)
+	if g then
+		g:free_obj_and_reinit(npc_id)
+		g:update()
+	end
+end
+
+function clearJob(npc,id)
+	--log("clearJob:NPC=[%s]:[%s]", npc and npc:name(), ">") --/#~#
+	local sim = alife()
+	if not sim then return end --/>
+	local npc_id = id or npc.id
+	if type(npc_id) == 'function' then
+		npc_id = npc:id()
+	end
+	local se_npc = npc_id and sim:object(npc_id)
+	if se_npc then
+		local se_smart = smart_terrain.get_smart_terrain(se_npc) --/#fix#
+		if se_smart then
+			--log("clearJob:NPC=[%s]", npc and npc:name(), "") --/#~#
+			se_smart:initialize_if_needed()
+			se_smart:unregister_npc(se_npc)
+		end
+	end
+end
+
+function changeCasualities(name_or_sid, delta)
+	local gulag = get_gulag(name_or_sid)
+	if gulag then
+		gulag:changeCasualities(delta)
+	end
+end
+
+function getCasualities(name_or_sid)
+	local gulag = get_gulag(name_or_sid)
+	if gulag then
+		return gulag:getCasualities()
+	end
+	return 0
+end
+
+function is_info_restricted(npc_id, info_pos)
+	local r = db.info_restr[npc_id]
+	if r == nil then
+		return false
+	end
+	if type(r) == "string" then
+		r = db.zone_by_name[r]
+		if r == nil then
+			return false
+		end
+		db.info_restr[npc_id] = r
+	end
+	return not r:inside(info_pos)
+end
+
+local tbl_level_id_by_name = {}
+--/#+# current object on the same level with smart-terrain?
+function is_on_gulag_level(se_obj, gulag)
+	if not tbl_level_id_by_name[gulag.name] then
+		tbl_level_id_by_name[gulag.name] = alife():object(gulag.name).level_id
+	end
+	return Get_MapIdObj(se_obj) == tbl_level_id_by_name[gulag.name] --/>
+end
+--/#+# smart terrain on the current level?
+function is_online_gulag(gulag_name)
+	if not tbl_level_id_by_name[gulag_name] then
+		tbl_level_id_by_name[gulag_name] = alife():object(gulag_name).level_id
+	end
+	if tbl_level_id_by_name[gulag_name] == db.idMapNow then
+		return true --/>
+	end
+	return nil --/>
+end
+--/#+# actor on level with smart terrain?
+function actor_on_gulag_level(actor, npc)
+	local gulag = get_npc_gulag(npc)
+	if gulag then
+		return this.is_online_gulag(gulag.name) --/> true or nil
+	end
+	return nil
+end
+--/ -----------------------------------------------------------------
+--/#-# Check if objects belongs to their gulags (rudiment)
+--/ -----------------------------------------------------------------
+function checkStalker(npc_community, gulag_type, npc_rank, se_obj)
+	for _, v in pairs(level_gulags) do
+		if v.checkStalker(npc_community, gulag_type, npc_rank, se_obj) then
+			return true
+		end
+	end
+	return false
+end
+
+function checkMonster(npc_community, gulag_type, npc_rank, se_obj)
+	for _, v in pairs(level_gulags) do
+		if v.checkMonster(npc_community, gulag_type, npc_rank, se_obj) then
+			return true
+		end
+	end
+	return false
+end
+
+function checkNpc(npc_community, is_stalker, gulag_type, npc_rank, se_obj)
+	if is_stalker then
+		return checkStalker(npc_community, gulag_type, npc_rank, se_obj)
+	end
+	return checkMonster(npc_community, gulag_type, npc_rank, se_obj)
+end
+
+function smart_force_update(name)
+	if name then
+		local gulag = xr_gulag.get_gulag_by_name(name)
+		if gulag then
+			gulag.smrttrn:update(true)
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,113 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : dialog_yantar.script
+ Description: Dialog & InfoPortions Function for yantar
+ Copyright  : 2011 © LA-team
+ Author     : vintar
+ Editors    : vintar, lox (01.07.2012)
+ Last edit  : 05.04.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function give_pda_module(oSpeaker1, oSpeaker2)
+	dialogs.give_items("xray_pda")
+end
+
+function transfer_pda_boards(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oNPC, "yan_pda_boards", "out")
+end
+
+function transfer_af_out(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oNPC, "maddog_af_cristall", "out")
+end
+
+function give_bad_helmet(oSpeaker1, oSpeaker2)
+	dialogs.give_items("bad_psy_helmet")
+	--give_info("yan_get_good_helmet_task")
+end
+
+function can_sakh_start_talk(oSpeaker1, oSpeaker2)
+	if has_info("yan_scientist_package_start") and not has_info("yan_meet_doc_start") then
+		return false
+	elseif has_info("swamp_doc_met") and not has_info("yan_scientist_artefact_done")  then
+		return false
+	end
+	return true
+end
+
+function give_package_reward(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oNPC, "scientist_package", "out")
+	dialogs.give_items("mineral_water", 2)
+	dialogs.give_items("antirad", 2)
+	dialogs.give_items("medkit_scientic", 2)
+	dialogs.give_money(2500)
+end
+
+function give_wire(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oNPC, "yan_pda_wires", "out")
+end
+
+function give_rifle_reward(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oNPC, "yan_rifle", "out")
+	dialogs.give_items("stalker_light_outfit_m1")
+	give_info("yan_bloodsucker_den_done")
+end
+
+function yan_bandits_killed()
+	return has_info("yan_bandit_village2_eliminated") and has_info("yan_bandit_gastation_eliminated")
+end
+
+function not_has_all_greben(oSpeaker1, oSpeaker2)
+	if not has_info("yan_got_stolen_case") or not has_info("yan_got_stolen_guitar") then
+		return true
+	end
+	return false
+end
+
+function yan_additional_stuff_cond(oSpeaker1, oSpeaker2)
+	return oSpeaker2:object("yan_favor_guitar") ~= nil and oSpeaker2:object("yan_drug_case") ~= nil
+end
+
+function yan_additional_stuff_cond_new(oSpeaker1, oSpeaker2)
+	return oSpeaker1:object("yan_favor_guitar") ~= nil and oSpeaker1:object("yan_drug_case") ~= nil
+end
+
+function yan_additional_stuff_cond_other(oSpeaker1, oSpeaker2)
+	return oSpeaker1:object("yan_favor_guitar") == nil or oSpeaker1:object("yan_drug_case") == nil
+end
+
+function yan_additional_stuff(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oNPC, "yan_favor_guitar", "out")
+	dialogs.relocate_item_section(oNPC, "yan_drug_case", "out")
+	dialogs.give_items("af_soother")
+end
+
+function hasnt_killed_both_bandits()
+	if not has_info("yan_bandit_village2_eliminated") or not has_info("yan_bandit_gastation_eliminated") then
+		return true
+	end
+	return false
+end
+
+function retutn_psy_device(actor, trader)
+	if db.actor:object("wave_registrator_detector") then
+		dialogs.lost_items("wave_registrator_detector")
+	end
+	if db.actor:object("wave_blockator") then
+		dialogs.lost_items("wave_blockator")
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

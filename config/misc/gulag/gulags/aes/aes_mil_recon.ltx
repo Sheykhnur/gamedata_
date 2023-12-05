@@ -1,0 +1,825 @@
+;;;;;;;;;;;;;;;;;;;;state 0;;;;;;;;;;;;;;;;;;;;;;;
+
+[combat_ignore@aes_mil_recon]
+
+[danger@aes_mil_recon]
+;ignore_distance = 0
+;ignore_types = corpse, sound 
+
+[danger@aes_mil_recon_fight]
+ignore_distance = 50
+
+[threshold@aes_mil_recon]
+max_ignore_distance = 3
+
+[death@aes_mil_dudaev]
+on_info = %+aes_dudaev_dead%
+
+[hit@aes_mil_dudaev]
+on_info = {=hit_by_actor} %+aes_dudaev_hitted%
+
+[hit@aes_mil_gr1]
+on_info = {=hit_by_actor} %+aes_dudaev_gr1_hitted%
+
+[hit@aes_mil_gr2]
+on_info = {=hit_by_actor} %+aes_dudaev_gr2_hitted%
+
+[logic@aes_mil_recon_prepare1]
+active = remark@aes_mil_recon_prepare1
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[remark@aes_mil_recon_prepare1]
+anim = salut
+path_walk = group_wait1
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+target = aes_mil_recon_group_leader, 0
+on_info = {+aes_dudaev_raid_start} %=smart_terrain_force_update(aes_mil_recon)%
+meet = no_meet
+
+[logic@aes_mil_recon_prepare2]
+active = remark@aes_mil_recon_prepare2
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[remark@aes_mil_recon_prepare2]
+anim = salut
+path_walk = group_wait2
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+target = aes_mil_recon_group_leader, 0
+meet = no_meet
+
+[logic@aes_mil_recon_prepare3]
+active = remark@aes_mil_recon_prepare3
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[remark@aes_mil_recon_prepare3]
+anim = salut
+path_walk = group_wait3
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(3)}
+danger = danger@aes_mil_recon
+target = aes_mil_recon_group_leader, 0
+meet = no_meet
+
+[logic@aes_mil_recon_prepare4]
+active = remark@aes_mil_recon_prepare4
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[remark@aes_mil_recon_prepare4]
+anim = salut
+path_walk = group_wait4
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(3)}
+danger = danger@aes_mil_recon
+target = aes_mil_recon_group_leader, 0
+meet = no_meet
+
+[logic@aes_mil_recon_prepare5]
+active = remark@aes_mil_recon_prepare5
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[remark@aes_mil_recon_prepare5]
+anim = salut
+path_walk = group_wait5
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(3)}
+danger = danger@aes_mil_recon
+target = aes_mil_recon_group_leader, 0
+meet = no_meet
+
+[logic@aes_mil_recon_leader]
+active = walker@aes_mil_recon_leader_start
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_leader_start]
+path_walk = group_leader
+path_look = group_leader_look
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+def_state_standing = ward
+meet = meet@aes_mil_recon_leader
+on_timer = 5 | remark@aes_mil_recon_leader_wait
+
+[remark@aes_mil_recon_leader_wait]
+anim = ward
+target = aes_mil_recon_group_wait4, 0
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+meet = no_meet
+on_info = {+aes_commander_rotate} remark@aes_mil_recon_leader_look
+
+[remark@aes_mil_recon_leader_look]
+anim = ward
+target = aes_mil_recon_group_to_leader, 1
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+meet = no_meet
+on_info = {+aes_mil_recon_dialog} remark@aes_mil_recon_leader_speak
+
+[remark@aes_mil_recon_leader_speak]
+anim = npc_refuse
+snd = sta_replics5 ;Of course Leitenant, fresh blood can always make a difference, let's listen he will say
+;of course, dudaev friends are my friends too, let's listen what he will say
+target = aes_mil_recon_group_to_leader, 0
+danger = danger@aes_mil_recon
+combat_ignore_cond  = always
+on_signal = sound_end | walker@aes_mil_recon_leader_wait_actor %+aes_mil_recon_dialog_end%
+
+[walker@aes_mil_recon_leader_wait_actor]
+path_walk = group_leader
+path_look = group_leader_look
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+def_state_standing = ward
+meet = meet@aes_mil_recon_leader
+
+[meet@aes_mil_recon_leader]
+meet_state     = 10| ward| 3|wait
+meet_state_wpn = 10| ward| 3|guard
+victim         = 10| nil| 3| actor   
+victim_wpn     = 10| nil| 3| actor   
+use            = true   
+use_wpn        = true
+abuse          = false
+meet_talk_enabled = true
+meet_dialog = aes_meet_dudaev
+
+[logic@aes_mil_recon_raid_meet]
+active = walker@aes_mil_recon_raid_meet
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raid_meet]
+path_walk = group_guard1
+path_look = group_guard1_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(3)}
+danger = danger@aes_mil_recon
+def_state_standing = guard
+
+[logic@aes_mil_recon_raid1]
+active = walker@aes_mil_recon_raid1
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raid1]
+path_walk = group_guard2
+path_look = group_guard2_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(3)}
+danger = danger@aes_mil_recon
+def_state_standing = patrol
+
+[logic@aes_mil_recon_raid2]
+active = walker@aes_mil_recon_raid2
+combat_ignore = combat_ignore@aes_mil_recon
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raid2]
+path_walk = group_guard3
+path_look = group_guard3_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(3)}
+danger = danger@aes_mil_recon
+def_state_standing = patrol
+
+;;;;;;;;;;;;;;;;;;;;;;;state 1;;;;;;;;;;;;;;;;;;;;;;;
+[logic@aes_mil_recon_attack_leader]
+active = walker@aes_mil_recon_attack_leader
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+on_death = death@aes_mil_dudaev
+combat_ignore = combat_ignore@aes_mil_recon
+on_hit = hit@aes_mil_dudaev
+
+[walker@aes_mil_recon_attack_leader]
+path_walk = group_walk_leader
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = sneak
+invulnerable = true
+on_signal = leadfinish | remark@aes_mil_recon_attack_prisluh
+
+[remark@aes_mil_recon_attack_prisluh]
+anim = caution
+meet = no_meet
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+target = aes_mil_recon_group_leader_after, 0
+invulnerable = true
+on_info = {+aes_actor_reached_another_ambush} remark@aes_mil_recon_attack_troubles, {+npp_chose_dolg1} remark@aes_mil_recon_attack_troubles
+
+[remark@aes_mil_recon_attack_troubles]
+anim = hold_pos
+;added to animation
+;snd = sta_replics3 ;Hold it! I think we are in trouble... It's an ambush!
+meet = no_meet
+combat_ignore_cond  = always
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+target = aes_mil_recon_group_leader_after, 0
+invulnerable = true
+on_signal = sound_end | %+aes_monolith_ambush2_start% walker@aes_mil_recon_fight_leader
+
+[walker@aes_mil_recon_fight_leader]
+path_walk = group_fight_leader
+path_look = group_fight_leader_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = patrol
+invulnerable = true
+on_info = {+aes_monolith_ambush2_dead} walker@aes_mil_recon_attack_done
+
+[walker@aes_mil_recon_attack_done]
+path_walk = group_leader_after
+path_look = group_leader_after_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+meet = meet@aes_mil_recon_leader_after
+
+[meet@aes_mil_recon_leader_after]
+meet_state     = 20| guard| 3|wait
+meet_state_wpn = 20| guard| 3|wait
+victim         = 20| nil| 3| actor   
+victim_wpn     = 20| nil| 3| actor   
+use            = true   
+use_wpn        = true
+abuse          = false
+meet_talk_enabled = true
+meet_dialog = {-npp_chose_dolg1 !is_wounded} aes_dudaev_done, {-npp_chose_dolg1 =is_wounded} dm_help_wounded_medkit_dialog, {+npp_chose_dolg1} dm_hello_dialog
+
+[logic@aes_mil_recon_attack1]
+active = walker@aes_mil_recon_attack1
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+on_hit = hit@aes_mil_gr1
+
+[walker@aes_mil_recon_attack1]
+path_walk = group_walk1
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = caution
+on_signal = r1 | walker@aes_mil_recon_attack1_end %+aes_r1_reached%
+
+[walker@aes_mil_recon_attack1_end]
+path_walk = group_walk1w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = caution
+invulnerable = {-aes_dudaev_gr1_hitted} true
+
+[logic@aes_mil_recon_attack2]
+active = walker@aes_mil_recon_attack2
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+
+[walker@aes_mil_recon_attack2]
+path_walk = group_walk2
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = caution
+on_signal = r2 | walker@aes_mil_recon_attack2_end %+aes_r2_reached%
+
+[walker@aes_mil_recon_attack2_end]
+path_walk = group_walk2w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = caution
+
+[logic@aes_mil_recon_attack3]
+active = walker@aes_mil_recon_attack3
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+on_hit = hit@aes_mil_gr2
+
+[walker@aes_mil_recon_attack3]
+path_walk = group_walk3
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = caution
+on_signal = r3 | walker@aes_mil_recon_attack3_end %+aes_r3_reached%
+
+[walker@aes_mil_recon_attack3_end]
+path_walk = group_walk3w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = caution
+invulnerable = {-aes_dudaev_gr2_hitted} true
+
+[logic@aes_mil_recon_attack4]
+active = walker@aes_mil_recon_attack4
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+
+[walker@aes_mil_recon_attack4]
+path_walk = group_walk4
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 1500 | walker@aes_mil_recon_attack41
+
+[walker@aes_mil_recon_attack41]
+path_walk = group_walk4w
+path_look = group_walk_look
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = patrol
+on_info = {+aes_r1_reached} walker@aes_mil_recon_attack4_end
+
+[walker@aes_mil_recon_attack4_end]
+path_walk = group_walk4w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = patrol
+
+[logic@aes_mil_recon_attack5]
+active = walker@aes_mil_recon_attack5
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+
+[walker@aes_mil_recon_attack5]
+path_walk = group_walk5
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 2000 | walker@aes_mil_recon_attack51
+
+[walker@aes_mil_recon_attack51]
+path_walk = group_walk5w
+path_look = group_walk_look
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = patrol
+on_signal = r9 | walker@aes_mil_recon_attack5_end %+aes_r9_reached%
+
+[walker@aes_mil_recon_attack5_end]
+path_walk = group_walk5w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = patrol
+
+[logic@aes_mil_recon_attack6]
+active = walker@aes_mil_recon_attack6
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+
+[walker@aes_mil_recon_attack6]
+path_walk = group_walk6
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 1700 | walker@aes_mil_recon_attack61
+
+[walker@aes_mil_recon_attack61]
+path_walk = group_walk6w
+path_look = group_walk_look
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = patrol
+on_info = {+aes_r2_reached} walker@aes_mil_recon_attack6_end
+
+[walker@aes_mil_recon_attack6_end]
+path_walk = group_walk6w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = patrol
+
+[logic@aes_mil_recon_attack7]
+active = walker@aes_mil_recon_attack7
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+
+[walker@aes_mil_recon_attack7]
+path_walk = group_walk7
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 1500 | walker@aes_mil_recon_attack71
+
+[walker@aes_mil_recon_attack71]
+path_walk = group_walk7w
+path_look = group_walk_look
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = patrol
+on_info = {+aes_r2_reached} walker@aes_mil_recon_attack7_end
+
+[walker@aes_mil_recon_attack7_end]
+path_walk = group_walk7w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = patrol
+
+[logic@aes_mil_recon_attack8]
+active = walker@aes_mil_recon_attack8
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+combat_ignore = combat_ignore@aes_mil_recon
+
+[walker@aes_mil_recon_attack8]
+path_walk = group_walk8
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 1500 | walker@aes_mil_recon_attack81
+
+[walker@aes_mil_recon_attack81]
+path_walk = group_walk8w
+path_look = group_walk_look
+combat_ignore_cond = {!fighting_actor =fighting_dist_ge(20)}
+danger = danger@aes_mil_recon
+threshold = threshold@aes_mil_recon
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = patrol
+on_info = {+aes_r9_reached} walker@aes_mil_recon_attack8_end
+
+[walker@aes_mil_recon_attack8_end]
+path_walk = group_walk8w
+path_look = group_walk_look
+combat_ignore_cond  = {!fighting_actor =fighting_dist_ge(100)}
+danger = danger@aes_mil_recon_fight
+threshold = threshold@aes_mil_recon
+def_state_standing = patrol
+
+
+;**************************************************recon raiders state 1***************************************************
+
+[logic@aes_mil_recon_raiders1]
+active = walker@aes_mil_recon_raiders1
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders1]
+path_walk = raiders1
+path_look = raiders1_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders1
+
+[kamper@aes_mil_recon_raiders1]
+path_walk = raiders_kamper1
+path_look = raiders_kamp1_look
+kamp_name = kamp1
+;******************************************************************************
+[logic@aes_mil_recon_raiders2]
+active = walker@aes_mil_recon_raiders2
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders2]
+path_walk = raiders2
+path_look = raiders2_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders2
+
+[kamper@aes_mil_recon_raiders2]
+path_walk = raiders_kamper2
+path_look = raiders_kamp1_look
+kamp_name = kamp1
+;*******************************************************************************
+[logic@aes_mil_recon_raiders3]
+active = walker@aes_mil_recon_raiders3
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders3]
+path_walk = raiders3
+path_look = raiders3_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders3
+
+[kamper@aes_mil_recon_raiders3]
+path_walk = raiders_kamper3
+path_look = raiders_kamp1_look
+kamp_name = kamp1
+;*************************************************************************
+[logic@aes_mil_recon_raiders4]
+active = walker@aes_mil_recon_raiders4
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders4]
+path_walk = raiders4
+path_look = raiders4_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders4
+
+[kamper@aes_mil_recon_raiders4]
+path_walk = raiders_kamper4
+path_look = raiders_kamp1_look
+kamp_name = kamp1
+;**************************************************************************
+[logic@aes_mil_recon_raiders5]
+active = walker@aes_mil_recon_raiders5
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders5]
+path_walk = raiders5
+path_look = raiders5_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders5
+
+[kamper@aes_mil_recon_raiders5]
+path_walk = raiders_kamper5
+path_look = raiders_kamp2_look
+kamp_name = kamp2
+;**********************************************************************
+[logic@aes_mil_recon_raiders6]
+active = walker@aes_mil_recon_raiders6
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders6]
+path_walk = raiders6
+path_look = raiders6_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders6
+
+[kamper@aes_mil_recon_raiders6]
+path_walk = raiders_kamper6
+path_look = raiders_kamp2_look
+kamp_name = kamp2
+;*************************************************************************
+[logic@aes_mil_recon_raiders7]
+active = walker@aes_mil_recon_raiders7
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders7]
+path_walk = raiders7
+path_look = raiders7_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders7
+
+[kamper@aes_mil_recon_raiders7]
+path_walk = raiders_kamper7
+path_look = raiders_kamp2_look
+kamp_name = kamp2
+;***************************************************************************
+[logic@aes_mil_recon_raiders8]
+active = walker@aes_mil_recon_raiders8
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders8]
+path_walk = raiders8
+path_look = raiders8_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders8
+
+[kamper@aes_mil_recon_raiders8]
+path_walk = raiders_kamper8
+path_look = raiders_kamp3_look
+kamp_name = kamp3
+;*****************************************************************************
+[logic@aes_mil_recon_raiders9]
+active = walker@aes_mil_recon_raiders9
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders9]
+path_walk = raiders9
+path_look = raiders9_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders9
+
+[kamper@aes_mil_recon_raiders9]
+path_walk = raiders_kamper9
+path_look = raiders_kamp3_look
+kamp_name = kamp3
+;*************************************************************************************
+[logic@aes_mil_recon_raiders10]
+active = walker@aes_mil_recon_raiders10
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders10]
+path_walk = raiders10
+path_look = raiders10_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders10
+
+[kamper@aes_mil_recon_raiders10]
+path_walk = raiders_kamper10
+path_look = raiders_kamp3_look
+kamp_name = kamp3
+;*************************************************************************************
+[logic@aes_mil_recon_raiders11]
+active = walker@aes_mil_recon_raiders11
+combat_ignore = combat_ignore@aes_mil_recon
+threshold = threshold@aes_mil_recon
+
+[walker@aes_mil_recon_raiders11]
+path_walk = raiders11
+path_look = raiders11_look
+combat_ignore_cond = {=fighting_dist_ge(20)}
+threshold = threshold@aes_mil_recon
+def_state_standing = guard
+on_info = {+aes_monolith_ambush2_dead} kamper@aes_mil_recon_raiders11
+
+[kamper@aes_mil_recon_raiders11]
+path_walk = raiders_kamper11
+path_look = raiders_kamp3_look
+kamp_name = kamp3
+;***************************************************************************************
+[logic@aes_mil_recon_raiders_leader_off]
+active = walker@aes_mil_recon_raiders_leader_off
+
+[walker@aes_mil_recon_raiders_leader_off]
+path_walk = raiders_leader_attack
+
+[logic@aes_mil_recon_raiders_leader]
+active = walker@aes_mil_recon_raiders_leader
+
+[walker@aes_mil_recon_raiders_leader]
+path_walk = raiders_leader_attack
+
+;aes_mil_recon_raiders_leader_after
+
+;****************************offline raiders***********************************************
+
+[logic@aes_mil_recon_off_raiders1]
+active = walker@aes_mil_recon_off_raiders1
+
+[walker@aes_mil_recon_off_raiders1]
+path_walk = raiders1
+path_look = raiders1_look
+
+[logic@aes_mil_recon_off_raiders2]
+active = walker@aes_mil_recon_off_raiders2
+
+[walker@aes_mil_recon_off_raiders2]
+path_walk = raiders2
+path_look = raiders2_look
+
+[logic@aes_mil_recon_off_raiders3]
+active = walker@aes_mil_recon_off_raiders3
+
+[walker@aes_mil_recon_off_raiders3]
+path_walk = raiders3
+path_look = raiders3_look
+
+[logic@aes_mil_recon_off_raiders4]
+active = walker@aes_mil_recon_off_raiders4
+
+[walker@aes_mil_recon_off_raiders4]
+path_walk = raiders4
+path_look = raiders4_look
+
+[logic@aes_mil_recon_off_raiders5]
+active = walker@aes_mil_recon_off_raiders5
+
+[walker@aes_mil_recon_off_raiders5]
+path_walk = raiders5
+path_look = raiders5_look
+
+[logic@aes_mil_recon_off_raiders6]
+active = walker@aes_mil_recon_off_raiders6
+
+[walker@aes_mil_recon_off_raiders6]
+path_walk = raiders6
+path_look = raiders6_look
+
+[logic@aes_mil_recon_off_raiders7]
+active = walker@aes_mil_recon_off_raiders7
+
+[walker@aes_mil_recon_off_raiders7]
+path_walk = raiders7
+path_look = raiders7_look
+
+[logic@aes_mil_recon_off_raiders8]
+active = walker@aes_mil_recon_off_raiders8
+
+[walker@aes_mil_recon_off_raiders8]
+path_walk = raiders8
+path_look = raiders8_look
+
+[logic@aes_mil_recon_off_raiders9]
+active = walker@aes_mil_recon_off_raiders9
+
+[walker@aes_mil_recon_off_raiders9]
+path_walk = raiders9
+path_look = raiders9_look
+
+[logic@aes_mil_recon_off_raiders10]
+active = walker@aes_mil_recon_off_raiders10
+
+[walker@aes_mil_recon_off_raiders10]
+path_walk = raiders10
+path_look = raiders10_look
+
+[logic@aes_mil_recon_off_raiders11]
+active = walker@aes_mil_recon_off_raiders11
+
+[walker@aes_mil_recon_off_raiders11]
+path_walk = raiders11
+path_look = raiders11_look
+

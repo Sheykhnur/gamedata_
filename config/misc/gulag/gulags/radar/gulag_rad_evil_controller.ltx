@@ -1,0 +1,33 @@
+[logic@rad_evil_controller_home1]
+active = mob_home@rad_evil_controller_home1
+
+[mob_home@rad_evil_controller_home1]
+path_home = home1
+home_min_radius = 10
+home_max_radius = 30
+
+[logic@rad_evil_controller_home2]
+active = mob_home@rad_evil_controller_home2
+
+[mob_home@rad_evil_controller_home2]
+path_home = home2
+home_min_radius = 1
+home_max_radius = 2
+friendly = true
+actor_friendly = true
+on_timer = 500 | mob_remark@rad_evil_controller_wait
+
+[mob_remark@rad_evil_controller_wait]
+anim = new_idle_0
+actor_friendly = true
+npc_friendly = true
+target = actor
+on_info = {+radar_controller_attacks} mob_home@rad_evil_controller_enemy
+
+[mob_home@rad_evil_controller_enemy]
+path_home = home2
+home_min_radius = 5
+home_max_radius = 40
+friendly = false
+actor_friendly = false
+aggressive_home = true

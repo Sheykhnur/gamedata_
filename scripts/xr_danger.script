@@ -1,0 +1,341 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_danger.script
+ Description: Scheme of ignoring dangers (threat)
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Last edit  : 17.06.2018 [07]
+--]]-----------------------------------------------------------------------------------------------
+--/ TODO: sky: there are problems with danger in patrol schemes in kamping. If to kill one or two npc'es 
+--/ which sitting near fireplace, then second won't react(give attention) on already killed dude.
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+--/ distance (m) far then which ignoring danger(s)
+local DANGER_IGNORE_DISTANCE = (system_ini():r_u32("alife", "switch_distance")) or 170
+--/ time (real ms) during which we remember danger(s)
+local DANGER_INERTION_TIME = 4000*1000
+--/ danger settings by type
+local danger_settings = { --/#+# category   | ignore_distance | inertion_time
+	[danger_object.entity_attacked] = {cat = "hit",      dist = 80, time = 4000*1000},
+	[danger_object.attacked]        = {cat = "hit",      dist = 80, time = 4000*1000},
+	[danger_object.grenade]         = {cat = "grenade",  dist =  20, time = 4000*1000},
+	[danger_object.entity_corpse]   = {cat = "corpse",   dist =  20, time = 40*1000},
+	[danger_object.attack_sound]    = {cat = "sound",    dist =  40, time = 4000*1000},
+	[danger_object.entity_death]    = {cat = "sound",    dist =  40, time = 4000*1000},
+	[danger_object.enemy_sound]     = {cat = "sound",    dist =  60, time = 4000*1000},
+	[danger_object.bullet_ricochet] = {cat = "ricochet", dist =  20, time = 2000*1000}
+}
+local always_ignore_danger = { m_car = true }
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function get_danger_name(danger)
+	local obj = danger:object()
+	if danger:type() ~= danger_object.grenade and danger:dependent_object() then
+		obj = danger:dependent_object()
+	end
+	if obj then
+		return obj:name() --/>
+	end
+	return "none" --/>
+end
+
+function get_danger_time(danger)
+	if danger:type() == danger_object.entity_corpse then
+		local corpse_object = danger:object()
+		return corpse_object:death_time()
+	end
+	return danger:time()
+end
+
+--/ check: do we need to react on danger (FALSE -we don't need to react)
+function is_danger(npc,best_danger,bLog)
+	--/ check on having danger:
+	if not best_danger then
+		return false --/>
+	end
+	--/ getting object, who provoked danger
+	local bd_obj = best_danger:object()
+	local bd_type = best_danger:type()
+	if bd_type ~= danger_object.grenade and best_danger:dependent_object() then
+		bd_obj = best_danger:dependent_object()
+	end
+	--/ check of having danger object:
+	if not bd_obj then
+		return false --/>
+	end
+	--/ check, if danger not in list of forever-ignored(BTR, helis ...)
+	if always_ignore_danger[bd_obj:section()] then
+		--if self.log then log("is_danger:NPC=[%s],not_or_forbidded_danger=[%s/%s],type=[%s]:(%s)", npc:name(), bd_obj:name(), bd_obj:section(), bd_type, "Info!") end --/#~#
+		return false --/>
+	end
+	-- check if npc is enemy to bd_obj and danger is a bullet ricochet
+	if bd_type == danger_object.bullet_ricochet and npc:relation(bd_obj) == game_object.enemy then
+		return true
+	end
+	local npc_id = npc:id()
+	local stor = db.storage[npc_id]
+	local st = stor and stor["danger"]
+	--/ check. if danger not in list of ignored (forbidden)
+	if st and (st.ignore_types and danger_settings[bd_type]) then
+		local category = danger_settings[bd_type].cat
+		if category and st.ignore_types[ category ] then
+			if bLog then log("is_danger:NPC=[%s]~>bd_type[%s]=[%s] =>(FALSE)", npc:name(), bd_type, category, "") end --/#~#
+			return false --/>
+		end
+	end
+	--/ ignorign dangers not from enemy (exept corpses and grenades)
+	if bd_type ~= danger_object.entity_corpse and (bd_type ~= danger_object.grenade and npc:relation(bd_obj) ~= game_object.enemy) then
+		if bLog then log("is_danger: NPC=[%s] bd_type=[%s]~relation =>(FALSE)", npc:name(), bd_type, "") end --/#~#
+		return false --/>
+	end
+	--/ zombie(zombied) ignore grenades
+	if bd_type == danger_object.grenade and (npc:character_community() == "zombied" or npc:section() == "stalker_zombied") then
+		return false --/>
+	end
+	--/#?# ignoring 'old' corpses
+	if bd_type == danger_object.entity_corpse then
+		if time_global() - bd_obj:death_time() >= DANGER_INERTION_TIME then
+			if bLog then log("is_danger: NPC=[%s] bd_type=[%s]~corpse time=[%s]/[%s] =>(FALSE)", npc:name(), bd_type, bd_obj:death_time(), time_global() - bd_obj:death_time(), "") end --/#~#
+			return false --/>
+		end
+	end
+	--/ ignoring by setting combat_ignore/danger
+	if stor then
+		if stor.active_scheme and not xr_combat_ignore.is_enemy(npc, bd_obj, stor["combat_ignore"]) then
+--			log("is_danger: NPC=[%s] bd_type=[%s]/[%s] combat_ignore =>(FALSE)", npc:name(), bd_type, bd_obj:name, "") --/#~#
+			return false
+		end
+		if stor.log and (bd_obj:id() or -1) ~= (stor.enemy_id or -1) then
+			log("is_danger: NPC=[%s] <= best_danger:obj=[%s],id=[%s] %s", npc:name(), bd_obj:name(), bd_obj:id(), stor.enemy_id or "", "") --/#~#
+		end
+		stor.enemy_id = bd_obj:id() --/#!# 'enemy' => 'enemy_id' for xr_conditions.script
+	end
+	local bd_position = best_danger:position()
+	--/ ignoring by distance (distance_sqr)
+	local distance_sqr = npc:position():distance_to_sqr( bd_position )
+	if not this.check_danger_distance(stor["danger"], bd_type, distance_sqr) then
+		if bLog then log("is_danger: NPC=[%s] bd_type=[%s] distance_sqr=[%s] =>(FALSE)", npc:name(), bd_type, distance_sqr, "") end --/#~#
+		return false --/>
+	end
+	--/ ignoring by zone
+	if sr_danger.check_danger_position(bd_position) then
+		if bLog then log("is_danger:NPC=[%s]->[%s],no_danger_zone =>(FALSE)", npc:name(), bd_type) end --/#~#
+		return false --/>
+	end
+	--/ ignoring by information restrictors
+	if xr_gulag.is_info_restricted(npc_id, bd_position) then
+		if bLog then log("is_danger:NPC=[%s]->[%s],info_restrictor =>(FALSE)", npc:name(), bd_type) end --/#~#
+		return false --/>
+	end
+	--/ ignoring heavy-wounded
+	if xr_wounded.is_heavy_wounded_by_id(npc_id) then
+		if bLog then log("is_danger:NPC=[%s]->[%s],heavy_wounded =>(FALSE)", npc:name(), bd_type) end --/#~#
+		return false --/>
+	end
+	--/ ignoring psy-wounded
+	if xr_wounded.is_psy_wounded_by_id(npc_id) then
+		if bLog then log("is_danger:NPC=[%s]->[%s],psy_wounded =>(FALSE)", npc:name(), bd_type) end --/#~#
+		return false --/>
+	end
+	--/ camper's ignoring all, exept grenades
+	if stor and stor.active_scheme and stor.active_scheme == "camper" and bd_type ~= danger_object.grenade then
+		return false --/>
+	end
+	if bd_type == danger_object.enemy_sound then
+		if not bd_obj or ( bd_obj.alive and not bd_obj:alive() ) then	
+		--	log("is_danger:[enemy_sound] NPC=[%s] bd_type=[%s][%s] death_time=[%s]/TimeG=[%s] =>(FALSE)", npc:name(), bd_type, bd_obj:name(), bd_obj:death_time(), time_global() - bd_obj:death_time(), "")
+			return false --/>
+		end
+	end
+	--log("is_danger: NPC=[%s] bd_type=[%s]/[%s] DANGER =>(true)", npc:name(), bd_type, bd_obj:name(), "")
+	return true --/>
+end
+--/ --------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR (true - if danger, false - if not)
+--/ -----------------------------------------------------------------------------------------------
+class "evaluator_danger" (property_evaluator)
+--/ ---------------------------------------------
+function evaluator_danger:__init(name, st) super (nil, name)
+	self.st  = st
+	self.log = st.log
+	self.is_zombied = st.is_zombied --/#?#
+	self.danger_time = nil
+end
+
+function evaluator_danger:evaluate()
+	--if self.log then log("ev_danger:NPC=[%s]:(%s)", self.object:name(), ">") end --/#~#
+	if not self.object or ( self.object.alive and not self.object:alive() ) then return false end --/> dead
+	--/ check of having danger:
+	local best_danger = self.object:best_danger()
+	if not best_danger then
+		if self.danger_time then self.danger_time = nil end
+		return false --/>
+	end
+	--/ intertion of return (only not for camper)
+	if self.danger_time then
+		self.danger_time = best_danger:time() --/ updating duration (time) of aggravator activity
+		local stor = db.storage[self.object:id()]
+		local bd_type = best_danger:type()
+		if this.check_danger_inertion_time(stor["danger"], bd_type, time_global() - self.danger_time) then
+			if self.log then log("ev_danger:NPC=[%s],bd_type=[%s],PassedTime=[%s]:[TRUE]", self.object:name(), bd_type, time_global() - self.danger_time) end --/#~#
+			return true --/> we won't calm down
+		end
+	end
+	--/ common checks
+	if not this.is_danger(self.object,best_danger,self.log) then
+		if self.log then log("ev_danger:NPC=[%s] bd_type=[%s] =>(FALSE)", self.object:name(), best_danger:type(), "") end --/#~#
+		return false
+	end
+	
+	if not self.mgr then
+		self.mgr = self.object:motivation_action_manager()
+	end
+	if self.mgr:initialized() and self.mgr:current_action_id() == stalker_ids.action_danger_planner then
+		self.danger_time = this.get_danger_time(best_danger)
+       -- log("setting danger time: %d, actid='%d'", self.danger_time, self.mgr:current_action_id())
+	end
+	--if self.log then log("ev_danger:NPC=[%s] type=[%s],time=[%s] =>(TRUE)", self.object:name(), best_danger:type(), self.danger_time, "") end --/#~#
+	return true --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.is_zombied = npc:character_community() == "zombied" or npc:section() == "stalker_zombied" --/#?#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/#+# by CoP
+	local danger_action = oPlanner:action(stalker_ids.action_danger_planner)
+	local danger_action_planner = cast_planner(danger_action)
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:remove_evaluator(stalker_ids.property_danger)
+	oPlanner:add_evaluator( stalker_ids.property_danger, this.evaluator_danger("danger", st) )
+	--/#+# by CoP
+	danger_action_planner:remove_evaluator(stalker_ids.property_danger)
+	danger_action_planner:add_evaluator(stalker_ids.property_danger, this.evaluator_danger("danger", st))
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	--/ for debug
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function reset_scheme(npc, scheme, stor, section)
+	local st = stor["danger"]
+	st.danger_settings = table.copy(danger_settings)
+	local danger_section = nil
+	if (scheme and scheme ~= "nil") and section then
+		danger_section = Get_Cfg_String(stor.ini, section, "danger")
+	end
+	if danger_section then
+		if stor.ini:line_exist(danger_section, "ignore_types") then
+			st.ignore_types = {}
+			local t = parse_names( stor.ini:r_string(danger_section, "ignore_types") )
+			for _,typ in pairs(t) do
+				st.ignore_types[typ] = true
+			end
+		end
+		st.ignore_distance      = Get_Cfg_Number(stor.ini, danger_section, "ignore_distance",      DANGER_IGNORE_DISTANCE)
+		st.danger_inertion_time = Get_Cfg_Number(stor.ini, danger_section, "danger_inertion_time", DANGER_INERTION_TIME)
+		
+		st.danger_settings[danger_object.grenade].dist = Get_Cfg_Number(stor.ini, danger_section, "ignore_distance_grenade", danger_settings[danger_object.grenade].dist)
+		st.danger_settings[danger_object.entity_corpse].dist = Get_Cfg_Number(stor.ini, danger_section, "ignore_distance_corpse", danger_settings[danger_object.entity_corpse].dist)
+		if stor.ini:line_exist(danger_section, "ignore_distance_hit") then
+			local val = Get_Cfg_Number(stor.ini, danger_section, "ignore_distance_hit")
+			if val then
+				st.danger_settings[danger_object.entity_attacked].dist = val
+				st.danger_settings[danger_object.attacked].dist = val
+			end
+		end
+		if stor.ini:line_exist(danger_section, "ignore_distance_sound") then
+			local val = Get_Cfg_Number(stor.ini, danger_section, "ignore_distance_sound")
+			if val then
+				st.danger_settings[danger_object.attack_sound].dist = val
+				st.danger_settings[danger_object.entity_death].dist = val
+				st.danger_settings[danger_object.enemy_sound].dist = val
+			end
+		end
+		st.danger_settings[danger_object.grenade].time = Get_Cfg_Number(stor.ini, danger_section, "danger_inertion_time_grenade", danger_settings[danger_object.grenade].time)
+		st.danger_settings[danger_object.entity_corpse].time = Get_Cfg_Number(stor.ini, danger_section, "danger_inertion_time_corpse", danger_settings[danger_object.entity_corpse].time)
+		st.danger_settings[danger_object.bullet_ricochet].time = Get_Cfg_Number(stor.ini, danger_section, "danger_inertion_time_ricochet", danger_settings[danger_object.bullet_ricochet].time)
+		if stor.ini:line_exist(danger_section, "danger_inertion_time_hit") then
+			local val = Get_Cfg_Number(stor.ini, danger_section, "danger_inertion_time_hit")
+			if val then
+				st.danger_settings[danger_object.entity_attacked].time = val
+				st.danger_settings[danger_object.attacked].time = val
+			end
+		end
+		if stor.ini:line_exist(danger_section, "danger_inertion_time_sound") then
+			local val = Get_Cfg_Number(stor.ini, danger_section, "danger_inertion_time_sound")
+			if val then
+				st.danger_settings[danger_object.attack_sound].time = val
+				st.danger_settings[danger_object.entity_death].time = val
+				st.danger_settings[danger_object.enemy_sound].time = val
+			end
+		end
+	end
+	--/#+# (transfered from xr_logic.script)
+	stalker_generic.reset_threshold(npc, scheme, stor, section)
+	stalker_generic.reset_show_spot(npc, scheme, stor, section)
+	--/ for debug
+	--if stor.log and danger_section then table.print(st, "danger|"..npc:name()) end --/#~#
+	if stor.log then log("reset_scheme:NPC=[%s],scheme=[%s],section=[%s],danger_section=[%s]", npc:name(), scheme, section, danger_section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs (for compatibility, later delete)
+--/------------------------------------------------------------------
+function set_danger(...)
+	set_scheme(...)
+end
+function reset_danger(...)
+	reset_scheme(...)
+end
+--/ -----------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------
+function check_danger_inertion_time(st, bd_type, pass_time)
+	local t = st and st.danger_settings[bd_type] or danger_settings[bd_type]
+	if t and t.time <= pass_time then
+		return false --/>
+	end
+	if st and st.danger_inertion_time then
+		if st.danger_inertion_time <= pass_time then
+			return false --/>
+		end
+	elseif DANGER_INERTION_TIME <= pass_time then
+		return false --/>
+	end
+	return true --/> danger not forgotten
+end
+
+function check_danger_distance(st, bd_type, distance_sqr)
+	if st and st.ignore_distance then
+		if st.ignore_distance^2 <= distance_sqr then
+			return false --/>
+		end
+	elseif DANGER_IGNORE_DISTANCE^2 <= distance_sqr then
+		return false --/>
+	end
+	local t = st and st.danger_settings[bd_type] or danger_settings[bd_type]
+	if t and t.dist^2 <= distance_sqr then
+		return false --/>
+	end
+	return true --/>
+end
+--/ -----------------------------------------------------------------------------------------------

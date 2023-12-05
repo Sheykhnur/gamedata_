@@ -1,0 +1,14 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {+car_scene_end +mil_actor_talked_contact -monsters_wave -mil_wave_scene_start} sr_cutscene@3 %+monsters_wave%
+
+[sr_idle@start]
+on_timer = 2400 | {+monsters_wave -monsters_wave_end} sr_cutscene %+mil_wave_scene_start%
+
+[sr_cutscene]
+point = mutant_cam_new
+look = mutant_cam_new_look
+cam_effector = mil_base_swarm
+on_signal = cameff_end |  nil %+monsters_wave_end =release%

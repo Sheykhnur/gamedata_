@@ -1,0 +1,8 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+ds_attack_group_start} sr_idle@ds_work
+
+[sr_idle@ds_work]
+on_actor_inside = {-ds_reached_critical_area} nil %+ds_reached_critical_area =release%

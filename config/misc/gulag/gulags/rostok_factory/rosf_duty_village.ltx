@@ -1,0 +1,104 @@
+[danger_condition@rosf_duty_village]
+ignore_distance = 8
+
+[threshold@rosf_duty_village]  
+max_ignore_distance = 7
+
+;[actor_dialogs]
+;id = rosf_dolg_leader_help,rosf_dolg_leader_ammo
+
+[death@village_leader]
+on_info = %+rosf_village_leader_dead%
+
+
+;*********state 0*********************
+
+[logic@rosf_duty_village_sleep_walker_walk]
+active = kamper@rosf_duty_village_sleep_kamper1
+danger = danger_condition@rosf_duty_village
+threshold = threshold@rosf_duty_village 
+
+[kamper@rosf_duty_village_sleep_kamper1]
+path_walk = sleep_walker_walk
+path_look = sleep_walker_walk_look
+kamp_name = kamp1
+threshold = threshold@rosf_duty_village 
+
+;************state 0, 1***************
+
+[logic@rosf_duty_village_leader]
+active = walker@rosf_duty_village_leader
+danger = danger_condition@rosf_duty_village
+threshold = threshold@rosf_duty_village 
+;on_death = death@village_leader
+;actor_dialogs = actor_dialogs
+
+[walker@rosf_duty_village_leader]
+path_walk = leader_walk
+path_look = leader_look
+def_state_standing = guard
+threshold = threshold@rosf_duty_village
+;meet = meet@duty_village_leader
+
+
+[meet@duty_village_leader]
+meet_state		= 10| hello| 5| nil
+meet_state_wpn	= 10| hello| 5| nil
+victim		= 10| actor
+victim_wpn		= 10| actor
+use			= true
+use_wpn		= true
+meet_dialog	= rosf_dolg_leader_help
+
+[logic@rosf_duty_village_guard1]
+active = kamper@rosf_duty_village_guard1
+danger = danger_condition@rosf_duty_village
+threshold = threshold@rosf_duty_village
+
+[kamper@rosf_duty_village_guard1]
+path_walk = guard_walk1
+path_look = guard_look1
+kamp_name = kamp2
+threshold = threshold@rosf_duty_village
+
+[logic@rosf_duty_village_patrol1]
+active = walker@rosf_duty_village_patrol1
+danger = danger_condition@rosf_duty_village
+threshold = threshold@rosf_duty_village 
+
+[walker@rosf_duty_village_patrol1]
+path_walk = patrol_walk1
+threshold = threshold@rosf_duty_village
+
+[logic@rosf_duty_village_kamper1]
+active = kamper@rosf_duty_village_kamper1
+danger = danger_condition@rosf_duty_village
+threshold = threshold@rosf_duty_village 
+
+[kamper@rosf_duty_village_kamper1]
+path_walk = kamper_walk1
+path_look = kamper_look1
+kamp_name = kamp3
+threshold = threshold@rosf_duty_village
+
+[logic@rosf_duty_village_kamper2]
+active = kamper@rosf_duty_village_kamper2
+danger = danger_condition@rosf_duty_village
+threshold = threshold@rosf_duty_village 
+
+[kamper@rosf_duty_village_kamper2]
+path_walk = kamper_walk2
+path_look = kamper_look2
+kamp_name = kamp3
+threshold = threshold@rosf_duty_village
+
+;***********state 1*******************
+
+[logic@rosf_duty_village_sleep_walker_sleep]
+active = sleeper@rosf_duty_village_sleeper
+threshold = threshold@rosf_duty_village
+
+[sleeper@rosf_duty_village_sleeper]
+path_main = sleep_walker_sleep
+wakeable = false
+threshold = threshold@rosf_duty_village

@@ -1,0 +1,48 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_forest.script
+ Description: Tasks forest
+ Copyright  : 2011 © LA-team
+ Author     : vintar
+ Editors    : vintar(05.11.2012)
+ Last edit  : 28.04.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, event)
+	if event == "item_take" then
+		if obj:section() == "forest_wc_map" then
+			give_info("forest_found_map")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "forest_piano_bammed" then
+		start_real_timer(15, nil, {info_id = "forest_piano_bammed_delay"})
+		return true --/>
+	end
+	if info_id == "forest_found_map" then
+		local s_obj = alife():object("forest_wc_map")
+		if s_obj then
+			alife():release(s_obj, true)
+		end
+		treasure_manager.give_treasure("bcr_wc_cache")
+		return true --/>
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+
+--/ -------------------------------------------------------------------------------------

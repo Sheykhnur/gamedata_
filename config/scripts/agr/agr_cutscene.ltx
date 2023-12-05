@@ -1,0 +1,11 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-agr_factory_assault_start} sr_idle@2 %+agr_factory_assault_start +agr_fake_battle +agr_spawn_defence%, sr_idle@wait_mole
+
+[sr_idle@2]
+on_info = {-agr_scene_completed} sr_idle@wait_mole %+agr_scene_completed -agr_fake_battle%
+
+[sr_idle@wait_mole]
+on_actor_inside = {+agr_mole_teleported -agr_mole_invite} nil %+agr_mole_invite =release%

@@ -1,0 +1,14 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+bas_cs1_drain} sr_particle@attack  %=play_snd(monsters\hologram\drain_scene)%
+
+[sr_particle@attack]
+name = anomaly2\beam_scene
+path = bas_holo_attack_sc1
+mode = 2
+looped = true
+on_info = {+bas_cs1_info_8} sr_idle@1
+
+[sr_idle@1]

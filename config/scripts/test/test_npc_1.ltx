@@ -1,0 +1,48 @@
+[combat_ignore]
+
+[logic]
+active = remark
+combat_ignore = combat_ignore
+
+[remark]
+anim = ordinary_talk
+snd = bas_replics21
+combat_ignore_cond = {=fighting_actor}
+target = rot1,0
+on_signal = sound_end | remark@2
+meet = no_meet
+invulnerable = true
+
+[remark@2]
+anim = ordinary_talk
+snd = bas_replics22
+combat_ignore_cond = {=fighting_actor}
+target = rot2,0
+on_signal = sound_end | remark@3
+meet = no_meet
+invulnerable = true
+
+[remark@3]
+anim = ordinary_talk
+snd = bas_replics23
+combat_ignore_cond = {=fighting_actor}
+target = rot3,0
+on_signal = sound_end | remark@4
+meet = no_meet
+invulnerable = true
+
+;[remark@4]
+;anim = ordinary_talk
+;snd = bas_replics21
+;combat_ignore_cond = {=fighting_actor}
+;target = rot4,0
+;on_signal = sound_end | remark
+;meet = no_meet
+
+[remark@4]
+snd = fight_attack
+combat_ignore_cond = {=fighting_actor}
+target = rot4,0
+on_signal = sound_end | %+aes_ambush_task_start% remark
+meet = no_meet
+invulnerable = true

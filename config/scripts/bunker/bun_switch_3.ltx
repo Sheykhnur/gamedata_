@@ -1,0 +1,24 @@
+[logic]
+active = ph_button@active3
+
+[ph_button@active3]
+anim = lab_primary_switcher_idle
+tooltip = tips_labx10switcher_press
+on_press = ph_button@deactivate3
+
+[ph_button@deactivate3]
+anim = lab_primary_switcher_off
+on_info = {-bun_control_switch_3_off} %+bun_control_switch_3_off =play_snd_from_obj(7806:ambient\switch_1)% nil
+
+;[ph_button@active3]
+;on_info = {+bun_control_switch_1_off +bun_control_switch_2_off +bun_control_switch_3_off +bun_control_switch_4_off} %+deactivate_radar_done% ph_idle@nil
+;anim = lab_primary_switcher_idle
+;tooltip = tips_labx16switcher_press
+;on_press = ph_button@deactivate3
+
+;[ph_button@deactivate3]
+;anim = lab_primary_switcher_off
+;on_timer = 500 | %+bun_control_switch_3_off =play_snd_from_obj(7806:ambient\switch_1)%
+;on_info = {+bun_control_switch_1_off +bun_control_switch_2_off +bun_control_switch_3_off +bun_control_switch_4_off} %+deactivate_radar_done% ph_idle@nil
+
+;[ph_idle@nil]

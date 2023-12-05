@@ -1,0 +1,48 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc1_mil1
+combat_ignore = combat_ignore
+
+[remark@war_sc1_mil1]
+anim = guard
+target = war_scene1_sld1, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_massacre} walker@war_sc1_mil1
+
+[walker@war_sc1_mil1]
+path_walk = war_sc1_guard
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sc1sld1rch | remark@war_sc1_mil11
+
+[remark@war_sc1_mil11]
+anim = assault_fire
+target = war_scene1_burer2w, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_bur2_death} remark@war_sc1_mil12
+
+[remark@war_sc1_mil12]
+anim = assault_fire
+target = war_scene1_burer1w, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc1_bur1_death} remark@war_sc1_mil13
+
+[remark@war_sc1_mil13]
+anim = guard
+target = war_scene1_burer1w, 0
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 2000 | {+war_sc1_bur1_death +war_sc1_bur4_death}  walker@war_sc1_mil1_away
+
+[walker@war_sc1_mil1_away]
+path_walk = war_sc1_sld_away
+meet = no_meet
+combat_ignore_cond = always
+def_state_moving1 = walk
+def_state_moving2 = walk
+def_state_moving3 = walk
+on_info = {+war_sc1_end} %=release%

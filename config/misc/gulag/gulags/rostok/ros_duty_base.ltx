@@ -1,0 +1,157 @@
+
+[danger@ros_duty_base]
+ignore_distance = 0
+
+[logic@ros_duty_base_voronin]
+active = walker@ros_duty_base_voronin
+
+[walker@ros_duty_base_voronin]
+path_walk = voronin_walk
+path_look = voronin_look
+danger = danger@ros_duty_base
+def_state_standing = ward
+def_state_moving1 = walk
+
+[logic@ros_duty_base_petrenko]
+active = walker@ros_duty_base_petrenko
+trade = misc\trade\trade_dolg.ltx
+inv_max_weight = 10000
+
+[walker@ros_duty_base_petrenko]
+path_walk = petrenko_walk
+path_look = petrenko_look
+danger = danger@ros_duty_base
+def_state_standing = ward
+def_state_moving1 = walk
+
+[logic@ros_duty_base_ivancov]
+active = walker@ros_duty_base_ivancov
+
+[walker@ros_duty_base_ivancov]
+path_walk = ivancov_walk
+path_look = ivancov_look
+danger = danger@ros_duty_base
+def_state_standing = ward
+def_state_moving1 = walk
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_roof_observer]
+active = walker@ros_duty_base_roof_observer
+
+[walker@ros_duty_base_roof_observer]
+path_walk = observer_walk
+path_look = observer_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_yard_patroler]
+active = walker@ros_duty_base_yard_patroler
+
+[walker@ros_duty_base_yard_patroler]
+path_walk = guard_walk
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_zastava]
+active = walker@ros_duty_base_zastava
+
+[walker@ros_duty_base_zastava]
+path_walk = zastava_walk
+path_look = zastava_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_zastava1
+meet = meet@bar_dolg_zastava1
+
+[meet@bar_dolg_zastava1]
+meet_state 		= 20| guard@wait|4| guard
+meet_state_wpn 	= 20| guard@wait| 15| threat@threat_weap
+victim 			= 20| actor
+victim_wpn 		= 20| actor
+use = true
+use_wpn = true
+meet_dialog = bar_dolg_zastava
+precond			= visibility
+
+[logic@ros_duty_base_dutier1]
+active = walker@ros_duty_base_dutier1
+
+[walker@ros_duty_base_dutier1]
+path_walk = guard1_walk
+path_look = guard1_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_zastava1
+meet = meet@bar_dolg_zastava1
+
+[logic@ros_duty_base_dutier2]
+active = walker@ros_duty_base_dutier2
+
+[walker@ros_duty_base_dutier2]
+path_walk = guard1_walk
+path_look = guard1_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_zastava1
+meet = meet@bar_dolg_zastava1
+
+[logic@ros_duty_base_dutier3]
+active = kamp@ros_duty_base_dutier3
+
+[kamp@ros_duty_base_dutier3]
+center_point = kamp1
+path_walk = kamp1_task
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_dutier4]
+active = kamp@ros_duty_base_dutier4
+
+[kamp@ros_duty_base_dutier4]
+center_point = kamp1
+path_walk = kamp1_task
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_dutier5]
+active = kamp@ros_duty_base_dutier5
+
+[kamp@ros_duty_base_dutier5]
+center_point = kamp1
+path_walk = kamp1_task
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_dutier6]
+active = kamp@ros_duty_base_dutier6
+
+[kamp@ros_duty_base_dutier6]
+center_point = kamp2
+path_walk = kamp2_task
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_dutier7]
+active = kamp@ros_duty_base_dutier7
+
+[kamp@ros_duty_base_dutier7]
+center_point = kamp2
+path_walk = kamp2_task
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_dutier8]
+active = kamp@ros_duty_base_dutier8
+
+[kamp@ros_duty_base_dutier8]
+center_point = kamp2
+path_walk = kamp2_task
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_dutier9]
+active = kamp@ros_duty_base_dutier9
+
+[kamp@ros_duty_base_dutier9]
+center_point = kamp2
+path_walk = kamp2_task
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+

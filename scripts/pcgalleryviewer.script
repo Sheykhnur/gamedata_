@@ -1,0 +1,316 @@
+
+-- file: pcGalleryViewer.script
+-- author: barin
+-- date: 2008-12-16
+-- edited by: barin
+-- last edited: 2009-09-18
+
+class "ListViewItem" (CUIListItemEx)
+
+function ListViewItem:__init(index, gallery_name, password, info) super()
+	self:SetWndRect(0, 0, 395, 22)
+	
+	self.index = index
+	self.name = gallery_name
+	self.password = password
+	self.password_info = info
+	
+	if self.password ~= nil and self.password ~= "none" and self.password ~= "" then
+		self:SetPasswdIcon()
+	end
+	
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self.text:SetWndRect(15, 0, 377, 22)
+	self.text:SetText(game.translate_string(tostring(self.name)))
+	self.text:SetFont(pcTextViewer.get_font("letterica16"))
+	self.text:SetTextColor(pcTextViewer.get_colour("white"))
+	self:AttachChild(self.text)
+end
+
+function ListViewItem:SetPasswdIcon()
+	self.protected_icon = CUIStatic()
+	self.protected_icon:SetAutoDelete(true)
+	self.protected_icon:SetWndRect(0, 2, 15, 22)
+	self.protected_icon:InitTexture("ui_pc_icon_padlock_gold")
+	self.protected_icon:SetWidth(13)
+	self.protected_icon:SetHeight(14)
+	self.protected_icon:SetStretchTexture(true)
+	self:AttachChild(self.protected_icon)
+end
+
+function ListViewItem:RemovePasswdIcon()
+	if self.protected_icon then
+		self:DetachChild(self.protected_icon)
+		self.protected_icon = nil
+		self.password = nil
+	end
+end
+
+function ListViewItem:SetFocus(b)
+	if b then
+		self.text:SetTextColor(pcTextViewer.get_colour("yellow"))
+	else
+		self.text:SetTextColor(pcTextViewer.get_colour("white"))
+	end
+end
+
+-- ************************************************************************************************* --
+
+class "uiGalleryViewer" (CUIScriptWnd)
+
+function uiGalleryViewer:__init(parent, x, y) super()
+	self:SetWindowName("uiGalleryViewer")
+	self.owner = parent
+	
+	if self.owner and self.owner.xml then
+		self.xml = self.owner.xml
+	else
+		self.xml = CScriptXmlInit()
+		self.xml:ParseFile("ui_wnd\\ui_desktop.xml")
+	end
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 630
+	self.wnd_height = 420
+	
+	self.item_index = nil
+	self.prev_item = nil
+	
+	self.curr_gallery = 1
+	self.curr_image = 0
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.dlg_password = pcPasswdBox.uiPasswordEditBox(self, nil, nil, self.wnd_x + self.wnd_width / 2 - 145,
+		self.wnd_y + self.wnd_height / 2 - 60)
+	
+	self.owner:AttachChild(self)
+end
+
+function uiGalleryViewer:__finalize()
+end
+
+function uiGalleryViewer:reset(galleries)
+	self.item_index = nil
+	self.galleries = galleries
+	self.prev_item = nil
+	
+	local listView = self:GetListWnd("listview")
+	if listView:GetSize() ~= 0 then
+		listView:RemoveAll()
+	end
+	
+	self:AddGalleries()
+	
+	self:GetFrameWindow("image_frame"):Show(false)
+	self:GetStatic("stc_picture_caption"):SetText(game.translate_string("ui_pc_static_select_gal"))
+	self:GetStatic("stc_image"):Show(false)
+	self:GetButton("btn_prev"):Show(false)
+	self:GetButton("btn_next"):Show(false)
+end
+
+function uiGalleryViewer:OnChildDialogExit(child_name)
+	if child_name == "uiPasswordEditBox" then
+		if self.item_index then
+			self:GetListWnd("listview"):GetItem(self.item_index - 1):RemovePasswdIcon()
+			self:GalleryChoosen(self.item_index)
+		end
+	end
+	self.item_index = nil
+end
+
+function uiGalleryViewer:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiGalleryViewer:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_image_viewer"))
+	self.wnd_frame:Show(true)
+	
+	local left_margin = self.wnd_x + 5
+	local top_margin = self.wnd_y + 32
+	local ctrl_width = 0
+	
+	local dlg = self.xml:InitList("image_viewer:listview", self)
+	dlg:SetWndPos(left_margin, top_margin)
+	dlg:SetHeight(self.wnd_height - 38)	
+	dlg:ShowSelectedItem(false)
+	self:Register(dlg, "listview")
+	
+	left_margin = left_margin + self:GetListWnd("listview"):GetWidth() + 20
+	top_margin = top_margin + 3
+	ctrl_width = 410
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("stc_picture_caption")
+	dlg:SetWndRect(left_margin - 10, top_margin, ctrl_width - 10, 22)
+	dlg:SetWidth(ctrl_width)
+	dlg:SetHeight(22)
+	dlg:SetFont(pcTextViewer.get_font("graffiti22"))
+	dlg:SetTextColor(pcTextViewer.get_colour("yellow"))
+	dlg:SetTextAlign(CGameFont.alCenter)
+	dlg:SetText(game.translate_string("ui_pc_static_select_gal"))
+	dlg:Show(false)
+	self:AttachChild(dlg)
+	
+	top_margin = top_margin + 25
+	
+	dlg = CUIFrameWindow()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("image_frame")
+	dlg:Init("ui_tablist_textbox", left_margin - 10, top_margin - 1, ctrl_width, 311)
+	dlg:Show(false)
+	self:AttachChild(dlg)
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("stc_image")
+	dlg:SetWndPos(left_margin - 7, top_margin + 3)
+	dlg:SetWidth(400)
+	dlg:SetHeight(300)
+	dlg:SetStretchTexture(true)
+	dlg:Show(false)
+	self:AttachChild(dlg)
+	
+	top_margin = top_margin + self:GetFrameWindow("image_frame"):GetHeight() + 5
+	left_margin = left_margin - 3
+	
+	dlg = self.xml:Init3tButton("image_viewer:btn_prev", self)
+	dlg:SetWndPos(left_margin - 10, top_margin)
+	dlg:Show(false)
+	self:Register(dlg, "btn_prev")
+	
+	dlg = self.xml:Init3tButton("image_viewer:btn_next", self)
+	left_margin = left_margin + self:GetFrameWindow("image_frame"):GetWidth() - dlg:GetWidth()
+	dlg:SetWndPos(left_margin - 10, top_margin)
+	dlg:Show(false)
+	self:Register(dlg, "btn_next")
+end
+
+function uiGalleryViewer:InitCallBacks()
+	self:AddCallback("listview", ui_events.LIST_ITEM_CLICKED, self.OnListViewItemsClicked, self)
+	self:AddCallback("btn_prev", ui_events.BUTTON_CLICKED, self.OnPrevBtnClicked, self)
+	self:AddCallback("btn_next", ui_events.BUTTON_CLICKED, self.OnNextBtnClicked, self)
+end
+
+function uiGalleryViewer:OnListViewItemsClicked()
+	local listView = self:GetListWnd("listview")
+	
+	if listView:GetSize() ~= 0 then
+		local sel_item = listView:GetSelectedItem()
+		if sel_item ~= -1 then
+			if self.prev_item then
+				listView:GetItem(self.prev_item):SetFocus(false)
+			end
+			
+			self.prev_item = sel_item
+			sel_item = listView:GetItem(sel_item)
+			sel_item:SetFocus(true)
+			
+			if sel_item.password and sel_item.protected_icon then
+				self:GetStatic("stc_picture_caption"):Show(false)
+				self:GetStatic("stc_image"):Show(false)
+				self:GetButton("btn_prev"):Show(false)
+				self:GetButton("btn_next"):Show(false)
+				self:GetFrameWindow("image_frame"):Show(false)
+				
+				self.item_index = sel_item.index
+				self.dlg_password:reset(sel_item.password, sel_item.password_info)
+				level.start_stop_menu(self.dlg_password, true)
+			else
+				self:GalleryChoosen(sel_item.index)
+			end
+		end
+	end
+end
+
+function uiGalleryViewer:GalleryChoosen(index)
+	self:GetStatic("stc_picture_caption"):Show(true)
+	self:GetFrameWindow("image_frame"):Show(true)
+	self:GetStatic("stc_image"):Show(true)
+	self:GetButton("btn_prev"):Show(true)
+	self:GetButton("btn_next"):Show(true)
+	
+	self.curr_gallery = index
+	self.curr_image = 0
+	self:SwitchImage("next")
+end
+
+function uiGalleryViewer:OnPrevBtnClicked()
+	self:SwitchImage("prev")
+end
+
+function uiGalleryViewer:OnNextBtnClicked()
+	self:SwitchImage("next")
+end
+
+function uiGalleryViewer:OnExit()
+	self.owner:OnChildDialogExit(self:WindowName())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiGalleryViewer:AddGalleries()
+	local listView = self:GetListWnd("listview")
+	for index, gallery in pairs(self.galleries) do
+		if type(index) == "number" then
+			listView:AddItem(ListViewItem(index, gallery.name, gallery.password, gallery.password_info))
+		end
+	end
+	listView:ScrollToBegin()
+end
+
+function uiGalleryViewer:SwitchImage(action)
+	if action == "prev" then
+		self.curr_image = self.curr_image - 1
+	elseif action == "next" then
+		self.curr_image = self.curr_image + 1
+	end
+	
+	if self.curr_image <= 1 then
+		self.curr_image = 1
+		self:GetButton("btn_prev"):Enable(false)
+		self:GetButton("btn_next"):Enable(true)
+	elseif self.curr_image >= #self.galleries[self.curr_gallery]["images"] then
+		self.curr_image = #self.galleries[self.curr_gallery]["images"]
+		self:GetButton("btn_prev"):Enable(true)
+		self:GetButton("btn_next"):Enable(false)
+	else
+		self:GetButton("btn_prev"):Enable(true)
+		self:GetButton("btn_next"):Enable(true)
+	end
+	_G.log("self.curr_gallery=%s self.curr_image=%s", self.curr_gallery, self.curr_image)
+	local img = self.galleries[self.curr_gallery].images[self.curr_image]
+	self:GetStatic("stc_image"):InitTexture(img)
+	--self:GetStatic("stc_image"):InitTexture("ui\\pc\\images\\" .. img)
+	
+	img = string.format("%s %d", game.translate_string("ui_pc_static_image"), self.curr_image)
+	img = string.format("%s %s", img, game.translate_string("ui_pc_static_image_of"))
+	img = string.format("%s %d", img, #self.galleries[self.curr_gallery]["images"])
+	self:GetStatic("stc_picture_caption"):SetText(img)
+	
+	if not self:GetStatic("stc_picture_caption"):IsShown() then
+		self:GetStatic("stc_picture_caption"):Show(true)
+	end
+end
+
+function uiGalleryViewer:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+	
+	return true
+end

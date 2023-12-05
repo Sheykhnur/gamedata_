@@ -1,0 +1,352 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_monster.script
+ Description: Monsters binder
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin, gr1ph00n(23.09.2012)
+ Last edit  : 28.12.2019 [ValeroK]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tDbgName = {}
+local param_ini = system_ini()
+local bDebug   = false --/ false|true disabled/enabled debug mode
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+function InitDebug() --/ for debug!
+	if db.tDbgName then
+		tDbgName = db.tDbgName
+		bDebug = true
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Monster binding - registering objects (obj - monster`s game object) in binder
+--/ -----------------------------------------------------------------
+function bind(obj)
+	obj:bind_object(this.monster_binder(obj))
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "monster_binder" (object_binder)
+--/ -----------------------------------------------------------------------------------------------
+function monster_binder:__init(obj) super(obj)
+	self.loaded       = false
+	self.used = false
+	self.first_update = true
+	self.time_update  = 0
+	self.obj_id  = obj:id()
+	self.obj_cid = obj:clsid()
+	self.log = bDebug and tDbgName[obj:name()] --/ for debug!
+end
+
+function monster_binder:reload(section)
+	object_binder.reload(self, section)
+end
+
+function monster_binder:reinit()
+	object_binder.reinit(self)
+	self.object:set_callback(callback.use_object,			self.use_callback,		self)
+	
+	db.storage[self.obj_id] = {}
+	self.st = db.storage[self.obj_id]
+	if self.log and not self.st.log then --/ for debug
+		self.st.log = self.log
+	end
+	if self.obj_cid == clsid.dog_s then
+		self.is_dog = true
+	elseif self.obj_cid == clsid.controller_s or self.obj_cid == clsid.controller then
+		self.is_controller = true
+	elseif clsid.bloodsucker == self.obj_cid or clsid.bloodsucker_s == self.obj_cid then
+		self.is_bloodsucker = true
+	elseif self.obj_cid == clsid.rat_s or self.object:section():match("^rat_") then
+		self.is_rat = true
+	end
+	if self.object:name() == "esc_tutorial_flesh" then
+		xr_effects.make_mutant_blind(db.actor, self.object)
+	end
+end
+
+function monster_binder:net_spawn(server_object)
+	if not object_binder.net_spawn(self, server_object) then
+		return false
+	end
+	local se_obj = alife():object(self.obj_id) --/ full server object
+	if not se_obj then
+		log("net_spawn:NPC=[%s/%s],se_obj=NIL:<%s>", self.object:name(), self.obj_id, "Warning!")
+		return true --/>
+	end
+	db.add_obj(self.object)
+	
+	if self.object:alive() then --/#+#
+		self.object:set_tip_text("")
+		self:set_callbacks() --/< all CALLBACKs set here --/#~#
+		xr_gulag.setup_gulag_and_logic_on_spawn( self.object, self.st, se_obj, modules.stype_mobile, self.loaded )
+		event("mob_spawn"):trigger({obj=self.object,obj_id=self.obj_id,obj_cid=self.obj_cid,se_obj=se_obj}) --/#+#>
+	else
+		self.object:set_tip_text_default()
+		self.object:set_callback(callback.use_object, self.use_callback, self) --/#+#
+	end
+	
+	return true
+end
+
+function monster_binder:net_destroy()
+	if self.st and self.st.active_scheme then
+		--event("mob_destroy"):trigger({obj=self.object,obj_id=self.object:id(),obj_cid=self.obj_cid}) --/#+?#>
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "net_destroy")
+	end
+	
+	db.del_obj(self.object)
+	db.storage[self.obj_id] = nil
+	
+	self:clear_callbacks() --/#~#
+	self.object:set_callback(callback.use_object, nil) --/#+#
+	
+	object_binder.net_destroy(self)
+end
+
+function monster_binder:update(delta)
+	object_binder.update(self, delta)
+	--/#+#
+	if self.first_update then
+		self.first_update = false
+		self.time_update = time_global() + 30000 --/ ~30 real-sec
+	end
+	event("mob_update_dbg"):trigger({binder=self}) --/#+#> for debug
+	--
+	if self.object:alive() then
+		if self.is_controller and self.time_update < time_global() then
+			self.time_update = time_global() + math.random(4,9)*1000
+			if distance_between(db.actor, self.object) <= 45 and phantom_manager:phantom_count() <= 5 then
+				local radius = 15.0 * (math.random() / 2.0 + 0.5)
+				local angle = 25 * math.random() - 22.5
+				local direction = vector_rotate_y(db.actor:direction(), angle)
+				phantom_manager.spawn_phantom(db.actor:position():add(direction:mul(radius)))
+			end
+		end
+	else
+		if self.is_rat and self.time_update <= time_global() then
+			self.time_update = time_global() + 30000
+			if not db.actor:see(self.object) then
+				local sobj = alife():object( self.obj_id )
+				if sobj then
+					alife():release(sobj, true)
+					return --/>
+				end
+			end
+		end
+			if self.used then
+			self.object:set_tip_text("")
+		else
+			local character_use = read_if_exist("s",nil,self.object:section(),"character_use","dead_monster_use")
+			self.object:set_tip_text(character_use)
+		end
+	end
+	--/<
+	if self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "update", delta)
+	end
+	event("mob_update"):trigger({obj=self.object,obj_id=self.obj_id,delta=delta}) --/#+#>
+end
+
+function monster_binder:net_save_relevant()
+	return true
+end
+
+function monster_binder:save(packet)
+	if guiders_main.check_vasyan_mod() then
+		abort("reinstall game")
+	end
+	event("mob_save"):trigger({obj=self.object,obj_id=self.obj_id}) --/#+#>
+	set_save_marker(packet, "save", false, sModule, self.object)
+	object_binder.save(self, packet)
+	xr_logic.save_obj(self.object, packet)
+	set_save_marker(packet, "save", true, sModule, self.object)
+	packet:w_bool(self.used)
+end
+
+function monster_binder:load(reader)
+	self.loaded = true
+	set_save_marker(reader, "load", false, sModule, self.object)
+	object_binder.load(self, reader)
+	if reader:r_eof() then
+		abort("load:SAVE_FILE_IS_CORRUPT:Obj=[%s],ID=[%s]:<%s>", self.object:name(), self.obj_id, "Error!")
+	end
+	event("mob_load"):trigger({obj=self.object,obj_id=self.object:id(),pk=reader}) --/#+#>
+	xr_logic.load_obj(self.object, reader)
+	set_save_marker(reader, "load", true, sModule, self.object)
+	self.used = reader:r_bool()
+end
+
+function read_if_exist(what,ini,section,name,def)
+	if not ini then ini = system_ini() end
+	if ini:section_exist(section) and ini:line_exist(section,name) then
+		if what == "f" then
+			return ini:r_float(section,name)
+		elseif what == "s" then
+			return ini:r_string(section,name)
+		elseif what == "b" then
+			return ini:r_bool(section,name)
+		end
+	end
+	return def
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function monster_binder:set_callbacks()
+	--self.object:set_patrol_extrapolate_callback(self.extrapolate_callback, self) --/#?#
+	self.object:set_callback(callback.patrol_path_in_point, self.waypoint_callback, self)
+	self.object:set_callback(callback.hit,                  self.hit_callback,      self)
+	self.object:set_callback(callback.death,                self.death_callback,    self)
+	self.object:set_callback(callback.sound,                self.hear_callback,     self) --/#+#
+	--self.object:set_callback(callback.use_object,           self.use_callback,      self) --/#x# in net_spawn
+end
+function monster_binder:clear_callbacks()
+	--self.object:set_patrol_extrapolate_callback(nil) --/#?#
+	self.object:set_callback(callback.death,                nil)
+	self.object:set_callback(callback.patrol_path_in_point, nil)
+	self.object:set_callback(callback.hit,                  nil)
+	self.object:set_callback(callback.sound,                nil) --/#+#
+	--self.object:set_callback(callback.use_object,           nil) --/#-#
+end
+
+function monster_binder:extrapolate_callback()
+	if self.object:get_script() ~= false then
+		local path_name = self.object:patrol()
+		if level.patrol_path_exists(path_name) then
+			local cur_pt = self.object:get_current_point_index()
+			return get_patrol(path_name):flags(cur_pt):get() == 0
+		end
+	end
+	return false
+end
+
+function monster_binder:waypoint_callback(obj, action_type, index)
+	if self.st and self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "waypoint_callback", obj, action_type, index)
+	end
+end
+
+function monster_binder:death_callback(victim, who)
+	--if self.log then log("death_callback:NPC=[%s],Who=[%s]", victim and victim:name(), who and who:name(), "") end --/ #~# 
+	xr_logic.issue_event_schemes(self.object, {"death",self.st.active_scheme}, "death_callback", victim, who)
+	event("mob_death"):trigger({victim=victim,who=who}) --/#+#>
+	self:clear_callbacks() --/#+#
+	self.object:set_callback(callback.use_object, self.use_callback, self) --/#+#
+	self.object:set_tip_text_default()
+end
+
+function monster_binder:hit_callback(obj, amount, local_direction, who, bone_index)
+	--if self.log then log("hit_callback:NPC=[%s],amount=[%s],bone=[%s],Who=[%s]", obj and obj:name(), string.short(amount), bone_index, who and who:name(), "") end --/ #~# 
+	if self.st.hit then
+		xr_logic.issue_event(self.object, self.st.hit, "hit_callback", obj, amount, local_direction, who, bone_index)
+	end
+	if self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "hit_callback", obj, amount, local_direction, who, bone_index)
+	end
+	event("mob_hit"):trigger({victim=self.object,amount=amount,dir=local_direction,who=who,bone=bone_index}) --/#+#>
+end
+
+function monster_binder:use_callback(obj, who) --/#+#
+	if self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "use_callback", obj, who)
+	end
+	
+	if self.use_flag == nil then
+		if self.object:alive() then --or param_ini:r_float(self.object:section(),Spawn_Inventory_Item_Probability) == 0.0 then
+			return
+		end
+		self.object:set_nonscript_usable(false)
+		self.use_flag = true
+	end
+	
+	if self.is_rat then --/#?# and why not in 'death_callback'? or generally in config 'Spawn_Inventory_Item_Probability'?
+		if not (self.meat_spawned and self.object:alive()) then
+			if math.random() < 0.1 then --/ probability of spawning rat meat
+				Spawn_ItemInInv("rat_meat", self.object)
+			--	log("use_callback: Rat Meat on searched rat is spawned") --/#~#
+			end
+			self.time_update = time_global() + 30000
+			self.meat_spawned = true
+		end
+	end
+	
+	event("mob_used"):trigger({obj=self.object,obj_id=self.obj_id,who=who,who_id=who and who:id()}) --/#+#>
+	
+	if self.object:alive() or self.used then return end
+	
+	if not db.actor:item_in_slot(0) then
+		news_manager.send_tip(db.actor,"st_no_knife")
+		--log("no knife")
+		return
+	end
+	
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	
+	local isection = db.actor:item_in_slot(0):section()
+	local knife = who:item_in_slot(0)
+	local check = (isection == "wpn_vodka" or isection == "wpn_short_shovel" or isection == "wpn_shovel" or isection == "wpn_pickaxe" 
+	or isection == "wpn_hammer" or isection == "wpn_lom" or isection == "wpn_axe" or isection == "wpn_tomahawk")
+
+	if who:id() ~= db.actor:id() and not check or (knife~=nil and who:active_slot() == 0) and not check then
+		self.used = true
+	else
+		if knife and not check then
+			news_manager.send_tip(db.actor,"st_no_knife")
+			--log("no knife + no bad knife")
+			return
+		end
+	end
+	if check and (db.actor:active_slot() == 0) then
+		news_manager.send_tip(db.actor,"st_bad_knife")
+		--log("knife + bad knife")
+		return
+	end
+	if knife and check then
+		news_manager.send_tip(db.actor,"st_no_knife")
+		--log("no knife + bad knife")
+		return
+	end
+		
+	monster_id = param_ini:r_string(self.object:section(), "Spawn_Inventory_Item_Class")
+    if monster_id then
+        SetVarA("looted_monster", monster_id)
+    end
+	
+	db.actor:give_info_portion("bad_meat")
+	
+	self.object:iterate_inventory(function (tmp, item)
+		db.actor:disable_info_portion("bad_meat")
+		if not all_items.is_mutant_body_part(item:section()) then
+			db.actor:give_info_portion("not_monster_item")
+		end
+	end,obj)
+	
+	item_usage.use_monster()
+	
+	self.object:set_tip_text("")
+	
+	if db.actor:has_info("bad_meat") then
+		return 
+	end
+	local item = nil
+	for i=0, self.object:object_count() - 1 do
+		item = self.object:object(i)
+		self.object:transfer_item(item, db.actor)
+	end
+end
+
+--/#+#
+function monster_binder:hear_callback(obj, who, sound_type, sound_position, sound_power)
+	if self.st and self.st.hear then
+		xr_logic.issue_event(self.object, self.st.hear, "hear_callback", obj, who, sound_type, sound_position, sound_power)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

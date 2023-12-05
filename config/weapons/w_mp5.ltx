@@ -1,0 +1,220 @@
+[wpn_mp5]:weapon_base,weapon_9x19
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\mp5"
+animation_slot                          = 2
+class                                   = WP_LR300
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+hand_dependence                         = 1
+repair_compatibility                    = hk
+scheduled                               = off
+weapon_class                            = assault_rifle
+weapon_rank                             = 1
+
+; Inventory icon
+inv_grid_width                          = 4
+inv_grid_height                         = 2
+inv_grid_x                              = 10
+inv_grid_y                              = 8
+silencer_x                              = 136
+silencer_y                              = 11
+
+; Text
+inv_name                                = wpn-mp5
+inv_name_short                          = wpn-mp5
+description                             = enc_weapons1_wpn-mp5
+
+; Visual
+hud                                     = wpn_mp5_hud
+position                                = -0.026, -0.125, -0.03
+orientation                             = 0, -10, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+strap_position                          = -0.16, -0.36, 0.15
+strap_orientation                       = -10, -5, 10
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_mp5\wpn_mp5.ogf
+
+; Effects
+fire_point                              = 0.0, 0.188, 0.392
+fire_point2                             = 0.0, 0.188, 0.392
+shell_point                             = 0.0, 0.188, 0.082
+shell_dir                               = 0.0, 1.0, 0.0
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.1
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_bore                                = weapons\draw_silent
+snd_draw                                = weapons\mp5\mp5_draw
+snd_empty                               = weapons\mp5\mp5_empty
+snd_holster                             = weapons\pistol_holster
+snd_reload                              = weapons\mp5\mp5_reload
+snd_reload_grenade                      = weapons\gen_grenload, 1.0, 0.8
+snd_shoot                               = weapons\mp5\mp5_shoot
+snd_shoot_grenade                       = weapons\gen_grenshoot
+snd_silncer_shot                        = weapons\mp5\mp5_shot_sil
+snd_switch                              = weapons\groza_switch, 1.0, 0.5
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_Gadyuka_5
+upgr_icon_x                             = 561
+upgr_icon_y                             = 129
+upgr_icon_width                         = 292
+upgr_icon_height                        = 114
+
+; Cost & Weight
+cost                                    = 2250
+inv_weight                              = 2.5
+ph_mass                                 = 3
+
+; Ammo
+ammo_limit                              = 210
+ammo_mag_size                           = 30
+
+; Features
+fire_modes                              = 1, -1
+scope_status                            = 0
+silencer_status                         = 2
+grenade_launcher_status                 = 0
+
+; Ballistics
+fire_distance                           = 300
+fire_dispersion_base                    = 0.67
+
+; Performance
+rpm                                     = 600
+
+; Reliability
+condition_shot_dec                      = 0.0004 ; 2500
+condition_queue_shot_dec                = 0.0004
+
+; Handling
+control_inertion_factor                 = 1.0f
+PDM_disp_base                           = 2.0
+PDM_disp_vel_factor                     = 1.0
+PDM_disp_accel_factor                   = 1.0
+
+; Recoil
+cam_dispersion                          = 0.9
+cam_dispersion_inc                      = 0.35
+cam_dispersion_frac                     = 1.0
+cam_max_angle                           = 10.0
+cam_max_angle_horz                      = 5.0
+cam_step_angle_horz                     = 2.5
+zoom_cam_dispersion                     = 0.5
+zoom_cam_dispersion_inc                 = 0.3
+zoom_cam_step_angle_horz                = 2.5
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.0
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_mp5
+upgrades                                = up_gr_firstab_mp5, up_gr_seconab_mp5, up_gr_thirdab_mp5, up_gr_fourtab_mp5, up_gr_fifthab_mp5, up_gr_fifthcd_mp5, up_gr_fifthef_mp5
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 0
+max_radius                              = 50
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 0.8
+
+
+[wpn_mp5_hud]
+aim_hud_offset_pos                      = -0.0854,0.05575,-0.1495
+aim_hud_offset_pos_16x9                 = -0.0854,0.05575,-0.1495
+aim_hud_offset_rot                      = 0.0351,0.0348,0
+aim_hud_offset_rot_16x9                 = 0.0351,0.0348,0
+anim_bore                               = mp5_idle_aim
+anim_hide                               = mp5_holster,,2.0
+anim_idle                               = mp5_idle
+anim_idle_aim                           = mp5_idle_aim
+anim_idle_moving                        = mp5_idle_moving
+anim_idle_moving_crouch                 = mp5_idle_crouch
+anim_idle_sprint                        = mp5_idle_sprint
+anim_reload                             = mp5_reload_empty, reload_empty
+anim_reload_empty                       = mp5_reload_empty, reload_empty
+anim_shots                              = mp5_shoot, shoot
+anim_show                               = mp5_draw
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = wpn_body
+fire_point                              = 0,0,0
+fire_point2                             = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_pos_16x9                  = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+gl_hud_offset_rot_16x9                  = 0,0,0
+hands_orientation                       = 2,2,0
+hands_orientation_16x9                  = 2,2,0
+hands_position                          = 0.01,-0.03,0.22
+hands_position_16x9                     = 0.01,-0.03,0.22
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_mp5\wpn_mp5_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+;---------MP5 под калибр 9x18 ПМ
+[wpn_mp5_m1]:wpn_mp5,weapon_9x18
+$spawn                                  = "weapons\uniq\wpn_mp5_m1"
+unique_item                             = true
+
+; Text
+inv_name                                = wpn-mp5_m1
+inv_name_short                          = wpn-mp5_m1
+description                             = enc_weapons1_wpn-mp5_m1
+
+; Cost & Weight
+cost                                    = 2870
+
+; Ballistics
+bullet_speed                            = 350
+
+
+;---------Модифицированный МП5
+[wpn_mp5_m2]:wpn_mp5
+$spawn                                  = "weapons\uniq\wpn_mp5_m2"
+unique_item                             = true
+
+; Inventory icon
+inv_grid_width                          = 4
+silencer_force_icon                     = true
+
+; Text
+inv_name                                = wpn-mp5_m2
+inv_name_short                          = wpn-mp5_m2
+description                             = enc_weapons1_wpn-mp5_m2
+
+; Effects
+flame_particles                         =
+smoke_particles                         = amik\weapons\smoke_particles\p_smoke_particles_00
+light_disabled                          = true
+
+; Sounds
+snd_shoot                               = weapons\mp5\mp5_shot_sil, 0.7
+
+; Cost & Weight
+cost                                    = 3210
+
+; Features
+silencer_status                         = 1
+
+; Ballistics
+fire_dispersion_base                    = 0.65

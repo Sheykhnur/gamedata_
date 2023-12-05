@@ -1,0 +1,31 @@
+[logic]
+active = sleeper
+combat_ignore = combat_ignore
+
+[sleeper]
+wakeable = true
+path_main = st_main
+danger = danger_condition
+on_actor_dist_le = 5 | camper
+on_actor_in_zone = level_prefix_space_restrictor_0003 | camper
+
+[camper]
+path_walk = st_main2
+path_look = st_main2_look
+danger = danger_condition@1
+def_state_moving_fire = sneak_fire
+
+[combat_ignore]
+
+[danger_condition]
+ignore_distance = 0
+ignore_distance_grenade = 0
+ignore_distance_corpse = 0
+ignore_distance_hit = 0
+ignore_distance_sound = 0
+
+[danger_condition@1]
+danger_inertion_time_grenade = 20000
+danger_inertion_time_corpse = 10000
+danger_inertion_time_hit = 60000
+danger_inertion_time_sound = 15000

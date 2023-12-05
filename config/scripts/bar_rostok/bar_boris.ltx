@@ -1,0 +1,42 @@
+[threshold@bar_boris]
+max_ignore_distance = 10
+ignore_monster   = 0
+
+[combat_ignore@bar_boris]
+
+[logic]
+active = remark@bar_boris
+combat_ignore = combat_ignore@bar_boris
+
+[remark@bar_boris]
+anim = sit
+combat_ignore_cond = {!hit_by_actor}
+threshold = threshold@bar_boris
+meet = no_meet
+target = bar_boriska_target, 0
+on_info = {=dist_to_actor_le(5) =see_actor} walker@bar_boris0
+
+[walker@bar_boris0]
+path_walk = bar_boris_squatting
+combat_ignore_cond = {!hit_by_actor}
+threshold = threshold@bar_boris
+meet = no_meet
+on_signal = rot | walker@bar_boris
+
+[walker@bar_boris]
+path_walk = bar_boris_squatting
+path_look = bar_boriska_look
+combat_ignore_cond = {!hit_by_actor}
+threshold = threshold@bar_boris
+meet = meet@boriska
+on_info = {=dist_to_actor_ge(5)} remark@bar_boris
+
+[meet@boriska]
+abuse = false
+use =  true
+use_wpn = true
+meet_state = 5|wait_trade|3|wait
+meet_state_wpn = 5|wait_trade|3|wait
+victim 			=  5|actor|3|actor
+victim_wpn 		= 5|actor|3|actor
+

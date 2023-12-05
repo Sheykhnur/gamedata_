@@ -1,0 +1,28 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+dar_sci_eff_start} sr_particle@expl
+
+
+[sr_particle@expl]
+name = anomaly2\bold_sarkofag_blast
+path = dar_sci6_particle
+mode = 2
+looped = false
+on_timer = 2000 | sr_particle@blow %=dar_eco_release%
+
+[sr_particle@blow]
+name = anomaly2\body_tear_00
+path = dar_sci6_particle
+mode = 2
+looped = false
+on_timer = 2000 | sr_particle@static %+dar_sci5_eff%
+
+[sr_particle@static]
+name = ghoul\anomal-05-blue-lstripes
+path = dar_sci6_particle
+mode = 2
+looped = true
+
+

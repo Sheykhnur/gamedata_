@@ -1,0 +1,20 @@
+;DOOR TO THE SHELTER AT THE SCIENTISTS' CAMP
+[logic]
+active = ph_door@closed
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+on_info = {=is_blowout_happening} ph_door@open
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed

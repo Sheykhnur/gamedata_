@@ -1,0 +1,201 @@
+<?xml version='1.0' encoding="windows-1251"?>
+<xml>
+	<!--
+		Here you can write all common sets of supplies for specific_character's <supplies> elements
+		Each template has an id, which you use to include the template
+		You can include templates into another templates (just take care not to make circular dependencies)
+		
+		<item> elements currently support following attributes:
+			s 			- item section name
+			qty 		- item quantity
+			prob 		- item probability from 0.0 to 1.0 (tested for every item in qty, similar to trader configs)
+			cond 		- item condition from 0.0 to 1.0
+
+			scope 		- attach scope to the weapon ("on" or "1" to attach)
+			silencer 	- attach silencer to the weapon
+			launcher 	- attach grenade launcher
+
+			ammo_s		- ammo section name
+			ammo_idx	- 0-based index of ammo in weapon's ammo_class (alternative to "ammo_s")
+			ammo_left	- number of ammo cartridges left inside the weapon on spawn
+			w_ammo 		- how many ammo packs to spawn for every spawned weapon (the same section as ammo_s/ammo_idx will be used)
+
+			gren_s		- grenade section name (for weapons with GL)
+			gren_idx	- 0-based index of item in weapon's grenade_class (alternative to "gren_s")
+			gren_left	- number of grenades left inside the GL
+			w_gren 		- how many grenades to spawn for every spawned weapon
+
+			upgrades	- a comma-separated list of pre-installed upgrades for a weapon or outfit (example: "up_firsta_usp,up_firstc_usp,up_firste_usp,up_fiftha_usp")
+
+		<include> elements are used to spawn whole templates of items:
+			id 			- template ID to spawn
+			qty 		- how many times to spawn items from this template
+			prob 		- probability to spawn template (similar to <item>)
+
+		<random_select> elements are used to randomly select only ONE from several options for spawn.
+			qty 		- how many times to spawn one of the options
+			prob 		- probability to spawn anything (similar to <item>)
+
+			<opt> elements contain <item> and <include> elements to spawn
+				w  		- the weight of given option when randomly picking what to spawn (for example, if you have one <opt> with w="2" and another with w="3", it means that with 40% probability the first option will be chosen, otherwise the second one)
+
+			NOTE: <random_select> cannot be nested, but you can put another in a template and <include> it
+	-->
+
+	<template id="medkits_high">
+		<random_select qty="2" prob="0.1">
+			<opt w="2"><item s="medkit_army"	cond="1.0"/></opt>
+			<opt w="1"><item s="medkit"	cond="1.0"/></opt>
+			<opt w="1"><item s="antirad" cond="1.0"/></opt>
+		</random_select>
+	</template>
+
+	<!-- Boosters -->
+	<template id="boosters_low">
+		<random_select qty="1" prob="0.02">
+			<opt w="2"><item s="booster_antirad"	 cond="1.0"/></opt>
+			<opt w="2"><item s="booster_coagulant"	 cond="1.0"/></opt>
+			<opt w="1"><item s="booster_antchemical" cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="boosters_med">
+		<random_select qty="2" prob="0.02">
+			<opt w="3"><item s="booster_antirad"	cond="1.0"/></opt>
+			<opt w="3"><item s="booster_coagulant"	cond="1.0"/></opt>
+			<opt w="2"><item s="booster_antchemical" cond="1.0"/></opt>
+			<opt w="1"><item s="booster_antipsy"	cond="1.0"/></opt>
+			<opt w="1"><item s="booster_weight"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="boosters_high">
+		<random_select qty="2" prob="0.04">
+			<opt w="3"><item s="booster_antirad"	cond="1.0"/></opt>
+			<opt w="3"><item s="booster_coagulant"	cond="1.0"/></opt>
+			<opt w="2"><item s="booster_antchemical" cond="1.0"/></opt>
+			<opt w="1"><item s="booster_antipsy"	cond="1.0"/></opt>
+			<opt w="1"><item s="booster_weight"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+
+	<template id="grenades_low">
+		<item s="grenade_rgd5" prob="0.03"/>
+	</template>
+	<template id="grenades_med">
+		<random_select qty="1" prob="0.06">
+			<opt w="3"><item s="grenade_rgd5"	cond="1.0"/></opt>
+			<opt w="1"><item s="grenade_f1"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="grenades_high">
+		<random_select qty="1" prob="0.09">
+			<opt w="2"><item s="grenade_rgd5"	cond="1.0"/></opt>
+			<opt w="3"><item s="grenade_f1"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+
+	<!-- Food supply variations. -->
+	<template id="food_low">
+		<random_select qty="1" prob="0.1">
+			<opt w="2"><item s="conserva"			cond="1.0"/></opt>
+			<opt w="1"><item s="yantar_food"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="food_med">
+		<random_select qty="1" prob="0.2">
+			<opt w="2"><item s="conserva"			cond="1.0"/></opt>
+			<opt w="1"><item s="tushenka_conserva"	cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="food_high">
+		<random_select qty="1" prob="0.3">
+			<opt w="2"><item s="tushenka_conserva"	cond="1.0"/></opt>
+			<opt w="1"><item s="korn_conserva"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+
+	<!-- Alcohol supply variations. -->
+	<template id="alcohol_normal">
+		<random_select qty="1" prob="0.1">
+			<opt w="3"><item s="vodka"				cond="1.0"/></opt>
+			<opt w="1"><item s="pripiat_beer"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="alcohol_high">
+		<random_select qty="1" prob="0.1">
+			<opt w="2"><item s="cmuphob_vodka"		cond="1.0"/></opt>
+			<opt w="2"><item s="hemupob_vodka"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="alcohol_vodka">
+		<random_select qty="1" prob="0.1">
+			<opt w="3"><item s="vodka"				cond="1.0"/></opt>
+			<opt w="1"><item s="cmuphob_vodka"		cond="1.0"/></opt>
+			<opt w="1"><item s="hemupob_vodka"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="alcohol_light">
+		<random_select qty="1" prob="0.05">
+			<opt w="1"><item s="pripiat_beer"		cond="1.0"/></opt>
+			<opt w="1"><item s="cmuphob_vodka"		cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="item_binoc">
+		<item s="wpn_binoc"								cond="1.0"/>
+	</template>
+	<template id="money_low">
+		<random_select qty="1" prob="0.1">
+			<opt w="3"><item s="rubles_10"			cond="1.0"/></opt>
+			<opt w="1"><item s="rubles_50"			cond="1.0"/></opt>
+			<opt w="1"><item s="rubles_100"			cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="money_med">
+		<random_select qty="1" prob="0.1">
+			<opt w="3"><item s="rubles_50"			cond="1.0"/></opt>
+			<opt w="1"><item s="rubles_100"			cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="money_high">
+		<random_select qty="1" prob="0.1">
+			<opt w="2"><item s="rubles_50"			cond="1.0"/></opt>
+			<opt w="1"><item s="rubles_100"			cond="1.0"/></opt>
+		</random_select>
+	</template>
+	<template id="money_vhigh">
+		<random_select qty="1" prob="0.1">
+			<opt w="2"><item s="rubles_100"			cond="1.0"/></opt>
+			<opt w="1"><item s="rubles_500"			cond="1.0"/></opt>
+		</random_select>
+	</template>
+
+<!--
+	How to use tier system:
+
+	All NPC supply templates have name in form: {community}_t{tier}_{rank}_{weapon}, where:
+		- community is stalker, bandit, merc, etc.
+		- tier is a number from 1 to 4
+		- rank like novice, veteran, etc. Some communities don't have novices and may have special groups like "specops", etc.
+		- weapon is the class of primary weapon - shotgun, smg, sniper, etc. Assault rifle is assumed by default.
+
+	All locations are separated into 4 tiers:
+		- 1 - early game (Kordon, Garbage, Agroprom)
+		- 2 - early-mid game (from Bar to Darkscape)
+		- 3 - mid-late game (from Yantar to Outskirts)
+		- 4 - late game (from Pripat/CNPP and beyond)
+
+	For example if location belongs to tier 3, you can use tier 1, 2 and 3 equipment (depending on the story, etc), but not tier 4.
+-->
+#include "gameplay\npc\supplies\supplies_weapons.xml"
+#include "gameplay\npc\supplies\supplies_stalker.xml"
+#include "gameplay\npc\supplies\supplies_bandit.xml"
+#include "gameplay\npc\supplies\supplies_dolg.xml"
+#include "gameplay\npc\supplies\supplies_svoboda.xml"
+#include "gameplay\npc\supplies\supplies_killer.xml"
+#include "gameplay\npc\supplies\supplies_monolith.xml"
+#include "gameplay\npc\supplies\supplies_ecolog.xml"
+#include "gameplay\npc\supplies\supplies_soldier.xml"
+#include "gameplay\npc\supplies\supplies_zombied.xml"
+#include "gameplay\npc\supplies\supplies_darkstalker.xml"
+#include "gameplay\npc\supplies\supplies_milstalker.xml"
+
+</xml>

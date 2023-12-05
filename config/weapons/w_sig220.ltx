@@ -1,0 +1,156 @@
+[wpn_sig220]:pistol_base,weapon_.45
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\sig220"
+class                                   = WP_USP45
+hand_dependence                         = 1
+repair_compatibility                    = usp
+scheduled                               = off
+weapon_rank                             = 2
+
+; Inventory icon
+inv_grid_width                          = 1
+inv_grid_height                         = 1
+inv_grid_x                              = 11
+inv_grid_y                              = 16
+silencer_x                              = 46
+silencer_y                              = -10
+
+; Text
+inv_name                                = wpn-sig220
+inv_name_short                          = wpn-sig220
+description                             = enc_weapons1_wpn-sig220
+
+; Visual
+hud                                     = wpn_sig220_hud
+position                                = -0.021, -0.085, 0.0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+visual                                  = dynamics\weapons\wpn_sig220\wpn_sig220.ogf
+
+; Effects
+fire_point                              = 0.0, 0.133, 0.161
+fire_point2                             = 0.0, 0.133, 0.16
+shell_point                             = 0.0, 0.133, 0.047
+shell_dir                               = 0.0, 0.0, 0.4
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 4.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+;snd_bore                                = weapons\sig220\sig220_bore
+snd_close                               = weapons\sig220\sig220_close
+snd_draw                                = weapons\sig220\sig220_draw
+snd_empty                               = weapons\sig220\sig220_empty
+snd_holster                             = weapons\pistol_holster
+snd_reload                              = weapons\sig220\sig220_reload
+snd_reload_empty                        = weapons\sig220\sig220_reload_empty
+snd_shoot                               = weapons\sig220\sig220_shoot
+snd_silncer_shot                        = weapons\sig220\sig220_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_SIP_t_M200
+upgr_icon_x                             = 8
+upgr_icon_y                             = 270
+upgr_icon_width                         = 257
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 5800
+inv_weight                              = 1.1
+ph_mass                                 = 1
+
+; Ammo
+ammo_mag_size                           = 7
+
+; Features
+fire_modes                              = 1
+scope_status                            = 0
+silencer_status                         = 2
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 0.96
+; Ballistics
+fire_dispersion_base                    = 0.6
+
+; Performance
+rpm                                     = 700 ; for burst-mode
+
+; Reliability
+condition_shot_dec                      = 0.0006666
+condition_queue_shot_dec                = 0.0006666
+
+; Handling
+control_inertion_factor                 = 0.9f
+
+; Recoil
+cam_dispersion                          = 3.0
+cam_dispersion_inc                      = 0.5
+cam_dispersion_frac                     = 0.7
+cam_step_angle_horz                     = 4.0
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.05
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_sig220
+upgrades                                = up_gr_firstab_sig220, up_gr_seconab_sig220, up_gr_thirdab_sig220, up_gr_fourtab_sig220, up_gr_fifthab_sig220
+installed_upgrades                      =
+
+; AI Params
+min_radius          		            = 0
+max_radius                              = 30
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 1.0
+
+
+[wpn_sig220_hud]:hud_base
+aim_hud_offset_pos                      = -0.0985,0.0576,-0.05
+aim_hud_offset_pos_16x9                 = -0.0985,0.0576,-0.05
+aim_hud_offset_rot                      = 0.0123,0.01255,-0.0075
+aim_hud_offset_rot_16x9                 = 0.0123,0.01255,-0.0075
+anim_bore                               = hpsa_idle_aim
+anim_bore_empty                         = hpsa_idle_aim, opened
+anim_hide                               = hpsa_holster
+anim_hide_empty                         = hpsa_holster, opened
+anim_idle                               = hpsa_idle
+anim_idle_aim                           = hpsa_idle_aim
+anim_idle_aim_empty                     = hpsa_idle_aim, opened
+anim_idle_empty                         = hpsa_idle, opened
+anim_idle_moving                        = hpsa_idle_moving
+anim_idle_moving_empty                  = hpsa_idle_moving, opened
+anim_idle_sprint                        = hpsa_idle_sprint
+anim_idle_sprint_empty                  = hpsa_idle_sprint, opened
+anim_reload                             = hpsa_reload, reload
+anim_reload_empty                       = hpsa_reload_empty, reload_empty
+anim_shot_l                             = hpsa_shoot, shoot_last
+anim_shots                              = hpsa_shoot, shoot
+anim_show                               = hpsa_draw,,2.0
+anim_show_empty                         = hpsa_draw, opened, 2.0
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_point                              = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = -0.5,1.,1.15
+hands_orientation_16x9                  = -0.5,1.,1.15
+hands_position                          = -0.031,-0.17,0
+hands_position_16x9                     = -0.031,-0.17,0
+item_orientation                        = 1.239378,-0.134046,-2.052052
+item_position                           = 0.000746,-0.000321,0.003479
+item_visual                             = dynamics\weapons\wpn_sig220\wpn_sig220_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true

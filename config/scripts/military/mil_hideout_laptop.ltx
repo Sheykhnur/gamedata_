@@ -1,0 +1,34 @@
+[logic]
+active = ph_computer@unlocked
+
+[ph_computer@unlocked]
+availability = accessible
+pc_type = desktop
+;user_name = ;ui_pc_user_name
+;password = ghost ;lol?
+;password_info = pc_on_use_callback
+icons_alignment = vertical
+wallpaper = wallpaper3
+show_tips = true
+tetris = true
+;puzzle = true
+;solitare = true
+known_info = esc_tut_pc_about_anoms
+known_code = pc_test_code_5
+;known_image = test_pc_known_image_001
+known_hex = 5
+on_info = {+pc_lock_now} ph_computer@locked, {+pc_bsod_now} ph_computer@bsod
+on_use = ;%+pc_on_use_callback%
+
+[ph_computer@locked]
+availability = locked
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+pc_unlock_now} ph_computer@unlocked
+
+[ph_computer@bsod]
+availability = malfunction
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+pc_fix_now} ph_computer@unlocked
+

@@ -1,0 +1,161 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = forg_generic_buy
+sell_condition = forg_sell_start
+buy_supplies = {+has_freeplay_info}supplies_freeplay, {+bas_switcher_off +deactivate_radar_done}supplies_before_prip, {+yan_good_helmet_start}supplies_after_helmet, {+dar_barman_has_all_x18_docs}supplies_after_darkvalley, supplies_start
+discounts = {+forg_fuel_task_complete} discount_after_work, discount_start
+
+buy_item_condition_factor = 0.45
+
+[discount_start]
+buy  = 1.0
+sell = 1.0
+
+[discount_after_work]
+buy  = 1.0
+sell = 0.92
+
+[forg_generic_buy]:buy_mutant_cheap,buy_devices_cheap,buy_artefacts_normal,buy_ammo_high
+
+
+[supplies_start]:basic_supplies,booster_supplies
+stalker_light_outfit                 = 2, 0.8
+cs_light_outfit                		 = 1, 0.95
+
+helm_gasmask                         = 2, 0.9
+helm_hardhat	                     = 1, 0.6
+
+ammo_.44_reg                         = 4, 0.8
+ammo_11.43x23_fmj                    = 10, 0.8
+ammo_12x70_cart                      = 12, 0.8
+ammo_12x70_buck                      = 12, 0.85
+ammo_12x76_dart                      = 8, 0.6
+ammo_12x76_zhekan                    = 8, 0.6
+ammo_5.45x39_fmj                     = 15, 0.8
+ammo_5.45x39_ap                      = 8, 0.5
+ammo_9x18_pmm                        = 5, 0.6
+ammo_9x19_pbp                        = 5, 0.8
+
+detector_radiation                   = 1, 1.0
+night_vision_bad					 = 1, 0.8
+detector_af_simple					 = 2, 0.9
+
+
+[supplies_after_darkvalley]:supplies_start
+stalker_protoexo_outfit				 = 2, 0.85
+monolit_outfit		                 = 2, 0.6
+monolit_scientific_outfit            = 1, 0.8
+stalker_medium_outfit                = 2, 0.8
+scientific_outfit                    = 2, 0.8
+cs_medium_outfit					 = 1, 0.8
+
+helm_protective	                     = 2, 0.7
+helm_tactic			                 = 1, 0.8
+
+ammo_.44_reg                         = 12, 0.8
+ammo_.44_frag                        = 5, 0.8
+ammo_5.7x28_ap                       = 8, 0.6
+ammo_5.7x28_jhp                      = 15, 0.7
+ammo_11.43x23_hydro                  = 6, 0.5
+ammo_5.45x39_ap                      = 6, 0.6
+ammo_5.56x45_ap                      = 6, 0.6
+ammo_5.56x45_ss190                   = 15, 0.6
+ammo_7.62x39_s						 = 15, 0.6
+ammo_7.62x51_fmj                     = 8, 0.5
+ammo_7.62x54_7h1                     = 15, 0.6
+ammo_7.62x54_7h14                    = 10, 0.65
+ammo_9x18_pmm                        = 8, 0.6
+ammo_9x19_fmj                        = 15, 0.6
+ammo_9x19_pbp                        = 8, 0.6
+ammo_9x39_pab9                       = 15, 0.6
+ammo_23x75_buck                      = 8, 0.7
+
+device_torch_eco					 = 2, 0.7
+device_torch_adv					 = 2, 0.8
+night_vision_good					 = 1, 1
+
+
+[supplies_after_helmet]:supplies_after_darkvalley
+cs_heavy_outfit	                     = 1, 0.45
+protection_outfit					 = 1, 0.5
+svoboda_heavy_outfit				 = 1, 0.5
+stalker_outfit                       = 2, 0.75
+exo_outfit                           = 1, 0.8
+military_heavy_outfit	           	 = 2, 0.75
+
+helm_battle_stalker					 = 2, 0.7
+helm_battle_military				 = 2, 0.7
+
+ammo_.44_reg                         = 20, 0.8
+ammo_.44_frag                        = 1, 0.8
+ammo_5.7x28_ap                       = 12, 0.6
+ammo_5.7x28_jhp                      = 20, 0.7
+ammo_5.56x45_ss190                   = 20, 0.6
+ammo_7.62x39_s						 = 20, 0.6
+ammo_7.62x51_fmj                     = 15, 0.7
+ammo_7.62x51_ap                      = 10, 0.7
+ammo_7.62x54_7h14                    = 20, 0.6
+ammo_9x19_fmj                        = 20, 0.6
+ammo_9x39_sp5                        = 20, 0.5
+ammo_11.43x23_hydro                  = 10, 0.5
+ammo_23x75_buck                      = 20, 0.7
+ammo_23x75_buck_ap                   = 10, 0.7
+
+detector_af_advanced				 = 1, 1.0
+device_torch_adv					 = 1, 1
+
+;stop selling junk
+novice_outfit                        =
+bandit_outfit                        =
+bandit_cloak_outfit					 =
+military_light_outfit             	 =
+cs_light_outfit                		 =
+stalker_light_outfit                 = 
+killer_light_outfit                  =
+helm_respirator                      =
+helm_gasmask                         =
+detector_radiation                   =
+ammo_7.62x54_7h1                     =
+ammo_9x39_pab9                       =
+
+
+[supplies_before_prip]:supplies_after_helmet
+cs_ultraheavy_outfit                 = 1, 0.65
+exo_outfit                           = 2, 0.5
+stalker_exo_heavy_outfit             = 1, 0.5
+military_ultraheavy_outfit        	 = 1, 0.5
+
+helm_battle_heavy_stalker			 = 1, 0.35
+helm_battle_heavy_military			 = 1, 0.75
+
+ammo_23x75_barr                      = 8, 0.7
+ammo_8.6x70_ap                       = 10, 0.7
+ammo_556_200                       	 = 10, 0.7
+ammo_556_200_ap                   	 = 6, 0.7
+ammo_762_100                   	 	 = 8, 0.7
+ammo_pkm_100                   	 	 = 8, 0.7
+
+detector_af_elite					 = 2, 0.8
+
+;stop selling junk
+stalker_protoexo_outfit				 =
+monolit_outfit						 =
+monolit_scientific_outfit			 =
+stalker_medium_outfit				 =
+scientific_outfit					 =
+svoboda_light_outfit				 =
+svoboda_medium_outfit				 =
+helm_protective	                     =
+helm_tactic			                 =
+night_vision_good					 =
+
+[supplies_freeplay]:supplies_before_prip
+stalker_exo_heavy_outfit             = 1, 1
+military_ultraheavy_outfit         	 = 1, 1
+cs_ultraheavy_outfit                 = 1, 1
+
+helm_battle_heavy_stalker			 = 1, 1
+helm_battle_heavy_military			 = 1, 1
+
+[forg_sell_start]:sell_all_high,sell_ammo_cheap,sell_outfit_normal,sell_weapons_high

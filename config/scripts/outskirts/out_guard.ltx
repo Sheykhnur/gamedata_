@@ -1,0 +1,123 @@
+[combat_ignore@out_guard]
+
+[hit@out_bar_guard]
+on_info = %+out_bar_hit%
+
+[death@out_bar_guard]
+on_info = %+out_bar_hit%
+
+[logic]
+active = {+out_actor_returned} walker@out_freedom_bar_guard_finished, {+out_got_flash} walker@out_freedom_bar_guard_signal, {-out_had_password +bar_out_spy_job_start} walker@out_freedom_bar_guard, walker@out_freedom_bar_guard_wait
+combat_ignore = combat_ignore@out_guard
+on_hit = hit@out_bar_guard
+on_death = death@out_bar_guard
+
+[walker@out_freedom_bar_guard]
+path_walk = out_freedom_bar_guard
+path_look = out_freedom_bar_guard_look
+combat_ignore_cond = {-out_bar_hit}
+meet = meet@out_freedom_bar_guard
+on_info = {+out_had_password} walker@out_freedom_bar_guard_wait
+
+[walker@out_freedom_bar_guard_wait]
+path_walk = out_freedom_bar_guard
+path_look = out_freedom_bar_guard_look
+combat_ignore_cond = {-out_bar_hit}
+on_timer = 2000 | walker@out_freedom_bar_guard_out
+
+[meet@out_freedom_bar_guard]
+abuse = false
+use = {-out_had_password} self, true
+use_wpn = {-out_had_password} self, true
+victim 			=  7 | actor
+victim_wpn 		= 7 | actor
+meet_state = 7|ward
+meet_state_wpn = 7|ward
+meet_dialog = out_guard_conversation
+precond			= visibility
+allow_break = false
+trade_enable = false
+
+[walker@out_freedom_bar_guard_out]
+path_walk = out_freedom_bar_guard_out
+path_look = out_freedom_bar_guard_look
+combat_ignore_cond = {-out_bar_hit}
+on_info = {+out_got_flash} walker@out_freedom_bar_guard_signal
+
+[walker@out_freedom_bar_guard_signal]
+path_walk = out_freedom_bar_guard_walk
+path_look = out_freedom_bar_guard_walk_look
+combat_ignore_cond = {-out_bar_hit}
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+meet = meet@out_freedom_bar_guard_angry
+on_info = {+out_drunken_scene} remark@out_freedom_bar_guard_actor
+on_info2 = {+bar_out_task_half_failed} walker@out_freedom_bar_guard_finished
+
+[meet@out_freedom_bar_guard_angry]
+abuse = false
+use = {-out_actor_returned -bar_out_task_half_failed -out_drunken_scene} self, true
+use_wpn = {-out_actor_returned -bar_out_task_half_failed -out_drunken_scene} self, true
+victim 			=  6 | actor
+victim_wpn 		= 6 | actor
+meet_state = 2|guard
+meet_state_wpn = 2|guard
+allow_break = false
+trade_enable = false
+meet_dialog_enabled = true
+meet_dialog = out_guard_flashcard
+
+[remark@out_freedom_bar_guard_actor]
+anim = guard
+snd = out_guard_replic1
+target = out_freedom_bar_look2, 0
+combat_ignore_cond = {-out_bar_hit}
+meet = no_meet
+on_signal = sound_end | walker@out_freedom_bar_guard_to_drunken
+
+[walker@out_freedom_bar_guard_to_drunken]
+path_walk = out_freedom_bar_guard_walk2
+path_look = out_freedom_bar_guard_walk2_look
+combat_ignore_cond = {-out_bar_hit}
+meet = no_meet
+on_signal = drunkpos | remark@out_freedom_bar_guard_talk
+
+[remark@out_freedom_bar_guard_talk]
+anim = ordinary_talk2
+snd = out_guard_replic2
+target = out_freedom_bar_look2, 0
+combat_ignore_cond = {-out_bar_hit}
+meet = no_meet
+on_signal = sound_end | %+out_drunken_stand% remark@out_freedom_bar_guard_talk_synth
+
+[remark@out_freedom_bar_guard_talk_synth]
+anim = ward
+target = out_freedom_bar_look2, 0
+combat_ignore_cond = {-out_bar_hit}
+meet = no_meet
+on_info = {+out_drunken_stand2} remark@out_freedom_bar_guard_talk2
+
+[remark@out_freedom_bar_guard_talk2]
+anim = guard
+snd = out_guard_replic3
+target = out_freedom_bar_look2, 0
+combat_ignore_cond = {-out_bar_hit}
+meet = no_meet
+on_signal = sound_end | %+out_guard_replic%
+on_info = {+out_drunken_talk} remark@out_freedom_bar_guard_talk3
+
+[remark@out_freedom_bar_guard_talk3]
+anim = wait
+snd = out_guard_replic4
+target = out_freedom_bar_look2, 0
+combat_ignore_cond = {-out_bar_hit}
+meet = no_meet
+on_signal = sound_end | %+out_guard_replic2%
+on_info = {+out_dialog_completed} walker@out_freedom_bar_guard_finished
+
+[walker@out_freedom_bar_guard_finished]
+path_walk = out_freedom_bar_guard_walk_end
+path_look = out_freedom_bar_guard_look_end
+combat_ignore_cond = {+out_actor_left -out_actor_returned -out_bar_hit}
+meet = no_meet

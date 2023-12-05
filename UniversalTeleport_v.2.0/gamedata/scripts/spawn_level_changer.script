@@ -1,0 +1,149 @@
+local lvertx,gvertx,pos,dir,lev
+
+function go_to(var)
+	if var and teleportator.need_art() then
+		if type(var) == "string" then
+			local place = teleport_base.places[var]
+			lvertx = place.lv
+			gvertx = place.gv
+			pos = vector():set(place.pos[1],place.pos[2],place.pos[3])
+			dir = vector():set(0.0,0.0,0.0)
+			lev = place.lvl
+		elseif type(var) == "table" then
+			lvertx = var.lv
+			gvertx = var.gv
+			pos = vector():set(var.posx,var.posy,var.posz)
+			dir = vector():set(0.0,var.diry,0.0)
+			lev = var.lvl
+		end
+		if lev == level.name() then
+			level.add_pp_effector ("teleport.ppe", 25002, false)
+			db.actor:set_actor_position(pos)
+			local snd_obj = xr_sound.get_safe_sound_object([[affects\tinnitus3a]])
+			snd_obj:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+		else
+			this.create_level_changer(30000, db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(),
+									  lvertx, gvertx, pos, dir, lev, 1)
+		end
+	else
+		teleportator.tele_msg()
+	end
+end
+
+function create_level_changer(
+				p_story_id,			-- story_id нового level_changer
+				p_positon,			-- координаты, где будет располагаться level_changer
+				p_lvertex_id,		-- level_vertex_id level_changer'a
+				p_gvertex_id,		-- game_vertex_id level_changer'a
+				
+				p_dest_lv,			-- level_vertex_id уровня, на который переходим
+				p_dest_gv,			-- game_vertex_id уровня, на который переходим
+				p_dest_pos,			-- координаты уровня, на который переходим
+				p_dest_dir,			-- направление взгляда после перехода
+				p_dest_level,		-- название уровня, на который переходим
+				p_silent			-- следует задать 1, чобы пдавить вопрос о смене уровня (автоматический переход)
+				)
+	
+	local obj = alife():create("level_changer", p_positon, p_lvertex_id, p_gvertex_id)
+	--level.map_add_object_spot(obj.id, "level_changer", "")		-- метка
+	
+	level.add_pp_effector ("teleport.ppe", 2006, false)
+	
+	local packet = net_packet()
+	obj:STATE_Write(packet)
+	
+	-- свойства cse_alife_object
+	local game_vertex_id = packet:r_u16()
+	local cse_alife_object__unk1_f32 = packet:r_float()
+	local cse_alife_object__unk2_u32 = packet:r_u32()
+	local level_vertex_id = packet:r_u32()
+	local object_flags = packet:r_u32()
+	local custom_data = packet:r_stringZ()
+	local story_id = packet:r_u32()
+	local spawn_story_id = packet:r_u32()
+	
+	-- свойства cse_shape
+	local shape_count = packet:r_u8()
+	for i=1,shape_count do
+		local shape_type = packet:r_u8()
+		if shape_type == 0 then
+			-- sphere
+			local center = packet:r_vec3()
+			local radius = packet:r_float()
+		else
+			-- box
+			local axis_x_x = packet:r_float()
+			local axis_x_y = packet:r_float()
+			local axis_x_z = packet:r_float()
+			local axis_y_x = packet:r_float()
+			local axis_y_y = packet:r_float()
+			local axis_y_z = packet:r_float()
+			local axis_z_x = packet:r_float()
+			local axis_z_y = packet:r_float()
+			local axis_z_z = packet:r_float()
+			local offset_x = packet:r_float()
+			local offset_y = packet:r_float()
+			local offset_z = packet:r_float()
+		end
+	end
+	
+	-- свойства cse_alife_space_restrictor
+	local restrictor_type = packet:r_u8()
+	
+	-- свойства cse_level_changer
+	local dest_game_vertex_id = packet:r_u16()
+	local dest_level_vertex_id = packet:r_u32()
+	local dest_position = packet:r_vec3()
+	local dest_direction = packet:r_vec3()
+	local dest_level_name = packet:r_stringZ()
+	local dest_graph_point = packet:r_stringZ()
+	local silent_mode = packet:r_u8()
+	
+	packet:w_begin(game_vertex_i)
+	packet:w_float(cse_alife_object__unk1_f32)
+	packet:w_u32(cse_alife_object__unk2_u32)
+	packet:w_u32(level_vertex_id)
+	packet:w_u32( bit_not(193) )
+	packet:w_stringZ(custom_data)
+	packet:w_u32(p_story_id)
+	packet:w_u32(spawn_story_id)
+	
+	packet:w_u8(1)
+	--packet:w_u8(0)				-- sphere
+	--packet:w_vec3(vector():set(0,0,0)
+	--packet:w_float(3.0)
+	packet:w_u8(1)					-- box
+	packet:w_float(2)
+	packet:w_float(0)
+	packet:w_float(0)
+	packet:w_float(0)
+	packet:w_float(4)
+	packet:w_float(0)
+	packet:w_float(0)
+	packet:w_float(0)
+	packet:w_float(4)
+	packet:w_float(0)
+	packet:w_float(0)
+	packet:w_float(0)
+	
+	packet:w_u8(3)					-- restrictor_type
+	
+	packet:w_u16(p_dest_gv)
+	packet:w_s32(p_dest_lv)
+	packet:w_vec3(p_dest_pos)
+	packet:w_vec3(p_dest_dir)
+	packet:w_stringZ(p_dest_level)
+	packet:w_stringZ("start_actor_99")
+	packet:w_u8(p_silent)
+	
+	packet:r_seek(0)
+	obj:STATE_Read(packet,packet:w_tell())
+end
+
+function del_old_teleport()
+	local sim = alife()
+	local se_obj = sim:story_object(30000)
+	if se_obj then
+		sim:release(se_obj, true)
+	end
+end

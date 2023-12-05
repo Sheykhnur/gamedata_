@@ -1,0 +1,197 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : death_manager.script
+ Description: Removing/spawn of items when NPC dying
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin, Gr1ph00n, SkyLoader
+ Last edit  : 09.08.2017 [phobos2077]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local always_keep_item = {}
+local remove_items_chance = {}
+local weapon_drop_condition = {1, 1}
+local ammo_fraction = {}
+local ammo_random_min = 1
+local dif = level.get_game_difficulty()
+local diff_koef =  dif == game_difficulty.novice and 0.15 or dif == game_difficulty.stalker and 0.5 or dif == game_difficulty.veteran and 1.0 or 1.35
+
+local sModule = script_name() --/ string name of file-module
+--/ -----------------------------------------------------------------
+--/ Print-Log (output of debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+function init_drop_settings()
+	local death_ini = ini_file("misc\\death_generic.ltx")
+	--/ Table of items, which can't be deleted (quest one for example)
+	always_keep_item 	  = Get_IniSection(death_ini, "keep_items", "bool", "true")
+	remove_items_chance	  = Get_IniSection(death_ini, "remove_items_chance", "number")
+	weapon_drop_condition = string.split(death_ini:r_string("options", "weapon_drop_condition"), ",", false)
+	ammo_fraction 		  = get_range_by_difficulty(death_ini, "options", "ammo_fraction")
+	ammo_random_min	      = death_ini:r_s32("options", "ammo_random_min")
+end
+
+local difficulty_names = {
+	[game_difficulty.novice] = "novice",
+	[game_difficulty.stalker] = "stalker",
+	[game_difficulty.veteran] = "veteran",
+	[game_difficulty.master] = "master",
+}
+
+function get_range_by_difficulty(ini, section, key)
+	local res = {}
+	for diff, diffName in pairs(difficulty_names) do
+		res[diff] = string.split(ini:r_string(section, string.format("%s_gd_%s", key, diffName)), ",", false)
+	end
+	return res
+end
+
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "drop_manager"
+--/ -----------------------------------------------------------------------------------------------
+function drop_manager:__init(npc)
+	self.npc = npc
+	-- self.tItems = {}
+	--/ How much ammo of each type is found on death
+	self.tAmmo = {}
+end
+
+function drop_manager:create_release_item()
+	local idNPC = self.npc:id()
+	local se_obj = idNPC and  alife():object(idNPC)
+	if not se_obj or se_obj.death_droped == true then
+		return --/>
+	end
+	se_obj.death_droped = true
+	if self.npc:character_community() == "arena_enemy" or self.npc:character_community() == "trader" then
+		return
+	end
+	-- self.tItems = {}
+	self.tAmmo = {}
+	self.hasSpecialPda = false
+	self.devicePda = nil
+	self.npc:iterate_inventory(self.process_item, self)
+	-- make sure we don't get generic PDA (spawned by engine), if custom PDA exist
+	-- also restrict PDA to be left only for certain factions
+	if self.devicePda and (self.hasSpecialPda or not self:can_have_pda()) then
+		self:remove_item(self.devicePda)
+	end
+
+	for ammoSect, currentAmmo in pairs(self.tAmmo) do
+		--/ Calculate ammo as a fraction of real ammo in inventory
+		local randomAmmo = calc_ammo_fraction(currentAmmo)
+		-- log("Spawn ammo %s by qty %s (from %s)", ammoSect, randomAmmo, currentAmmo)
+		Spawn_ItemsInInv(ammoSect, randomAmmo, self.npc)
+	end
+	--[[ -- Spawn of additional items (not used yet)
+	for _,v in pairs(self.tItems) do
+		Spawn_ItemsInInv(ammoSect, randomAmmo, self.npc)
+	end
+	]]
+end
+
+function drop_manager:can_have_pda()
+	local comm = self.npc:character_community()
+	return comm ~= "military" and comm ~= "monolith" and comm ~= "dark_stalker"
+end
+
+--/ Remember given qty of ammo for later spawn
+function drop_manager:remember_ammo(ammoSect, qty)
+	self.tAmmo[ammoSect] = (self.tAmmo[ammoSect] or 0) + qty
+end
+
+--/ Calculate a fraction of ammo to remain, depending on difficulty and configs
+function calc_ammo_fraction(totalAmmo)
+	local difficulty = level.get_game_difficulty()
+	local difficultyRange = ammo_fraction[difficulty]
+	local fraction = math.ceil(totalAmmo * la_utils.random_range(difficultyRange))
+	if fraction < ammo_random_min and ammo_random_min < totalAmmo then
+		fraction = ammo_random_min
+	end
+	-- log("Calc ammo fraction, total: %d, difficulty: %s, min: %s, max: %s, result: %d", totalAmmo, difficulty_names[difficulty], difficultyRange[1], difficultyRange[2], fraction)
+	return fraction
+end
+
+function process_dropped_weapon(item)
+	if get_clsid(item) ~= clsid.wpn_rpg7_s and get_clsid(item) ~= clsid.wpn_rg6_s then
+		--/ Reduce ammo in mag
+		local currentAmmo = item:get_ammo_in_magazine()
+		local randomAmmo = calc_ammo_fraction(item:get_ammo_magsize())
+		if currentAmmo > randomAmmo then
+			item:set_ammo_elapsed(randomAmmo)
+		end
+	end
+	--/ There should be decreased condition of weapon
+	
+	item:set_condition(0.0)
+	local min_bound, max_bound = 0.0, 0.25
+
+	if 		level.get_game_difficulty() == game_difficulty.novice then min_bound, max_bound = 0.5, 0.85
+	elseif	level.get_game_difficulty() == game_difficulty.stalker then min_bound, max_bound = 0.35, 0.65
+	elseif	level.get_game_difficulty() == game_difficulty.veteran then min_bound, max_bound = 0.15, 0.45
+	end
+	
+	local cond = 0.0
+	cond = ((la_math.clamp(la_math.random_gaussian_skew(unpack(weapon_drop_condition)), 0.0, 0.7))*(2-diff_koef))
+	cond = la_math.clamp(cond, min_bound, max_bound)
+	item:set_condition(cond)
+	log("Reducing weapon condition %s to %s, diff_koef %s, min_bound, max_bound %s %s", item:section(), cond, diff_koef, min_bound, max_bound)
+end
+
+function drop_manager:remove_item(item)
+	--	log("process_item:=[%s]=>releasing from [%s]", item:name(), self.npc:name(), "") --/#~#
+	--[[ --#-# skyloader: physic bugs here
+	--alife():release(alife():object(item_id), true)
+	if alife():object(item_id) then
+		self.npc:remove_from_inventory(item_id)
+	end]]
+	--#+# skyloader: remove_from_inventory drops item first, then removes. In the end, we get physic bugs of npc when they dying (lots of items drops and deletes at the same time), jam of npc in car, if to hit him, other bugs (lags too). So better use alife():release()
+
+	local sobj = alife():object(item:id())
+	if sobj then
+		alife():release(sobj, true)
+	end
+end
+
+--/ Function called for every item to remove it or leave it.
+function drop_manager:process_item(item)
+	local item_id = item:id()
+	if not alife():object(item_id) then
+		return --/>
+	end
+	local section = item:section()
+	if remove_items_chance[section] ~= nil then
+		local remove_chance = remove_items_chance[section]
+		if remove_chance < 1.0 then
+			remove_chance = remove_chance*diff_koef
+		end
+		--log("item: %s remove chance: %d", section, remove_chance)
+		if math.random() < remove_chance then
+			self:remove_item(item)
+			return
+		end
+	end
+
+	if isAmmo(item) then
+		--/ Remove this ammo item, but remember initial amount
+		self:remember_ammo(item:section(), item:get_ammo_in_magazine())
+		self:remove_item(item)
+		return
+	end
+	if string.match(section, "_pda$") then
+		if section == "device_pda" then
+			self.devicePda = item
+		else
+			self.hasSpecialPda = true
+		end
+	end
+	if isWeapon(item) then
+		process_dropped_weapon(item)
+		return
+	end
+end

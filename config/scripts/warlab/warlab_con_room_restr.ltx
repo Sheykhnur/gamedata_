@@ -1,0 +1,18 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = sr_idle@timer
+
+[sr_idle@timer]
+on_timer = 1200|{-war_con_end} sr_cutscene %+war_con_start%
+
+[sr_cutscene]
+point = war_actor_point
+look = oso_walk
+cam_effector = war_con_1, war_con_2
+pp_effector = sar_out
+on_signal = cameff_end | sr_idle@timer2 %+war_con_end%
+
+[sr_idle@timer2]
+on_timer = 400|nil %+oso_init_dialog =release%

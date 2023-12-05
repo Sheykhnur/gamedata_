@@ -1,0 +1,372 @@
+[danger_condition@agr_stalker_tunnel_terrain]
+ignore_distance = 15
+
+[combat_ignore@agr_stalker_tunnel_terrain]
+
+[threshold@agr_stalker_tunnel_terrain]
+max_ignore_distance = 10
+
+[death@agr_stalker_tunnel_terrain]
+on_info = {=killed_by_actor -agr_actor_attacked_tunnel} %=set_gulag_enemy_actor(agr_stalker_tunnel_terrain) +agr_actor_attacked_tunnel%
+
+
+[logic@agr_stalker_tunnel_terrain_kamper]
+active = kamper@agr_stalker_tunnel_terrain_kamper
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+ 
+[kamper@agr_stalker_tunnel_terrain_kamper]
+path_walk = kamper_walk
+path_look = kamper_look
+kamp_name = kamp1
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+meet = meet@mole_tunnel
+
+[meet@mole_tunnel]
+meet_state		= 25|hello |5|nil
+meet_state_wpn	= 25|hello |5|nil
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog = agr_stalker_talk_level
+
+
+[logic@agr_stalker_tunnel_terrain_guard]
+active = walker@agr_stalker_tunnel_terrain_guard
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_guard]
+path_walk = guard_walk
+path_look = guard_look
+def_state_standing = guard
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_patrol1]
+active = walker@agr_stalker_tunnel_terrain_patrol1
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_patrol1]
+path_walk = patrol1_walk
+path_look = patrol1_look
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_patrol2]
+active = walker@agr_stalker_tunnel_terrain_patrol2
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_patrol2]
+path_walk = patrol2_walk
+path_look = patrol2_look
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_kamper_add1]
+active = kamper@agr_stalker_tunnel_terrain_kamper_add1
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+ 
+[kamper@agr_stalker_tunnel_terrain_kamper_add1]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_kamper_add2]
+active = kamper@agr_stalker_tunnel_terrain_kamper_add2
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+ 
+[kamper@agr_stalker_tunnel_terrain_kamper_add2]
+path_walk = kamper3_walk
+path_look = kamper3_look
+kamp_name = kamp1
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_fixer]
+active = walker@agr_stalker_tunnel_terrain_fixer
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_fixer]
+path_walk = fixer_walk
+path_look = fixer_look
+;def_state_standing = sit_cop
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+meet = meet@fixer
+
+[meet@fixer]
+meet_state		= 0|sit_cop
+meet_state_wpn	= 0|sit_cop
+victim			= 15|actor|3|nil
+victim_wpn		= 15|actor|3|nil
+use				= true
+use_wpn			= true
+precond 		= visibility
+
+
+[logic@agr_stalker_tunnel_terrain_fixer_sleep]
+active = walker@agr_stalker_tunnel_terrain_fixer_sleep
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+ 
+[walker@agr_stalker_tunnel_terrain_fixer_sleep]
+path_walk = fixer_walk
+path_look = fixer_look_sleep
+def_state_standing = sit_cop_sleep
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+meet = meet@fixer
+
+
+[logic@agr_stalker_tunnel_terrain_guide]
+active = walker@agr_stalker_tunnel_terrain_guide
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_guide]
+path_walk = guide_walk
+path_look = guide_look
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+meet = meet@guide
+
+[meet@guide]
+meet_state		= 15|hello
+meet_state_wpn	= 15|hello
+victim			= 15|actor|3|nil
+victim_wpn		= 15|actor|3|nil
+use				= true
+use_wpn			= true
+precond 		= visibility
+
+
+[logic@agr_stalker_tunnel_terrain_sleeper1]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper1
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper1]
+path_main = sleeper1_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_sleeper2]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper2
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper2]
+path_main = sleeper2_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+[logic@agr_stalker_tunnel_terrain_sleeper3]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper3
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper3]
+path_main = sleeper3_main
+wakeable = true
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_sleeper4]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper4
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper4]
+path_main = sleeper4_main
+wakeable = true
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+
+
+[logic@agr_stalker_tunnel_terrain_sleeper5]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper5
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+on_death = death@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper5]
+path_main = sleeper5_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = {-agr_actor_attacked_tunnel =fighting_dist_ge(50)}
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[logic@agr_stalker_tunnel_terrain_kamper_off]
+active = walker@agr_stalker_tunnel_terrain_kamper_off
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_kamper_off]
+path_walk = kamper_walk
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_patrol_off1]
+active = walker@agr_stalker_tunnel_terrain_patrol_off1
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_patrol_off1]
+path_walk = patrol1_walk
+path_look = patrol1_look
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_patrol_off2]
+active = walker@agr_stalker_tunnel_terrain_patrol_off2
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_patrol_off2]
+path_walk = patrol2_walk
+path_look = patrol2_look
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+
+[logic@agr_stalker_tunnel_terrain_kamper_add_off1]
+active = kamper@agr_stalker_tunnel_terrain_kamper_add_off1
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+ 
+[kamper@agr_stalker_tunnel_terrain_kamper_add_off1]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_kamper_add_off2]
+active = kamper@agr_stalker_tunnel_terrain_kamper_add_off2
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+ 
+[kamper@agr_stalker_tunnel_terrain_kamper_add_off2]
+path_walk = kamper3_walk
+path_look = kamper3_look
+kamp_name = kamp1
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_guard_off]
+active = walker@agr_stalker_tunnel_terrain_guard_off
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[walker@agr_stalker_tunnel_terrain_guard_off]
+path_walk = guard_off
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_sleeper_off1]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper_off1
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper_off1]
+path_main = sleeper1_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_sleeper_off2]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper_off2
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper_off2]
+path_main = sleeper2_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_sleeper_off3]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper_off3
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper_off3]
+path_main = sleeper3_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_sleeper_off4]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper_off4
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper_off4]
+path_main = sleeper4_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_sleeper_off5]
+active = sleeper@agr_stalker_tunnel_terrain_sleeper_off5
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+
+[sleeper@agr_stalker_tunnel_terrain_sleeper_off5]
+path_main = sleeper5_main
+wakeable = false
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+
+[logic@agr_stalker_tunnel_terrain_fixer_off]
+active = walker@agr_stalker_tunnel_terrain_fixer_off
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+ 
+[walker@agr_stalker_tunnel_terrain_fixer_off]
+path_walk = fixer_walk
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+meet = no_meet
+
+[logic@agr_stalker_tunnel_terrain_guide_off]
+active = walker@agr_stalker_tunnel_terrain_guide_off
+combat_ignore = combat_ignore@agr_stalker_tunnel_terrain
+threshold = threshold@agr_stalker_tunnel_terrain
+ 
+[walker@agr_stalker_tunnel_terrain_guide_off]
+path_walk = fixer_walk
+danger = danger_condition@agr_stalker_tunnel_terrain
+combat_ignore_cond = always
+meet = no_meet

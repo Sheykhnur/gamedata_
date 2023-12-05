@@ -1,0 +1,668 @@
+local register_maps = {
+{"l01_escape",			"esc_bunker_sidr","esc_blokpost","esc_atp","esc_tonnel","esc_ferma","esc_kpp"},
+{"l02_garbage",			"gar_graveyard","gar_angar","gar_dolg","gar_forest","gar_stop","gar_dogs"},
+{"l03_agroprom",		"agr_tonnel","agr_comlex","agr_marsh","agr_boars","agr_military","agr_radiation"},
+{"l04_darkvalley",		"dar_ferma","dar_terrazzo","dar_plant","dar_bloodsucker","dar_x18","dar_dolg"},
+{"l05_bar",				"bar_southblokpost","bar_northblokpost","bar_bar","bar_peterenko","bar_tower"},
+{"l06_rostok",			"ros_place","ros_tower","ros_helicopter","ros_building","ros_tonnel"},
+{"l07_military",		"mil_village","mil_killers","mil_freedom","mil_stop","mil_barier","mil_heli"},
+{"l08_yantar",			"yan_bunker","yan_marsh","yan_bus","yan_complex"},
+{"l10_radar",			"rad_kpp","rad_heli","rad_terrazzo","rad_antenns","rad_tonnel","rad_for_stones"},
+{"l11_pripyat",			"pri_stadium","pri_dk","pri_hotel","pri_kindergarten","pri_to_radar","pri_station"},
+{"l12_stancia",			"st_to_sarkofag","st_stop_btr","st_west","st_pipes","st_coach_east","st_bridge"},
+{"l12_stancia_2",		"st2_to_cont_mono","st2_tanks","st2_pipes","st2_generators","st2_tanks2","st2_finish","st2_east","st2_roof","st2_antenna"},
+{"l03u_agr_underground","agrund_tainik","agrund_zal","agrund_stair","agrund_electra"},
+{"l04u_labx18",			"x18_stair","x18_aspic","x18_pseudogigant","x18_docs"},
+{"l08u_brainlab",		"x16_lift","x16_tankroom","x16_pult","x16_controler"},
+{"l10u_bunker",			"bun_containers","bun_pool","bun_spools","bun_breaker"},	
+{"l12u_sarcofag",		"sar_monolith","sar_stair","sar_underroom","sar_to_chaes"},
+{"l12u_control_monolith","cont_mono_start","cont_mono_room","cont_mono_management"}
+	}
+local numlv,lvl_for_tele 
+
+function goToMap(lvl)
+	if lvl then
+		numlv = lvl
+		lvl_for_tele = register_maps[lvl][1]
+		local hud = map_teleport(get_hud())
+		level.start_stop_menu(hud, true)
+	end
+end
+
+class "map_teleport"(CUIScriptWnd)
+function map_teleport:__init(owner) super()
+	self.owner = owner
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function map_teleport:InitControls()
+	self:Init(0,0,1024,768)
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_telemaps.xml")
+	
+	xml:InitStatic("background",		self)
+	xml:InitStatic("map_"..lvl_for_tele,	self)
+	xml:InitStatic("teleport_frame",	self)
+	
+	local caption = "caption_"..lvl_for_tele
+	self:Register(xml:Init3tButton(caption,self), caption)
+	local params = register_maps[numlv]
+	for a=1,#params,1 do
+		if a~=1 then
+			local btn = tostring(params[a])
+			self:Register(xml:Init3tButton(btn,self), btn)
+		end
+	end
+	if has_alife_info("teleport_on_surfaces") then
+		self:Register(xml:Init3tButton("btn_underground", self), "btn_underground")
+	elseif has_alife_info("teleport_under_ground") then
+		self:Register(xml:Init3tButton("btn_onsurfaces", self), "btn_onsurfaces")
+	end
+	self:Register(xml:Init3tButton("btn_next", self), "btn_next")
+	self:Register(xml:Init3tButton("btn_prev", self), "btn_prev")
+	self:Register(xml:Init3tButton("btn_back", self), "btn_back")
+	self:Register(xml:Init3tButton("btn_quit", self), "btn_quit")
+end
+
+function map_teleport:InitCallBacks()
+	local t = register_maps[numlv]
+	if numlv == 1 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.esc_bunker_sidr,	self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.esc_blokpost,		self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.esc_atp,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.esc_tonnel,		self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.esc_ferma,			self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.esc_kpp,			self	)
+	elseif numlv == 2 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.gar_graveyard,		self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.gar_angar,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.gar_dolg,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.gar_forest,		self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.gar_stop,			self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.gar_dogs,			self	)
+	elseif numlv == 3 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.agr_tonnel,		self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.agr_comlex,		self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.agr_marsh,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.agr_boars,			self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.agr_military,		self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.agr_radiation,		self	)
+	elseif numlv == 13 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.agrund_tainik,		self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.agrund_zal,		self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.agrund_stair,		self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.agrund_electra,	self	)
+	elseif numlv == 4 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.dar_ferma,			self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.dar_terrazzo,		self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.dar_plant,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.dar_bloodsucker,	self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.dar_x18,			self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.dar_dolg,			self	)
+	elseif numlv == 14 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.x18_stair,			self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.x18_aspic,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.x18_pseudogigant,	self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.x18_docs,			self	)
+	elseif numlv == 5 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.bar_southblokpost,	self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.bar_northblokpost,	self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.bar_bar,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.bar_peterenko,		self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.bar_tower,			self	)
+	elseif numlv == 6 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.ros_place,			self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.ros_tower,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.ros_helicopter,	self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.ros_building,		self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.ros_tonnel,		self	)
+	elseif numlv == 7 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.mil_village,		self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.mil_killers,		self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.mil_freedom,		self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.mil_stop,			self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.mil_barier,		self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.mil_heli,			self	)
+	elseif numlv == 8 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.yan_bunker,		self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.yan_marsh,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.yan_bus,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.yan_complex,		self	)
+	elseif numlv == 15 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.x16_lift,			self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.x16_tankroom,		self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.x16_pult,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.x16_controler,		self	)
+	elseif numlv == 9 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.rad_kpp,			self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.rad_heli,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.rad_terrazzo,		self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.rad_antenns,		self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.rad_tonnel,		self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.rad_for_stones,	self	)
+	elseif numlv == 10 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.pri_stadium,		self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.pri_dk,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.pri_hotel,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.pri_kindergarten,	self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.pri_to_radar,		self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.pri_station,		self	)
+	elseif numlv == 11 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.st_to_sarkofag,	self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.st_stop_btr,		self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.st_west,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.st_pipes,			self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.st_coach_east,		self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.st_bridge,			self	)
+	elseif numlv == 12 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.st2_to_cont_mono,	self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.st2_tanks,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.st2_pipes,			self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.st2_generators,	self	)
+		self:AddCallback(	t[6],	ui_events.BUTTON_CLICKED,	self.st2_tanks2,		self	)
+		self:AddCallback(	t[7],	ui_events.BUTTON_CLICKED,	self.st2_finish,		self	)
+		self:AddCallback(	t[8],	ui_events.BUTTON_CLICKED,	self.st2_east,			self	)
+		self:AddCallback(	t[9],	ui_events.BUTTON_CLICKED,	self.st2_roof,			self	)
+		self:AddCallback(	t[10],	ui_events.BUTTON_CLICKED,	self.st2_antenna,		self	)
+	elseif numlv == 16 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.bun_containers,	self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.bun_pool,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.bun_spools,		self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.bun_breaker,		self	)
+	elseif numlv == 17 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.sar_monolith,		self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.sar_stair,			self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.sar_underroom,		self	)
+		self:AddCallback(	t[5],	ui_events.BUTTON_CLICKED,	self.sar_to_chaes,		self	)
+	elseif numlv == 18 then
+		self:AddCallback(	t[2],	ui_events.BUTTON_CLICKED,	self.cont_mono_start,	self	)
+		self:AddCallback(	t[3],	ui_events.BUTTON_CLICKED,	self.cont_mono_room,	self	)
+		self:AddCallback(	t[4],	ui_events.BUTTON_CLICKED,	self.cont_mono_management,self	)
+	end
+	if has_alife_info("teleport_on_surfaces") then
+		self:AddCallback("btn_underground", ui_events.BUTTON_CLICKED, self.switch_menu, self)
+	elseif has_alife_info("teleport_under_ground") then
+		self:AddCallback("btn_onsurfaces", ui_events.BUTTON_CLICKED, self.switch_menu, self)
+	end
+	self:AddCallback("btn_next", ui_events.BUTTON_CLICKED, self.on_next, self)
+	self:AddCallback("btn_prev", ui_events.BUTTON_CLICKED, self.on_prev, self)
+	self:AddCallback("btn_back", ui_events.BUTTON_CLICKED, self.on_back, self)
+	self:AddCallback("btn_quit", ui_events.BUTTON_CLICKED, self.on_quit, self)
+end
+
+function map_teleport:OnKeyboard(dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:on_quit()
+		elseif dik == DIK_keys.DIK_TAB then
+			self:switch_menu()
+		elseif dik == DIK_keys.DIK_BACK then
+			self:on_back()
+		elseif dik == DIK_keys.DIK_LEFT then
+			self:on_prev()
+		elseif dik == DIK_keys.DIK_RIGHT then
+			self:on_next()
+		end
+	end
+	return true
+end
+
+function map_teleport:on_back()
+	self:on_quit()
+	teleportator.new_menu()
+end
+function map_teleport:on_quit()
+	self:GetHolder():start_stop_menu(self, true)
+end
+function map_teleport:on_next()
+	self:on_quit()
+	this.switch_map("next")
+end
+function map_teleport:on_prev()
+	self:on_quit()
+	this.switch_map("prev")
+end
+function map_teleport:switch_menu()
+	self:on_quit()
+	if has_alife_info("teleport_on_surfaces") then
+		db.actor:give_info_portion("teleport_under_ground")
+		this.switch_map("under")
+	else
+		db.actor:give_info_portion("teleport_on_surfaces")
+		this.switch_map("surf")
+	end
+end
+
+-- escape
+function map_teleport:esc_bunker_sidr()
+	spawn_level_changer.go_to("esc_bunker_sidr")
+	self:on_quit()
+end
+function map_teleport:esc_blokpost()
+	spawn_level_changer.go_to("esc_blokpost")
+	self:on_quit()
+end
+function map_teleport:esc_atp()
+	spawn_level_changer.go_to("esc_atp")
+	self:on_quit()
+end
+function map_teleport:esc_tonnel()
+	spawn_level_changer.go_to("esc_tonnel")
+	self:on_quit()
+end
+function map_teleport:esc_ferma()
+	spawn_level_changer.go_to("esc_ferma")
+	self:on_quit()
+end
+function map_teleport:esc_kpp()
+	spawn_level_changer.go_to("esc_kpp")
+	self:on_quit()
+end
+-- garbage
+function map_teleport:gar_graveyard()
+	spawn_level_changer.go_to("gar_graveyard")
+	self:on_quit()
+end
+function map_teleport:gar_angar()
+	spawn_level_changer.go_to("gar_angar")
+	self:on_quit()
+end
+function map_teleport:gar_dolg()
+	spawn_level_changer.go_to("gar_dolg")
+	self:on_quit()
+end
+function map_teleport:gar_forest()
+	spawn_level_changer.go_to("gar_forest")
+	self:on_quit()
+end
+function map_teleport:gar_stop()
+	spawn_level_changer.go_to("gar_stop")
+	self:on_quit()
+end
+function map_teleport:gar_dogs()
+	spawn_level_changer.go_to("gar_dogs")
+	self:on_quit()
+end
+-- agroprom
+function map_teleport:agr_tonnel()
+	spawn_level_changer.go_to("agr_tonnel")
+	self:on_quit()
+end
+function map_teleport:agr_comlex()
+	spawn_level_changer.go_to("agr_comlex")
+	self:on_quit()
+end
+function map_teleport:agr_marsh()
+	spawn_level_changer.go_to("agr_marsh")
+	self:on_quit()
+end
+function map_teleport:agr_boars()
+	spawn_level_changer.go_to("agr_boars")
+	self:on_quit()
+end
+function map_teleport:agr_military()
+	spawn_level_changer.go_to("agr_military")
+	self:on_quit()
+end
+function map_teleport:agr_radiation()
+	spawn_level_changer.go_to("agr_radiation")
+	self:on_quit()
+end
+-- agroprom underground
+function map_teleport:agrund_tainik()
+	spawn_level_changer.go_to("agrund_tainik")
+	self:on_quit()
+end
+function map_teleport:agrund_zal()
+	spawn_level_changer.go_to("agrund_zal")
+	self:on_quit()
+end
+function map_teleport:agrund_stair()
+	spawn_level_changer.go_to("agrund_stair")
+	self:on_quit()
+end
+function map_teleport:agrund_electra()
+	spawn_level_changer.go_to("agrund_electra")
+	self:on_quit()
+end
+-- darkvalley
+function map_teleport:dar_ferma()
+	spawn_level_changer.go_to("dar_ferma")
+	self:on_quit()
+end
+function map_teleport:dar_terrazzo()
+	spawn_level_changer.go_to("dar_terrazzo")
+	self:on_quit()
+end
+function map_teleport:dar_plant()
+	spawn_level_changer.go_to("dar_plant")
+	self:on_quit()
+end
+function map_teleport:dar_bloodsucker()
+	spawn_level_changer.go_to("dar_bloodsucker")
+	self:on_quit()
+end
+function map_teleport:dar_x18()
+	spawn_level_changer.go_to("dar_x18")
+	self:on_quit()
+end
+function map_teleport:dar_dolg()
+	spawn_level_changer.go_to("dar_dolg")
+	self:on_quit()
+end
+-- lab x18
+function map_teleport:x18_stair()
+	spawn_level_changer.go_to("x18_stair")
+	self:on_quit()
+end
+function map_teleport:x18_aspic()
+	spawn_level_changer.go_to("x18_aspic")
+	self:on_quit()
+end
+function map_teleport:x18_pseudogigant()
+	spawn_level_changer.go_to("x18_pseudogigant")
+	self:on_quit()
+end
+function map_teleport:x18_docs()
+	spawn_level_changer.go_to("x18_docs")
+	self:on_quit()
+end
+-- bar
+function map_teleport:bar_southblokpost()
+	spawn_level_changer.go_to("bar_southblokpost")
+	self:on_quit()
+end
+function map_teleport:bar_northblokpost()
+	spawn_level_changer.go_to("bar_northblokpost")
+	self:on_quit()
+end
+function map_teleport:bar_bar()
+	spawn_level_changer.go_to("bar_bar")
+	self:on_quit()
+end
+function map_teleport:bar_peterenko()
+	spawn_level_changer.go_to("bar_peterenko")
+	self:on_quit()
+end
+function map_teleport:bar_tower()
+	spawn_level_changer.go_to("bar_tower")
+	self:on_quit()
+end
+-- rostok
+function map_teleport:ros_place()
+	spawn_level_changer.go_to("ros_place")
+	self:on_quit()
+end
+function map_teleport:ros_tower()
+	spawn_level_changer.go_to("ros_tower")
+	self:on_quit()
+end
+function map_teleport:ros_helicopter()
+	spawn_level_changer.go_to("ros_helicopter")
+	self:on_quit()
+end
+function map_teleport:ros_building()
+	spawn_level_changer.go_to("ros_building")
+	self:on_quit()
+end
+function map_teleport:ros_tonnel()
+	spawn_level_changer.go_to("ros_tonnel")
+	self:on_quit()
+end
+-- military
+function map_teleport:mil_village()
+	spawn_level_changer.go_to("mil_village")
+	self:on_quit()
+end
+function map_teleport:mil_killers()
+	spawn_level_changer.go_to("mil_killers")
+	self:on_quit()
+end
+function map_teleport:mil_freedom()
+	spawn_level_changer.go_to("mil_freedom")
+	self:on_quit()
+end
+function map_teleport:mil_stop()
+	spawn_level_changer.go_to("mil_stop")
+	self:on_quit()
+end
+function map_teleport:mil_barier()
+	spawn_level_changer.go_to("mil_barier")
+	self:on_quit()
+end
+function map_teleport:mil_heli()
+	spawn_level_changer.go_to("mil_heli")
+	self:on_quit()
+end
+-- yantar
+function map_teleport:yan_bunker()
+	spawn_level_changer.go_to("yan_bunker")
+	self:on_quit()
+end
+function map_teleport:yan_marsh()
+	spawn_level_changer.go_to("yan_marsh")
+	self:on_quit()
+end
+function map_teleport:yan_bus()
+	spawn_level_changer.go_to("yan_bus")
+	self:on_quit()
+end
+function map_teleport:yan_complex()
+	spawn_level_changer.go_to("yan_complex")
+	self:on_quit()
+end
+-- brainlab
+function map_teleport:x16_lift()
+	spawn_level_changer.go_to("x16_lift")
+	self:on_quit()
+end
+function map_teleport:x16_tankroom()
+	spawn_level_changer.go_to("x16_tankroom")
+	self:on_quit()
+end
+function map_teleport:x16_pult()
+	spawn_level_changer.go_to("x16_pult")
+	self:on_quit()
+end
+function map_teleport:x16_controler()
+	spawn_level_changer.go_to("x16_controler")
+	self:on_quit()
+end
+-- radar
+function map_teleport:rad_kpp()
+	spawn_level_changer.go_to("rad_kpp")
+	self:on_quit()
+end
+function map_teleport:rad_heli()
+	spawn_level_changer.go_to("rad_heli")
+	self:on_quit()
+end
+function map_teleport:rad_terrazzo()
+	spawn_level_changer.go_to("rad_terrazzo")
+	self:on_quit()
+end
+function map_teleport:rad_antenns()
+	spawn_level_changer.go_to("rad_antenns")
+	self:on_quit()
+end
+function map_teleport:rad_tonnel()
+	spawn_level_changer.go_to("rad_tonnel")
+	self:on_quit()
+end
+function map_teleport:rad_for_stones()
+	spawn_level_changer.go_to("rad_for_stones")
+	self:on_quit()
+end
+-- pripyat
+function map_teleport:pri_stadium()
+	spawn_level_changer.go_to("pri_stadium")
+	self:on_quit()
+end
+function map_teleport:pri_dk()
+	spawn_level_changer.go_to("pri_dk")
+	self:on_quit()
+end
+function map_teleport:pri_hotel()
+	spawn_level_changer.go_to("pri_hotel")
+	self:on_quit()
+end
+function map_teleport:pri_kindergarten()
+	spawn_level_changer.go_to("pri_kindergarten")
+	self:on_quit()
+end
+function map_teleport:pri_to_radar()
+	spawn_level_changer.go_to("pri_to_radar")
+	self:on_quit()
+end
+function map_teleport:pri_station()
+	spawn_level_changer.go_to("pri_station")
+	self:on_quit()
+end
+-- stancia
+function map_teleport:st_to_sarkofag()
+	spawn_level_changer.go_to("st_to_sarkofag")
+	self:on_quit()
+end
+function map_teleport:st_stop_btr()
+	spawn_level_changer.go_to("st_stop_btr")
+	self:on_quit()
+end
+function map_teleport:st_west()
+	spawn_level_changer.go_to("st_west")
+	self:on_quit()
+end
+function map_teleport:st_pipes()
+	spawn_level_changer.go_to("st_pipes")
+	self:on_quit()
+end
+function map_teleport:st_coach_east()
+	spawn_level_changer.go_to("st_coach_east")
+	self:on_quit()
+end
+function map_teleport:st_bridge()
+	spawn_level_changer.go_to("st_bridge")
+	self:on_quit()
+end
+-- stancia2
+function map_teleport:st2_to_cont_mono()
+	spawn_level_changer.go_to("st2_to_cont_mono")
+	self:on_quit()
+end
+function map_teleport:st2_tanks()
+	spawn_level_changer.go_to("st2_tanks")
+	self:on_quit()
+end
+function map_teleport:st2_pipes()
+	spawn_level_changer.go_to("st2_pipes")
+	self:on_quit()
+end
+function map_teleport:st2_generators()
+	spawn_level_changer.go_to("st2_generators")
+	self:on_quit()
+end
+function map_teleport:st2_tanks2()
+	spawn_level_changer.go_to("st2_tanks2")
+	self:on_quit()
+end
+function map_teleport:st2_finish()
+	spawn_level_changer.go_to("st2_finish")
+	self:on_quit()
+end
+function map_teleport:st2_east()
+	spawn_level_changer.go_to("st2_east")
+	self:on_quit()
+end
+function map_teleport:st2_roof()
+	spawn_level_changer.go_to("st2_roof")
+	self:on_quit()
+end
+function map_teleport:st2_antenna()
+	spawn_level_changer.go_to("st2_antenna")
+	self:on_quit()
+end
+-- bunker
+function map_teleport:bun_containers()
+	spawn_level_changer.go_to("bun_containers")
+	self:on_quit()
+end
+function map_teleport:bun_pool()
+	spawn_level_changer.go_to("bun_pool")
+	self:on_quit()
+end
+function map_teleport:bun_spools()
+	spawn_level_changer.go_to("bun_spools")
+	self:on_quit()
+end
+function map_teleport:bun_breaker()
+	spawn_level_changer.go_to("bun_breaker")
+	self:on_quit()
+end
+-- sarcofag
+function map_teleport:sar_monolith()
+	spawn_level_changer.go_to("sar_monolith")
+	self:on_quit()
+end
+function map_teleport:sar_stair()
+	spawn_level_changer.go_to("sar_stair")
+	self:on_quit()
+end
+function map_teleport:sar_underroom()
+	spawn_level_changer.go_to("sar_underroom")
+	self:on_quit()
+end
+function map_teleport:sar_to_chaes()
+	spawn_level_changer.go_to("sar_to_chaes")
+	self:on_quit()
+end
+-- control monolith
+function map_teleport:cont_mono_start()
+	spawn_level_changer.go_to("cont_mono_start")
+	self:on_quit()
+end
+function map_teleport:cont_mono_room()
+	spawn_level_changer.go_to("cont_mono_room")
+	self:on_quit()
+end
+function map_teleport:cont_mono_management()
+	spawn_level_changer.go_to("cont_mono_management")
+	self:on_quit()
+end
+
+-- Переключение между картами
+function switch_map(indx)
+	local num = 1
+	if indx == "surf" then
+		num = 1
+	elseif indx == "under" then
+		num = 13
+	elseif indx == "next" or indx == "prev" then
+		if has_alife_info("teleport_on_surfaces") then
+			for i=1,12 do
+				local lmap = register_maps[i][1]
+				if lmap == lvl_for_tele then
+					if indx == "next" then
+						if i<12 then num=i+1 else num=1 end
+					elseif indx == "prev" then
+						if i>1 then num=i-1 else num=12 end
+					end
+					break
+				end
+			end
+		elseif has_alife_info("teleport_under_ground") then
+			for i=1,6 do
+				local lmap = register_maps[i+12][1]
+				if lmap == lvl_for_tele then
+					if indx == "next" then
+						if i<6 then num=i+1 else num=1 end
+					elseif indx == "prev" then
+						if i>1 then num=i-1 else num=6 end
+					end
+					num = num+12
+					break
+				end
+			end
+		end
+	end
+	tele_to_level.goToMap(num)
+end

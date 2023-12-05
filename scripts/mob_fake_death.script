@@ -1,0 +1,72 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : mob_fake_death.script
+ Description: scheme: "Mob fake death"
+ Copyright  : 2004 © GSC Game World
+ Author     : Jim
+ Editors    : ...
+ Last edit  : 12.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/------------------------------------------------------------------------------------------------
+class "mob_fake_death"
+--/------------------------------------------------------------------------------------------------
+function mob_fake_death:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function mob_fake_death:reset_scheme()
+	self.st.is_down = self.object:fake_death_fall_down()
+	if self.log then log("reset_scheme: Mob=[%s], is_down=(%s)", self.object and self.object:name(), self.st.is_down, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function mob_fake_death:update(delta)
+	if not xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		if not self.st.is_down then --/ if it could not falldown try again
+			self.st.is_down = self.object:fake_death_fall_down()
+			if self.log then log("update: Mob=[%s], is_down=(%s)", self.object:name(), self.st.is_down, "") end --/#~#
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function mob_fake_death:deactivate()
+	self.object:fake_death_stand_up()
+	if self.log then log("deactivate: Mob=[%s] :(%s)", self.object:name(), "x") end --/#~#
+end
+--/------------------------------------------------------------------------------------------------
+--/ ADD_TO_BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder: Mob=[%s], scheme=[%s], section=[%s]:(%s)", npc:name(), scheme, section, ">")
+	st.action = this.mob_fake_death(npc, st)
+	--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	--/ fot debug!
+	if st.log then log("add_to_binder: Mob=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET_SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+--	log("set_scheme: Mob=[%s], scheme=[%s], section=[%s], gulag=[%s]:(%s)", npc:name(), scheme, section, gulag_name, ">")
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ fot debug!
+	if st.log then log("set_scheme: Mob=[%s],scheme=[%s],section=[%s],gulag=[%s]", npc:name(), scheme, section, gulag_name, "") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

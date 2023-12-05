@@ -1,0 +1,26 @@
+local value_by_section = {}
+
+function init()
+	event("presets"):register(PreSets)
+end
+
+function PreSets(e)
+	--for sect, _ in pairs(all_items.is_money) do
+	--	value_by_section[sect] = Get_Cfg_Num32(system_ini(), sect, "cost", 0)
+	--end	
+    event("item_take"):register(on_item_take)
+end
+
+function on_item_take(e)
+	local sobj, count, value = nil, 0, 0
+	if string.match(e.section, "rubles_") then
+		sobj = alife():object(e.item_id)
+		if sobj then
+			count = e.item:get_ammo_in_magazine() or 0
+			-- value = count * value_by_section[e.section]
+			value = count * Get_Cfg_Num32(system_ini(), e.section, "cost", 0)
+			db.actor:give_money(value)
+			alife():release(sobj, true)
+		end
+	end
+end

@@ -1,0 +1,45 @@
+[smart_terrains]
+none = true
+
+[threshold@forg_stalker_trader]
+ignore_monster = 0
+
+[logic]
+active = walker@forg_trader
+combat_ignore = combat_ignore@forg_stalker_trader
+trade = misc\trade\trade_forg_stalker.ltx
+inv_max_weight = 10000
+threshold = threshold@forg_stalker_trader
+
+[walker@forg_trader]
+path_walk = forg_trader_way
+path_look = forg_trader_look
+def_state_standing = wait_trade
+combat_ignore_cond = always
+on_info = {+forg_stalker_trader_task_done} walker@forg_trader_ask
+threshold = threshold@forg_stalker_trader
+
+[walker@forg_trader_ask]
+path_walk = forg_trader_way
+path_look = forg_trader_look
+combat_ignore_cond = always
+meet = meet@forg_trader_ask
+on_info = {+forg_stalker_trader_asked_all} walker@forg_trader_trade
+threshold = threshold@forg_stalker_trader
+
+[walker@forg_trader_trade]
+path_walk = forg_trader_way
+path_look = forg_trader_look
+combat_ignore_cond = always
+threshold = threshold@forg_stalker_trader
+
+[combat_ignore@forg_stalker_trader]
+
+[meet@forg_trader_ask]
+meet_state 			= 5| wait_trade
+meet_state_wpn 		= 5| wait_trade
+victim         		= 5| actor   
+victim_wpn    		= 5| actor   
+use                 = true
+use_wpn             = true
+meet_dialog			= forg_stalker_trader_ask

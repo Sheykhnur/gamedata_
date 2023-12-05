@@ -1,0 +1,455 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_ai_mgr.script
+ Description: Manager of AI-schemes
+ Copyright  : 2012 © LA-team
+ Author     : ...
+ Editors    : gr1ph00n
+ Last edit  : 08.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs & SCHEMEs PARTs
+--/------------------------------------------------------------------
+local sSchemeName = "ai_mgr" --/ string name of the scheme
+iEvl_AI_Base = xr_evaluators_id.ai_manager_evaluators --/ basic ID (8000)
+iAct_AI_Base = xr_actions_id.ai_manager_actions --/ basic ID (62+...|8000)
+--/------------------------------------------------------------------
+local tAI_Schemes = { [sSchemeName] = {} } --/ schemes array
+local tAiStorage  = {} --/ AI-callbacks array
+local tAI_Modules = {} --/ data array for AI-modules
+ --/        №  |  file name/module   | scheme name  | logic section| enable_scheme | disable_scheme | CPrecond    |ID-evid_base| №№-evid
+tAI_Modules[0] = {module="la_ai_mgr",scheme=nil,section=nil,enable=false,disable=false,evid=nil,common=nil,ev_ids={},acid=nil} --/ "Manager of AI-schemes"
+--/------------------------------------------------------------------
+local bDebug  = false --/ flag for debug
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+--	log("init:[>]") --/#~#
+	if bInit then return end --/>
+	this.Load_List_AI_Modules()
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------
+function PreSets(e) --/ calls when game loads
+--	log("PreSets:(%s/%s)=>(%s/%s)", stalker_ids.property_script, stalker_ids.action_script, iEvl_AI_Base, iAct_AI_Base, "") --/#~# 47/62
+	if not bInit then abort(sModule..":Not_initialised!") end
+	event("actor_update"):register(OnUpdateActor)
+	event("item_take"):register(OnTake)
+	event("npc_update"):register(OnUpdate_NPC)
+	--event("npc_hear"):register(OnHear_NPC)
+	event("npc_hit"):register(OnHit_NPC)
+	event("npc_death"):register(OnDeath_NPC)
+	event("npc_destroy"):register(OnDestroy_NPC)
+	event("actor_save"):register(OnSave)
+	this.OnGameLoad()
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Manager of AI-modules
+--/ -----------------------------------------------------------------------------------------------
+function Load_List_AI_Modules()
+	local ltx = ini_file("lost_alpha\\la_framework.ltx")
+	local section = "ai_modules"
+	if ltx and ltx:section_exist(section) then
+		for i=0, ltx:line_count(section)-1 do
+			local result, idx, value = ltx:r_line(section, i, "", "")
+			if type(tonumber(idx)) == 'number' and trim_w(value) and trim_w(value) ~= "" then
+				local tS = string.split(value, ",")
+				local sNameModule, enabled = tS[1], tS[2]
+				if sNameModule and sNameModule ~= sModule and enabled == "true" then --/ and db[sNameModule]
+					tAI_Modules[#tAI_Modules+1] = {module=sNameModule}
+				end
+			else
+				log("Load_List_AI_Modules:(%s):idx=[%s],v=[%s]:<%s>", i, idx, value, "Warning!")
+			end
+		end
+		--table.print(tAI_Modules,sModule..":AI_Modules|") --/#~#
+	end
+end
+
+--/ loading array of parameters to register scheme (from ltx-file)
+local function Load_Scheme_Params(sNameModule)
+	local tRet = {}
+	local scheme_ltx = ini_file("lost_alpha\\ai_schemes\\"..sNameModule..".ltx")
+	tRet.section = Get_Cfg_Bool(scheme_ltx, "scheme_params", "logic",   false)
+	tRet.enable  = Get_Cfg_Bool(scheme_ltx, "scheme_params", "enable",  true)
+	tRet.disable = Get_Cfg_Bool(scheme_ltx, "scheme_params", "disable", true)
+	tRet.main    = Get_Cfg_Bool(scheme_ltx, "scheme_params", "main",    false)
+	tRet.common  = Get_Cfg_Bool(scheme_ltx, "scheme_params", "common",  true)
+	tRet.ev_ids  = ReadFromIni (scheme_ltx, "scheme_params", "ev_ids",  {0}, "table", ",", false)
+	return tRet --/>
+end
+--/ Indexation (call by name of mudle from evaluator modules itself)
+function Register_AI_Module(sNameModule,sNameScheme,tParams)
+	if not bInit then
+		log("Register_AI_Module:=[%s], scheme=[%s]:<%s>", sNameModule, sNameScheme, "Warning!")
+		return --/> too early!
+	end
+	if sNameModule and sNameScheme then
+		if db[sNameModule] then
+			if not tParams then
+				tParams = Load_Scheme_Params(sNameModule)
+			end
+			for idx,v in ipairs(tAI_Modules) do
+				if v.module == sNameModule then
+					if not (v.scheme and v.evid) then --/ if NOT static or NOT indexed - tabulating
+						v.scheme  = sNameScheme
+						v.section = tParams.section == true      --/ flag of logic sections use
+						v.enable  = not tParams.enable == false  --/ flag of allowing enabling scheme nominally (manager)
+						v.disable = not tParams.disable == false --/ flag of allowing to disable scheme nominally (manager)
+						v.main    = tParams.main == true         --/ flag of having priority under 'dependent' schemes
+						v.common  = not tParams.common == false  --/ flag of registration in "addDynamicProperty"
+						v.ev_ids  = tParams.ev_ids or {0} --/ id-array of evaluator for registering in "addDynamicPrecondition"
+						v.evid    = this.iEvl_AI_Base + idx *10
+						v.acid    = this.iAct_AI_Base + idx *10
+						tAI_Schemes[sNameScheme] = v
+					end
+					if bDebug then log("Register_AI_Module:(%d)ID=[%d]=>module=[%s],scheme=[%s],s=[%s],e=[%s,d=[%s],c=[%s],ev_ids=[%d/%d]", idx, v.evid, v.module, v.scheme, tostring(v.section), tostring(v.enable), tostring(v.disable), tostring(v.common), v.ev_ids[1], #v.ev_ids, "") end --/#~#
+					return v.evid, v.acid --/>
+				end
+			end
+			abort("%s:Register_AI_Module:module=[%s],scheme=[%s]<~NOT found on base AI_Modules:<%s>", sModule, sNameModule, sNameScheme, "Error!")
+		end
+	else
+		abort("%s:Register_AI_Module:module=[%s],scheme=[%s]<~Wrong argumenta by AI_Modules:<%s>", sModule, sNameModule, sNameScheme, "Error!")
+	end
+end
+--/-------------------------------------------------------------------------------------------------
+--/ Process (functions)
+--/-------------------------------------------------------------------------------------------------
+--/ loading/connecting schemes
+function Load_Schemes()
+--	log("Load_Schemes:[%s]", ">") --/#~#
+	local iSchemeType = modules.stype_stalker or 0
+	for idx,v in ipairs(tAI_Modules) do
+		if idx == 0 then --/ registering "ai_mng" (can be usefull later ...)
+			v.section = false
+			v.evid = iEvl_AI_Base --/ = stalker_ids.property_script +18756 --/ basic ID
+			v.acid = iAct_AI_Base --/ = stalker_ids.action_script   +18756 --/ basic ID
+			if bDebug then log("Load_Schemes: iEvl_AI_Base=[%s],iAct_AI_Base=[%s]", iEvl_AI_Base, iAct_AI_Base, "") end --/#~#
+		elseif db[v.module] then
+			if v.evid then
+				if bDebug then log("Load_Schemes: module(%s)=[%s], scheme=[%s], stype=[%s]", idx, v.module, v.scheme, iSchemeType, "") end --/#~#
+				_G.load_scheme(v.module, v.scheme, iSchemeType)
+				--/ adding evaluators, which have higher priority, or which interrupts other scripts/schemes on their own
+				if v.common and v.ev_ids then
+					for _,vv in ipairs(v.ev_ids) do
+						xr_motivator.addDynamicProperty( {v.evid + vv, false} )
+					end
+				end --log("Load_Schemes: module(%s)=[%s], scheme=[%s] %s common", idx, v.module, v.scheme, "+") --/#~#
+			else
+				log("Load_Schemes: module(%s)=[%s] ~ not registered:<%s>", idx, v.module, v.scheme, "Warning!") --/#~#
+			end
+		end
+	end
+end
+
+function Enable_Scheme(oNPC, ini, scheme, section)
+	local t = tAI_Schemes[scheme]
+	if t and db[t.module] and t.enable and t.evid then --/ skipping "ai_mng" & ...
+		if _G[t.module].set_scheme then
+			if t.section then
+				local stor = oNPC and db.storage[oNPC:id()]
+				if stor then
+--					log("Enable_Scheme:module=[%s],scheme=[%s],section=[%s],stype=[%s],gulag=[%s],NPC=[%s]", t.module, scheme, section, stor.stype, stor.gulag_name, oNPC:name(), "") --/#~#
+					--stor.overrides = xr_logic.cfg_get_overrides(ini, section, oNPC) --/#?# loading of overrides
+					if stor.stype then
+						xr_logic.reset_generic_schemes_on_scheme_switch(oNPC, scheme, section)
+					end
+					_G[t.module].set_scheme(oNPC, ini, scheme, section or scheme, stor.gulag_name)
+				else
+					log("Enable_Scheme:module=[%s],scheme=[%s],section=[%s],NPC=[%s]:<%s>", t.module, scheme, section, oNPC and oNPC:name(), "Warning!") --/#~#
+					_G[t.module].set_scheme(oNPC, ini, scheme, section or scheme)
+				end
+			else  --log("Enable_Scheme:module=[%s],scheme=[%s],section=[%s],NPC=[%s]%s", t.module, scheme, section, oNPC and oNPC:name(), "") --/#~#
+				_G[t.module].set_scheme(oNPC, ini, scheme, section or scheme) --/ if t.section ~= true than substitute input parameter
+			end
+		else
+			log("Enable_Scheme:module=[%s],scheme=[%s],section=[%s],NPC=[%s]: not function='set_scheme':<%s>", t.module, scheme, section, oNPC and oNPC:name(), "Warning!") --/#~#
+		end
+	end
+end
+
+--/ enabling schemes (from xr_logic.script)
+function Enable_Schemes(oNPC, ini, scheme, section)
+	local bMain = scheme and scheme == "ai_mgr_main" --/ flag of activating main schemes pack
+	local bScheme = scheme and not (bMain or scheme:match('^ai_mgr')) --/ flag of activating scheme which has it's name
+	--local bDebug = oNPC and oNPC:name() == "esc_ranger1"
+	if bDebug then log("Enable_Schemes:NPC=[%s],scheme=[%s],section=[%s],main=(%s):(%s)", oNPC and oNPC:name(), scheme, section, bMain, ">") end --/#~#
+	for idx,v in ipairs(tAI_Modules) do
+		if db[v.module] and v.enable and v.evid and (bScheme or v.main == bMain) then --/ skipping "ai_mng" & ...
+			if _G[v.module].set_scheme then
+				if v.section then
+					local stor = oNPC and db.storage[oNPC:id()]
+					if stor then
+						if bDebug then log("Enable_Schemes:(%s)module=[%s],scheme=[%s],section=[%s],stype=[%s],gulag=[%s],NPC=[%s]", idx, v.module, v.scheme, section, stor.stype, stor.gulag_name, oNPC:name(), "") end --/#~#
+						--stor.overrides = xr_logic.cfg_get_overrides(ini, section, oNPC) --/#?# loading overrides
+						if stor.stype then
+							xr_logic.reset_generic_schemes_on_scheme_switch(oNPC, v.scheme, section)
+						end
+						_G[v.module].set_scheme(oNPC, ini, v.scheme, section or v.scheme, stor.gulag_name)
+					else
+						log("Enable_Schemes:(%d)module=[%s],scheme=[%s],section=[%s],NPC=[%s]:<%s>", idx, v.module, v.scheme, section, oNPC and oNPC:name(), "Warning!")
+						_G[v.module].set_scheme(oNPC, ini, v.scheme, section or v.scheme)
+					end
+				else
+					if bDebug then log("Enable_Schemes:(%d)module=[%s],scheme=[%s],section=[%s],NPC=[%s]", idx, v.module, v.scheme, section or v.scheme, oNPC and oNPC:name(), "") end --/#~#
+					_G[v.module].set_scheme(oNPC, ini, v.scheme, v.scheme or section) --/ if v.section ~= true then substitute input parameter
+				end
+			else
+				log("Enable_Schemes:(%d)module=[%s],scheme=[%s],section=[%s],NPC=[%s]: not function='set_scheme':<%s>", idx, v.module, v.scheme or scheme, section, oNPC and oNPC:name(), "Warning!")
+			end
+		end
+		if bScheme and scheme == v.scheme then
+			if bDebug then log("Enable_Schemes:NPC=[%s],scheme=[%s],section=[%s]:(%s)", oNPC and oNPC:name(), scheme, section, "<x") end --/#~#
+			break
+		end
+	end
+end
+--/ disabling schemes (from xr_logic.script)
+function Disable_Schemes(oNPC, scheme)
+--	log("Disable_Schemes:NPC=[%s],SchemeType=[%s]", oNPC and oNPC:name(), scheme, "") --/#~#
+	for idx,v in ipairs(tAI_Modules) do
+		if db[v.module] and v.disable and v.evid then --/ skipping "ai_mng" & ...
+			if _G[v.module].disable_scheme then
+--			log("Disable_Schemes:(%s)module=[%s],scheme=[%s],NPC=[%s]", idx, v.module, v.scheme, oNPC:name(), "") --/#~#
+				_G[v.module].disable_scheme(oNPC, v.scheme)
+			else
+				log("Disable_Schemes:(%s)module=[%s],scheme=[%s],NPC=[%s]: not function='disable_scheme':<%s>", idx, v.module, v.scheme, oNPC:name(), "Warning!")
+			end
+		end
+	end
+end
+
+--/-------------------------------------------------------------------------------------------------
+--/ CallBacks Section
+--/-------------------------------------------------------------------------------------------------
+function OnGameLoad()
+	if not db.la_cleaner then --/ cleaning when game starts
+		if db.la_ai_grenader  then la_ai_grenader.cleaning() end
+		if db.la_ai_glauncher then la_ai_glauncher.cleaning() end
+	end
+end
+
+function OnSave(e)
+	if db.la_ai_grenader  then la_ai_grenader.cleaning() end
+	if db.la_ai_glauncher then la_ai_glauncher.cleaning() end
+end
+
+function OnUpdateActor(e)
+	if db.la_ai_grenader  then la_ai_grenader.update(e.delta) end
+	if db.la_ai_glauncher then la_ai_glauncher.update(e.delta) end
+	if db.la_ai_disguise  then la_ai_disguise.update(e.delta) end
+	--/ чистка
+	for id,v in pairs(tAiStorage) do
+		if not ( db.storage[id] and level.object_by_id(id) ) then
+--			log("OnUpdateActor:Id=[%s],Stor=[%s],Obj=[%s]:<%s>", id, db.storage[id] ~= nil, level.object_by_id(id) and level.object_by_id(id):name(), "Info!") --/#~#
+			tAiStorage[id] = nil
+		end
+	end
+end
+
+function OnNetSpawnNPC(e)
+	--/ reserve
+end
+
+function OnUpdate_NPC(e)
+	if tAiStorage[e.obj_id] then
+		this.issue_ai_event(e.obj_id, "npc_update", e.obj, e.delta)
+	end
+	if db.la_ai_disguise then la_ai_disguise.npc_update(e.obj,delta) end
+end
+
+function OnTake(e)
+	if not e.item then return end --/>
+	if db.la_ai_grenader  then la_ai_grenader.fake_pickup(e.item) end
+	if db.la_ai_glauncher then la_ai_glauncher.fake_pickup(e.item) end
+	if db.la_ai_heal      then la_ai_heal.pickup(e.item) end
+end
+
+function OnHit_NPC(e)
+	local id = e.victim and e.victim:id()
+	if id and tAiStorage[id] and e.amount > 0.001 then
+		this.issue_ai_event(id, "hit_callback", e.victim,e.amount,e.dir,e.who,e.bone)
+	end
+end
+
+function OnHear_NPC(e)
+	local id = e.obj:id()
+	if id and tAiStorage[id] then
+		this.issue_ai_event(id, "hear_callback", e.obj,e.who,e.s_type,e.s_pos,e.s_pwr)
+	end
+end
+
+function OnDeath_NPC(e)
+	local id = e.victim and e.victim:id()
+	if id and tAiStorage[id] then
+		this.issue_ai_event(id, "death_callback", e.victim, e.who)
+	end
+end
+
+function OnDestroy_NPC(e)
+	if tAiStorage[e.obj_id] then
+		this.issue_ai_event(e.obj_id, "npc_net_destroy", e.obj)
+	end
+end
+
+--/------------------------------------------------------------------
+--/ AI-CallBacks Section
+--/------------------------------------------------------------------
+--/ processing of AI-callbacks
+function issue_ai_event(idNPC, sEvFunc, ...)
+	local tAS = tAiStorage[idNPC]
+	if tAS then
+		if db.storage[idNPC] then
+			local oAction, bEnabled
+			for oAction, bEnabled in pairs(tAS) do
+				if bEnabled and oAction[sEvFunc] then
+					oAction[sEvFunc](oAction, ...)
+				end
+			end
+		else
+			log("issue_ai_event:idNPC=[%s],EvFunc=[%s],bStor=[%s]:<%s>", idNPC, sEvFunc, db.storage[idNPC] ~= nil, "Warning!")
+			tAS = nil
+		end
+	end
+end
+--/ registration of AI-callback
+function subscribe_ai_event(oNPC, oAction, scheme)
+	if oNPC and oAction then
+		local idNPC = oNPC:id()
+		if db.storage[idNPC] then
+			if not tAiStorage[idNPC] then
+				tAiStorage[idNPC] = {}
+			end
+			tAiStorage[idNPC][oAction] = true
+		end
+	else
+		log("subscribe_ai_event:NPC=[%s],Scheme=[%s],Action=[%s]:<%s>", oNPC and oNPC:name(), oAction, scheme, "Warning!")
+	end
+end
+--/ unregistering of AI-callback
+function unsubscribe_ai_event(idNPC, oAction, scheme)
+	local tAS = idNPC and tAiStorage[idNPC]
+	if tAS then
+--		log("unsubscribe_ai_event:idNPC=[%s],Scheme=[%s],#Stor=[%s]:[%s]", idNPC, scheme, table.size(tAS), ">") --/#~#
+		if oAction then
+			tAS[oAction] = nil --/ cleaning action callback
+		else
+			tAS = nil
+		end
+		--/#?# check: is there left any other Action for this NPC (do we need it?)
+		this.Clear_AiStorage(idNPC, tAS, scheme)
+--		log("unsubscribe_ai_event:idNPC=[%s],Scheme=[%s],Stor=[%s]:[%s]", idNPC, scheme, tAS and table.size(tAS), "<") --/#~#
+	--else log("unsubscribe_ai_event:idNPC=[%s],Scheme=[%s],Action~NIL:<%s>", idNPC, scheme, "Warning!")
+	end
+end
+
+function Clear_AiStorage(idNPC, tAS, scheme)
+--	log("Clear_AiStorage:idNPC=[%s],Scheme=[%s],AiStor=[%s/%s]:[%s]", idNPC, scheme, tAiStorage[idNPC] ~= nil, table.size(tAiStorage), ">") --/#~#
+	local iCnt = 0
+	if tAS then
+		for _,v in pairs(tAS) do --/ analogue of table.size(tAS)
+			iCnt = iCnt +1
+		end
+		if iCnt > 0 then
+			for i=1,iCnt do
+				if not tAS[i] then
+--					log("Clear_AiStorage:idNPC=[%s],Scheme=[%s],DelAction=(%s/%s):[%s]", idNPC, scheme, i, iCnt, "x") --/#~#
+					table.remove(tAS, i) --/ deleting record from array tAS NPC
+					iCnt = iCnt -1
+					break
+				end
+			end
+		end
+	end
+	if iCnt <= 0 and tAiStorage[idNPC] then --/ no other actions
+		tAiStorage[idNPC] = nil --/ cleaning of tAiStorage
+		iCnt = 0
+		for _,v in pairs(tAiStorage) do --/ analogue of table.size(tAiStorage)
+			iCnt = iCnt +1
+		end
+		if iCnt > 0 then
+			for i=1,iCnt do
+				if not tAiStorage[i] then
+--					log("Clear_AiStorage:idNPC=[%s],Scheme=[%s],DelStor=(%s/%s):[%s]", idNPC, scheme, i, iCnt, "X") --/#~#
+					table.remove(tAiStorage, i) --/ cleaning record from common array
+					break
+				end
+			end
+		end
+	end
+--	log("Clear_AiStorage:idNPC=[%s]Scheme=[%s],AiStor=[%s/%s]:[%s]", idNPC, scheme, tAiStorage[idNPC] ~= nil, table.size(tAiStorage), "<") --/#~#
+end
+--/------------------------------------------------------------------------------------------------
+--/ HELPERs
+--/------------------------------------------------------------------------------------------------
+function get_evid(scheme,ev_id)
+	for k,v in pairs(tAI_Modules) do
+		if scheme == v.scheme then
+			return v.evid + (ev_id or 0) --/>
+		end
+	end
+	return nil
+end
+function get_acid(scheme,ac_id)
+	for k,v in pairs(tAI_Modules) do
+		if scheme == v.scheme then
+			return v.acid + (ac_id or 0) --/>
+		end
+	end
+	return nil
+end
+function get_scheme_by_evid(ev_id)
+	for k,v in pairs(tAI_Modules) do
+		if v.evid and ev_id then
+			if v.evid == ev_id then
+				return v.scheme..":evaluator" --/>
+			elseif (v.evid /10) ==  math.floor(ev_id /10) then
+				return v.scheme..":evaluator+" --/>
+			end
+		end
+	end
+	return nil
+end
+function get_scheme_by_acid(ac_id)
+	for k,v in pairs(tAI_Modules) do
+		if v.acid and ac_id then
+			if v.acid == ac_id then
+				return v.scheme..":action" --/>
+			elseif (v.acid /10) ==  math.floor(ac_id /10) then
+				return v.scheme..":action+" --/>
+			end
+		end
+	end
+	return nil
+end
+--/------------------------------------------------------------------------------------------------
+--/ Integrating synonyms of functions from current module to module '_G'
+--/------------------------------------------------------------------------------------------------
+local bFuncG = false --/ flag of integration functions to module '_G'
+
+if not bFuncG then
+	local tFuncG = {
+		["register_ai_module"]   = Register_AI_Module,
+		["subscribe_ai_event"]   = subscribe_ai_event,
+		["unsubscribe_ai_event"] = unsubscribe_ai_event,
+		["get_ai_evid"]          = get_evid,
+		["get_ai_acid"]          = get_acid
+	}
+	local oModule = _G
+	setfenv(1,oModule)
+	for k,v in pairs(tFuncG) do
+		oModule[k] = v
+		setfenv(oModule[k],oModule)
+	end
+	bFuncG = true
+end
+--/------------------------------------------------------------------------------------------------

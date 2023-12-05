@@ -1,0 +1,72 @@
+;-------*********-------- Лиана
+[zone_rusty_hair]
+$spawn 						= "zones\liana\liana_average"
+;$prefetch 					= 16
+class						= ZS_RUSTY 
+name						= Liana
+
+visual						= physics\anomaly\anomaly_liana
+idle_anim_name				= idle
+attack_anim_name			= idle
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+hit_impulse_scale			= 0.5
+effective_radius			= 0.75 									;размер радиуса в процентах от оригинального, где действует зона
+sound						= zone_mosquito_bald
+postprocess					= postprocess_new
+
+min_speed_to_react  		= 1
+
+hit_power					= 1
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= true
+art_onstart_spawn_prob		= 0.26
+art_onstart_spawn_cicles	= 1
+
+hit_type					= strike ;chemical_burn
+hit_effect					= anomaly2\hit_metal_02
+
+idle_particles				= anomaly2\pux_idle
+blowout_particles			= anomaly2\pux_blast
+
+idle_small_particles		= anomaly2\pux_damage_smoke_01
+idle_big_particles			= anomaly2\pux_damage_smoke_02
+entrance_small_particles	= anomaly2\pux_blast
+entrance_big_particles		= anomaly2\pux_blast
+
+disable_time				= -1									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 8000									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= -1									;время отключения idle партиклов
+
+ignore_nonalive				= true;
+ignore_small				= true;
+ignore_artefacts			= true
+
+awaking_time				= 500
+blowout_time				= 8000	
+accamulate_time				= 10000
+
+attack_animation_start		= 0
+attack_animation_end		= 8000
+
+blowout_light				= off
+idle_light					= off
+
+visible_by_detector 		= on
+
+blowout_wind				= off
+
+artefacts					= af_rusty_thorn,7,af_rusty_kristall,3
+
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts 	= on
+artefact_spawn_probability  = 0.5									;вероятность, что во время погибания существа в аномалии будет рожден артефакт
+artefact_spawn_particles 	= anomaly2\gravi_anomaly_shield_00		;партиклы, которые отыграютс¤ на месте рождени¤ артефакта (опционально)
+artefact_born_sound 		= anomaly\anomaly_gravy_hit1			;звук, который отыграютс¤ на месте рождени¤ артефакта (опционально)
+throw_out_power 			= 5										;импульс с которым артефакт будет выброшен из зоны в произвольном направлении
+artefact_spawn_height 		= 1										;(м) высота на центром зоны где будет рожден артефакт
+artefact_spawn_cicles		= 1										;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2

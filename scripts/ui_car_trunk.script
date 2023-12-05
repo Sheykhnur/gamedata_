@@ -1,0 +1,136 @@
+--[[
+ File       : ui_car_trunk.script
+ Description: "On Use Trunk Menu"
+ Copyright  : 2008 © LA-team
+ Author     : barin (16.10.2008)
+ Editors    : gr1ph00n, lox(07.02.2013)
+ Last edit  : 01.09.17 rafa
+ --]]
+
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------------------------------------
+class "uiTrunkMenu" (CUIScriptWnd)
+--/ ------------------------------------------------------------------------------------------------
+function uiTrunkMenu:__init(car_id, binder) super()
+	self:NeedCenterCursor(true)
+	la_utils.custom_ui_usage("show", sModule)
+	
+	self.car_id     = car_id
+	self.binder		= binder
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiTrunkMenu:__finalize()
+end
+
+function uiTrunkMenu:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	local frame_width  = 135
+	local frame_height = 140
+	local frame_x = math.modf((1024 - frame_width)/2)
+	local frame_y = math.modf((768 - frame_height)/2)
+	
+	local dlg = CUIFrameWindow()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("wnd_frame")
+	dlg:Init("ui_tablist_textbox", frame_x, frame_y, frame_width, frame_height)
+	--dlg:Init("ui_stroketextbox", frame_x, frame_y, frame_width, frame_height)
+	self:AttachChild(dlg)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_refuel")
+	dlg:SetTextST("ui_st_refuel")
+	dlg:Enable(self.binder:can_refuel())
+	dlg:Init("ui_button_ordinary", frame_x + 5, frame_y + 10, 117, 29)
+	self:AttachChild(dlg)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_repair")
+	dlg:SetTextST("ui_st_repair")
+	dlg:Enable(self.binder:can_repair())
+	dlg:Init("ui_button_ordinary", frame_x + 5, frame_y + 40, 117, 29)
+	self:AttachChild(dlg)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_trunk")
+	dlg:SetTextST("ui_st_open_trunk")
+	dlg:Enable(self.binder.has_trunk)
+	dlg:Init("ui_button_ordinary", frame_x + 5, frame_y + 70, 117, 29)
+	self:AttachChild(dlg)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_cancel")
+	dlg:SetTextST("ui_inv_exit")
+	dlg:Init("ui_button_ordinary", frame_x + 5, frame_y + 100, 117, 29)
+	self:AttachChild(dlg)
+end
+
+function uiTrunkMenu:InitCallBacks()
+	self:AddCallback("btn_refuel", ui_events.BUTTON_CLICKED, self.OnBtnRefuel, self)
+	self:AddCallback("btn_repair", ui_events.BUTTON_CLICKED, self.OnBtnRepair, self)
+	self:AddCallback("btn_trunk",  ui_events.BUTTON_CLICKED, self.OnBtnTrunk,  self)
+	self:AddCallback("btn_cancel", ui_events.BUTTON_CLICKED, self.OnCancel,      self)
+end
+
+function uiTrunkMenu:OnBtnRefuel()
+	self.binder:refuel()
+	local btn = self:GetButton("btn_refuel")
+	btn:Enable(false)
+	-- check again a light after, so fuel canister has time to remove
+	start_quick_timer(0, function()
+		btn:Enable(self.binder:can_refuel())
+	end)
+end
+
+function uiTrunkMenu:OnBtnRepair()
+	self.binder:repair()
+	local btn = self:GetButton("btn_repair")
+	btn:Enable(false)
+	start_quick_timer(0, function()
+		btn:Enable(self.binder:can_repair())
+	end)
+end
+
+function uiTrunkMenu:OnBtnTrunk()
+	self:OnQuit()
+
+	local car = level.object_by_id(self.car_id)
+	if car then
+		car:get_car():ShowTrunk()
+	end
+end
+
+function uiTrunkMenu:OnQuit()
+	la_utils.custom_ui_usage("hide", sModule)
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiTrunkMenu:OnCancel()
+	self:OnQuit()
+
+	local car = level.object_by_id(self.car_id)
+	if car then
+		car:get_car():CloseTrunkBone()
+	end
+end
+
+function uiTrunkMenu:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE or dik == bind_to_dik(key_bindings.kUSE) then
+			self:OnCancel()
+		end
+	end
+	
+	return true
+end

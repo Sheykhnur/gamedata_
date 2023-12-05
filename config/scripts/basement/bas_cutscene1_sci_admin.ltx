@@ -1,0 +1,139 @@
+[combat_ignore@bas_admin]
+
+[danger@bas_admin]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_admin]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@admin_sit_ready
+combat_ignore = combat_ignore@bas_admin
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+
+[remark@admin_sit_prepare]
+anim = sit_static_chair_right_scene
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+on_timer = 5000 | remark@admin_sit_ready
+
+[remark@admin_sit_ready]
+anim = sit_static_chair_right_scene
+snd = bas_replics1
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+on_signal = sound_end | remark@admin_labrat
+meet = no_meet
+
+[remark@admin_labrat]
+anim = sit_static_chair_right_head
+;snd = bas_replics2
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+on_signal = sound_end | %+bas_cs1_info_1%
+on_info = {+bas_labrat_finished} remark@admin_initiate
+
+[remark@admin_initiate]
+anim = sit_static_chair_right_clava
+snd = bas_replics4
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+on_signal = sound_end | %+bas_scan_start%
+on_info = {+bas_scan_completed} remark@admin_look ;from script
+
+[remark@admin_look]
+anim = sit_static_chair_right_clava
+snd = bas_replics_take_a_look
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+on_signal = sound_end | %+bas_cs1_info_2% walker@admin_look
+
+[walker@admin_look]
+path_walk = bas_sci1_see
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+target = bas_look_to_holo, 0
+on_info = {+bas_cs1_info_3} remark@admin_dialog
+
+[remark@admin_dialog]
+anim = sci_talking
+snd = bas_replics8
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+on_signal = sound_end | %+bas_cs1_info_4% remark@admin_synth
+target = bas_look_to_holo, 0
+
+[remark@admin_synth]
+anim = wait
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+target = bas_look_to_holo, 0
+on_info = {+bas_cs1_info_6} remark@admin_dialog2
+
+[remark@admin_dialog2]
+anim = stand_wait
+snd = bas_replics11
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+on_signal = sound_end | %+bas_admin_not_tested%
+on_info = {+bas_cs1_drain} remark@admin_ppc
+
+[remark@admin_synth_end]
+anim =  stand_wait
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+
+[remark@admin_ppc]
+anim = sci_suprised
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+on_info = {+bas_cs1_shut_down} walker@admin_run
+
+[remark@admin_end]
+anim = sci_fear_new
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+
+[walker@admin_run]
+path_walk = bas_sci1_back
+path_look = bas_sci1_back_look
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+target = bas_sci1_back_look, 0
+on_signal = admreached | remark@admin_shutdown
+meet = no_meet
+
+[remark@admin_shutdown]
+anim = sit_static_chair_right
+combat_ignore_cond = always
+danger = danger@bas_admin
+threshold = threshold@bas_admin
+meet = no_meet
+target = bas_sci1_back_look, 0
+on_info = {+bas_cutscene_end} %=bas_release_all%

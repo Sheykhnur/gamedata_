@@ -1,0 +1,103 @@
+[combat_ignore]
+
+[logic]
+active = walker@war_sc4_tehnic
+combat_ignore = combat_ignore
+
+[walker@war_sc4_tehnic]
+path_walk = war_sc4_teh1_walk1
+meet = no_meet
+combat_ignore_cond = always 
+team = war_tehnics
+on_signal = rebreached | remark@war_sc4_wait %+war_sc4_sci_start%
+
+[remark@war_sc4_wait]
+anim = stand_wait
+target = war_sc4_teh1_walk2, 1
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc4_talk1} remark@war_sc4_work
+
+[remark@war_sc4_work]
+anim = war_ok_deal
+snd = war_replics31
+target = war_sc4_teh1_walk2, 1
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | walker@war_sc4_tehnic_go %+war_sc4_walk%
+
+[walker@war_sc4_tehnic_go]
+path_walk = war_sc4_teh1_walk2
+meet = no_meet
+combat_ignore_cond = always
+def_state_standing = ward
+team = war_tehnics
+on_info = {+war_sc4_talk3} remark@war_sc4_work2
+
+[remark@war_sc4_work2]
+anim = sci_think
+snd = war_replics34
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh1_look, 0
+on_signal = sound_end | remark@war_sc4_work34 %+war_instrument%
+
+[remark@war_sc4_work34]
+anim = war_repair
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh1_look, 0
+on_timer = 11900 | %+war_sc4_sparks%
+on_signal = anim_end | remark@sc4_work5
+
+[remark@sc4_work5]
+anim = war_incident
+snd = war_replics35
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh1_look, 0
+on_signal = sound_end | %+war_sc4_snd%
+on_info = {+war_sc4_talk5} remark@sc4_work6
+
+[remark@sc4_work6]
+anim = npc_refuse
+snd = war_replics38
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh2_look, 0
+on_signal = sound_end | %+war_sc4_knock% remark@sc4_work6_synth
+
+[remark@sc4_work6_synth]
+anim = wait
+meet = no_meet
+combat_ignore_cond = always
+target = war_sc4_teh2_look, 0
+on_timer = 5500 | remark@sc4_work7 %+war_sc4_talk6%
+
+[remark@sc4_work7]
+anim = hello
+target = war_sc4_sci_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = anim_end | remark@war_sc4_teh1_death
+
+[remark@war_sc4_teh1_death]
+anim = war_cough
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 10000 | remark@war_sc4_psy_teh1
+
+[remark@war_sc4_psy_teh1]
+anim = psycho_mind
+meet = no_meet
+combat_ignore_cond = always
+anim_reset = false
+on_info = {+war_sc4_dead} remark@war_sc4_psy_teh1f
+
+[remark@war_sc4_psy_teh1f]
+anim = psycho_mind
+snd = war_replics40a
+meet = no_meet
+combat_ignore_cond = always
+anim_reset = false
+on_signal = sound_end | nil %=kill_npc%

@@ -1,0 +1,55 @@
+[logic]
+active = {+country_second_wave_start} sr_idle@11, {+country_major_third_mutant_quest_start -country_second_wave_start} sr_idle@2, {-country_major_third_mutant_quest_start} sr_idle@1
+
+[sr_idle@1]
+on_info = {+country_major_third_mutant_quest_start} sr_idle@2 %=scenario_autosave_w_info(country_major_wave_atack_3) =rad_psy_basic_clear =set_weather(la_silenthill) =play_snd(affects\hit_fist) =run_cam_effector(fusker)%
+on_info2 = {+country_second_wave_start} sr_idle@11 %=scenario_autosave_w_info(country_major_wave_atack_4) =rad_psy_basic_clear =set_weather(la_silenthill)%
+on_info3 = {+third_wave_contr_dead} nil
+
+[sr_idle@2]
+on_info = {+country_second_wave_start} sr_idle@11 %=scenario_autosave_w_info(country_major_wave_atack_4) =rad_psy_basic_clear =set_weather(la_silenthill)%
+on_actor_outside = sr_idle@3 %=teleport_actor(bcr_atack_wave_teleport:bcr_atack_wave_teleport_look) =rad_psy_basic_clear =play_snd(affects\hit_fist) =run_cam_effector(fusker) =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh3)%
+on_info2 = {+third_wave_contr_dead} nil
+
+[sr_idle@3]
+on_info = {+country_second_wave_start} sr_idle@11 %=scenario_autosave_w_info(country_major_wave_atack_4) =rad_psy_basic_clear =set_weather(la_silenthill)%
+on_actor_outside = sr_idle@2 %=teleport_actor(bcr_atack_wave_teleport:bcr_atack_wave_teleport_look) =rad_psy_basic_clear =play_snd(affects\hit_fist) =run_cam_effector(fusker) =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh2)%
+on_info2 = {+third_wave_contr_dead} nil
+
+
+[sr_idle@11]
+on_info = sr_idle@21
+on_info2 = {+third_wave_contr_dead} nil
+
+[sr_idle@21]
+on_info = {+country_third_wave_start} sr_idle@111 %=scenario_autosave_w_info(country_major_wave_atack_5) =rad_psy_basic_clear =set_weather(la_silenthill)%
+on_actor_outside = sr_idle@31 %=teleport_actor(bcr_atack_wave_teleport:bcr_atack_wave_teleport_look) =rad_psy_basic_clear =play_snd(affects\hit_fist) =run_cam_effector(fusker) =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh3)%
+on_info2 = {+third_wave_contr_dead} nil
+
+[sr_idle@31]
+on_info = {+country_third_wave_start} sr_idle@111 %=scenario_autosave_w_info(country_major_wave_atack_5) =rad_psy_basic_clear =set_weather(la_silenthill)%
+on_actor_outside = sr_idle@21 %=teleport_actor(bcr_atack_wave_teleport:bcr_atack_wave_teleport_look) =rad_psy_basic_clear =play_snd(affects\hit_fist) =run_cam_effector(fusker) =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh2)%
+on_info2 = {+third_wave_contr_dead} nil
+
+
+[sr_idle@111]
+on_info = sr_idle@211
+on_info2 = {+third_wave_contr_dead} nil
+
+[sr_idle@211]
+on_info = {+country_major_wave_kontr} sr_idle@4 %=scenario_autosave_w_info(country_major_wave_atack_6) =rad_psy_basic_clear =set_weather(la_silenthill)%
+on_actor_outside = sr_idle@31 %=teleport_actor(bcr_atack_wave_teleport:bcr_atack_wave_teleport_look) =rad_psy_basic_clear =play_snd(affects\hit_fist) =run_cam_effector(fusker) =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh3)%
+on_info2 = {+third_wave_contr_dead} nil
+
+[sr_idle@311]
+on_info = {+country_major_wave_kontr} sr_idle@4 %=scenario_autosave_w_info(country_major_wave_atack_6) =rad_psy_basic_clear =set_weather(la_silenthill)%
+on_actor_outside = sr_idle@21 %=teleport_actor(bcr_atack_wave_teleport:bcr_atack_wave_teleport_look) =rad_psy_basic_clear =play_snd(affects\hit_fist) =run_cam_effector(fusker) =play_snd(characters_voice\scenario\military\collect\mil_collect_laugh2)%
+on_info2 = {+third_wave_contr_dead} nil
+
+
+[sr_idle@4]
+on_info = sr_idle@5
+on_info2 = {+third_wave_contr_dead} nil
+
+[sr_idle@5]
+on_info = {+third_wave_contr_dead} nil

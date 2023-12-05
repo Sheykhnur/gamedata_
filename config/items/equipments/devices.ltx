@@ -1,0 +1,188 @@
+;-------------- ѕриборы --------------
+
+;------------------
+[device_pda]:identity_immunities
+;$spawn                          = "devices\device_pda"
+$prefetch                       = 16
+class                           = D_PDA
+cform                           = skeleton
+visual                          = equipments\item_pda.ogf
+radius                          = 50
+slot                            = 7
+default_to_ruck                 = false
+
+inv_name                        = pda_item_name
+inv_name_short                  = pda_item_name
+description                     = enc_equipment_devic_device-PDA1
+
+inv_weight                      = 0.25
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 16
+inv_grid_y         = 16
+
+cost                            = 400
+
+attach_angle_offset             = 3.080506, -1.493053, -1.202040
+attach_position_offset          = 0.080000, 0.021273, 0.100000
+attach_bone_name                = bip01_r_hand
+auto_attach                     = false
+
+;------------------
+[device_torch]:identity_immunities
+$spawn                          = "devices\device_torch"
+$prefetch                       = 32
+class                           = TORCH_S
+cform                           = skeleton
+visual                          = equipments\light_night.ogf
+default_to_ruck                 = false
+
+description                     = enc_equipment_devic_device-torch1
+inv_name                        = device-torch
+inv_name_short                  = device-torch
+
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 16
+inv_grid_y         = 10
+inv_weight                      = 0.45
+
+cost                            = 100
+slot                            = 9
+position                        = 0.35, 0.25, 0.0
+light_trace_bone                = cone_bone
+battery_duration                = 75000
+disabled_maps                   = andy_test_, pahom, hlebushek
+uncharge_rate                   = 20.0
+trade_ignore_condition          = true ; ignore "buy_item_condition_factor" for this item
+condition_cost_koef             = 0.3  ; only drop price by ~30%
+condition_cost_curve            = 1.0 ; condition cost drop curvature (1 - straight line, <1 - slower first, >1 - faster first)
+
+auto_attach                     = false
+attach_bone_name                = bip01_head
+attach_angle_offset             = 0, -3.14, 1.6
+attach_position_offset          = 0.115, 0.00, 0.07
+
+night_vision                    = on
+
+snd_night_vision_on             = weapons\nv_start
+snd_night_vision_off            = weapons\nv_off
+snd_night_vision_idle           = ambient\silence, 0.0
+snd_night_vision_broken         = weapons\nv_off
+
+snd_flashlight_switch_on        = actor\flashlight
+
+;------------------
+[device_torch_adv]:device_torch
+$spawn                          = "devices\device_torch advanced"
+description                     = enc_equipment_devic_device-torch2
+inv_name                        = device-torch-adv
+inv_name_short                  = device-torch-adv
+
+inv_grid_x         = 18
+inv_grid_y         = 10
+
+visual                          = equipments\light_night2.ogf
+inv_weight                      = 0.55
+cost                            = 600
+battery_duration                = 70000
+
+;------------------
+[device_torch_eco]:device_torch
+$spawn                          = "devices\device_torch economic"
+
+description                     = enc_equipment_devic_device-torch3
+inv_name                        = device-torch-eco
+inv_name_short                  = device-torch-eco
+
+inv_grid_x         = 20
+inv_grid_y         = 10
+
+visual                          = equipments\light_night3.ogf
+inv_weight                      = 0.4
+cost                            = 350
+battery_duration                = 180000
+
+;------------------
+[sleeping_bag]:usable_base
+visual                          = equipments\sleeping_bag.ogf
+inv_name                        = enc_sleeping_bag_name
+inv_name_short                  = enc_sleeping_bag_name
+description                     = enc_sleeping_bag_descr
+inv_weight                      = 0.0
+inv_grid_width     = 2
+inv_grid_height    = 2
+inv_grid_x         = 39
+inv_grid_y         = 36
+cost                            = 400
+eat_health                      = 0
+eat_satiety                     = 0
+eat_power                       = 0
+eat_radiation                   = 0
+eat_alcohol                     = 0
+wounds_heal_perc                = 0
+eat_portions_num                = -1 ;--/#!# использовать бесконечно раз!
+
+;------------------
+[item_battery]:usable_base
+$spawn                          = "devices\item_battery"
+class                           = II_BATTE
+visual                          = equipments\item_battery_02.ogf
+
+description                     = enc_item_battery_descr
+inv_name                        = enc_item_battery_name
+inv_name_short                  = enc_item_battery_name
+
+inv_weight                      = 0.05
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 16
+inv_grid_y         = 17
+
+cost                            = 45
+
+force_min                       = 25
+force_const                     = 63
+force_max                       = 100
+force_grow_speed                = 25
+destroy_time                    = 3000
+throw_point                     = 0,0.4,0.5
+throw_dir                       = 0,0,1
+
+use_sound						= actor\battery_insert
+
+;------------------
+[repair_kit]:usable_base
+$prefetch                       = 32
+visual                          = equipments\box_repair_kit.ogf
+
+inv_name                        = st_item_repair_kit
+inv_name_short                  = st_item_repair_kit
+description                     = st_item_repair_kit_descr
+
+inv_weight                      = 0.5
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 22
+inv_grid_y         = 34
+cost                            = 7500
+
+eat_portions_num                = 3
+
+;------------------
+[gunsmith_kit]:usable_base
+$prefetch                       = 32
+visual                          = equipments\box_gunsmith_kit.ogf
+
+inv_name                        = st_item_gunsmith_kit
+inv_name_short                  = st_item_gunsmith_kit
+description                     = st_item_gunsmith_kit_descr
+
+inv_weight                      = 0.75
+inv_grid_width     = 2
+inv_grid_height    = 1
+inv_grid_x         = 26
+inv_grid_y         = 40
+cost                            = 7000
+
+eat_portions_num                = 3

@@ -1,0 +1,120 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_inv_wnd_menu.script
+ Description: 
+ Copyright  : 2009 © LA-team
+ Author     : barin(29.08.2009)
+ Editors    : barin(05.07.2010)
+ Last edit  : 13.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ ------------------------------------------------------------------------------------------------
+class "uiInvWndMenu" (CUIScriptWnd)
+--/ ------------------------------------------------------------------------------------------------
+function uiInvWndMenu:__init(owner) super()
+	self.owner = owner
+	
+	self.btn_clicked = "cancel"
+	self.item_count = 0
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.owner:AttachChild(self)
+	self:SetWindowName("uiInvWndMenu")
+end
+
+function uiInvWndMenu:__finalize()
+end
+
+function uiInvWndMenu:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.owner.parent.xml:InitFrame("items_menu:frame", self)
+	self:Register(self.owner.parent.xml:Init3tButton("items_menu:btn_one",    self), "menu_btn_one")
+	self:Register(self.owner.parent.xml:Init3tButton("items_menu:btn_half",   self), "menu_btn_half")
+	self:Register(self.owner.parent.xml:Init3tButton("items_menu:btn_all",    self), "menu_btn_all")
+	self:Register(self.owner.parent.xml:Init3tButton("items_menu:btn_cancel", self), "menu_btn_cancel")
+end
+
+function uiInvWndMenu:InitCallBacks()
+	self:AddCallback("menu_btn_one",    ui_events.BUTTON_CLICKED, self.OnBtnOneClicked,    self)
+	self:AddCallback("menu_btn_half",   ui_events.BUTTON_CLICKED, self.OnBtnHalfClicked,   self)
+	self:AddCallback("menu_btn_all",    ui_events.BUTTON_CLICKED, self.OnBtnAllClicked,    self)
+	self:AddCallback("menu_btn_cancel", ui_events.BUTTON_CLICKED, self.OnBtnCancelClicked, self)
+end
+
+function uiInvWndMenu:UpdateControls(x, y, item_count, item_type)
+	self.btn_clicked = "cancel"
+	self.item_count = item_count
+	
+	self:SetWndPos(x, y)
+	
+	if item_type == ui_inv_wnd_items.ITEM_MONEY then
+		self:GetButton("menu_btn_one"):Enable(false)
+		self:GetButton("menu_btn_half"):Enable(false)
+		self:GetButton("menu_btn_all"):Enable(true)
+	elseif item_count == 1 then
+		self:GetButton("menu_btn_one"):Enable(true)
+		self:GetButton("menu_btn_half"):Enable(false)
+		self:GetButton("menu_btn_all"):Enable(true)
+	elseif item_count == 2 then
+		self:GetButton("menu_btn_one"):Enable(true)
+		self:GetButton("menu_btn_half"):Enable(false)
+		self:GetButton("menu_btn_all"):Enable(true)
+	elseif item_type == ui_inv_wnd_items.ITEM_AMMO then
+		self:GetButton("menu_btn_one"):Enable(false)
+		self:GetButton("menu_btn_half"):Enable(true)
+		self:GetButton("menu_btn_all"):Enable(true)
+	else
+		self:GetButton("menu_btn_one"):Enable(true)
+		self:GetButton("menu_btn_half"):Enable(true)
+		self:GetButton("menu_btn_all"):Enable(true)
+	end
+end
+
+function uiInvWndMenu:OnBtnOneClicked()
+	self.btn_clicked = "one"
+	self:OnQuit()
+end
+
+function uiInvWndMenu:OnBtnHalfClicked()
+	self.btn_clicked = "half"
+	self:OnQuit()
+end
+
+function uiInvWndMenu:OnBtnAllClicked()
+	self.btn_clicked = "all"
+	self:OnQuit()
+end
+
+function uiInvWndMenu:OnBtnCancelClicked()
+	self.btn_clicked = "cancel"
+	self:OnQuit()
+end
+
+function uiInvWndMenu:OnQuit()
+	self.owner:OnMenuItemSelected(self.btn_clicked, self.item_count)
+	--self:GetHolder():start_stop_menu(self, true)
+	self:Show(false)
+	self:Enable(false)
+end
+
+function uiInvWndMenu:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	--[[if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self.btn_clicked = "cancel"
+			self:OnQuit()
+		end
+	end]]
+	return true
+end
+--/ ------------------------------------------------------------------------------------------------

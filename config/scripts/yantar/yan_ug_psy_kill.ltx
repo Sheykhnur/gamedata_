@@ -1,0 +1,28 @@
+[logic]
+active = {-yan_switcher_off} sr_idle, {+yan_switcher_off} nil %=release%
+ 
+[sr_idle]
+on_actor_inside = {-esc_nimble_work_task3_brain_helm !current_helmet(bad_psy_helmet)} sr_psy_antenna@strong, {-esc_nimble_work_task3_brain_helm !current_helmet(good_psy_helmet)} sr_psy_antenna@strong, {+esc_nimble_work_task3_brain_helm =current_helmet(bad_psy_helmet)} sr_psy_antenna@weak, {+esc_nimble_work_task3_brain_helm =current_helmet(good_psy_helmet)} sr_psy_antenna@weak
+on_info = {+yan_switcher_off} nil %=release%
+
+[sr_psy_antenna@strong]
+eff_intensity = +500
+hit_intensity = +350
+phantom_prob = 100
+postprocess = psi2.ppe
+min_phantom_idle = 10
+max_phantom_idle = 200
+on_info = {+yan_switcher_off} nil %=release%
+on_info2 = {+esc_nimble_work_task3_brain_helm =current_helmet(bad_psy_helmet)} sr_psy_antenna@weak, {+esc_nimble_work_task3_brain_helm =current_helmet(good_psy_helmet)} sr_psy_antenna@weak
+on_actor_outside = sr_idle
+
+[sr_psy_antenna@weak]
+eff_intensity = +300
+hit_intensity = +10
+phantom_prob = 25
+postprocess = controller_aura.ppe
+min_phantom_idle = 4000
+max_phantom_idle = 10000
+on_info = {+yan_switcher_off} nil %=release%
+on_info2 = {-esc_nimble_work_task3_brain_helm !current_helmet(bad_psy_helmet)} sr_psy_antenna@strong, {-esc_nimble_work_task3_brain_helm !current_helmet(good_psy_helmet)} sr_psy_antenna@strong
+on_actor_outside = sr_idle

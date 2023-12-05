@@ -1,0 +1,33 @@
+[combat_ignore@out_bar1]
+
+[hit@out_bar]
+on_info = %+out_bar_hit%
+
+[death@out_bar]
+on_info = %+out_bar_hit%
+
+[logic]
+active = walker@out_freedom_bar_walker1
+combat_ignore = combat_ignore@out_bar1
+on_hit = hit@out_bar
+on_death = death@out_bar
+
+[walker@out_freedom_bar_walker1]
+path_walk = out_freedom_bar_walk1
+path_look = out_freedom_bar_look1
+combat_ignore_cond = {-out_bar_hit}
+on_info = {+out_other_drunken -out_dialog_completed} remark@out_freedom_bar_walker1_talk
+on_info2 = {+out_actor_returned} walker@out_freedom_bar_walker_combat
+
+[remark@out_freedom_bar_walker1_talk]
+anim = wait
+snd = out_guard_replic5
+target = actor
+meet = no_meet
+combat_ignore_cond = {-out_bar_hit}
+on_signal = sound_end | %+out_dialog_completed =out_set_actor_enemy_cond% walker@out_freedom_bar_walker_combat
+
+[walker@out_freedom_bar_walker_combat]
+path_walk = out_freedom_bar_walk1
+path_look = out_freedom_bar_look1
+combat_ignore_cond = {+out_actor_left -out_actor_returned -out_bar_hit}

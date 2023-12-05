@@ -1,0 +1,147 @@
+;-------*Основа*-------- Электра
+[zone_witches_galantine]
+$prefetch 					= 16
+class						= ZS_MBALD
+name						= Electra
+
+hit_impulse_scale			= .03
+effective_radius			= 0.75 ;размер радиуса в процентах от оригинального, где действует зона
+sound						= zone_mosquito_bald
+;postprocess				= postprocess_electra
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+hit_power				= 0.99
+
+hit_koef_car				= 1.5
+car_kill_engine				= true
+attenuation					= 1
+period						= 1
+art_onstart_spawn  			= true
+art_onstart_spawn_prob		= 0.02
+art_onstart_spawn_cicles	= 1
+
+idle_particles				= anomaly2\electra_idle_hide
+blowout_particles			= anomaly2\electra2_blast
+
+hit_small_particles			= anomaly2\electra_entrance_small
+hit_big_particles			= anomaly2\electra_damage_02_smoke
+idle_small_particles		= anomaly2\electra_damage_01_smoke
+idle_big_particles			= anomaly2\electra_damage_02_smoke
+entrance_small_particles	= anomaly2\electra_entrance_small
+entrance_big_particles		= anomaly2\emi_entrance_big_00
+
+idle_sound					= anomaly\electra_idle1; anomaly_gravy_idle
+blowout_sound				= anomaly\electra_blast1
+hit_sound					= anomaly\electra_hit
+entrance_sound				= anomaly\electra_hit
+
+blowout_light				= on
+light_color		    		= 0.8,0.9,1
+light_range		    		= 30.0
+light_time 		    		= 1;0.35
+light_height				= 1.5			;подъем источника света на высоту
+
+idle_light					= off
+
+hit_type					= shock
+
+disable_time				= 50	;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 500		;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 100	;время отключения idle партиклов
+
+awaking_time				= 150
+blowout_time				= 1000
+accamulate_time				= 4000
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+visible_by_detector 		= on
+
+blowout_wind				= off
+
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 150
+blowout_wind_time_end		= 299
+blowout_wind_power			= 0.2			;сила поднимаего ветра (от 0 до 1), в момент blowout_wind_time_peak 
+
+artefacts					= af_electra_sparkler,8,af_accumulator,8,af_twinkle,3,af_jewel,3,af_electra_flash,1,af_electra_moonlight,1,af_ice,1,af_white_sun,0,af_electra,0
+
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts 	= on
+artefact_spawn_probability 	= 0.04									;вероятность, что во время погибания существа в аномалии будет рожден артефакт
+artefact_spawn_particles 	= anomaly2\electra_entrance_small		;партиклы, которые отыграются на месте рождения артефакта (опционально)
+artefact_born_sound 		= anomaly\electra_hit					;звук, который отыграются на месте рождения артефакта (опционально)
+throw_out_power				= 0										;импульс с которым артефакт будет выброшен из зоны в произвольном направлении
+artefact_spawn_height		= 0.5									;(м) высота на центром зоны где будет рожден артефакт
+artefact_spawn_cicles		= 1									;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2
+
+
+;-------*Слабая*--------
+[zone_witches_galantine_weak]:zone_witches_galantine
+$spawn 						= "zones\electra\zone_electra_weak"
+
+awaking_time				= 150
+blowout_time				= 1000
+accamulate_time				= 4000
+
+hit_power					= 0.49
+
+artefacts					= af_electra_sparkler,8,af_accumulator,8
+
+;-------Не производящая артефактов на спавне
+[zone_witches_galantine_weak_noart]:zone_witches_galantine_weak,anomaly_base_noart
+$spawn 						= "zones\electra\zone_electra_weak_noart"
+
+
+;-------*Средняя*--------
+[zone_witches_galantine_average]:zone_witches_galantine
+$spawn 						= "zones\electra\zone_electra_average"
+
+awaking_time				= 150
+blowout_time				= 1000
+accamulate_time				= 3000
+
+hit_power					= 0.79
+
+artefacts					= af_twinkle,8,af_jewel,8
+
+;-------Не производящая артефактов на спавне
+[zone_witches_galantine_average_noart]:zone_witches_galantine_average,anomaly_base_noart
+$spawn 						= "zones\electra\zone_electra_average_noart"
+
+
+
+;-------*Сильная*--------
+[zone_witches_galantine_strong]:zone_witches_galantine
+$spawn 						= "zones\electra\zone_electra_strong"
+
+awaking_time				= 120
+blowout_time				= 1000
+accamulate_time				= 2500
+hit_power					= 1.09
+
+artefacts					= af_electra_flash,8,af_electra_moonlight,8,af_ice,8
+
+;-------Не производящая артефактов на спавне
+[zone_witches_galantine_strong_noart]:zone_witches_galantine_strong,anomaly_base_noart
+$spawn 						= "zones\electra\zone_electra_strong_noart"
+
+
+;-------*Очень сильная*--------
+[zone_witches_galantine_very_strong]:zone_witches_galantine
+$spawn 						= "zones\electra\zone_electra_very_strong"
+
+awaking_time				= 100
+blowout_time				= 1000
+accamulate_time				= 2000
+hit_power					= 1.39
+
+artefacts					= af_electra_flash,1,af_electra_moonlight,1,af_ice,1,af_white_sun,2,af_electra,2
+
+;-------Не производящая артефактов на спавне
+[zone_witches_galantine_very_strong_noart]:zone_witches_galantine_very_strong,anomaly_base_noart
+$spawn 						= "zones\electra\zone_electra_very_strong_noart"

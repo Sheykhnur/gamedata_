@@ -1,0 +1,17 @@
+[logic]
+active = mob_fake_death@zombie1
+on_death = mob_death
+
+[mob_fake_death@zombie1]
+path_home = zombie1_home
+panic = 0
+braindead = true
+on_info = {+yan_pribor_task_pribor1_has} mob_home@zombie1
+on_info2 = {=mob_was_hit} mob_home@zombie1
+on_info3 = {+yan_pribor_task_zombie1_killed} mob_home@zombie1
+
+[mob_home@zombie1]
+path_home = zombie1_home
+
+[mob_death]
+on_info = %+yan_pribor_task_zombie1_killed%

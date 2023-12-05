@@ -1,0 +1,503 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_escape.script
+ Description: Tasks escape
+ Copyright  : 2010 © LA-team
+ Author     : gr1ph00n (2011-02-10)
+ Editors    : gr1ph00n, vintar, lox, Lijenstina
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sid_info_told = {
+	"esc_trader_tell_strelok",
+	"esc_trader_tell_zone",
+	"esc_trader_tell_equipment",
+	"esc_trader_tell_money",
+	"esc_trader_tell_freedom",
+	"esc_trader_tell_duty",
+	"esc_trader_tell_factory"
+}
+local info_tbl = {
+	af_rusty_thorn_quest    		= "esc_tut_actor_has_af", --/ "cordon_af_rusty_thorn"
+	esc_killed_flash  		= "esc_got_novice_drive",
+	esc_maddog_pda    		= "esc_got_maddog_pda",
+	af_electra_maddog 		= "esc_got_maddog_af",
+	esc_red_fox_pda   		= "esc_red_fox_pda_have",
+	esc_vagon_key			= "esc_has_carriage_key"
+}
+local wolf_info_tbl =  {
+	"esc_wolf_spoke_leader",
+	"esc_wolf_spoke_why",
+	"esc_wolf_spoke_who",
+	"esc_wolf_spoke_brother",
+	"esc_wolf_spoke_mercs"
+}
+local cam_inert = 0
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if next(info_tbl) and sEvent == "item_take" then
+		for section, info_id in pairs(info_tbl) do
+			if has_info(info_id) then
+				info_tbl[section] = nil --/ clear
+			elseif db.actor:object(section) then
+				give_info(info_id)
+				info_tbl[section] = nil --/ clear
+				break
+			end
+		end
+	end
+	if sid_info_told and has_info_portions(sid_info_told) and not has_info("esc_trader_told_all") then
+		sid_info_told = nil --/ clear
+		give_info("esc_trader_told_all")
+	end
+	if wolf_info_tbl and has_info_portions(wolf_info_tbl) and not has_info("esc_wolf_spoke_all")  then
+		wolf_info_tbl = nil --/ clear
+		give_info("esc_wolf_spoke_all")
+	end
+	if db.sMapNow == "la01_escape" then
+		if has_info("esc_freeplay_rotate_actor") and not has_info("esc_freeplay_teleport_finished") then
+			this.freeplay_set_actor_pos()
+			if has_info("oso_blood") then
+				disable_info("oso_blood")
+			end
+			level.ai_ignore_actor(false)
+			level.show_indicators()
+			level.enable_input()
+		end
+	end
+	if not has_info("esc_got_equipment") and xr_conditions.is_box_empty() then
+		give_info("esc_got_equipment")
+	end
+	if has_info("esc_rescue_fox_done") and not has_info("esc_toolkits_spawned") then
+		xr_effects.spawn_additional_toolkits()
+		give_info("esc_toolkits_spawned")
+	end
+	if has_info("cordon_military_hostile") and not has_info("esc_actor_fucked_up") then
+		news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("esc_actor_fucked_up_text"), "sid")
+		db.actor:change_character_reputation(-1000)
+		relation_registry.set_community_goodwill("stalker", db.actor, -350)
+		relation_registry.set_community_goodwill("dolg", db.actor, -300)
+		relation_registry.set_community_goodwill("ecolog", db.actor, -300)
+		relation_registry.set_community_goodwill("trader", db.actor, -350)
+		relation_registry.set_community_goodwill("milstalker", db.actor, -1000)
+		give_info("esc_actor_fucked_up")
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "scene_start" then
+		if not has_info("esc_trader_tell_factory") then
+			give_info("esc_trader_tell_factory")
+		end
+		return true
+	end
+	if not info_id:match('^esc_') then
+		return false --/>
+	end
+	if info_id == "esc_actor_start_replic" then
+		local snd = xr_sound.get_safe_sound_object("script_replics\\trader\\sido_convo_1")
+		snd:play(db.actor, 1, sound_object.s2d)
+		start_real_timer(5, nil, {info_id = "esc_sid_replic"})
+		return true --/>
+	end
+	if info_id == "esc_sid_replic_said" then
+		local snd = xr_sound.get_safe_sound_object("script_replics\\trader\\sido_convo_3")
+		snd:play(db.actor, 1, sound_object.s2d)
+		start_real_timer(6, nil, {info_id = "esc_actor_start_replic2"})
+		return true --/>
+	end
+	if info_id == "esc_close_door" then
+		if has_info("esc_give_af_task") and not has_info("esc_tut_actor_has_af") and not has_info("esc_start_think_given") and has_info("esc_trader_newbie") then
+			give_info("esc_start_think_given")
+			game.start_tutorial("part_la_pda_actor")
+			--news_manager.send_tip_hud(nil, "esc_start_thinking_text", nil, 12)
+		end
+		return true --/>
+	end
+	if info_id == "esc_factory_cleaned" then
+		if has_info("esc_trader_newbie") then
+			if has_info("esc_assault_task_start") then
+				if not has_info("esc_got_maddog_stuff") then
+					news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("esc_madog_stuff_help"), "sid")
+				end
+			end
+		end
+		return true --/>
+	end
+	if info_id == "esc_got_maddog_stuff" then
+			if has_info("esc_assault_task_start") then
+				if not has_info("esc_factory_cleaned") then
+					if has_info("esc_trader_newbie") then
+						--news_manager.send_tip_hud(nil, "esc_clear_factory_title", "sid")
+					else
+						news_manager.send_tip_hud(stalker_network.set_random_name(), game.translate_string("esc_clear_factory_message"), "novice")
+					end
+				end
+			end
+		return true --/>
+	end
+	if info_id == "esc_got_maddog_pda" or info_id == "esc_got_maddog_af" then
+		if has_info_portions({"esc_got_maddog_pda", "esc_got_maddog_af"}) then
+			give_info("esc_got_maddog_stuff")
+			if has_info("esc_trader_newbie") then
+				game.start_tutorial("part_pda_diary")
+				give_info("encyclopedy_tutorial_diary")
+			end
+		end
+		return true --/>
+	end
+	if info_id == "esc_actor_attacks_dstalker" then
+		if has_info("esc_rescue_fox_start") and not has_info("esc_fox_rescued") and not has_info("esc_fox_dead") then
+			give_info("esc_fox_rescued")
+		end
+		if not has_info("esc_talked_with_dstalker_leader") then
+			give_info("esc_talked_with_dstalker_leader")
+		end
+		if not has_info("esc_sid_gives_dstalker_info") then
+			give_info("esc_sid_gives_dstalker_info")
+		end
+		return true --/>
+	end
+	if info_id == "esc_talk_to_sid" then
+		news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("esc_talk_to_sid"), "sid")
+		return true --/>
+	end
+	if info_id == "esc_wolf_message2_sent" then
+		if xr_gulag.getGulagPopulation("esc_tunnel_zombie_terrain") ~= 0 then
+			start_game_timer(1.2*60, nil, {info_id = "esc_sid_gives_zombie_task"})
+		end
+		return true --/>
+	end
+	if info_id == "esc_talked_with_dstalker_leader" then
+		if xr_gulag.getGulagPopulation("esc_tunnel_zombie_terrain") ~= 0 then
+			if not has_info("esc_sid_gives_zombie_task") then
+				start_game_timer(3.5*60, nil, {info_id = "esc_sid_gives_zombie_task"}) --/ ~3.5 game-minute
+			end
+		end
+		return true --/>
+	end
+	if info_id == "esc_sid_gives_zombie_task" then
+		if xr_gulag.getGulagPopulation("esc_tunnel_zombie_terrain") ~= 0 then
+			local casual = xr_gulag.getCasualities("esc_tunnel_zombie_terrain")
+			if casual < 5 then
+				news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("esc_kill_zombies_tip"), "sid", 6)
+			end
+		end
+		return true --/>
+	end
+		
+	if info_id == "esc_red_fox_pda_have" then
+		news_manager.send_tip_hud(game.translate_string("pda_info_header"), game.translate_string("esc_blue_silhouette"), "unknown")
+		start_real_timer(5, nil, {info_id = "esc_bs_task"}) --/ ~ 5 real-sec
+		return true --/>
+	end
+	if info_id == "esc_bs_clue1" then
+		local snd_obj = xr_sound.get_safe_sound_object("characters_voice\\scenario\\esc\\bs_clue1")
+		snd_obj:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 15.0)
+		news_manager.send_tip_hud(game.translate_string("esc_quest_header"), game.translate_string("esc_red_fox1"), "unknown")
+		return true --/>
+	end
+	if info_id == "esc_bs_clue2" then
+		local snd_obj = xr_sound.get_safe_sound_object("characters_voice\\scenario\\esc\\bs_clue2")
+		snd_obj:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 15.0)
+		news_manager.send_tip_hud(game.translate_string("esc_quest_header"), game.translate_string("esc_red_fox2"), "unknown")
+		return true --/>
+	end
+	if info_id == "esc_bs_clue3" then
+		local snd_obj = xr_sound.get_safe_sound_object("characters_voice\\scenario\\esc\\bs_clue3")
+		snd_obj:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 15.0)
+		news_manager.send_tip_hud(game.translate_string("esc_quest_header"), game.translate_string("esc_red_fox3"), "unknown")
+		local obj = db.actor:object("esc_red_fox_pda")
+		if obj then
+			alife():release(alife():object(obj:id()), true)
+		end
+		start_real_timer(5, nil, {info_id = "esc_safe_task"}) --/ ~ 5 real-sec
+		return true --/>
+	end
+	if info_id == "esc_lazy_marked_one" then
+		news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("esc_trader_send_to_garb"), "sid", 12)
+		return true --/>
+	end
+	if info_id == "esc_got_novice_drive" then
+		give_info("esc_wandering_cond1")
+		give_info("esc_serious_talk")
+		return true --/>
+	end
+	if info_id == "esc_assault_go2" then
+		if not has_info("esc_assault_talked_petruha") then
+			give_info("esc_assault_talked_petruha")
+		end
+		if has_info("esc_assault_task_start") then
+			if not has_info("esc_talked_with_wolf") then
+				give_info("esc_talked_with_wolf")
+			end
+		end
+		return true --/>
+	end
+	if info_id == "esc_fox_dialog_thanks" then
+		start_real_timer(3, nil, {info_id = "esc_lazy_marked_one"}) --/ ~ 3 real-sec
+		return true --/>
+	end
+	if info_id == "esc_fixer_teleported" then
+		start_real_timer(2, nil, {info_id = "esc_fixer_working"}) --/ ~ 2 real-sec
+		give_info("esc_wandering_cond2")
+		return true --/>
+	end
+	if info_id == "esc_teleport_scene_end" then
+		if has_info("esc_trader_newbie") then
+			game.start_tutorial("part_la_combat")
+			give_info("encyclopedy_tutorial_combat")
+		end
+		if has_info("esc_assault_go1") then
+			news_manager.send_tip_hud(game.translate_string("stalker_message_header"), game.translate_string("esc_factory_tip"), "novice")
+		end
+		return true --/>
+	end
+	if info_id == "esc_sin_warning" then
+		if has_info("esc_rescue_fox_start") then
+			if xr_gulag.getGulagPopulationComed("esc_fox_house") >= 2 then --/ just in case if actor will shoot sins far away
+				news_manager.send_tip_hud(game.translate_string("esc_sin_message_header"), game.translate_string("esc_sin_warning"..math.random(1,4)), "sin")
+			end
+		end
+		return true --/>
+	end
+	if info_id == "esc_scavenge_tip" then
+		if has_info("esc_trader_newbie") then
+			--news_manager.send_tip_hud(nil, "esc_scavenge_tutorial")
+			game.start_tutorial("part_la_scavenge")
+			give_info("encyclopedy_tutorial_scavenge")
+		end
+		return true --/>
+	end
+	if info_id == "esc_crouch_tip" then
+		if has_info("esc_trader_newbie") then
+			game.start_tutorial("part_4_crouch")
+			give_info("encyclopedy_tutorial_crouch")
+			start_real_timer(15, sModule..".sprint_tutorial")
+		end
+		return true --/>
+	end
+	if info_id == "esc_faction_tip" then
+		if has_info("esc_trader_newbie") then
+			game.start_tutorial("part_la_faction")
+			give_info("encyclopedy_tutorial_faction")
+		end
+		return true --/>
+	end
+	if info_id == "esc_assault_bandit_factory_done" then
+		if has_info("esc_trader_tell_factory") then
+			local se_obj = alife():story_object(6028)
+			if se_obj then 
+				Del_MapSpot(se_obj.id, "crlc_big") 
+			end
+		end
+		return true --/>
+	end
+	if info_id == "esc_rescue_novice_from_heli_done" then
+		start_real_timer(1.5, nil, {info_id = "esc_assault_task_start"})
+		return true
+	end
+	if info_id == "esc_wagon_task_gave_key" then
+		local obj = db.actor:object("esc_vagon_key")
+		if obj then
+			news_manager.relocate_item(db.actor, "out", obj:section(), 1)
+			news_manager.relocate_item(db.actor, "in", "af_medusa", 1)
+			alife():release(alife():object(obj:id()), true)
+			Spawn_ItemsInInv("af_medusa",1)
+		end
+		return true
+	end
+	if info_id == "esc_pc_info" then
+		pdaDownloads.add_article{"esc_tutorial_pc_to_all_name", "esc_tutorial_pc_to_all_text"}
+		return true
+	end
+	if info_id == "esc_anom_info" then
+		pdaDownloads.add_article{"esc_tutorial_pc_anoms_name", "esc_tutorial_pc_anoms_text"}
+		return true
+	end
+	if info_id == "esc_nimble_sleeping" then
+		if not has_info("esc_nimble_slept") then
+		start_game_timer(12*60*60, nil, {info_id = "esc_nimble_slept"}) --/ ~12 hours
+		end
+		return true
+	end
+	if info_id == "esc_nimble_item1_have" then
+		if not has_info("esc_nimble_item1_reward") then
+		start_game_timer(24*60*60, nil, {info_id = "esc_nimble_item1_reward"}) --/ ~24 hours
+		end
+		return true
+	end
+	if info_id == "esc_nimble_work_task2_done" then
+		if not has_info("esc_nimble_item2_reward") then
+		start_game_timer(30*60*60, nil, {info_id = "esc_nimble_item2_reward"}) --/ ~30 hours
+		end
+		return true
+	end
+	if info_id == "esc_nimble_work_task3_done" then
+		if not has_info("esc_nimble_item3_reward") then
+		start_game_timer(20*60*60, nil, {info_id = "esc_nimble_item3_reward"}) --/ ~20 hours
+		end
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function end_intro_game()
+	local pos = get_patrol("spawn_target_test"):point(0)
+	db.actor:set_actor_look_at_position(pos, 0)
+	stalker_network.disable_network()
+	this.disable_hud()
+end
+
+function play_sound_intro()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\human_01\\stalker\\states\\breath\\breath_2")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 15.0)
+end
+
+function end_intro_start() --/< from ui_movies.xml
+	level.add_pp_effector("esc_out.ppe", 2013, false)
+	if has_info("esc_actor_scene") then
+		level.save_allowed(false)
+		level.disable_input()
+		level.hide_indicators()
+		play_sound_intro()
+	end
+end
+
+function intro_blink_timer() --/< from state_mgr_animation_list.actor_start.into...
+	start_quick_timer(0.5, this.intro_actor_snd)
+end
+
+function intro_actor_snd()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\esc\\uh")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 15.0)
+	start_quick_timer(0.5, this.intro_blink)
+end
+
+function intro_blink()
+	level.add_pp_effector("blink.ppe", 2014, false)
+end
+
+function end_intro_play()
+	if not has_info("ecs_trader_meet") then
+		level.add_cam_effector("camera_effects\\actor_wake_up.anm", 25, false, "")
+		db.actor:deactivate_slot()
+		local bolt = db.actor:item_in_slot(5)
+		if bolt then
+			db.actor:remove_from_inventory( bolt:id() )
+		end
+		Spawn_ItemInInv("bolt_anim_base")
+		start_real_timer(1, "tasks_escape.wait_for_hands_register")
+	end
+end
+
+function wait_for_hands_register(t)
+	local hands = db.actor:object("bolt_anim_base")
+	if hands then
+		xr_effects.restore_weapon_helper()
+		db.actor:move_to_slot(hands, false)
+		db.actor:activate_slot(5)
+	end
+	--db.actor:restore_weapon()
+	Spawn_ItemInInv("bolt")
+	start_quick_timer(9, this.end_hand_anim) --/ ~9 real-sec (wait 'hand_anim' done)
+end
+
+function end_hand_anim(t)
+	local hands = db.actor:item_in_slot(5)
+	if hands then
+		db.actor:move_to_ruck( hands )
+		db.actor:remove_from_inventory( hands:id() )
+	end
+	local bolt = db.actor:object("bolt")
+	if bolt then
+		db.actor:move_to_slot(bolt, true)
+	end
+	level.show_indicators()
+	level.enable_input()
+	give_info("ecs_trader_meet")
+	disable_info("esc_actor_scene")
+end
+
+function freeplay_set_actor_pos()
+	local oPathWalk = get_patrol("esc_freeplay_teleport")
+	local oPathLook = get_patrol("esc_freeplay_look")
+	local dir = oPathLook:point(0):sub(oPathWalk:point(0))
+	--db.actor:set_actor_position(oPathWalk:point(0))
+	db.actor:set_actor_direction(-dir:getH())
+	give_info("esc_freeplay_teleport_finished")
+end
+
+function preliminary_wolf_teleport() --/ teleporting out from the village
+	if not db.actor:has_info("esc_wolf_changing_smart") then
+			give_info("esc_wolf_changing_smart")
+	end
+end
+
+function sprint_tutorial()
+	game.start_tutorial("part_10_sprint")
+	give_info("encyclopedy_tutorial_sprint")
+end
+
+function esc_factory_cleared()
+	if has_info("esc_factory_cleaned") and has_info("esc_got_maddog_stuff") then
+		return true
+	end
+	return false
+end
+
+function start_wander_timer()
+	start_game_timer(2*60*60, sModule..".remove_wander_infos")
+end
+
+function remove_wander_infos()
+	disable_info("esc_wandering_cond1")
+	disable_info("esc_wandering_cond2")
+end
+
+function disable_hud()
+	xr_effects.hide_weapon_helper()
+	level.disable_input()
+	level.hide_indicators()
+end
+
+function flash_cutscene_start()
+	level.add_pp_effector("blink.ppe", 88, false)
+	this.flash_cutscene()
+end
+
+function flash_cutscene()
+	level.disable_input()
+	level.hide_indicators()
+	xr_effects.hide_weapon_helper()
+	level.ai_ignore_actor(true)
+	level.add_cam_effector2("camera_effects\\esc_flash.anm", 102, false, sModule..".flash_cutscene_end")
+end
+
+function flash_cutscene_end()
+	level.ai_ignore_actor(false)
+	level.enable_keyboard_input()
+	level.show_indicators()
+	level.enable_input()
+	xr_effects.restore_weapon_helper()
+end
+
+function ammo_tutorial()
+	if not has_info("encyclopedy_tutorial_ammo") then
+		game.start_tutorial("part_la_ammo")
+		give_info("encyclopedy_tutorial_ammo")
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

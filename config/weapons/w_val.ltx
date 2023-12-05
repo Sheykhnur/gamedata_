@@ -1,0 +1,200 @@
+[wpn_val]:weapon_base,weapon_9x39
+$npc                                    = off
+$prefetch                               = 8
+$spawn                                  = "weapons\val"
+animation_slot                          = 2
+class                                   = WP_VAL
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+hand_dependence                         = 1
+repair_compatibility                    = vss
+scheduled                               = off
+weapon_class                            = assault_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 5
+inv_grid_y                              = 8
+
+; Text
+inv_name                                = wpn-val
+inv_name_short                          = wpn-val
+description                             = enc_weapons1_wpn-val
+
+; Visual
+hud                                     = wpn_val_hud
+position                                = -0.026, -0.131, 0.0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+scope_texture                           = wpn_crosshair_vss
+strap_position                          = -0.26, -0.11, 0.25
+strap_orientation                       = -15, -9, 110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_val\wpn_val.ogf
+
+; Effects
+fire_point                              = 0.0,0.174,0.562
+fire_point2                             = 0.0, 0.097, 0.722
+flame_particles                         = ; silencer
+shell_point                             = -0.02,0.167,0.082
+shell_dir                               = 0.0, 1.0, 0.0
+light_disabled                          = true
+
+; Sounds
+snd_close                               = weapons\generic_close
+snd_draw                                = weapons\vss\draw
+snd_empty                               = weapons\vss\empty, 0.8
+snd_holster                             = weapons\vss\holster
+snd_reload                              = weapons\vss\reload
+snd_shoot                               = weapons\vss\shoot
+snd_silncer_shot                        = weapons\vss\shoot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_SA_Lavina
+upgr_icon_x                             = 297
+upgr_icon_y                             = 739
+upgr_icon_width                         = 292
+upgr_icon_height                        = 99
+
+; Cost & Weight
+cost                                    = 42000
+inv_weight                              = 2.5
+ph_mass                                 = 5
+
+; Ammo
+ammo_mag_size                           = 20
+
+; Features
+fire_modes                              = 1, -1
+scopes_sect                             = scope_val, scope_x2.7_val, scope_live_detector_val, scope_night_val, scope_var_val
+scope_status                            = 2
+silencer_status                         = 1
+grenade_launcher_status                 = 0
+
+; Ballistics
+fire_dispersion_base                    = 0.4
+
+; Performance
+rpm                                     = 600
+rpm_empty_click                         = 200
+
+; Reliability
+condition_shot_dec                      = 0.00045 ; 2000
+condition_queue_shot_dec                = 0.00045
+
+; Handling
+control_inertion_factor                 = 1.3f
+PDM_disp_base                           = 3.3
+PDM_disp_vel_factor                     = 1.4
+PDM_disp_accel_factor                   = 1.4
+
+; Recoil
+cam_dispersion                          = 1.0
+cam_dispersion_inc                      = 0.4
+cam_dispersion_frac                     = 1.0
+cam_step_angle_horz                     = 2.5
+zoom_cam_dispersion                     = 0.6
+zoom_cam_dispersion_inc                 = 0.25
+zoom_cam_step_angle_horz                = 1.3
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_val
+upgrades                                = up_gr_firstab_val, up_gr_seconab_val, up_gr_thirdab_val, up_gr_fourtab_val, up_gr_fifthab_val
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 100
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 0.7
+
+
+[wpn_val_hud]:hud_base
+aim_hud_offset_pos                      = -0.09365,0.0768,-0.15
+aim_hud_offset_pos_16x9                 = -0.09365,0.0768,-0.15
+aim_hud_offset_rot                      = 0.0293,0.03405,-0.01
+aim_hud_offset_rot_16x9                 = 0.0293,0.03405,-0.01
+anim_bore                               = vintorez_idle_aim
+anim_hide                               = vintorez_holster,,3.0
+anim_idle                               = vintorez_idle
+anim_idle_aim                           = vintorez_idle_aim
+anim_idle_moving                        = vintorez_idle_moving
+anim_idle_moving_crouch                 = vintorez_idle_crouch
+anim_idle_sprint                        = vintorez_idle_sprint
+anim_reload                             = vintorez_reload_empty, reload_empty
+anim_shots                              = vintorez_shoot, shoot
+anim_show                               = vintorez_draw
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = muzzle
+fire_point                              = 0,0,0
+fire_point2                             = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+grenade_bone                            = grenade
+hands_orientation                       = 2,2,0
+hands_orientation_16x9                  = 2,2,0
+hands_position                          = -0.062,-0.15,0.15
+hands_position_16x9                     = -0.062,-0.15,0.15
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_val\wpn_val_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+[scope_val]
+scope_name                              = wpn_addon_scope
+scope_x                                 = 50
+scope_y                                 = 11
+
+[scope_x2.7_val]:scope_val
+scope_name                              = wpn_addon_scope_x2.7
+
+[scope_live_detector_val]:scope_val
+scope_name                              = wpn_addon_scope_detector
+
+[scope_night_val]:scope_val
+scope_name                              = wpn_addon_scope_night
+
+[scope_var_val]:scope_val
+scope_name                              = wpn_addon_scope_var
+
+
+;---------Модифицированный Вал
+[wpn_val_m1]:wpn_val
+$spawn                                  = "weapons\uniq\wpn_val_m1"
+unique_item                             = true
+
+; Inventory icon
+scope_force_icon                        = true
+
+; Text
+inv_name                                = wpn-val_m1
+inv_name_short                          = wpn-val_m1
+description                             = enc_weapons1_wpn-val_m1
+
+; Visual
+scope_texture                           = wpn_crosshair_vss
+
+; Cost & Weight
+cost                                    = 45390
+
+; Features
+scope_status                            = 1
+;scope_alive_detector                    = scope_detector
+scope_dynamic_zoom                      = on
+scope_zoom_factor                       = 22.222 ;x3
+
+installed_upgrades                      = up_firsta_val,up_firstd_val,up_firstf_val

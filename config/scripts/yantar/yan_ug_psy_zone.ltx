@@ -1,0 +1,17 @@
+[logic]
+active = {-yan_switcher_off} sr_idle, {+yan_switcher_off} nil %=release%
+ 
+[sr_idle]
+on_actor_inside = {!actor_in_zone(ladc_yan_space_restrictor_0002)} sr_psy_antenna@weak
+on_info = {+yan_switcher_off} nil %=release%
+
+[sr_psy_antenna@weak]
+eff_intensity = +80
+hit_intensity = +3
+phantom_prob = 25
+postprocess = psi2.ppe
+min_phantom_idle = 4000
+max_phantom_idle = 10000
+on_info = {+yan_switcher_off} nil %=release%
+on_info2 = {=actor_in_zone(ladc_yan_space_restrictor_0002)} sr_idle
+on_actor_outside = sr_idle

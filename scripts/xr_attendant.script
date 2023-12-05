@@ -1,0 +1,445 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_attendant.script
+ Description: Follower scheme (follower)
+ Copyright  : 2004 © GSC Game World
+ Author     : Tunduk Vladimir (aka Sidorovich)
+ Editors    : gr1ph00n(21.09.2012)
+ Last edit  : 07.05.2017 [lox]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Attendant_Leader = xr_evaluators_id.sidor_attendant_eva
+local iEvl_Attendant_Follow = xr_evaluators_id.sidor_attendant_eva +1
+local iEvl_Attendant_Wait   = xr_actions_id.sidor_attendant_act
+local iEvl_Attendant_Follow = xr_actions_id.sidor_attendant_act +1
+local tBindEvls = {} --/ array of 'otside' conditions for scheme activation
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end --/>
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		{id = db.xr_blowout     and xr_blowout.get_ai_evl(0),     flg = false}, --/ blowout not active
+		--{id = db.xr_blowout     and xr_blowout.get_ai_evl(1),     flg = false}, --/ no cover needed
+		--{id = db.xr_blowout     and xr_blowout.get_ai_evl(2),     flg = false}, --/in cover
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_leader" (property_evaluator)
+--/ -----------------------------------------------------------------
+-- Evaluator of waiting leader
+--/ ---------------------------------------------
+function evaluator_leader:__init (name, st) super (nil, name)
+	self.st = st
+	self.time = 0
+end
+
+function evaluator_leader:evaluate()
+	if self.st.leader_id then
+		return true --/> лидер уже есть
+	end
+	--/ If setted story_id of leader, then we will touch it (need to get his ID)
+	if self.st.leader then
+		--/#+# gr1ph00n
+		if self.st.leader == "actor" then
+			self.st.leader_id = idActor
+			return true --/>
+		end
+		--/<
+		local sim = alife ()
+		if sim and tonumber(self.st.leader) then
+			local soNPC = sim:story_object(tonumber(self.st.leader))
+			if soNPC and level.object_by_id(soNPC.id) then
+				self.st.leader_id = soNPC.id
+				return true --/>
+			end
+		end
+		return false --/>
+	end
+	abort(sModule..":Don't use followers as patrol soldier in gulag system. Use XR_PATROL scheme")
+end
+
+--/ -----------------------------------------------------------------
+class "evaluator_follow" (property_evaluator)
+--/ -----------------------------------------------------------------
+--/ Evaluator of following after leader
+--/ ---------------------------------------------
+function evaluator_follow:__init (name, st) super (nil, name)
+	self.st = st
+end
+
+function evaluator_follow:evaluate ()
+	return xr_logic.is_active(self.object, self.st) --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTION
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_wait" (action_base)
+--/ -----------------------------------------------------------------
+--/ Action of waiting leader
+--/ ---------------------------------------------
+function action_wait:__init (action_name, st) super (nil, action_name)
+	self.st = st
+	self.log = st.log
+	self.was_reset = false
+	self:reset_scheme()
+end
+
+function action_wait:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_wait:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+end
+
+function action_wait:execute()
+	action_base.execute(self)
+--	log("ac_wait:exe:try_switch_to_another_section") --/#~#
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return --/>
+	end
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+end
+
+function action_wait:finalize()
+	action_base.finalize(self)
+end
+
+function action_wait:reset_scheme()
+	self.was_reset = true
+end
+
+function action_wait:activate_scheme()
+	self.was_reset = false
+end
+
+--/ -----------------------------------------------------------------
+class "action_follow" (action_base)
+--/ -----------------------------------------------------------------
+--/ Action of moving after leader
+--/ ---------------------------------------------
+function action_follow:__init (action_name, st) super (nil, action_name)
+	self.st = st
+	self.log = st.log
+	self.was_reset = false
+end
+
+function action_follow:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_follow:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self:reset_scheme()
+end
+
+function action_follow:execute()
+	action_base.execute (self)
+	
+	if not self.was_reset then
+		self:reset_scheme()
+	end
+	
+--	log("ac_follow:exe:try_switch_to_another_section") --/#~#
+	if xr_logic.try_switch_to_another_section (self.object, self.st, db.actor) then
+		self.st.leader_id = nil
+		return --/>
+	end
+	
+	--/ FIXME !!! 
+	--xr_sound.set_sound(self.object, self.st.sound_theme)
+--	log("ac_follow:exe:NPC=[%s],pos=[%s]:[%s]", self.object:name (), string.short(self.object:position()), "i") --/#~#
+	--/ check, if alive our superior.
+	local oLeader = level.object_by_id(self.st.leader_id)
+	if not oLeader then
+		self:free()
+		return --/>
+	elseif not oLeader:alive() and self.st.stub_for_corpse == false then
+		self.st.signals["leader_dead"] = true
+		--self:free()
+		return --/>
+	end
+	
+	--/ check if we are in the list
+	self:check_list()
+	
+	if self.st.leader_section == nil then
+		self.st.leader_section = db.storage[self.st.leader_id].active_section
+		--if self.st.leader_section ~= nil then
+--			log("ac_follow:exe:NPC=[%s],LEADER_SCHEME=[%s]", self.object:name(), self.st.leader_section) --/#~#
+		--end
+	end
+	
+	if db.storage[self.st.leader_id].active_section ~= self.st.leader_section then
+		self.st.signals["leader_section_changed"] = true
+		self:free()
+		return --/>
+	end
+	
+	--/ get specific target, distance to it and position.
+	local idLv, iDist, vPos = self:calculate_position()
+--	log("ac_follow:exe:NPC=[%s],idLv=[%s]", self.object:name(), idLv) --/#~#
+	if self.state == 0 then --/ 0 - going, 1 - standing
+		if iDist > 1 then
+			self.object:set_dest_level_vertex_id(idLv)
+			self.object:set_desired_position(vPos)
+			local vDir
+			if self.st.stub_for_corpse == true then
+				vDir = vector():sub(oLeader:center(),oLeader:position()):normalize()
+			else
+				vDir = oLeader:direction()
+			end
+			self.object:set_desired_direction(vDir)
+			self.object:set_detail_path_type(move.line)
+			self.object:set_path_type(game_object.level_path)
+			if iDist > 20 then
+			 state_mgr.set_state(self.object, self.st.animation_sprint)
+--			 log("ac_follow:exe:NPC=[%s]~IS_SPRINTED", self.object:name()) --/#~#
+			elseif iDist < 3 then
+			 state_mgr.set_state(self.object, self.st.animation_move)
+--			 log("ac_follow:exe:NPC=[%s]~IS_MOVED", self.object:name()) --/#~#
+			elseif iDist > 5 then
+			 state_mgr.set_state(self.object, self.st.animation_run)
+--			 log("ac_follow:exe:NPC=[%s]~IS_RUNNING", self.object:name()) --/#~#
+			end
+		else
+			self.state = 1
+		end
+	else --/ stand
+		if iDist > 3 then
+			self.state = 0
+		else
+			--/ FIXME (remove stub for corpse)
+			if self.st.stub_for_corpse and not oLeader:alive() then
+				self.st.signals["leader_dead"] = true
+				--self:free()
+				return --/>
+			end
+			
+			if self.st.leader_id ~= db.actor:id() and xr_meet.is_meet(oLeader) == true then
+--				log("LEADER IN MEET STATE") --/#~#
+				state_mgr.set_state(self.object, self.st.state_if_leader_in_meet, nil, nil, db.actor)
+			else
+--				log("LEADER NOT IN MEET STATE") --/#~#
+				state_mgr.set_state(self.object, "idle")
+			end
+		end
+	end
+end
+
+function action_follow:finalize()
+	action_base.finalize(self)
+	if self.index ~= nil then
+		--table.remove(db.storage[self.st.leader_id].followers, self.index)
+		self.index = nil
+	end
+	--xr_sound.set_sound(self.object, nil)
+end
+
+function action_follow:calculate_position()
+	--/ get from leader node and direction
+	local oLeader = level.object_by_id(self.st.leader_id)
+	local idLv = oLeader:level_vertex_id()
+	local vDirL = oLeader:direction()
+	--/ and also number of peoples(population).
+	local iSize = (db.storage[self.st.leader_id] and #db.storage[self.st.leader_id].followers) or 0
+	local vDir  = vector():set(0,0,0)
+	local iDist = self.st.distance
+	--/ if we go chain style, then one, if normal way, then other
+	if self.st.formation == true then --/ if we go chain
+		vDir = vector_rotate_y(vDirL, 90.0)
+		vDir.y = 0
+		vDir:normalize()
+		if bit_and(self.index, 1) == 1 then
+			vDir.x = -vDir.x
+			vDir.z = -vDir.z
+		end
+		iDist = self.st.distance *iSize *0.5
+	else
+		if iSize == 1 then
+			vDir = vector_rotate_y(vDirL, 179.0)
+		else
+			vDir = vector_rotate_y(vDirL, 90.0 + (180 / (iSize + 1)) * self.index)
+		end
+	end
+	
+	if not self.object:accessible(idLv) then
+		idLv = self.object:level_vertex_id()
+		if not self.object:accessible(idLv) then
+			idLv = self.object:nearest_accessible_position()
+		else
+			vDirL = level.vertex_position(idLv)
+			return idLv, vDirL:distance_to(self.object:position()), vDirL --/>
+		end
+	end
+	
+	local idLvNeed = self.object:vertex_in_direction(idLv, vDir, iDist)
+	if idLvNeed == -1 then
+		idLvNeed = idLv
+	elseif not self.object:accessible(idLvNeed) then
+		abort(sModule..":FOLLOWER=[%s], ACCESSIBLE VERTEX ID ERROR!", self.object:name())
+	end
+	
+	if not self.object:accessible(idLvNeed) then
+		idLvNeed = oLeader:level_vertex_id()
+		if not self.object:accessible(idLvNeed) then
+			log("!!!ERROR!!!Follower=[%s] can't found accessible vertex id !!!", self.object:name())
+			idLvNeed = self.object:nearest_accessible_position()
+			--abort ("ERROR: can't find vertex id for object %s", self.object:name())
+		end
+	end
+	
+	local vPos = level.vertex_position(idLvNeed)
+	return idLvNeed, vPos:distance_to(self.object:position()), vPos --/>
+end
+
+function action_follow:check_list()
+	--/ taking leader storage
+	local stor_leader = self.st.leader_id and db.storage[self.st.leader_id]
+	if not stor_leader then return end --/> #fix#
+	--/ if leader has no table of companions, then create it and add ourself to there as number 1
+	if not stor_leader.followers then
+		stor_leader.followers = {self.object:id()}
+		self.index = 1
+--		log("ac_follow:check_list:NPC=[%s/%s]~AS_FOLLOWER=1", self.object:name(), self.object:id() ) --/#~#
+	else --/ otherwise search through table and looking ourself
+		local npc_id = self.object:id()
+		for i=1, #stor_leader.followers do
+			if stor_leader.followers[i] == npc_id then
+				self.index = i
+--				log("ac_follow:check_list:NPC=[%s/%s]~AS_FOLLOWER=[%s]", self.object:name(), self.object:id(), i) --/#~#
+				return --/>
+			end
+		end
+		--/ didn't find... let's add.
+		table.insert(stor_leader.followers, npc_id)
+		self.index = #stor_leader.followers
+--		log("ac_follow:check_list:NPC=[%s/%s]~Set_AS_FOLLOWER=[%s]", self.object:name(), self.object:id(), self.index) --/#~#
+	end
+end
+
+function action_follow:free()
+	--/ if we are under gulag, then let's request other job, otherwise straight way to logic
+	local g = xr_gulag.get_npc_gulag(self.object)
+	if g then
+		if self.st.dont_change_job == false then
+			log("!!!FOLLOWER %s!!! LEADER SECTION CHANGED - NEED NEW JOB FROM GULAG", self.object:name()) --/#~#
+			xr_gulag.resetJob (self.object)
+		end
+	else
+--		log("ac_follow:free:try_switch_to_another_section") --/#~#
+		xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+	end
+end
+
+function action_follow:reset_scheme()
+	self.was_reset = true
+	self.vertex_id = nil
+	self.index = nil
+	self.state = 0 --/ 0 - going, 1 - standing
+	self.st.signals = {}
+	self.st.signals["leader_section_changed"] = false
+	self.st.signals["leader_dead"] = false
+	--xr_sound.set_sound(self.object, self.st.sound_theme)
+end
+
+function action_follow:activate_scheme()
+	self.was_reset = false
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oNPC, ini, sScheme, sSection, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:[%s]", oNPC:name(), sScheme, sSection, ">") --/#~#
+	--/ Planner
+	local oPlanner = oNPC:motivation_action_manager()
+	--/ Evaluators
+	oPlanner:add_evaluator (iEvl_Attendant_Leader, this.evaluator_leader ("ev_attendant_leader", st))
+	oPlanner:add_evaluator (iEvl_Attendant_Follow, this.evaluator_follow ("ev_attendant_follow", st))
+	--/ New Actions(1)
+	local oNewAction = this.action_wait ("ac_attendant_wait", st)
+	xr_motivator.addGeneralPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition( world_property( iEvl_Attendant_Leader, false ) )
+	oNewAction:add_effect( world_property( iEvl_Attendant_Leader, true ) )
+	oPlanner:add_action( iEvl_Attendant_Wait, oNewAction )
+	--/ registration of action, to call method 'reset_scheme' when scheme settings changing:
+	xr_logic.subscribe_action_for_events (oNPC, st, oNewAction)
+	--/ New Actions(2)
+	oNewAction = this.action_follow ("ac_attendant_follow", st)
+	xr_motivator.addGeneralPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition( world_property( iEvl_Attendant_Leader, true ) )
+	oNewAction:add_precondition( world_property( iEvl_Attendant_Follow, true ) )
+	oNewAction:add_effect( world_property( iEvl_Attendant_Follow, false ) )
+	oPlanner:add_action( iEvl_Attendant_Follow, oNewAction )
+	--/ registration of action, to call method 'reset_scheme' when scheme settings changing:
+	xr_logic.subscribe_action_for_events (oNPC, st, oNewAction)
+	
+	--/ Actions
+	local oAction = oPlanner:action(xr_actions_id.alife)
+	oAction:add_precondition( world_property( iEvl_Attendant_Follow, false ) )
+	if not db.no_gather_items then --/ if NOT disabled by cmd
+		oAction = oPlanner:action(stalker_ids.action_gather_items) --/ action of gathering (taking items)
+		oAction:add_precondition(world_property(iEvl_Attendant_Follow, false)) --/ allowed if evaluator of scheme not active
+	end
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:[%s]", oNPC:name(), sScheme, sSection, "+") end --/#~#
+end
+
+function set_scheme(oNPC, ini, sScheme, sSection, sGulagName)
+	local st = xr_logic.assign_storage_and_bind(oNPC, ini, sScheme, sSection)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, sSection, oNPC)
+	
+	st.leader_section = nil
+	st.leader                  = Get_Cfg_String(ini, sSection, "leader")
+	st.animation_move          = Get_Cfg_String(ini, sSection, "anim_walk",   "patrol")
+	st.animation_run           = Get_Cfg_String(ini, sSection, "anim_run",    "run")
+	st.animation_sprint        = Get_Cfg_String(ini, sSection, "anim_sprint", "sprint")
+	st.state_if_leader_in_meet = Get_Cfg_String(ini, sSection, "state_if_leader_in_meet", "idle")
+	st.stub_for_corpse         = Get_Cfg_Bool  (ini, sSection, "stub_for_corpse", false)
+	st.dont_change_job         = Get_Cfg_Bool  (ini, sSection, "dont_change_job", false)
+	st.no_gather_items 		   = Get_Cfg_Bool  (ini, sSection, "no_gather_items", true)
+	st.formation               = Get_Cfg_Bool  (ini, sSection, "formation_line",  false)
+	st.distance                = Get_Cfg_Number(ini, sSection, "distance")
+	if not st.distance then
+		if st.formation then
+			st.distance = 5
+		else
+			st.distance = 1.5
+		end
+	end
+	st.sound_theme = Get_Cfg_String(ini, sSection, "snd", "state")
+	if st.sound_theme == "silent" then st.sound_theme = nil end
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s]%s", oNPC:name(), sScheme, sSection, sGulagName, "") end --/#~#
+end
+--/ ------------------------------------------------------------------------------------------------

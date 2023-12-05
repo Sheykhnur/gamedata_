@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-agr_sosed} sr_idle@2 %=agr_krot_sos_1_2 +agr_sosed% 
+
+[sr_idle@2]
+on_info = {+agr_help_krot_start} sr_idle@combat_trigger, {+agr_krot_dead} nil %=release%
+
+[sr_idle@combat_trigger]
+on_actor_inside = {-agr_krot_skirmish_start} nil %+agr_krot_skirmish_start =agr_hold_enemy =release%
+on_game_timer   = 1200 | {-agr_krot_skirmish_start} nil %+agr_krot_skirmish_start =agr_hold_enemy =release%

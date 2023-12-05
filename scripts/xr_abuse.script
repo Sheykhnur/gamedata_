@@ -1,0 +1,225 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_abuse.script
+ Description: Reaction scheme of stalkers on anoying actor
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Editors    : gr1ph00n (24.09.2012)
+ Last edit  : 13.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Abuse = xr_evaluators_id.abuse_base
+local iAct_Abuse = xr_actions_id.abuse_base
+local tBindEvls = { --/ array of 'external' conditions for scheme activation
+	[1] = { stalker_ids.property_alive,          true  }, --/ NPC alive
+	[2] = { stalker_ids.property_danger,         false }, --/ no dangers
+	[3] = { xr_evaluators_id.sidor_wounded_base, false }  --/ NPC not wounded
+}
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_abuse" (property_evaluator)
+--/ -----------------------------------------------------------------
+--/ Do we need punch someone in face
+--/ -----------------------------------
+function evaluator_abuse:__init(name, st) super (nil, name)
+	self.st = st
+	self.abuse_mgr = st.abuse_manager
+end
+
+function evaluator_abuse:evaluate()
+	return self.abuse_mgr:update() --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ACTION
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_abuse_hit" (action_base)
+--/ -----------------------------------------------------------------
+--/ Punch in face
+--/------------------------------------
+function action_abuse_hit:__init (action_name, st) super (nil, action_name)
+	self.st  = st
+	self.log = st.log
+	self.abuse_mgr = st.abuse_manager
+end
+
+function action_abuse_hit:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_abuse_hit:ini:NPC=[%s]:(%s)", self.object:name(), ">") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	xr_sound.set_sound_play(self.object, "use_abuse")
+	if self.object:position():distance_to(db.actor:position()) < 2.4 then
+		--/ Punch with butt/weapon
+		state_mgr.set_state(self.object, "punch", nil, nil, {look_object = db.actor}, {animation = true})
+	end
+end
+
+function action_abuse_hit:execute()
+	action_base.execute(self)
+end
+
+function action_abuse_hit:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "AbuseManager"
+--/ -----------------------------------------------------------------------------------------------
+function AbuseManager:__init(npc, st)
+	self.npc    = npc
+	self.st     = st
+	self.log    = st.log
+	self.enable = true
+	self.abuse_value     = 0
+	self.abuse_rate      = 1
+	self.abuse_threshold = math.random(2,5) --/#~# 5
+	self.last_update     = nil
+end
+
+function AbuseManager:update()
+	if self.enable and self.abuse_value > 0 then
+		if self.last_update then
+			self.abuse_value = self.abuse_value - (time_global() - self.last_update)*0.00005
+		end
+		self.last_update = time_global()
+		--if self.log then log("am:update:NPC=[%s],abuse_value=[%s]", self.npc:name(), string.short(self.abuse_value), "") end --/#~#
+		if self:abused() then
+			if self.npc:position():distance_to(db.actor:position()) < 25 then --/ far then 25m abuse not active
+				return true --/>
+			end
+		end
+	elseif self.abuse_value < 0 or self.last_update then
+		self.abuse_value = 0
+		self.last_update = nil
+	end
+	return false --/>
+end
+
+function AbuseManager:abused()
+	return self.abuse_value >= self.abuse_threshold --/>
+end
+
+function AbuseManager:SetAbuseRate(iRate)
+	self.abuse_rate = iRate or 1
+end
+
+function AbuseManager:addAbuse(value)
+	if self.enable and value then
+		self.abuse_value = self.abuse_value + (value * self.abuse_rate)
+	end
+end
+
+function AbuseManager:clearAbuse()
+	self.abuse_value = 0
+end
+
+function AbuseManager:enableAbuse()
+	self.enable = true
+end
+
+function AbuseManager:disableAbuse()
+	self.enable = false
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.abuse_manager = AbuseManager(npc, st)
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:add_evaluator( iEvl_Abuse, this.evaluator_abuse("ev_abuse", st) )
+	--/ NewAction -----------------------------------------------------
+	local oNewAction = this.action_abuse_hit("ac_abuse_hit", st)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition( world_property( iEvl_Abuse, true ))
+	oNewAction:add_effect( world_property( iEvl_Abuse, false ))
+	oPlanner:add_action( iAct_Abuse, oNewAction )
+	--/ Actions (additional preconditions for some standard operators)
+	local oAction = oPlanner:action(xr_actions_id.alife)
+	oAction:add_precondition( world_property( iEvl_Abuse, false ) )
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	--/ for debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME - switching scheme
+--/------------------------------------------------------------------
+function reset_scheme(npc, scheme, st, section)
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs
+--/------------------------------------------------------------------
+function set_abuse(...)
+	set_scheme(...)
+end
+function reset_abuse(...)
+	reset_scheme(...)
+end
+--/------------------------------------------------------------------
+--/ Process
+--/------------------------------------------------------------------
+function get_abuse_mgr(npc_id)
+	local stor = npc_id and db.storage[npc_id]
+	return stor and stor.abuse and stor.abuse.abuse_manager --/>
+end
+
+function is_abuse(npc)
+	local abuse_mgr = npc and get_abuse_mgr(npc:id())
+	if abuse_mgr then
+		return abuse_mgr.enable --/>
+	end
+	return false --/>
+end
+
+function add_abuse(npc, value)
+	local abuse_mgr = npc and get_abuse_mgr(npc:id())
+	if abuse_mgr then
+		abuse_mgr:addAbuse(value)
+	end
+end
+
+function clear_abuse(npc)
+	local abuse_mgr = npc and get_abuse_mgr(npc:id())
+	if abuse_mgr then
+		abuse_mgr:clearAbuse()
+	end
+end
+
+function enable_abuse(npc)
+	local abuse_mgr = npc and get_abuse_mgr(npc:id())
+	if abuse_mgr then
+		abuse_mgr:enableAbuse()
+	end
+end
+
+function disable_abuse(npc)
+	local abuse_mgr = npc and get_abuse_mgr(npc:id())
+	if abuse_mgr then
+		abuse_mgr:disableAbuse()
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,295 @@
+;********************************************state 0***************************************************
+
+[danger_condition@forg_mercs]
+;ignore_distance = 5
+
+[threshold@forg_mercs]
+;max_ignore_distance = 0
+
+[combat_ignore@forg_mercs]
+
+[hit@forg_mercs]
+on_info = {=hit_by_actor} %+forg_merc_unfriendly%
+
+[death@forg_mercs]
+on_info = {=killed_by_actor} %+forg_merc_unfriendly%
+
+[meet@forg_mercs]
+meet_state		= 5|ward
+meet_state_wpn	= 5|ward
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog	= {-forg_is_passed -forg_merc_unfriendly} forg_password_dialog, {+forg_is_passed} dm_hello_dialog
+
+[logic@forg_merc_terrain_sleeper1]
+active = sleeper@forg_merc_terrain_sleeper1
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_sleeper1]
+path_main = sleeper1_main
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_sleeper2]
+active = sleeper@forg_merc_terrain_sleeper2
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_sleeper2]
+path_main = sleeper2_main
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_sleeper3]
+active = sleeper@forg_merc_terrain_sleeper3
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_sleeper3]
+path_main = kamper1_walk
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_sleeper4]
+active = sleeper@forg_merc_terrain_sleeper4
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_sleeper4]
+path_main = kamper2_walk
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_kamper3]
+active = kamper@forg_merc_terrain_kamper3
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[kamper@forg_merc_terrain_kamper3]
+path_walk = kamper3_walk
+path_look = kamper3_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+;********************************************state 1***************************************************
+
+[logic@forg_merc_terrain_patrol1]
+active = patrol@forg_merc_terrain_patrol1
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[patrol@forg_merc_terrain_patrol1]
+path_walk = patrol1_walk
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_patrol2]
+active = patrol@forg_merc_terrain_patrol2
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[patrol@forg_merc_terrain_patrol2]
+path_walk = patrol2_walk
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_kamper1]
+active = kamper@forg_merc_terrain_kamper1
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[kamper@forg_merc_terrain_kamper1]
+path_walk = kamper1_walk
+path_look = kamper1_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_kamper2]
+active = kamper@forg_merc_terrain_kamper2
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[kamper@forg_merc_terrain_kamper2]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_guard1]
+active = walker@forg_merc_terrain_guard1
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[walker@forg_merc_terrain_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+;********************************************state 0,1*************************************************
+
+[logic@forg_merc_terrain_guardpost]
+active = walker@forg_merc_terrain_guardpost
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[walker@forg_merc_terrain_guardpost]
+path_walk = guardpost_walk
+path_look = guardpost_look
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk1]
+active = walker@forg_merc_terrain_drunk1
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[walker@forg_merc_terrain_drunk1]
+path_walk = drunk1_walk
+path_look = drunk1_look
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk2]
+active = walker@forg_merc_terrain_drunk2
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[walker@forg_merc_terrain_drunk2]
+path_walk = drunk2_walk
+path_look = drunk2_look
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk3]
+active = walker@forg_merc_terrain_drunk3
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[walker@forg_merc_terrain_drunk3]
+path_walk = drunk3_walk
+path_look = drunk3_look
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk4]
+active = walker@forg_merc_terrain_drunk4
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[walker@forg_merc_terrain_drunk4]
+path_walk = drunk4_walk
+path_look = drunk4_look
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk_sleep1]
+active = sleeper@forg_merc_terrain_drunk_sleep1
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_drunk_sleep1]
+path_main = sleeper3_main
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk_sleep2]
+active = sleeper@forg_merc_terrain_drunk_sleep2
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_drunk_sleep2]
+path_main = sleeper4_main
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk_sleep3]
+active = sleeper@forg_merc_terrain_drunk_sleep3
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_drunk_sleep3]
+path_main = sleeper5_main
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs
+
+[logic@forg_merc_terrain_drunk_sleep4]
+active = sleeper@forg_merc_terrain_drunk_sleep4
+combat_ignore = combat_ignore@forg_mercs
+on_hit = hit@forg_mercs
+on_death = death@forg_mercs
+threshold = threshold@forg_mercs
+
+[sleeper@forg_merc_terrain_drunk_sleep4]
+path_main = sleeper6_main
+wakeable = false
+combat_ignore_cond = {=fighting_actor -forg_merc_unfriendly}
+meet = meet@forg_mercs
+danger = danger_condition@forg_mercs

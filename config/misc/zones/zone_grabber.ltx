@@ -1,0 +1,105 @@
+;-------*Аноималия Хваталка*--------
+[zone_ameba1]
+
+class						= Z_AMEBA
+name						= Grabber
+
+visual						= physics\anomaly\anomaly_hvatalka
+idle_anim_name				= idle
+attack_anim_name			= blast
+
+hit_impulse_scale			= 0.
+effective_radius			= 0.5
+actor_blowout_radius_percent= 0.5
+max_velocity_in_zone		= 0.5
+sound						=
+
+ef_anomaly_type			= 1
+ef_weapon_type			= 13
+
+attenuation			= 1
+period				= 1
+art_onstart_spawn   		= true
+art_onstart_spawn_prob		= 0.02
+art_onstart_spawn_cicles	= 1
+
+hit_type		= chemical_burn
+
+disable_time				= -1									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 500									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= -1									;время отключения idle партиклов
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+;idle_particles				= anomaly2\group_items\studen_idle_bottom
+blowout_particles			= anomaly2\group_items\studen_idle_bottom_00
+blowout_sound				= anomaly\buzz_hit
+
+awaking_time				= 500
+blowout_time				= 1000	
+accamulate_time				= 8000
+
+attack_animation_start		= 0
+attack_animation_end		= 1000
+
+blowout_light				= off
+idle_light					= off
+blowout_wind				= off
+
+artefacts					= af_rusty_thorn,8
+
+visible_by_detector = on
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts 	= on
+artefact_spawn_probability 	= 0.04
+artefact_spawn_particles	= anomaly2\pux_blast
+artefact_born_sound			= anomaly\bfuzz_blowout
+throw_out_power				= 0
+artefact_spawn_height		= 2
+artefact_spawn_cicles		= 1
+
+
+[zone_grabber_weak]:zone_ameba1
+$spawn 						= "zones\grabber\zone_grabber_weak"
+
+hit_power					= 0.05
+
+artefacts					= af_rusty_thorn,8
+
+[zone_grabber_weak_noart]:zone_grabber_weak,anomaly_base_noart
+$spawn 						= "zones\grabber\zone_grabber_weak_noart"
+
+
+[zone_grabber_average]:zone_ameba1
+$spawn 						= "zones\grabber\zone_grabber_average"
+
+hit_power					= 0.15
+
+artefacts					= af_rusty_kristall,8
+
+[zone_grabber_average_noart]:zone_grabber_average,anomaly_base_noart
+$spawn 						= "zones\grabber\zone_grabber_average_noart"
+
+
+[zone_grabber_strong]:zone_ameba1
+$spawn 						= "zones\grabber\zone_grabber_strong"
+
+hit_power					= 0.25
+
+artefacts					= af_rusty_sea_urchin,8,af_dummy_battery,8
+
+[zone_grabber_strong_noart]:zone_grabber_strong,anomaly_base_noart
+$spawn 						= "zones\grabber\zone_grabber_strong_noart"
+
+
+[zone_grabber_very_strong]:zone_ameba1
+$spawn 						= "zones\grabber\zone_grabber_very_strong"
+
+hit_power					= 0.35
+
+artefacts					= af_fungus,1,af_green_beads,1
+
+[zone_grabber_very_strong_noart]:zone_grabber_very_strong,anomaly_base_noart
+$spawn 						= "zones\grabber\zone_grabber_very_strong_noart"

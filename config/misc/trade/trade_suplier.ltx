@@ -1,0 +1,95 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = supplier_basic_buy
+sell_condition = military_start_sell
+buy_supplies = {+has_freeplay_info}supplies_freeplay, {+bas_switcher_off +deactivate_radar_done}supplies_before_prip, {+yan_good_helmet_start}supplier_after_helmet, supplier_start
+
+[supplier_basic_buy]:buy_artefacts_cheap,buy_food_normal,buy_outfit_high
+
+
+[military_start_sell]:sell_all_normal,sell_outfit_cheap,sell_misc_high,sell_device_high,
+; Some stuff slithly cheaper than normal traders
+
+
+[supplier_start]:essential_supplies
+scientific_outfit                    = 2, 0.85
+cs_medium_outfit	                 = 2, 0.8
+
+helm_protective	                     = 2, 0.85
+helm_tactic			                 = 1, 0.85
+
+ammo_12x70_cart					 	 = 10, 0.8
+ammo_12x70_buck				 	 	 = 7, 0.8
+ammo_12x76_dart                      = 5, 0.6
+ammo_12x76_zhekan					 = 7, 0.8
+ammo_23x75_buck                      = 4, 0.8
+ammo_5.45x39_fmj                     = 15, 0.6
+ammo_7.62x39_s						 = 5, 0.6
+ammo_7.62x51_fmj					 = 6, 0.8
+ammo_7.62x51_ap					 	 = 3, 0.8
+ammo_9x18_fmj                        = 15, 0.6
+
+medkit_scientic                      = 2, 0.9
+pripiat_beer		                 = 10, 0.5
+
+
+[supplier_after_helmet]:supplier_start
+killer_outfit		                 = 2, 0.7
+stalker_outfit                       = 2, 0.7
+protection_outfit                    = 2, 0.7
+exo_outfit                           = 2, 0.7
+military_heavy_outfit	           	 = 2, 0.5
+cs_heavy_outfit	                     = 2, 0.7
+svoboda_heavy_outfit                 = 2, 0.7
+
+helm_battle_stalker					 = 2, 0.5
+helm_battle_military				 = 2, 0.5
+
+ammo_11.43x23_fmj                    = 5, 0.6
+ammo_5.45x39_ap	                     = 6, 0.6
+ammo_7.62x39_ap						 = 2, 0.6
+ammo_7.62x51_fmj					 = 10, 0.8
+ammo_7.62x51_ap					 	 = 10, 0.8
+ammo_9x18_pmm                        = 10, 0.6
+ammo_9x18_pbp                        = 10, 0.6
+ammo_9x39_ap                         = 4, 0.6
+ammo_9x39_pab9                       = 9, 0.6
+ammo_9x39_sp5                        = 3, 0.6
+ammo_23x75_buck                      = 8, 0.8
+ammo_23x75_buck_ap                   = 5, 0.9
+
+medkit	                             = 9, 0.9
+
+bandit_heavy_outfit                  =
+military_medium_outfit				 =
+scientific_outfit                    =
+cs_medium_outfit	                 =
+helm_protective	                     =
+helm_tactic			                 =
+
+[supplies_before_prip]:supplier_after_helmet
+stalker_exo_heavy_outfit             = 2, 0.45
+military_ultraheavy_outfit        	 = 2, 0.5
+cs_ultraheavy_outfit                 = 2, 0.6
+
+helm_battle_heavy_stalker			 = 2, 0.5
+helm_battle_heavy_military			 = 2, 0.5
+
+ammo_23x75_barr                      = 5, 0.9
+
+stalker_outfit                       =
+exo_outfit                           =
+military_heavy_outfit	           	 =
+cs_heavy_outfit	                     =
+helm_battle_stalker					 =
+helm_battle_military				 =
+
+[supplies_freeplay]:supplies_before_prip
+military_ultraheavy_outfit         	 = 1, 1
+cs_ultraheavy_outfit                 = 1, 1
+dolg_scientific_outfit               = 1, 1
+stalker_exo_heavy_outfit             = 1, 1
+
+helm_battle_heavy_stalker			 = 1, 1
+helm_battle_heavy_military			 = 1, 1

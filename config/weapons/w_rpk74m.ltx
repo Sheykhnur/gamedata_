@@ -1,0 +1,221 @@
+[wpn_rpk74m]:weapon_base,weapon_5.45x39
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\wpn_rpk_74m"
+animation_slot                          = 2
+class                                   = WP_LR300
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+hand_dependence                         = 1
+repair_compatibility                    = ak
+scheduled                               = off
+weapon_class                            = assault_rifle
+weapon_rank                             = 2
+
+; Inventory icon
+inv_grid_width     						= 6
+inv_grid_height     					= 2
+inv_grid_x     							= 10
+inv_grid_y     							= 6
+silencer_x                  			= 236
+silencer_y                  			= 4
+
+; Text
+inv_name                                = st_wpn_rpk74m_name
+inv_name_short                          = st_wpn_rpk74m_name
+description                             = st_wpn_rpk74m_descr
+
+; Visual
+hud                                     = wpn_rpk74m_hud
+position                                = -0.026, -0.175, 0.0
+orientation                             = 0, 0, 0
+strap_position                          = -0.26,-0.11,0.25
+strap_orientation                       = -15,-9,110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_rpk74m\wpn_rpk74m.ogf
+
+; Effects
+fire_point                              = 0,0.218,0.7
+fire_point2                             = 0,0.161,0.6
+shell_point                             = 0,0.216,0.174
+shell_dir                               = 0, 0, 0.4
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\ak\ak_draw
+snd_empty                               = weapons\ak_empty, 0.7
+snd_holster                             = weapons\rifle_holster
+snd_reload                              = weapons\rpk74m\rpk74m_reload
+snd_reload_empty                        = weapons\rpk74m\rpk74m_reload_empty
+snd_shoot                               = weapons\rpk74m\rpk74m_shoot
+snd_silncer_shot                        = weapons\ak74\ak74_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_AKM74_2
+upgr_icon_x                             = 304
+upgr_icon_y                             = 627
+upgr_icon_width                         = 295
+upgr_icon_height                        = 110
+
+; Cost & Weight
+cost                                    = 47400
+inv_weight                              = 5.1
+ph_mass                                 = 5
+
+; Ammo
+ammo_limit                              = 45
+ammo_mag_size                           = 45
+
+; Features
+fire_modes                              = 1, -1
+scopes_sect                             = scope_rpk74m, scope_x2.7_rpk74m, scope_live_detector_rpk74m, scope_night_rpk74m, scope_var_rpk74m
+scope_status                            = 2
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Ballistics
+bullet_speed                			= 1000 
+fire_dispersion_base                    = 0.5
+
+; Impact
+hit_power                               = 1.05
+hit_impulse                 			= 140
+
+; Performance
+rpm                                     = 650
+
+; Reliability
+misfire_start_condition                 = 0.5
+misfire_end_condition                   = 0.0
+misfire_start_prob                      = 0.001
+misfire_end_prob                        = 0.05
+condition_shot_dec                      = 0.00015384
+condition_queue_shot_dec                = 0.00015384
+
+; Handling
+control_inertion_factor                 = 1.5f
+PDM_disp_base                           = 3.75
+PDM_disp_vel_factor                     = 1.5
+PDM_disp_accel_factor                   = 1.5
+
+; Recoil
+cam_dispersion                          = 1.0
+cam_dispersion_inc                      = 0.4
+cam_dispersion_frac                     = 0.5
+cam_step_angle_horz                     = 1.5
+zoom_cam_dispersion                     = 0.6
+zoom_cam_dispersion_inc                 = 0.3
+zoom_cam_step_angle_horz                = 1.0
+
+; Aiming
+zoom_enabled                            = true
+zoom_inertion_factor                    = 1.65
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_10plus3
+upgrades                                = up_gr_firstab_galil, up_gr_seconab_galil, up_gr_thirdab_galil, up_gr_thirdcd_galil, up_gr_thirdef_rpk74m
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 100
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 0.65
+
+
+[wpn_rpk74m_hud]
+aim_hud_offset_pos                     = -0.069600,0.031200,-0.0476
+aim_hud_offset_rot                     = 0.031500,0.042000,0.000000
+
+aim_hud_offset_pos_16x9					= -0.069600,0.031200,-0.0476
+aim_hud_offset_rot_16x9					= 0.031500,0.042000,0.000000
+gl_hud_offset_pos                       = -0.031250,-0.003000,-0.129001
+gl_hud_offset_pos_16x9                  = -0.031250,-0.003000,-0.129001
+gl_hud_offset_rot                       = -0.132938,-0.071237,0
+gl_hud_offset_rot_16x9                  = -0.132938,-0.071237,0
+
+anim_bore                       		= ak74_ins_idle
+anim_hide                				= ak74_ins_hide
+anim_idle                				= ak74_ins_idle
+anim_idle_aim            				= ak74_ins_idle_aim
+anim_idle_moving         				= ak74_ins_idle_moving,,0.9
+anim_idle_moving_crouch					= ak74_ins_idle, idle
+anim_idle_sprint         				= ak74_ins_idle_sprint,,0.95
+anim_reload              				= ak74_ins_reload, reload
+anim_reload_empty        				= ak74_ins_reload_empty, reload_empty
+anim_shots               				= ak74_ins_shoot, shoot
+anim_show								= ak74_ins_draw
+
+attach_place_idx                        = 0
+
+hands_position                           = 0.011500,-0.005000,-0.080000
+hands_orientation                        = 2.699999,1.899999,0.000000
+
+hands_position_16x9                      = 0.011500,-0.005000,-0.080000
+hands_orientation_16x9                   = 2.699999,1.899999,0.000000
+
+item_position							 = 0,0,0
+item_orientation						 = 0,0,0
+
+fire_point								= 0,0,0
+fire_bone                   			= muzzle
+fire_point2                 			= 0,0,0
+fire_bone2                				= muzzle_gl
+
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+
+shell_point                 			= 0,0,0
+shell_dir               				= 0.0, 1.0, 0.0
+shell_bone                				= gilza
+
+zoom_hide_crosshair                     = true
+item_visual                             = dynamics\weapons\wpn_rpk74m\wpn_rpk74m_hud.ogf
+
+
+[scope_rpk74m_base]
+scope_x                     			= 37
+scope_y                     			= -10
+
+[scope_rpk74m]:scope_rpk74m_base
+scope_name                              = wpn_addon_scope
+
+[scope_x2.7_rpk74m]:scope_rpk74m_base
+scope_name                              = wpn_addon_scope_x2.7
+
+
+[scope_live_detector_rpk74m]:scope_rpk74m_base
+scope_name                              = wpn_addon_scope_detector
+
+
+[scope_night_rpk74m]:scope_rpk74m_base
+scope_name                              = wpn_addon_scope_night
+
+
+[scope_var_rpk74m]:scope_rpk74m_base
+scope_name                              = wpn_addon_scope_var
+
+[wpn_rpk74m_m1]:wpn_rpk74m
+$spawn                                  = "weapons\wpn_rpk_74m_m1"
+unique_item								= true
+
+; Features
+fire_modes                              = 1, 3, -1
+
+; Performance
+rpm                                     = 700
+
+; Cost & Weight
+cost                                    = 61400
+
+installed_upgrades                      = up_firsta_galil, up_firstc_galil, up_firstf_galil, up_secona_galil, up_second_galil, up_seconf_galil, up_thirda_galil, up_thirde_rpk74m

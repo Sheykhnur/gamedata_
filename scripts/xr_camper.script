@@ -1,0 +1,641 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_camper.script
+ Description: Camper scheme: Dude with big gun goes and shooting creatures.
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Editors    : gr1ph00n
+ Last edit  : 17.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_NoActive    = xr_evaluators_id.stohe_camper_base +1
+local iEvl_CloseCombat = xr_evaluators_id.stohe_camper_base +2
+local iAct_Patrol      = xr_actions_id.stohe_camper_base +1
+local tBindEvls = { --/ array of 'external' conditions of activation of the scheme
+	[1] = { stalker_ids.property_alive,               true }, --/ NPC alive
+	[2] = { xr_evaluators_id.sidor_wounded_base +1,   true }, --/#!# wounded, but can fight
+	[3] = { stalker_ids.property_danger,              false}, --/ no dangers
+	[4] = { stalker_ids.property_anomaly,             false}, --/ no anomalies
+	[5] = { xr_evaluators_id.sidor_wounded_base,      false}, --/ not wounded
+	[6] = { xr_evaluators_id.chugai_heli_hunter_base, false}, --/ don't see helis
+	[7] = { xr_evaluators_id.stohe_meet_base +1,      false}, --/ no talks
+	[8] = { xr_evaluators_id.abuse_base,              false}, --/ not abused
+}
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end --/>
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout    and xr_blowout.get_ai_evl(0),         flg = false}, --/ don't see blowout
+		[2] = {id = db.la_ai_watcher and la_ai_watcher.get_ai_evl(0),      flg = false}, --/ no gathering
+		[3] = {id = not db.no_gather_items and stalker_ids.property_items, flg = false}, --/#?# no items to gather
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+function id(oNPC)
+	if oNPC then
+		return oNPC:id() --/>
+	end
+	return nil --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATORs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_end" (property_evaluator)
+--/ -----------------------------------------------------------------
+--/ Condition of finishing script
+--/ ---------------------------------------------
+function evaluator_end:__init(name, st) super (nil, name)
+	self.st = st
+end
+
+function evaluator_end:evaluate()
+	return not xr_logic.is_active(self.object, self.st) --/> scheme not active
+end
+
+--/ -----------------------------------------------------------------
+class "evaluator_close_combat" (property_evaluator)
+--/ -----------------------------------------------------------------
+--/ Usual combat or camper
+--/ ---------------------------------------------
+function evaluator_close_combat:__init(name, st, oPlanner) super (nil, name)
+	self.st  = st
+	self.log = st.log
+	self.ev_enemy    = oPlanner:evaluator(stalker_ids.property_enemy)
+	self.ev_danger   = oPlanner:evaluator(stalker_ids.property_danger)
+	self.ev_canfight = oPlanner:evaluator(xr_evaluators_id.sidor_wounded_base +1)
+	self.close_combat = false
+end
+
+function evaluator_close_combat:evaluate()
+--	log("ev_close_combat:NPC=[%s],close=[%s]", self.object:name(), tostring(not xr_logic.is_active(self.object, self.st))) --/#~#
+	if not xr_logic.is_active(self.object, self.st) then
+		return true --/> scheme not active
+	end
+	--/ if no enemies - return false
+	if not self.ev_enemy:evaluate() then
+		return false --/>
+	end
+	--/ if we can't fight at all - return false
+	if not self.ev_canfight:evaluate() then
+		return false --/>
+	end
+	--/ if we see a grenade - auto-release to close_combat (return true)
+	if self.ev_danger:evaluate() then
+		if self.log then log("%s:ev_close_combat:NPC=[%s]~>danger:[%s]", self.object:name(), ">") end --/#~#
+		return true --/>
+	end
+	local oEnemy = self.object:best_enemy()
+	if oEnemy then
+		local oNPC   = self.object
+		if not self.close_combat then
+			self.close_combat = oNPC:position():distance_to(oNPC:memory_position(oEnemy)) < self.st.radius
+		end
+		if self.close_combat then
+			local iMemEnemy = oNPC:memory_time(oEnemy)
+			if iMemEnemy then
+				if iMemEnemy + 20000 < time_global() then
+					self.close_combat = false
+				end
+			else
+				self.close_combat = false
+			end
+		end
+		if self.log and self.close_combat then log("ev_close_combat:NPC=[%s],Enemy=[%s]:[%s]", self.object:name(), oEnemy:name(), ">") end --/#~#
+	else
+		--return self.close_combat --/> There maybe need just to set FALSE and return FALSE
+		self.close_combat = false
+	end
+	return self.close_combat --/>
+end
+
+----------------------------------------------------------------------------------------------------------------------
+--/ ACTIONS
+----------------------------------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_patrol" (action_base)
+--/ -----------------------------------------------------------------
+--/ Patrolling territory by patrol way
+--/ ---------------------------------------------
+function action_patrol:__init (action_name, st) super (nil, action_name)
+	self.st  = st
+	self.log = st.log
+	self.move_mgr = st.move_mgr
+	self.st.scan_table = {}
+end
+
+function action_patrol:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_patrol:ini:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self:reset_scheme()
+	self.enemy_position = nil
+end
+
+function action_patrol:reset_scheme()
+	if self.log then log("ac_patrol:reset_scheme:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	state_mgr.set_state(self.object, "patrol")
+	self.st.signals    = {}
+	self.st.scan_table = {}
+	if self.st.sniper == true then
+		self.move_mgr:reset(self.st.path_walk,
+			utils.path_parse_waypoints(self.st.path_walk),
+			nil,
+			nil,
+			nil,self.st.suggested_state,{obj=self,func=self.process_point})
+			
+		--/ there add parsing of corners for scan
+		local oPPath = get_patrol(self.st.path_look)
+		if oPPath then
+			for k=0,oPPath:count()-1 do
+				for i=0,31 do
+					if oPPath:flag(k,i) then
+						if not self.st.scan_table[i] then self.st.scan_table[i] = {} end
+						table.insert(self.st.scan_table[i], {key = k, pos = oPPath:point(k)})
+					end
+				end
+			end
+		end
+	else
+		self.move_mgr:reset(
+			self.st.path_walk,
+			utils.path_parse_waypoints(self.st.path_walk),
+			self.st.path_look,
+			utils.path_parse_waypoints(self.st.path_look),
+			nil,self.st.suggested_state,{obj=self,func=self.process_point}
+			)
+	end
+	self.st.last_look_point = nil
+	self.st.cur_look_point  = nil
+	self.st.scan_begin      = nil
+end
+
+function action_patrol:activate_scheme()
+	self:reset_scheme()
+end
+
+function action_patrol:can_shoot()
+	if self.st.shoot == "always" then
+		return true --/>
+	elseif self.st.shoot == "none" then
+		return false --/>
+	elseif self.st.shoot == "terminal" then
+		if self.move_mgr:standing_on_terminal_waypoint() then
+			return true --/>
+		end
+		return false --/>
+	end
+	abort("%s:ac:can_shoot:NPC=[%s]~unrecognized shoot type=[%s]:<%s>", sModule, self.object:name(), self.st.shoot, "Error!")
+end
+
+function action_patrol:execute()
+	action_base.execute (self)
+--	if self.log then log("ac_patrol:exe:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	if xr_logic.try_switch_to_another_section (self.object, self.st, db.actor) then
+		return --/>
+	end
+	self.enemy = self.object:best_enemy()
+	if self.enemy then
+		self.st.mem_enemy = self.object:memory_time(self.enemy)
+		--/ Forgetting enemy by time.
+		if not self.st.mem_enemy or self.st.mem_enemy + self.st.idle < time_global() then
+			self.enemy        = nil
+			self.st.mem_enemy = nil
+			self.move_mgr:continue()
+		end
+	else
+		if self.st.mem_enemy then
+			self.st.mem_enemy = nil
+			self.move_mgr:continue()
+		end
+	end
+--	if self.log then log("ac_patrol:exe:NPC=[%s],Enemy=[%s]:[%s]", self.object:name(), self.enemy and self.enemy:name(), ">") end --/#~#
+	
+	--/ Three types of action:
+	--/ There is enemy
+	if self.enemy then
+		if self.object:see(self.enemy) == true and self:can_shoot() then
+			--/ отстрел врага
+--			log("cp: [%s] see [%s]", self.object:name(), self.enemy:name())
+			if self.st.sniper == true then
+				if self.st.suggested_state.campering_fire then
+					state_mgr.set_state(self.object, self.st.suggested_state.campering_fire, nil, nil, {look_object = self.enemy, look_position = self.enemy:position()}, {animation = true}, nil, {yaw_delta = 0.2})
+				else
+					state_mgr.set_state(self.object, "hide_sniper_fire", nil, nil, {look_object = self.enemy, look_position = self.enemy:position()}, {animation = true}, nil, {yaw_delta = 0.2})
+				end
+			else
+				if self.st.suggested_state.campering_fire then
+					state_mgr.set_state(self.object, self.st.suggested_state.campering_fire, nil, nil, {look_object = self.enemy, look_position = self.enemy:position()}, {animation = true}, nil, {yaw_delta = 0.2})
+				else
+					state_mgr.set_state(self.object, "hide_fire", nil, nil, {look_object = self.enemy, look_position = self.enemy:position()}, {animation = true}, nil, {yaw_delta = 0.2})
+				end
+			end
+--			log("attack sound [%s]", tostring(self.st.attack_sound)) --/#~#
+			xr_sound.set_sound(self.object, self.st.attack_sound)
+			
+		else
+			--/ Analizing last known position of enemy.
+			local memory_position = self.object:memory_position(self.enemy)
+			if self.enemy_position == nil or
+				 self.enemy_position.x ~= memory_position.x or
+				 self.enemy_position.y ~= memory_position.y or
+				 self.enemy_position.z ~= memory_position.z
+				then
+				self.enemy_position = memory_position
+				--/ Add place of search enemy to scan_table
+				if self.st.sniper == true then
+					self.position = self.object:position()
+					
+					self.direction = vector():set(self.enemy_position.x - self.position.x,
+												0,
+												self.enemy_position.z - self.position.z)
+					self.direction:normalize()
+					local wide_sight = self.position:distance_to(self.enemy_position)*math.tan(self.st.enemy_disp)
+					
+					self.point_0 = vector():set(self.enemy_position.x + wide_sight*self.direction.z,
+												self.enemy_position.y,
+												self.enemy_position.z - wide_sight*self.direction.x)
+					
+					self.point_2 = vector():set(self.enemy_position.x - wide_sight*self.direction.z,
+												self.enemy_position.y,
+												self.enemy_position.z + wide_sight*self.direction.x)
+					
+					self.st.scan_table[-1] = {}
+					table.insert(self.st.scan_table[-1], {key = 0, pos = self.point_0})
+					table.insert(self.st.scan_table[-1], {key = 1, pos = self.enemy_position})
+					table.insert(self.st.scan_table[-1], {key = 2, pos = self.point_2})
+				end
+			end
+			
+			xr_sound.set_sound(self.object, nil)
+			if self.st.sniper == true then
+				--/ search enemy (scan enemy)
+--				log("SCAN_ENEMY [%s] of [%s]", utils.to_str(time_global() - self.st.mem_enemy), utils.to_str(self.st.idle)) --/#~#
+				--/ scanning
+				if time_global() - self.st.mem_enemy < self.st.post_enemy_wait then
+					local position
+					if self.enemy_position then
+						position = {look_position = self.enemy_position}
+					end
+					if self.st.suggested_state.campering then
+						state_mgr.set_state(self.object, self.st.suggested_state.campering, nil, nil, position)
+					else
+						state_mgr.set_state(self.object, "hide_na", nil, nil, position)
+					end
+				else
+					self:scan(-1)
+				end
+			else
+				--/ if noretreat or we on place - hide, otherwise go to point
+				if self:on_place() then 
+--					log("on place[%s]", self.object:name()) --/#~#
+					local vPosLook
+					if self.enemy_position then
+						vPosLook = {look_position = self.enemy_position}
+					end
+					if self.st.suggested_state.campering then
+						state_mgr.set_state(self.object, self.st.suggested_state.campering, nil, nil, vPosLook)
+					else
+						state_mgr.set_state(self.object, "hide", nil, nil, vPosLook)
+					end
+				else --/ continue going
+--					log("not on place[%s]", self.object:name()) --/#~#
+					self.move_mgr:continue()
+					self.move_mgr:update()
+				end
+			end
+		end
+		if self.log then log("ac_patrol:exe:NPC=[%s],Enemy=[%s]:[%s]", self.object:name(), self.enemy and self.enemy:name(), "<") end --/#~#
+		return --/>
+	end
+	
+	if self:process_danger() then --/ have danger
+		xr_sound.set_sound(self.object, nil)
+		self.danger = true
+		if self.log then log("ac_patrol:exe:NPC=[%s]~danger:[%s]", self.object:name(), "<") end --/#~#
+		return --/>
+	end
+	if self.danger == true then
+		self.danger = false
+		self.move_mgr:continue()
+	end
+	
+	--/ if there is no enemy and no danger.
+	if self.st.sniper == true then
+		--/ Scanning region in central(nodal) points
+		--/ if we are on point - launch scan counter and scan defined time.
+		if self:on_place() then
+			if self.scantime == nil then
+				self.scantime = time_global()
+			end
+--			log("SCAN [%s]:[%s] of [%s]", self.object:name(), time_global() - self.scantime, self.st.scantime_free) --/#~#
+			--/ scanning
+			self:scan(self.st.wp_flag)
+			--/ if we ar standing on final point - no reset.
+			if self.move_mgr:standing_on_terminal_waypoint() then
+				if self.log then log("ac_patrol:exe:NPC=[%s]~move_mgr:standing:[%s]", self.object:name(), "<x") end --/#~#
+				return --/>
+			end
+			--/ check on finishing scan.
+			if self.scantime ~= nil and time_global() - self.scantime >= self.st.scantime_free then
+				self.move_mgr:continue()
+			end
+		else
+			self.scantime = nil
+			self.move_mgr:update()
+		end
+	else
+		--/ Moving by move_mgr
+		if self.log then log("ac_patrol:exe:NPC=[%s]~update move_mgr:[%s]", self.object:name(), "<") end --/#~#
+		self.move_mgr:update()
+	end
+end
+
+function action_patrol:process_danger()
+	local best_danger = self.object:best_danger()
+	if not best_danger then
+		return false --/>
+	end
+	if not xr_danger.is_danger(self.object, best_danger) then
+		return false
+	end
+	local bd_type = best_danger:type()
+	local passed_time = time_global() - best_danger:time()
+	--[[
+	local stor = db.storage[self.object:id()]
+	--/ Sift by inertion
+	if not xr_danger.check_danger_inertion_time(stor["danger"], bd_type, passed_time) then
+		return false --/>
+	end
+	--/ getting object which provoked danger
+	local bd_obj = best_danger:object()
+	--/ Sift reaction on dangers of 'own mates'
+	if bd_obj and bd_type == danger_object.attack_sound and bd_obj:character_community() == self.object:character_community() then
+		return false --/>
+	end
+	--/ Sift by distance
+	--if not self:on_place() then
+		if not xr_danger.check_danger_distance(stor["danger"], bd_type, self.object:position():distance_to_sqr(best_danger:position())) then
+--			log("DANGER [%s] [FALSE] danger_distance camper", self.object:name()) --/#~#
+			return false --/>
+		end
+	--end
+	--]]
+	local tEmerg = nil
+	if not self.danger then
+		tEmerg = {animation = true}
+		self.object:play_sound(stalker_ids.sound_alarm, 1, 0, 1, 0)
+	end
+	local bd_obj = best_danger:object()
+	--/ If danger dangerous - fire to position of initiator, if not - rotate and watch there.
+	--/ Dangerous danger: hit or very close ricochet non later then 5sec.
+	if bd_obj and bd_type == danger_object.attacked and passed_time < 5*1000 then --/ 5 sec - actual time ('danger_expiration_time')
+		local look_pos = {look_position = bd_obj:position()}
+		if self.st.suggested_state.campering_fire then
+			state_mgr.set_state(self.object, self.st.suggested_state.campering_fire, nil, nil, look_pos, {animation = true}, nil, {yaw_delta = 0.2})
+		else
+			state_mgr.set_state(self.object, "hide_fire", nil, nil, look_pos, {animation = true}, nil, {yaw_delta = 0.2})
+		end
+	else
+		local look_pos = {look_position = best_danger:position()}
+		if self.st.suggested_state.campering then
+			state_mgr.set_state(self.object, self.st.suggested_state.campering, nil, nil, look_pos, tEmerg)
+		else
+			if self.st.sniper == true then
+				state_mgr.set_state(self.object, "hide_na", nil, nil, look_pos, tEmerg)
+			else
+				state_mgr.set_state(self.object, "hide", nil, nil, look_pos, tEmerg)
+			end
+		end
+	end
+	if self.log then log("ac_patrol:process_danger:NPC=[%s],BD=[%s/%s]:[%s]", self.object:name(), bd_obj and bd_obj:name(), bd_type, ">") end --/#~#
+	return true --/>
+end
+
+function action_patrol:scan(flag)
+	if self.st.scan_table[flag] == nil then
+		return --/>
+	end
+	
+	if self.flag ~= flag then
+		self.flag               = flag
+		self.st.scan_begin      = nil
+		self.st.cur_look_point  = nil
+		self.st.last_look_point = nil
+	end
+	local iTime = time_global()
+	if self.st.scan_begin == nil or self.st.scan_begin + self.st.time_scan_delta < iTime then
+		self.next_point = self:get_next_point(flag)
+		if self.st.cur_look_point == nil then
+			self.st.cur_look_point = 1
+		end
+		if self.st.last_look_point == nil then
+			self.st.last_look_point = self.next_point
+		end
+		
+--		log("Look at [%s][%s]", self.st.last_look_point.key, self.st.cur_look_point) --/#~#
+		self.look_position = self.st.last_look_point.pos
+		self.dest_position = self.next_point.pos
+		self.look_point = vector():set(self.look_position.x + self.st.cur_look_point * (self.dest_position.x - self.look_position.x)/self.st.scandelta,
+																	 self.look_position.y + self.st.cur_look_point * (self.dest_position.y - self.look_position.y)/self.st.scandelta,
+																	 self.look_position.z + self.st.cur_look_point * (self.dest_position.z - self.look_position.z)/self.st.scandelta)
+		if self.st.suggested_state.campering then                     
+			state_mgr.set_state(self.object, self.st.suggested_state.campering, nil, nil, {look_position = self.look_point}, nil, nil, {yaw_delta = 0.2})
+		else
+			state_mgr.set_state(self.object, "hide_na", nil, nil, {look_position = self.look_point}, nil, nil, {yaw_delta = 0.2})
+		end
+		
+		if self.st.cur_look_point >= self.st.scandelta then
+			self.st.cur_look_point = nil
+			self.st.last_look_point = self.next_point
+		else
+			if self.st.scan_begin ~= nil then
+				self.st.cur_look_point = self.st.cur_look_point + (iTime - self.st.scan_begin)/self.st.time_scan_delta
+			else
+				self.st.cur_look_point = self.st.cur_look_point + 1
+			end
+		end
+		self.st.scan_begin = iTime
+	end
+end
+
+function action_patrol:get_next_point(flag)
+	local next = false
+	if self.st.last_look_point == nil then
+		table.sort(self.st.scan_table[flag], function(a,b) return a.key < b.key end)
+	end
+	--table.print(self.st.scan_table[flag]) --/#~#
+	for k,v in pairs(self.st.scan_table[flag]) do
+		if self.st.last_look_point == nil then
+			return v --/>
+		end
+		if next == true then
+			return v --/>
+		end
+		if self.st.last_look_point.key == v.key then
+			next = true
+		end
+	end
+	if next == true then
+		if self.st.last_look_point.key == 0 then
+			table.sort(self.st.scan_table[flag], function(a,b) return a.key < b.key end)
+		else
+			table.sort(self.st.scan_table[flag], function(a,b) return a.key > b.key end)
+		end
+	end
+	return self.st.last_look_point --/>
+end
+
+function action_patrol:process_point(mode, number)
+	return false --/>
+end
+
+function action_patrol:finalize()
+	if self.log then log("ac_patrol:fin:NPC=[%s]:[%s]", self.object:name(), "x") end --/#~#
+	self.move_mgr:finalize()
+	action_base.finalize (self)
+end
+
+function action_patrol:on_place()
+	if self.st.no_retreat == true then return false end
+	local oPPath = get_patrol(self.st.path_walk)
+	if oPPath then
+		for k=0, oPPath:count() - 1 do
+			if utils.stalker_at_waypoint(self.object, oPPath, k) then
+				for i=0, 31 do
+					if oPPath:flag(k, i) then
+						self.st.wp_flag = i
+						return true --/>
+					end
+				end
+				self.st.wp_flag = nil
+				return false --/>
+			end
+		end
+		self.st.wp_flag = nil
+		return false --/>
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oNPC, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", oNPC:name(), scheme, section, ">") --/#~#
+	st.move_mgr = db.storage[oNPC:id()].move_mgr
+	--/ Planner -------------------------------------------------------
+	local oPlanner = oNPC:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	oPlanner:add_evaluator( iEvl_NoActive,    this.evaluator_end("camper_end", st) )
+	oPlanner:add_evaluator( iEvl_CloseCombat, this.evaluator_close_combat("camper_close_combat", st, oPlanner) )
+	--/ New Action ----------------------------------------------------
+	local oNewAction = this.action_patrol("ac_camper_patrol", st)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition( world_property( iEvl_CloseCombat, false)) --/ 
+	oNewAction:add_precondition( world_property( iEvl_NoActive,    false)) --/ scheme not active
+	oNewAction:add_effect( world_property( iEvl_NoActive,              true ))
+	oNewAction:add_effect( world_property( stalker_ids.property_enemy, false))
+	
+	oPlanner:add_action( iAct_Patrol, oNewAction )
+	st.action = oNewAction --/ for registration from resets
+	--/ Actions -------------------------------------------------------
+	local oAction = oPlanner:action( xr_actions_id.alife )
+	oAction:add_precondition( world_property( iEvl_NoActive, true) )
+	--/
+	oAction = oPlanner:action( stalker_ids.action_combat_planner )
+	oAction:add_precondition( world_property(iEvl_CloseCombat, true))
+	oAction:add_effect( world_property(iEvl_CloseCombat, false))
+	oAction:add_effect( world_property(iEvl_NoActive,    true ))
+	--/ fot debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", oNPC:name(), scheme, section, "+") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(oNPC, ini, scheme, section, gulag_name)
+--	log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", oNPC:name(), scheme, section, "") --/#~#
+	local st = xr_logic.assign_storage_and_bind(oNPC, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, oNPC)
+	--/ registration action, for calling methods of 'reset_scheme' when changing settings of the scheme
+	xr_logic.subscribe_action_for_events(oNPC, st, st.action)
+	
+	st.path_walk  = Get_Cfg_String(ini, section, "path_walk", "<<Err!>>", true, gulag_name)
+	st.path_look  = Get_Cfg_String(ini, section, "path_look", "<<Err!>>", true, gulag_name)
+	st.shoot      = Get_Cfg_String(ini, section, "shoot", "always")
+	st.sniper     = Get_Cfg_Bool  (ini, section, "sniper", false)
+	st.no_retreat = Get_Cfg_Bool  (ini, section, "no_retreat", false)
+	if st.sniper == true and st.no_retreat == true then
+		abort("%s:set_scheme:NPC=[%s],section=[%s].No_retreat not available for SNIPER:<%s>", sModule, oNPC:name(), section, "Error!")
+	end
+	
+	st.suggested_state = {}
+	st.suggested_state.standing       = Get_Cfg_String(ini, section, "def_state_standing")
+	st.suggested_state.moving         = Get_Cfg_String(ini, section, "def_state_moving")
+	st.suggested_state.moving1        = st.suggested_state.moving
+	st.suggested_state.moving2        = st.suggested_state.moving
+	st.suggested_state.moving3        = st.suggested_state.moving
+	st.suggested_state.moving_fire    = Get_Cfg_String(ini, section, "def_state_moving_fire")
+	st.suggested_state.campering      = Get_Cfg_String(ini, section, "def_state_campering")
+	st.suggested_state.campering_fire = Get_Cfg_String(ini, section, "def_state_campering_fire")
+	st.attack_sound                   = Get_Cfg_String(ini, section, "attack_sound", "fight_attack")
+	if st.attack_sound == "false" then
+		st.attack_sound = nil
+	end
+--	log("set_scheme:attack sound=[%s]", st.attack_sound) --/#~#
+	st.radius        = Get_Cfg_Number(ini, section, "radius", 20)
+	st.scantime_free = Get_Cfg_Number(ini, section, "scantime_free", 60000)
+	st.idle          = Get_Cfg_Number(ini, section, "enemy_idle", 60000) --/ time of forgetting enemy
+	st.post_enemy_wait = 5000 --/ time, which we wait enemy, looking at his last position.
+	st.enemy_disp      = 7/57.2957 --/ Angle in range which sniper keep searching lost enemy.
+	st.scandelta       = 30
+	st.timedelta       = 4000
+	st.time_scan_delta = st.timedelta/st.scandelta
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s]", oNPC:name(), scheme, section, gulag_name, "") end --/#~#
+	if not validate_patrol_path(st.path_walk, oNPC, true) then
+		log("set_scheme:NPC=[%s],section=[%s],path_walk=[%s]<~NOT_validate:<%s>", oNPC:name(), section, st.path_walk, "Warning!")
+		this.disable_scheme(oNPC, scheme)
+		smart_terrain.unregister_npc(oNPC)
+		xr_logic.initialize_obj(oNPC, db.storage[oNPC:id()], false, db.actor, modules.stype_stalker)
+	end
+	if not validate_patrol_path(st.path_look, oNPC, false) then
+		log("set_scheme:NPC=[%s],section=[%s],path_look=[%s]<~not_validate:<%s>", oNPC:name(), section, st.path_look, "Info!")
+	end
+end
+--/------------------------------------------------------------------
+--/#+# DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/< "camper"
+	local stor = npc and db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		if st.log then log("disable_scheme:NPC=[%s],scheme=[%s]", npc:name(), scheme, "") end --/#~#
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,30 @@
+[logic]
+active = remark@main
+combat_ignore = combat_ignore@rad_fake_actor
+danger = danger@rad_fake_actor
+threshold = threshold@rad_fake_actor
+
+[remark@main]
+anim = ward
+meet = no_meet
+no_move = true
+combat_ignore_cond = always
+target = rad_actor_look, 0
+danger = danger@rad_fake_actor
+on_info = {+rad_scene_end} %=release%
+threshold = threshold@rad_fake_actor
+;on_signal = anim_end | remark@main
+
+[combat_ignore@rad_fake_actor]
+
+[danger@fake_actor]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+
+[threshold@rad_fake_actor]
+max_ignore_distance = 0
+ignore_monster      = 0

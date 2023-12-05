@@ -1,0 +1,170 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_deadcity.script
+ Description: Tasks deadcity
+ Copyright  : 2012 © LA-team
+ Author     : gr1ph00n
+ Editors    : vintar(02.02.2013)
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:section() == "scientist_package" then
+			give_info("yan_scientist_package_have")
+		end
+		if obj:section() == "cit_borziy_pda" then
+			give_info("dol_mil_bandit_pda_have")
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id == "yan_deadcity_reached" then
+		give_info("cit_save_doctor_start")
+		start_game_timer(2.5 *60, sModule..".yan_deadcity_reached") --/ 15000: ~2.5 game-minute
+		return true
+	end
+	if not info_id:match('^cit_') then --/#+# for optimization
+		return false --/>
+	end
+	if info_id == "cit_wait_cavalry" then
+		start_game_timer(2.5 *60, sModule..".spawn_heli") --/ ~2.5 game-minute
+		start_game_timer(275, sModule..".wait_cavalry") --/ ~4.5 game-minute
+		return true
+	end
+	if info_id == "cit_find_your_stuff_start" then
+		disable_info("cit_actor_broke_the_rules")
+		local sobj = alife():object("cit_mercs_cache")
+		if sobj then
+			alife():create("scientist_package", vector(), 0, 0, sobj.id)
+		end
+		return true
+	end
+	if info_id == "cit_meet_entrance_guard_done" then
+		if not has_info("cit_meet_informer_done") then
+			start_real_timer(1.5, nil, {info_id = "cit_meet_informer_start"}) --/ 1500: ~15 game-sec -> ~1.5 real-sec
+		end
+		return true
+	end
+	if info_id == "cit_actor_broke_the_rules" then
+		if not has_info("cit_kill_mercs_base") then
+			give_info("cit_meet_entrance_guard_done")
+			give_info("cit_meet_informer_done")
+			start_game_timer(20, "xr_effects.punch_actor")
+			start_game_timer(40, "xr_effects.prison_sentence")
+		else
+			give_info("cit_fighting_actor")
+		end
+		return true
+	end
+	return false
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function yan_deadcity_reached()
+	news_manager.send_tip_hud(game.translate_string("freedom_message_header"), game.translate_string("cit_mercs_message"), "freedom", 20)
+end
+
+function spawn_heli(t)
+	local p = get_patrol("cit_heli_spawn_point")
+	if p then  --log("spawn_heli:>") --/#~#
+		--local pos,lvid,gvid = p:point(0), p:level_vertex_id(0), p:game_vertex_id(0)
+		--local se_obj = la_utils.spawn_heli(pos, lvid, gvid, "[logic]\ncfg = scripts\\deadcity\\cit_heli.ltx", 7226)
+		local se_obj = alife():create("helicopter", 7226 , p:point(0), p:level_vertex_id(0), p:game_vertex_id(0))
+		local se_heli = cse_alife_helicopter.cast_helicopter(se_obj)
+		se_heli:set_engine_sound("alexmx\\helicopter")
+		se_heli:set_startup_animation("idle")
+		se_heli:set_custom_data("[logic]\ncfg = scripts\\deadcity\\cit_heli.ltx")
+	end
+end
+
+function wait_cavalry(t)
+--	log("wait_cavalry:>") --/#~#
+	give_info("cit_kill_mercs_base")
+	xr_effects.play_snd(db.actor, nil, {"characters_voice\\scenario\\cit\\distance_shooting"})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\rocket_fly", 2})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\rpg7_explode", 4})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\t_rgd5_explosion", 5})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\t_rgd5_explosion", 8})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\t_rgd5_explosion", 12})
+	xr_gulag.kill_gulag_entities("cit_partei_lager")
+	xr_gulag.kill_gulag_entities("cit_gym_lager")
+	xr_gulag.kill_gulag_entities("cit_patrolers")
+	start_game_timer(2.5 *60, sModule..".wait_cavalry2") --/ 14000: ~2.5 game-minute
+end
+
+function wait_cavalry2(t)
+--	log("wait_cavalry2:>") --/#~#
+	xr_effects.play_snd(db.actor, nil, {"characters_voice\\scenario\\cit\\distance_shooting"})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\rocket_fly", 2})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\rpg7_explode", 4})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\t_rgd5_explosion", 5})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\t_rgd5_explosion", 9})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\rocket_fly", 10})
+	xr_effects.play_snd(db.actor, nil, {"weapons\\rpg7_explode", 12})
+	start_real_timer(0.2, "tasks_deadcity.smoke_grenade1")
+	start_real_timer(0.65, "tasks_deadcity.smoke_grenade2")
+	start_real_timer(1, "tasks_deadcity.smoke_grenade3")
+	start_real_timer(20, "tasks_deadcity.spawn_cavalry")
+end
+
+function smoke_grenade1(t)
+	local p = get_patrol("cit_smoke_grenade1")
+	if not p then return end --/>
+	local smoke = particles_object("explosions\\explosion_dym")
+	smoke:play_at_pos(p:point(0))
+	xr_effects.play_snd(db.actor, nil, {"weapons\\grenade_gd05"})
+	give_info("cit_smoke")
+end
+
+function smoke_grenade2(t)
+	local p = get_patrol("cit_smoke_grenade2")
+	if not p then return end --/>
+	local smoke = particles_object("explosions\\explosion_dym")
+	smoke:play_at_pos(p:point(0))
+	xr_effects.play_snd(db.actor, nil, {"weapons\\grenade_gd05"})
+end
+
+function smoke_grenade3(t)
+	local p = get_patrol("cit_smoke_grenade3")
+	if not p then return end --/>
+	local smoke = particles_object("explosions\\explosion_dym")
+	smoke:play_at_pos(p:point(0))
+	xr_effects.play_snd(db.actor, nil, {"weapons\\grenade_gd05"})
+end
+
+function spawn_cavalry(t)
+	xr_gulag.kill_gulag_entities("cit_partei_lager")
+	xr_gulag.kill_gulag_entities("cit_gym_lager")
+	xr_gulag.kill_gulag_entities("cit_patrolers")
+	xr_gulag.kill_gulag_entities("cit_mercs_base")
+	give_info("cit_spawn_cavalry")
+	start_real_timer(1, nil, {info_id = "cit_move_colonel"}) --/ ~1 real-sec
+end
+
+function kill_mercs(t) --/< from timer!
+	local npc = level.object_by_id(t.id)
+	if npc and npc:alive() and t.id ~= idActor then
+	npc:kill(npc)
+	end
+end
+
+function kill(id) --/#?# (rudiment?)
+	local obj = level.object_by_id(id)
+	if obj and obj:alive() then
+		obj:kill(obj)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

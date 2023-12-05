@@ -1,0 +1,339 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : se_zones.script
+ Description: Zone registration (anomaly zones and etc)
+ Copyright  : 2004 © GSC Game World & LA
+ Author     : GSC Game World
+ Editors    : barin(08.07.2010), gr1ph00n(15.07.2012), 03.03.2013
+ Last edit  : 17.04.2017  [loxotron]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function is_single_player_game()
+	if _G.alife == nil or alife() ~= nil then
+		return true --/>
+	elseif _G.IsGameTypeSingle == nil or IsGameTypeSingle() == true then
+		return true --/>
+	end
+	return false --/>
+
+--[[
+	if level.present() and db.actor and db.actor:alive() then
+		return	(true)
+	end
+	return		(false)
+--]]
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_zone_anom" (cse_anomalous_zone)
+--/ -----------------------------------------------------------------------------------------------
+function se_zone_anom:__init(section) super(section)
+	self.spawner = nil
+	self.ini_init_done = false
+end
+
+function se_zone_anom:on_register()
+	cse_anomalous_zone.on_register(self)
+	se_anom_zone.on_anom_register(self) --/#+# barin
+	
+	self.artefact_spawn_idle = 60*60*1000*utils.cfg_get_number(system_ini(), self:section_name(), "artefact_spawn_idle", self, false, 24)
+	self.artefact_spawn_rnd = utils.cfg_get_number(system_ini(), self:section_name(), "artefact_spawn_rnd", self, false, 100)	
+	
+end
+
+function se_zone_anom:update()
+	cse_anomalous_zone.update(self)
+
+	if self.last_spawn_time == nil then
+		self.last_spawn_time = game.get_game_time()
+	end
+		
+	if game.get_game_time():diffSec(self.last_spawn_time) >= self.artefact_spawn_idle then
+		self.last_spawn_time = game.get_game_time()
+		if Random.I(100) <= self.artefact_spawn_rnd then
+			self:spawn_artefacts()
+		end
+	end	
+end
+
+function se_zone_anom:STATE_Write(packet)
+	cse_anomalous_zone.STATE_Write(self, packet)
+	
+	if self.last_spawn_time == nil then
+		packet:w_u8(0)
+	else
+		packet:w_u8(1)
+		utils.w_CTime(packet, self.last_spawn_time)
+	end	
+end
+
+function se_zone_anom:STATE_Read(packet, size)
+	cse_anomalous_zone.STATE_Read(self, packet, size)
+	
+	if editor() then
+		return
+	end
+	
+	if (is_single_player_game() == false) then
+		return
+	end
+	
+	if not packet:r_eof() then
+		local flag = packet:r_u8()
+		if flag == 1 then
+			self.last_spawn_time = utils.r_CTime(packet)
+		end
+	end
+end
+--/#+# gr1ph00n start
+function se_zone_anom:can_switch_online()
+	if not self.ini_init_done then
+		self:load_ini()
+	end
+	if not self.spawner then
+		return cse_anomalous_zone.can_switch_online(self)
+	end
+	if db.actor and not db.actor:alive() then
+		return self.online
+	end
+	if self.online == false then
+		return cse_anomalous_zone.can_switch_online(self) and (xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) ~= nil)
+	elseif xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) ~= nil then
+		return true
+	end
+	return false
+end
+
+function se_zone_anom:keep_saved_data_anyway()
+	return true
+end
+
+function se_zone_anom:load_ini()
+	local ini = self:spawn_ini()
+	if self.spawner or not ini or self.ini_init_done then
+		return
+	end
+	if ini:section_exist("spawner") then
+		self.spawner = xr_logic.parse_condlist(db.actor, "spawner", "cond", Get_Cfg_String(ini, "spawner", "cond", ""))
+	end
+	self.ini_init_done = true
+end
+--/< gr1ph00n end
+--/ -----------------------------------------------------------------------------------------------
+class "se_zone_visual" (cse_zone_visual)
+--/ -----------------------------------------------------------------------------------------------
+function se_zone_visual:__init(section) super(section)
+end
+
+function se_zone_visual:on_register()
+	cse_zone_visual.on_register(self)
+	se_anom_zone.on_anom_register(self) --/#+# barin
+	
+	self.artefact_spawn_idle = 60*60*1000*utils.cfg_get_number(system_ini(), self:section_name(), "artefact_spawn_idle", self, false, 24)
+	self.artefact_spawn_rnd = utils.cfg_get_number(system_ini(), self:section_name(), "artefact_spawn_rnd", self, false, 100)
+end
+
+function se_zone_visual:update()
+	cse_zone_visual.update(self)
+	
+	if self.last_spawn_time == nil then
+		self.last_spawn_time = game.get_game_time()
+	end
+		
+	if game.get_game_time():diffSec(self.last_spawn_time) >= self.artefact_spawn_idle then
+		self.last_spawn_time = game.get_game_time()
+		if Random.I(100) <= self.artefact_spawn_rnd then
+			self:spawn_artefacts()
+		end
+	end	
+end
+
+function se_zone_visual:STATE_Write(packet)
+	cse_zone_visual.STATE_Write(self, packet)
+	
+	if self.last_spawn_time == nil then
+		packet:w_u8(0)
+	else
+		packet:w_u8(1)
+		utils.w_CTime(packet, self.last_spawn_time)
+	end	
+end
+
+function se_zone_visual:STATE_Read(packet, size)
+	cse_zone_visual.STATE_Read(self, packet, size)
+	
+	if editor() then
+		return
+	end
+
+	if (is_single_player_game() == false) then
+		return
+	end
+	
+	if not packet:r_eof() then
+		local flag = packet:r_u8()
+		if flag == 1 then
+			self.last_spawn_time = utils.r_CTime(packet)
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_restrictor" (cse_alife_space_restrictor)
+--/ -----------------------------------------------------------------------------------------------
+function se_restrictor:__init (section) super (section)
+end
+
+function se_restrictor:keep_saved_data_anyway()
+	return true
+end
+
+function se_restrictor:STATE_Write(packet)
+	cse_alife_space_restrictor.STATE_Write(self, packet)
+end
+
+function se_restrictor:STATE_Read( reader, size )
+	cse_alife_space_restrictor.STATE_Read( self, reader, size )
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_shelter" (cse_alife_space_restrictor) --/ "se_blowout_shelter"
+--/ -----------------------------------------------------------------------------------------------
+function se_shelter:__init (section) super (section)
+end
+
+function se_shelter:keep_saved_data_anyway()
+	return true
+end
+
+function se_shelter:STATE_Write(packet)
+	cse_alife_space_restrictor.STATE_Write(self, packet)
+end
+
+function se_shelter:STATE_Read( reader, size )
+	cse_alife_space_restrictor.STATE_Read( self, reader, size )
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_flame_zone" (cse_anomalous_zone)
+--/ -----------------------------------------------------------------------------------------------
+function se_flame_zone:__init (section) super (section)
+	self.cooking_food = {}
+end
+
+function se_flame_zone:get_foods()
+	return self.cooking_food
+end
+
+function se_flame_zone:set_foods(foods)
+	self.cooking_food = foods
+end
+
+function se_flame_zone:keep_saved_data_anyway()
+	return true
+end
+
+--/#># start
+function se_flame_zone:on_register()
+	cse_anomalous_zone.on_register(self)
+	db.flame_zones[self.id] = true
+end
+
+function se_flame_zone:STATE_Read( reader, size )
+	cse_anomalous_zone.STATE_Read( self, reader, size )
+	if not reader:r_eof() then
+		self.cooking_food = {}
+		local count = reader:r_u8() --/< cooking_food_count
+		if count > 0 then
+			local section, timer = nil, nil
+			for i=1, count do
+				section = reader:r_stringZ() --/< cooking_food_section
+				timer = game_timer.GameTimer():load(reader) --/< cooking_food_time
+				table.insert(self.cooking_food, { section = section, timer = timer } )
+			end
+		end
+	end
+end
+
+function se_flame_zone:keep_saved_data_anyway()
+	return true
+end
+
+function se_flame_zone:STATE_Write(packet)
+	cse_anomalous_zone.STATE_Write(self, packet)
+	local count = la_utils.count_container_items(self.cooking_food)
+	packet:w_u8(count) --/> cooking_food_count
+	if count > 0 then
+		local section_idx = nil
+		for k,v in pairs(self.cooking_food) do
+			parser.dbg_print("se_flame_zone:STATE_Write:[%s]", v.section) --/###
+			packet:w_stringZ(v.section) --/> cooking_food_section
+			v.timer:save(packet) --/> cooking_food_time
+		end
+	end
+end
+--/#<# end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_zone_campfire" (cse_anomalous_zone) --/#+# Fireplaces (flame)
+--/ -----------------------------------------------------------------------------------------------
+function se_zone_campfire:__init (section) super (section)
+end
+
+function se_zone_campfire:on_register()
+--	log("se_zone_campfire:on_register:Obj=[%s/%s],Cid=[%s]%s", self:name(), self.id, self:clsid(), "") --/#~#
+	cse_anomalous_zone.on_register(self)
+	if tCFires[self.id] == nil then
+		self:repack() --/#+# repack
+		tCFires[self.id] = true
+	end
+end
+
+function se_zone_campfire:on_unregister()
+	cse_anomalous_zone.on_unregister(self)
+	tCFires[self.id] = nil
+end
+
+function se_zone_campfire:keep_saved_data_anyway()
+	return true
+end
+
+--/ ---------------------------------------------
+function se_zone_campfire:repack()
+--	log("se_zone_campfire:repack:Obj=[%s],Cid=[%s]%s", self:name(), self:clsid(), "") --/#~#
+	local iClassId = self:clsid()
+	if isZoneCFire(self,iClassId) then
+		if self:get_space_restrictor_type()~=self.DEFAULT_RESTRICTOR_TYPE_IN then
+			self:set_space_restrictor_type(self.DEFAULT_RESTRICTOR_TYPE_IN)
+			--data.artefact_spawn_count = 0 --/#?#
+		end
+	end
+--	log("se_zone_campfire:repack:Obj=[%s],Cid=[%s],Section=[%s],Radius=[%s]%s", self:name(), iClassId, self:section_name(), string.short(self.radius), "") --/#~#
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_zone_mine" (cse_anomalous_zone) --/#+# Mines
+--/ -----------------------------------------------------------------------------------------------
+function se_zone_mine:__init (section) super (section)
+end
+
+function se_zone_mine:on_register()
+	cse_anomalous_zone.on_register(self)
+end
+
+function se_zone_mine:on_unregister()
+	cse_anomalous_zone.on_unregister(self)
+end
+
+function se_zone_mine:keep_saved_data_anyway()
+	return true
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,39 @@
+[logic]
+active = {-deactivate_radar_done} sr_idle@check %=set_weather(af_preblowout)%, {+deactivate_radar_done} nil %=release%
+
+[sr_idle@check]
+on_actor_inside = {=current_helmet(good_psy_helmet)} sr_psy_antenna@good_psy_helmet, {=current_helmet(bad_psy_helmet)} sr_psy_antenna@bad_psy_helmet, sr_psy_antenna@no_helmet
+on_info = {+deactivate_radar_done} nil %=release%
+
+[sr_psy_antenna@no_helmet]
+eff_intensity = +300
+hit_intensity = +25
+phantom_prob = 100
+postprocess = psy_antenna.ppe
+min_phantom_idle = 1000
+max_phantom_idle = 2000
+on_info = {+deactivate_radar_done} nil %=release%
+on_info2 = {=current_helmet(good_psy_helmet)} sr_psy_antenna@good_psy_helmet, {=current_helmet(bad_psy_helmet)} sr_psy_antenna@bad_psy_helmet
+on_actor_outside = sr_idle@check
+
+[sr_psy_antenna@bad_helmet]
+eff_intensity = +100
+hit_intensity = +2
+phantom_prob = 60
+postprocess = psy_antenna.ppe
+min_phantom_idle = 3000
+max_phantom_idle = 5000
+on_info = {+deactivate_radar_done} nil %=release%
+on_info2 = {!current_helmet(bad_psy_helmet)} sr_idle@check
+on_actor_outside = sr_idle@check
+
+[sr_psy_antenna@good_helmet]
+eff_intensity = +100
+hit_intensity = 0
+phantom_prob = 50
+postprocess = psy_antenna_indoor.ppe
+min_phantom_idle = 3000
+max_phantom_idle = 5000
+on_info = {+deactivate_radar_done} nil %=release%
+on_info2 = {!current_helmet(good_psy_helmet)} sr_idle@check
+on_actor_outside = sr_idle@check

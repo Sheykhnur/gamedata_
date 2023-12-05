@@ -1,0 +1,138 @@
+;*********************************bar new lager***************************************
+
+
+;*************************************************state 0**********************************************
+
+[logic@bar_new_lager_petrenko_off]
+active = walker@new_petrenko_off
+
+[walker@new_petrenko_off]
+path_walk = petrenko_walk
+path_look = petrenko_look
+
+[logic@bar_new_lager_off_visitor1]
+active = walker@bar_new_off_visitor1
+
+[walker@bar_new_off_visitor1]
+path_walk = visitor1_walk
+path_look = visitor1_look
+combat_ignore = always
+
+[logic@bar_new_lager_off_visitor2]
+active = walker@bar_new_off_visitor2
+
+[walker@bar_new_off_visitor2]
+path_walk = visitor2_walk
+path_look = visitor2_look
+combat_ignore = always
+
+[logic@bar_new_lager_off_visitor3]
+active = walker@bar_new_off_visitor3
+
+[walker@bar_new_off_visitor3]
+path_walk = visitor3_walk
+path_look = visitor3_look
+combat_ignore = always
+
+[logic@bar_new_lager_off_visitor4]
+active = walker@bar_new_off_visitor4
+
+[walker@bar_new_off_visitor4]
+path_walk = visitor4_walk
+path_look = visitor4_look
+combat_ignore = always
+
+
+;**********************************state 1********************************************
+
+[danger@bar_new_lager]
+;ignore_distance = 0
+
+[threshold@bar_new_lager]
+ignore_monster = 0
+
+[combat_ignore@bar_new_lager]
+
+[logic@bar_new_lager_petrenko]
+active = walker@new_petrenko
+combat_ignore = combat_ignore@bar_new_lager
+trade = misc\trade\trade_dolg.ltx
+inv_max_weight = 10000
+threshold = threshold@bar_new_lager
+
+[walker@new_petrenko]
+path_walk = petrenko_walk
+path_look = petrenko_look
+def_state_standing = barman_wait_free
+def_state_moving1 = barman_walk_free
+def_state_moving2 = barman_walk_free
+def_state_moving3 = barman_walk_free
+meet = meet@new_petrenko
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@bar_new_lager
+danger = danger@bar_new_lager
+
+[logic@bar_new_lager_visitor1]
+active = walker@bar_new_visitor1
+combat_ignore = combat_ignore@bar_new_lager
+threshold = threshold@bar_new_lager
+
+[walker@bar_new_visitor1]
+path_walk = visitor1_walk
+path_look = visitor1_look
+combat_ignore = always
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@bar_new_lager
+danger = danger@bar_new_lager
+meet = meet@bar_new_visitor1
+
+[meet@bar_new_visitor1]
+meet_state = 1|ward@state
+meet_state_wpn = 1|ward@state
+use = true
+use_wpn = false
+victim = 1|actor
+victim_wpn = 1|actor
+actor_dialog =  guider_dialog
+
+[logic@bar_new_lager_visitor2]
+active = walker@bar_new_visitor2
+combat_ignore = combat_ignore@bar_new_lager
+threshold = threshold@bar_new_lager
+
+[walker@bar_new_visitor2]
+path_walk = visitor2_walk
+path_look = visitor2_look
+combat_ignore = always
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@bar_new_lager
+danger = danger@bar_new_lager
+meet = meet@bar_new_visitor1
+
+[logic@bar_new_lager_visitor3]
+active = walker@bar_new_visitor3
+combat_ignore = combat_ignore@bar_new_lager
+threshold = threshold@bar_new_lager
+
+[walker@bar_new_visitor3]
+path_walk = visitor3_walk
+path_look = visitor3_look
+combat_ignore = always
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@bar_new_lager
+danger = danger@bar_new_lager
+meet = meet@bar_new_visitor1
+
+[logic@bar_new_lager_visitor4]
+active = walker@bar_new_visitor4
+combat_ignore = combat_ignore@bar_new_lager
+threshold = threshold@bar_new_lager
+
+[walker@bar_new_visitor4]
+path_walk = visitor4_walk
+path_look = visitor4_look
+combat_ignore = always
+combat_ignore_cond = {!fighting_actor}
+threshold = threshold@bar_new_lager
+danger = danger@bar_new_lager
+

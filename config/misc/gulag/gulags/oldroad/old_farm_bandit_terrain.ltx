@@ -1,0 +1,302 @@
+[death@old_farm_bandit_terrain]
+on_info = {=killed_by_actor -old_farm_bandit_hit} %+old_farm_bandit_hit%
+
+[danger_condition@old_farm_bandit_terrain]
+ignore_distance = 100
+
+[hit@old_farm_bandit_terrain]
+on_info = {=hit_by_actor -old_farm_bandit_hit} %+old_farm_bandit_hit%
+
+[threshold@old_farm_bandit_terrain]
+ignore_monster = 1
+
+[combat_ignore@old_farm_bandit_terrain]
+
+[logic@old_farm_bandit_terrain_patrol_01]
+active				= patrol@old_farm_bandit_terrain_patrol_01
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[patrol@old_farm_bandit_terrain_patrol_01]
+path_walk           = patrol_01_walk
+path_look           = patrol_01_look
+commander           = true
+formation           = back
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_patrol_02]
+active				= patrol@old_farm_bandit_terrain_patrol_02
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[patrol@old_farm_bandit_terrain_patrol_02]
+path_walk           = patrol_02_walk
+path_look           = patrol_02_look
+commander           = true
+formation           = back
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_guard]
+active				= walker@old_farm_bandit_terrain_guard
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[walker@old_farm_bandit_terrain_guard]
+path_walk           = guard_walk
+path_look           = guard_look
+def_state_standing	= guard
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_kamper_01]
+active				= kamper@old_farm_bandit_terrain_kamper_01
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[kamper@old_farm_bandit_terrain_kamper_01]
+path_walk           = kamper_01_walk
+path_look           = kamper_look
+kamp_name			= kamp1
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_kamper_02]
+active				= kamper@old_farm_bandit_terrain_kamper_02
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[kamper@old_farm_bandit_terrain_kamper_02]
+path_walk           = kamper_02_walk
+path_look           = kamper_look
+kamp_name			= kamp1
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_kamper_03]
+active				= kamper@old_farm_bandit_terrain_kamper_03
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[kamper@old_farm_bandit_terrain_kamper_03]
+path_walk           = kamper_03_walk
+path_look           = kamper_look
+kamp_name			= kamp1
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_kamper_04]
+active				= kamper@old_farm_bandit_terrain_kamper_04
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[kamper@old_farm_bandit_terrain_kamper_04]
+path_walk           = kamper_04_walk
+path_look           = kamper_look
+kamp_name			= kamp1
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_kamper_05]
+active				= kamper@old_farm_bandit_terrain_kamper_05
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[kamper@old_farm_bandit_terrain_kamper_05]
+path_walk           = kamper_05_walk
+path_look           = kamper_look
+kamp_name			= kamp1
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_walker_01]
+active				= walker@old_farm_bandit_terrain_walker_01
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[walker@old_farm_bandit_terrain_walker_01]
+path_walk           = walker_01_walk
+path_look           = walker_01_look
+def_state_standing	= sit_ass
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_walker_02]
+active				= walker@old_farm_bandit_terrain_walker_02
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[walker@old_farm_bandit_terrain_walker_02]
+path_walk           = walker_02_walk
+path_look           = walker_02_look
+def_state_standing	= wait
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_walker_03]
+active				= walker@old_farm_bandit_terrain_walker_03
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[walker@old_farm_bandit_terrain_walker_03]
+path_walk           = walker_03_walk
+path_look           = walker_03_look
+def_state_standing	= guard
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_day]
+active				= sleeper@old_farm_bandit_terrain_sleeper_day
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_day]
+path_main           = sleeper_01_walk
+wakeable			= false
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[logic@old_farm_bandit_terrain_sleeper_01]
+active				= sleeper@old_farm_bandit_terrain_sleeper_01
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_01]
+path_main           = sleeper_01_walk
+wakeable			= false
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_02]
+active				= sleeper@old_farm_bandit_terrain_sleeper_02
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_02]
+path_main           = sleeper_02_walk
+wakeable			= false
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_03]
+active				= sleeper@old_farm_bandit_terrain_sleeper_03
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_03]
+path_main           = sleeper_03_walk
+wakeable			= false
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_04]
+active				= sleeper@old_farm_bandit_terrain_sleeper_04
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_04]
+path_main           = sleeper_04_walk
+wakeable			= false
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_05]
+active				= sleeper@old_farm_bandit_terrain_sleeper_05
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_05]
+path_main           = sleeper_05_walk
+wakeable			= false
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_06]
+active				= sleeper@old_farm_bandit_terrain_sleeper_06
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_06]
+path_main           = sleeper_06_walk
+wakeable			= false
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_07]
+active				= sleeper@old_farm_bandit_terrain_sleeper_07
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_07]
+path_main           = sleeper_07_walk
+wakeable			= true
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_08]
+active				= sleeper@old_farm_bandit_terrain_sleeper_08
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_08]
+path_main           = sleeper_08_walk
+wakeable			= true
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain
+
+[logic@old_farm_bandit_terrain_sleeper_09]
+active				= sleeper@old_farm_bandit_terrain_sleeper_09
+combat_ignore		= combat_ignore@old_farm_bandit_terrain
+on_death			= death@old_farm_bandit_terrain
+on_hit				= hit@old_farm_bandit_terrain
+threshold			= threshold@old_farm_bandit_terrain
+
+[sleeper@old_farm_bandit_terrain_sleeper_09]
+path_main           = sleeper_09_walk
+wakeable			= true
+combat_ignore_cond	= {-old_farm_bandit_hit =fighting_actor}
+danger				= danger_condition@old_farm_bandit_terrain

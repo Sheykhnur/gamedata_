@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-ecs_trader_meet -esc_actor_cam_end -esc_actor_scene} sr_cutscene %+esc_actor_scene%
+
+[sr_cutscene]
+point = esc_actor_start_point
+look = esc_actor_start_look
+cam_effector = esc_start_1,esc_start_2
+pp_effector = nil
+on_signal = cameff_end | nil %+esc_actor_cam_end =tasks_escape.end_intro_play() =release%

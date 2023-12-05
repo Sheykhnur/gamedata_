@@ -1,0 +1,220 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_labx16.script
+ Description: Gulags labx16
+ Copyright  : 2004 © LA-team
+ Author     : loxotron
+ Editors    : loxotron(23.02.2013)
+ Last edit  : 26.02.2013 (by ...) [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	--/ for monsters ------------------------------
+	x16_st_controller  = {comm = {"controller"}},
+	x162_st_snork      = {comm = {"snork"}},
+	x162_st_snork_2    = {comm = {"snork"}},
+	x162_st_gigant     = {comm = {"pseudo_gigant"}},
+	x16_st_poltergeist = {comm = {"poltergeist"}},	--/polter_tele_indoor
+	x16_st_burer       = {comm = {"burer"}},
+	x16_zombie         = {comm = {"zombie"}},
+	x16_zombie_2       = {comm = {"zombie"}},
+	x16_zombie_3       = {comm = {"zombie"}},
+	x16_zombied_1      = {comm = {"zombied"}},
+	x16_zombied_2      = {comm = {"zombied"}},
+	x16_zombied_3      = {comm = {"zombied"}},
+	x16_zombied_4      = {comm = {"zombied"}},
+	x16_zombied_5      = {comm = {"zombied"}},
+	x16_zombied_6      = {comm = {"zombied"}},
+	x16_zombied_7      = {comm = {"zombied"}},
+	x16_zombied_8      = {comm = {"zombied"}},
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ controllers
+--/ ---------------------------------------------
+gulags.x16_st_controller.jobs = function(sj, gname, type, squad, groups)
+	gulags.x16_st_controller.ltx = smart_dyn_ltx.add_mob_home(type, 2, 5, 13)
+	
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "",  "", false, type, nil))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "",  "",   nil, type, nil))
+end
+
+gulags.x16_st_controller.state = function(gulag)
+	if has_info("lab_generator_off") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ snorks
+--/ ---------------------------------------------
+gulags.x162_st_snork.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x162_st_snork_2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 8 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", false, type, nil))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, nil))
+	end
+end
+
+gulags.x162_st_snork_2.state = function(gulag)
+	if has_info("x16_spawn_ambush") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ gigants
+--/ ---------------------------------------------
+gulags.x162_st_gigant.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("off" .. i,  0, 5, {0}, squad, groups[1], "", "", false, type, nil))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, nil))
+	end
+end
+
+gulags.x162_st_gigant.state = function(gulag)
+	if has_info("x16_actor_in_giant_zone") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ burers
+--/ ---------------------------------------------
+gulags.x16_st_burer.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("home1", 0, 5, {0}, squad, groups[1], "",  "", false, type, nil))
+	table.insert(sj, gulag_tasks.getJob("home2", 0, 5, {1}, squad, groups[1], "",  "",   nil, type, nil))
+end
+
+gulags.x16_st_burer.state = function(gulag)
+	if has_info("x16_burer_respawn_01") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+--/ poltergeists
+--/ ---------------------------------------------
+gulags.x16_st_poltergeist.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("home", 0, 5, {0}, squad, groups[1], "",  "", nil, type, nil))
+end
+
+--/ ---------------------------------------------
+--/ zombies
+--/ ---------------------------------------------
+gulags.x16_zombie.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombie_2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("off" .. i,  0, 5, {0}, squad, groups[1], "", "", false, type, nil))
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, nil))
+	end
+end
+
+gulags.x16_zombie_2.state = function(gulag)
+	if has_info("x16_spawn_ambush") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombie_3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("home" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_1.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_2.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("off" .. i,    0, 5, {0}, squad, groups[1], "", "", false, type, nil))
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {1}, squad, groups[1], "", "",   nil, type, nil))
+	end
+end
+
+gulags.x16_zombied_2.state = function(gulag)
+	if has_info("x16_spawn_ambush") then
+		return 1
+	end
+	return 0
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_3.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_4.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_5.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_6.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_7.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("walker", 0, 5, {0}, squad, groups[1], "",  "", nil, type, nil))
+end
+
+--/ ---------------------------------------------
+gulags.x16_zombied_8.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("walker" .. i, 0, 5, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

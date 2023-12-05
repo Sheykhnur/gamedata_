@@ -1,0 +1,160 @@
+;-------*Основа*-------- Карусель
+[zone_mincer]
+$prefetch 					= 16
+class						= ZS_MINCE	
+name						= Meat
+
+ef_anomaly_type				= 2
+ef_weapon_type				= 14
+
+sound						= zone_mosquito_bald
+hit_effect					= explosions\expl_02_sparks
+
+hit_power					= 0.99
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= true
+art_onstart_spawn_prob		= 0.02
+art_onstart_spawn_cicles	= 1
+
+tearing_particles			= anomaly2\body_tear_00
+torn_particles				= anomaly2\gravi_anomaly_shield_00
+idle_particles				= anomaly2\carousel_idle_hide
+accum_particles				= anomaly2\gravi_zaxvat_myasorubka
+awake_particles				= anomaly2\gravi_zaxvat_myasorubka
+blowout_particles			= anomaly2\gravi_zaxvat_myasorubka
+
+hit_small_particles			= hit_fx\hit_metal_02
+hit_big_particles			= anomaly2\gravity_damage_02_blood2
+idle_small_particles		= anomaly2\gravity_damage_01_smoke
+idle_big_particles			= anomaly2\gravity_damage_02_blood2 ;anomaly2\gravity_damage_02_smoke
+entrance_small_particles	= anomaly2\gravi_anomaly_shield_00
+entrance_big_particles		= anomaly2\gravi_anomaly_00;
+
+tele_particles_small		= anomaly2\gravity_damage_01_smoke ;anomaly2\gravity_damage_01_smoke
+tele_particles_big			= anomaly2\gravity_damage_02_smoke	
+
+idle_sound					= anomaly\gravi_idle01					;постоянный звук
+awake_sound					= anomaly\gravi_idle01
+accum_sound					= anomaly\gravi_idle01
+blowout_sound				= anomaly\anomaly_mincer_blowout; anomaly_gravy_blast01		;во время выброса(удара) в центре аномалии	
+hit_sound					= anomaly\anomaly_gravy_hit1			;на персонаже, когда тот получает хит
+entrance_sound				= anomaly\gravi_idle01					;при попадании объекта в аномалию
+body_tearing_sound			= anomaly\anomaly_body_tear_1			;звук разрывания трупа
+hit_type					= strike
+hit_impulse_scale			= 0.1									;соотношение физического импульса и силы хита
+effective_radius			= 1.0									;размер радиуса в процентах от оригинального, где действует зона
+
+disable_time				= -1								;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= -1								;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 100									;время отключения idle партиклов
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+blowout_light				= off
+idle_light					= off
+
+awaking_time				= 50
+blowout_time				= 10000	
+accamulate_time				= 4000
+
+blowout_particles_time		= 50
+blowout_sound_time  		= 100
+blowout_light_time			= 5988
+blowout_explosion_time		= 5999
+
+;----------- параметры телекинеза для зоны
+throw_in_impulse			= 4000									;сила втягивания для единичной массы на расстоянии один метр
+throw_out_impulse			= 1500;	1000							;сила выбрасывания взрывом
+throw_in_impulse_alive		= 600									;сила импульса втягивания для живых
+throw_in_impulse_car		= 1000									;сила импульса втягивания для машин
+throw_in_atten				= 1.2									;коэфф. затягивания (чем меньше, тем плавнее затягивает)
+throw_in_hit_koef_alive		= 4.5									;коэфф. силы хита при затягивании живых существ (из рассчета 1 полного хита в секунду)
+throw_in_hit_koef_car		= 8.0									;коэфф. силы хита при затягивании машин (из рассчета 1 полного хита в секунду)
+blowout_radius_percent		= 0.6									;радиус (в процентах от всего радиуса) непосредственно выброса
+actor_blowout_radius_percent= 0.6
+tele_height					= 10 ;1.5								;высота подъема телекинеза 
+time_to_tele				= 7000									;время деражания объекта в воздухе
+tele_pause					= 4000									;пауза перед тем как снова поднять упавший объект
+
+visible_by_detector			= on
+
+blowout_wind				= on
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 5900
+blowout_wind_time_end		= 10000;9999
+blowout_wind_power			= 0.5									;сила поднимаего ветра (от 0 до 1), в момент blowout_wind_time_peak 
+
+artefacts					= af_blood,4,af_mincer_meat,1
+
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts		= on
+artefact_spawn_probability 	= 0.04									;вероятность, что во время погибания существа в аномалии будет рожден артефакт
+artefact_spawn_particles	= anomaly2\gravi_anomaly_shield_00		;партиклы, которые отыграются на месте рождения артефакта (опционально)
+artefact_born_sound			= anomaly\anomaly_gravy_hit1			;звук, который отыграются на месте рождения артефакта (опционально)
+throw_out_power				= 2										;импульс с которым артефакт будет выброшен из зоны в произвольном направлении
+artefact_spawn_height		= 6										;(м) высота на центром зоны где будет рожден артефакт
+artefact_spawn_cicles		= 1										;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2
+
+
+;-------*Слабая*--------
+[zone_mincer_weak]:zone_mincer
+$spawn 						= "zones\carousel\zone_carousel_weak"
+
+blowout_wind_power			= 0.2	
+
+hit_power					= 0.70
+
+artefacts					= af_blood,8
+
+;-------Не производящая артефактов на спавне
+[zone_mincer_weak_noart]:zone_mincer_weak,anomaly_base_noart
+$spawn 						= "zones\carousel\zone_carousel_weak_noart"
+
+
+;-------*Средняя*--------
+[zone_mincer_average]:zone_mincer
+$spawn 						= "zones\carousel\zone_carousel_average"
+
+blowout_wind_power			= 0.5
+
+hit_power					= 1.30
+
+artefacts					= af_mincer_meat,8,af_devils_guts,8
+
+;-------Не производящая артефактов на спавне
+[zone_mincer_avarage_noart]:zone_mincer_average,anomaly_base_noart
+$spawn 						= "zones\carousel\zone_carousel_average_noart"
+
+
+;-------*Сильная*--------
+[zone_mincer_strong]:zone_mincer
+$spawn 						= "zones\carousel\zone_carousel_strong"
+
+blowout_wind_power			= 1	
+
+hit_power					= 2.00
+
+artefacts					= af_cuttlefish,8,af_soul,8
+
+;-------Не производящая артефактов на спавне
+[zone_mincer_strong_noart]:zone_mincer_strong,anomaly_base_noart
+$spawn 						= "zones\carousel\zone_carousel_strong_noart"
+
+
+;-------*Очень сильная*--------
+[zone_mincer_very_strong]:zone_mincer
+$spawn 						= "zones\carousel\zone_carousel_very_strong"
+
+blowout_wind_power			= 2
+
+hit_power					= 2.40
+
+artefacts					= af_cuttlefish,1,af_soul,1,af_gold_beads,2,af_pupil,2
+
+;-------Не производящая артефактов на спавне
+[zone_mincer_very_strong_noart]:zone_mincer_very_strong,anomaly_base_noart
+$spawn 						= "zones\carousel\zone_carousel_very_strong_noart"

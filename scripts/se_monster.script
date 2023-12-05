@@ -1,0 +1,212 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : se_monster.script
+ Description: 
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin (13.08.2010), gr1ph00n
+ Last edit  : 05.05.2013 [...]
+ Change script_version:
+  4 - barin: saving field: job_online
+  5 - barin: saving field: was_in_smart_terrain
+--]] ----------------------------------------------------------------------------------------------
+
+--/ smart_terrain_conditions - smart terrains conditions (se_monster::spawn_ini())
+--/ was_in_smart_terrain - set by smart terrain if mutant was in smart terrain
+
+--/ job_online - whether job in gulag is online/offline (set by xr_gulag.script)
+--/ job_online_condlist - gulag job online/offline condition list (set by xr_gulag.script)
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "se_monster" (cse_alife_monster_base)
+--/ -----------------------------------------------------------------------------------------------
+function se_monster:__init(section) super(section)
+	self.ini = nil
+	self.ini_initialized = false
+	self.spawner_present = false
+	self.smart_terrain_conditions = nil
+	
+	--/ this flags taken from smart work:
+	--/  nil      = smart doesn't care at all
+	--/  true     = always online
+	--/  false    = always offline
+	--/  condlist = condition, which determine true or false
+	self.job_online          = nil
+	self.job_online_condlist = nil
+	
+	self.was_in_smart_terrain = false
+	
+	self.check_distance = false
+	self.min_distance = 150
+end
+
+function se_monster:get_ini()
+	if not self.ini_initialized then
+		self.ini = self:spawn_ini()
+		self.ini_initialized = true
+		
+		if self.ini then
+			self.spawner_present = self.ini:section_exist("spawner")
+			if self.spawner_present == true then
+				if self.ini:line_exist("spawner", "check_distance") then --/#!# missing everywhere!
+					self.check_distance = self.ini:r_bool("spawner", "check_distance")
+					if self.check_distance then
+						if self.ini:line_exist("spawner", "min_distance") then
+							self.min_distance = self.ini:r_u32("spawner", "min_distance")
+						end
+						if not self.min_distance or self.min_distance >= 150 then
+							self.min_distance = alife():switch_distance() - 50
+						end
+						self.min_distance = math.min(150, self.min_distance)
+						self.min_distance = math.max( 30, self.min_distance)
+					end
+					log("get_ini: check_distance=(%s), min_distance=[%s]", self.check_distance, self.min_distance, "") --/#~#
+				end
+			end
+		end
+	end
+end
+
+function se_monster:get_job_online()
+	if self.job_online_condlist == nil then
+		return self.job_online
+	end
+	return xr_logic.pick_section_from_condlist(db.actor_proxy, self, self.job_online) ~= nil
+end
+
+function se_monster:can_switch_offline()
+	if db.is_switchings(self.id) then --/#+# waiting transfer to online
+		return true --/>
+	end
+	
+	local bOnLine = self:get_job_online()
+	if bOnLine ~= nil then
+		return not bOnLine --/>
+	end
+	--/#+# gr1ph00n: check 'if there is spawner':
+	if self.spawner_present and self.online then --/#???# and for what purporse this checks?
+		--/ if specified distance of check and actor close, then object will stay in online:
+		if self.check_distance and self.min_distance < db.actor:position():distance_to(level.vertex_position(self.m_level_vertex_id)) then
+--			log("can_switch_offline: %s , online:(%s)", self:name(), "FALSE") --/#~#
+			return false --/> actor close
+		end
+		local bSwitch = cse_alife_monster_base.can_switch_offline(self)
+		local bSpawn = bSwitch and xr_spawner.check_spawn(self, true)
+--		log("can_switch_offline: %s , online:?=>(%s)=>(%s)", self:name(), bSwitch, bSpawn, "") --/#~#
+		return bSwitch --/>
+	end
+	--/<
+	return cse_alife_monster_base.can_switch_offline(self) --/>
+end
+
+function se_monster:can_switch_online()
+	if db.is_switchings(self.id) then --/#+# waiting transfer to offline
+		return false --/>
+	end
+	
+	local bOnLine = self:get_job_online()
+	if bOnLine ~= nil then
+		return bOnLine --/>
+	end
+	--/ standart check 'if there is no spawner':
+	if not self.spawner_present then
+		return cse_alife_monster_base.can_switch_online(self) --/>
+	end
+	--/ if no actor or dead then:
+	if not (db.actor and db.actor:alive()) then
+		return (self.online == true) --/>
+	end
+	
+	if self.online then
+		--/ if specified distance of check and actor closer then needed, then object will stay in offline:
+		if self.check_distance and self.min_distance < db.actor:position():distance_to(level.vertex_position(self.m_level_vertex_id)) then
+			return false --/>
+		end
+		return xr_spawner.check_spawn(self) --/> #~# gr1ph00n
+	end
+	--/ if specified distance of check and actor far then needed, then object will stay in offline:
+	if self.check_distance and self.min_distance > db.actor:position():distance_to(level.vertex_position(self.m_level_vertex_id)) then
+		return false --/>
+	end
+	--/ all checks finished - final, spawner call:
+	return cse_alife_monster_base.can_switch_online(self) and xr_spawner.check_spawn(self) --/>
+end
+
+function se_monster:STATE_Write(packet)
+	cse_alife_monster_base.STATE_Write(self, packet)
+	
+	if self.job_online == true then --/ (on|off)-line not determined
+		packet:w_u8(0)
+	elseif self.job_online == false then --/ to off-line
+		packet:w_u8(1)
+	elseif self.job_online == nil then --/ to on-line without 'job'
+		packet:w_u8(2)
+	else
+		packet:w_u8(3)
+		packet:w_stringZ(self.job_online_condlist)
+	end
+	
+	packet:w_bool(self.was_in_smart_terrain)
+end
+
+function se_monster:STATE_Read(packet, size)
+	cse_alife_monster_base.STATE_Read(self, packet, size)
+	
+	local t = packet:r_u8()
+	if t == 0 then
+		self.job_online = true
+	elseif t == 1 then
+		self.job_online = false
+	elseif t == 2 then
+		self.job_online = nil
+	else
+		self.job_online_condlist = packet:r_stringZ()
+		self.job_online = xr_logic.parse_condlist(nil, "se_monster:STATE_Read", "job_online", self.job_online_condlist)
+	end
+	
+	self.was_in_smart_terrain = packet:r_bool()
+end
+
+function se_monster:on_before_register()
+	self:fill_exclusives()
+end
+
+function se_monster:on_register()
+	cse_alife_monster_base.on_register(self)
+	
+	db.Add_Mob(self.id) --/#+#
+	if self:alive() and self:smart_terrain_id() == 65535 then --/#+#
+		self:brain():update(false)
+	end
+	xr_statistic.add(self) --/#+# barin
+end
+
+function se_monster:on_unregister()
+	cse_alife_monster_base.on_unregister(self)
+	
+	smart_terrain.unregister_npc(self)
+	db.Del_Mob(self.id) --/#+#
+end
+
+function se_monster:on_death(killer)
+	cse_alife_monster_base.on_death(self, killer)
+	
+	xr_statistic.remove(self) --/#+# barin
+end
+
+function se_monster:fill_exclusives()
+	self:get_ini()
+	self.smart_terrain_conditions = smart_terrain.read_smart_terrain_conditions(self)
+	if self.smart_terrain_conditions then
+		for name, condlist in pairs(self.smart_terrain_conditions) do
+			smart_terrain.exclusives[name] = (smart_terrain.exclusives[name] or 0) + 1
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

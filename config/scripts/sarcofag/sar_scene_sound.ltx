@@ -1,0 +1,17 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+sar_scene_start} sr_idle@2
+
+[sr_idle@2]
+on_timer = 3500 | %=play_snd(monsters\bloodsucker\idle_1)% sr_idle@3
+
+[sr_idle@3]
+on_timer = 8500 | %=play_snd(monsters\bloodsucker\attack_0)% sr_idle@35
+
+[sr_idle@35]
+on_timer = 500 | %=play_snd(characters_voice\scenario\sar\sar_near1)% sr_idle@4
+
+[sr_idle@4]
+on_timer = 4800 | %+sar_sparks% nil

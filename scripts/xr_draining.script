@@ -1,0 +1,207 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_draining.script
+ Description: scheme: ...
+ Copyright  : 2011 © LA-team
+ Author     : gr1ph00n (19.08.2011)
+ Editors    : gr1ph00n (05.09.2011)
+ Last edit  : 30.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ NOTE: the scheme requires finishing!
+--/ works, though not very good
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local states = {
+	draining_dummy    = -1,
+	draining_start    =  0,
+	draining_wait     =  1,
+	draining_fire     =  2,
+	draining_hit      =  3,
+	draining_complete =  4,
+}
+local hit_params    = { power = 0.4, impulse = 30 }
+local wait_time_hit = 4000
+local wait_time_pre = 1000
+local particle_name = "anomaly2\\beam"
+local snd_path      = "monsters\\hologram\\drain"
+local zero_vel      = vector():set(0,0,0)
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local scheme_enabled    = true --/ flag of permission of activity of the scheme
+local sSchemeName = "draining" --/ string name of the scheme
+local iEvl_AI_Draining = xr_evaluators_id.la_draining_base --/ property_base
+local iAct_AI_Draining = xr_actions_id.la_draining_base --/ operator_base
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ --------------------------
+function PreSets(e)
+	local ltx = ini_file("lost_alpha\\ai_schemes\\"..script_name()..".ltx")
+	scheme_enabled = Get_Cfg_Bool(ltx, "options", "enabled", scheme_enabled)
+end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "evaluator_draining" (property_evaluator)
+--/ -----------------------------------------------------------------------------------------------
+function evaluator_draining:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_draining:evaluate()
+	return self.object:alive() and xr_logic.is_active(self.object, self.st) --and self.object:see(db.actor) and (self.object:distance_to(db.actor:position()) < 15)
+end
+--/ -----------------------------------------------------------------------------------------------
+class "action_draining" (action_base)
+--/ -----------------------------------------------------------------------------------------------
+function action_draining:__init(action_name, st) super(nil, action_name)
+	self.st = st
+	self.state      = states.draining_dummy
+	self.wait_timer = nil
+	self.particle   = nil
+	self.snd        = nil
+	self.st.signals = {}
+	self.turned     = false
+	self.log        = st.log
+end
+
+function action_draining:initialize()
+	action_base.initialize(self)
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self.state = states.draining_start
+	self.snd = sound_object(snd_path)
+	self.particle = particles_object(particle_name)
+	if self.log then log("ac_draining:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+end
+
+function action_draining:execute()
+	action_base.execute(self)
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	if self.log then log("ac_draining:exe:NPC=[%s]", self.object:name(), "") end --/#~#
+	if self.state == states.draining_start then
+		--if not self.object:see(db.actor) then
+		--	return
+		--end
+		state_mgr.set_state(self.object, "drain", { obj = self, func = self.time_callback, turn_end_func = self.turn_end_callback }, 
+				0, {look_position = db.actor:position()}, {animation = true})
+		if not self.turned then
+			return
+		end
+		db.actor:set_actor_look_at_position(self.object:bone_position("bip01_spine"), 1) --/skyloader: how about this?
+		db.actor:hide_weapon()
+		level.disable_input()
+		level.hide_indicators()
+		self.wait_timer = time_global() + wait_time_pre
+		self.state = states.draining_wait
+	elseif self.state == states.draining_wait then
+		if self.wait_timer <= time_global() then
+			self.state = states.draining_fire
+		end
+	elseif self.state == states.draining_fire then
+		--local dir = self.object:position():sub(db.actor:position())
+		self.particle:play(self.object:position():add(vector():set(0.0, 1.1, 0.0)), self.object:position():sub(db.actor:position()), zero_vel)
+		--self.particle:move_to(self.object:position():add(dir:set_length(self.object:position():distance_to(db.actor:position()))), zero_vel)
+		self.snd:play_at_pos(db.actor, self.object:position())
+		self.wait_timer = time_global() + wait_time_hit
+		self.state = states.draining_hit
+	elseif self.state == states.draining_hit then
+		if self.wait_timer <= time_global() then 
+			local h = hit()
+			h.draftsman = self.object
+			h.direction = self.object:position():sub(db.actor:position())
+			h.type = hit.wound
+			h.power = hit_params.power
+			h.impulse = hit_params.impulse
+			db.actor:hit(h)
+			self.state = states.draining_complete
+		end
+	elseif self.state == states.draining_complete then
+		level.show_indicators()
+		level.enable_input()
+		db.actor:restore_weapon()
+		self.st.signals["draining_complete"] = true
+		self.particle, self.snd = nil, nil
+	end
+--	log("ac_draining:execute:NPC=[%s],state=[%s]%s", self.object:name(), self.state, "<") --/#~#
+end
+
+function action_draining:finalize()
+	action_base.finalize(self)
+	self.object:clear_animations()
+end
+
+function action_draining:activate_scheme()
+	self.st.signals = {}
+	self.turned = false
+end
+
+function action_draining:turn_end_callback()
+	if self.log then log("TURN END CALLBACK CALLED") end --/#~#
+	self.turned = true
+end
+
+function action_draining:time_callback()
+	if self.log then log("TIME CALLBACK CALLED") end--/#~#
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder: NPC=[%s], scheme=[%s], section=[%s], enabled=[%s]:(%s)", npc:name(), scheme, section, scheme_enabled, ">") --/#~#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	if not scheme_enabled then
+		oPlanner:add_evaluator(iEvl_AI_Draining, property_evaluator_const(false))
+	else
+		oPlanner:add_evaluator(iEvl_AI_Draining, this.evaluator_draining("ev_draining", st))
+		
+		--/ New Action --------------------------------------------------
+		local oNewAction = this.action_draining("ac_draining", st)
+		oNewAction:add_precondition(world_property(iEvl_AI_Draining, true))
+		xr_motivator.addMainPrecondition(oNewAction)
+		oNewAction:add_effect(world_property(iEvl_AI_Draining, false))
+		oPlanner:add_action(iAct_AI_Draining, oNewAction)
+		st.action = oNewAction --/#!# for subscribe for events
+		
+		--/ Actions -----------------------------------------------------
+		local oAction = oPlanner:action(xr_actions_id.alife)
+		oAction:add_precondition(world_property(iEvl_AI_Draining, false))
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind (npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	--/ for debug!
+	if st.log then log("set_scheme: NPC=[%s], scheme=[%s], section=[%s], gulag=[%s]", npc:name(), scheme, section, gulag_name, "") end
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = npc and db.storage[ npc:id() ]
+	local st = stor and stor[scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		st.enabled = false
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

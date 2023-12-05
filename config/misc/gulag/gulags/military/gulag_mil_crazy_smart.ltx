@@ -1,0 +1,86 @@
+[danger@mil_crazy]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@mil_crazy]
+max_ignore_distance = 5
+ignore_monster      = 0
+
+[combat_ignore@crazy]
+
+[hit@mil_crazy]
+on_info = {=hit_by_actor} %=psy_hit(0.2) =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker) =run_cam_effector(fusker) +mil_extra_task =play_snd(monsters\bloodsucker\bloodsucker_script_attack_1) =release%
+
+;*****************day*********************************
+
+[logic@military_crazy_smart_walk1]
+active = walker@military_crazy_smart_walk1
+combat_ignore = combat_ignore@mil_crazy
+threshold = threshold@mil_crazy
+on_hit = hit@mil_crazy
+
+[walker@military_crazy_smart_walk1]
+path_walk = walk1
+path_look = look1
+danger = danger@mil_crazy
+meet = meet@military_crazy_stalker_smart_info
+combat_ignore_cond = {!fighting_actor} true
+threshold = threshold@mil_crazy
+on_info = {-mil_crazy_st_relax} walker@military_crazy_smart_hello
+on_info2 = {+mil_crazy_task_done} %=psy_hit(0.2) =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker) =run_cam_effector(fusker) +mil_extra_task =play_snd(monsters\bloodsucker\bloodsucker_script_attack_1) =release%
+
+[meet@military_crazy_stalker_smart_info]
+precond = visibility
+meet_state = 3|caution@mil_crazy
+meet_state_wpn = 3|caution@mil_crazy
+abuse = false
+victim = 5|actor
+victim_wpn = 5|actor
+use = true
+use_wpn = true
+allow_break = false
+
+[walker@military_crazy_smart_hello]
+path_walk = walk1
+path_look = look1
+danger = danger@mil_crazy
+meet = meet@military_crazy_stalker_smart_hey
+combat_ignore_cond = {!fighting_actor} true
+threshold = threshold@mil_crazy
+on_info = {+mil_crazy_st_relax} walker@military_crazy_smart_walk1
+on_info2 = {+mil_crazy_task_done} %=psy_hit(0.2) =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker) =run_cam_effector(fusker) +mil_extra_task =play_snd(monsters\bloodsucker\bloodsucker_script_attack_1) =release%
+
+[meet@military_crazy_stalker_smart_hey]
+precond = visibility
+meet_state = 3|caution@mil_crazy_caution
+meet_state_wpn = 3|caution@mil_crazy_caution|2|%=actor_enemy%
+victim = 5|actor
+victim_wpn = 5|actor
+use = true
+use_wpn = true
+allow_break = false
+
+;*****************night*********************************
+
+[logic@military_crazy_smart_sleep1]
+active = sleeper@military_crazy_smart_sleep1
+combat_ignore = combat_ignore@mil_crazy
+
+[sleeper@military_crazy_smart_sleep1]
+path_main = sleep1
+wakeable = true
+danger = danger@mil_crazy
+combat_ignore_cond = {!fighting_actor} true
+threshold = threshold@mil_crazy
+on_info = {-mil_crazy_st_relax} walker@military_crazy_smart_hello_sleep
+on_info2 = {+mil_crazy_task_done} %=psy_hit(0.2) =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker) =run_cam_effector(fusker) +mil_extra_task =play_snd(monsters\bloodsucker\bloodsucker_script_attack_1) =release%
+
+[walker@military_crazy_smart_hello_sleep]
+path_walk = walk1
+path_look = look1
+danger = danger@mil_crazy
+meet = meet@military_crazy_stalker_smart_hey
+combat_ignore_cond = {!fighting_actor} true
+threshold = threshold@mil_crazy
+on_info = {+mil_crazy_st_relax} sleeper@military_crazy_smart_sleep1
+on_info2 = {+mil_crazy_task_done} %=psy_hit(0.2) =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker) =run_cam_effector(fusker) +mil_extra_task =play_snd(monsters\bloodsucker\bloodsucker_script_attack_1) =release%

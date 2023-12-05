@@ -1,0 +1,3439 @@
+;====================================================================
+;--/ Last edit: 10.09.2019
+;====================================================================
+
+#include "task_manager_2.ltx"
+
+;--/ ----------------------------------------------------------------
+[options]
+;--/ ----------------------------------------------------------------
+self_tasks     = true  ;--/ false|true (не)разрешены самоинициализирующиеся задания
+color_line     = true  ;--/ false|true (не)разрешено подцвечивание квестов в КПК
+random_rewards = false ;--/ false|true (не)разрешены рандомные награды
+
+;--/ ----------------------------------------------------------------
+[parent_by_story_id] ;--/ table: iStoryId = sParent,sCharName
+;--/ ----------------------------------------------------------------
+6006 = trader
+10017 = a_esc_shustriy
+6027 = esc_wolf
+7603 = rosf_duty_leader
+6107 = gar_hellcar
+6109 = gar_seriy
+6304 = agr_krot
+6305 = agr_ratcatcher
+8904 = forg_alex
+6504 = barman
+6505 = bar_informer
+6509 = bar_hunter
+6508 = bar_petrenko
+6409 = dolina_gusarov
+10027 = a_fore_dolg_leader
+7503 = ds_veles
+6905 = yan_professor
+8108 = swa_doctor
+6704 = mil_supplier
+8208 = out_bar_barman
+8217 = lukash
+8704 = hermit
+10005 = hills_major
+8303 = deedee
+
+;--/ ----------------------------------------------------------------
+[return_task_by_type] ;--/ table: sTaskType = sDescription
+;--/ ----------------------------------------------------------------
+
+eliminate_lager = return_for_reward
+defend_lager    = return_for_reward
+kill_stalker    = return_for_reward
+artefact        = return_for_reward_bring
+find_item       = return_for_reward_bring
+find_item_hide	= return_for_reward_bring
+monster_part    = return_for_reward_bring
+courier         = return_for_reward_bring
+
+;--/ ----------------------------------------------------------------
+[num_by_status] ;--/#+# для 'сжатого' формата сохранений
+;--/ ----------------------------------------------------------------
+normal     = 0 ;--/[?] квест свободен (доступен для выдачи)
+selected   = 1 ;--/[+] квест выдан
+completed  = 2 ;--/[+] квест выполнен, но не сдан
+rewarded   = 3 ;--/[?] квест выполнен, награда выдана
+refused    = 4 ;--/[?] квест в отказе
+failed     = 5 ;--/[+] квест провален
+
+[list]:list_2
+;--/=================================================================
+
+;--/ esc --------------------
+sid_find_eye
+sid_find_tail
+sid_find_zombie_hand
+sid_find_cat_head
+sid_find_tushkano_tail
+sid_find_karlik_ear
+sid_find_pseudo_tail
+sid_find_poltergeist_brain
+
+sid_kill_zombies
+sid_kill_boars
+sid_kill_flesh
+sid_kill_dogs
+sid_kill_polter
+sid_kill_tushkano
+sid_kill_sucker
+sid_kill_chimera
+sid_kill_dogs_2
+
+sid_kill_stalker_1
+sid_kill_stalker_2
+sid_kill_stalker_3
+sid_kill_stalker_4
+sid_kill_stalker_6
+
+sid_find_artefact_1
+sid_find_artefact_11
+sid_find_artefact_2
+sid_find_artefact_21
+sid_find_artefact_3
+sid_find_artefact_31
+sid_find_artefact_4
+sid_find_artefact_41
+sid_find_artefact_5
+sid_find_artefact_51
+sid_find_artefact_6
+sid_find_artefact_61
+sid_find_artefact_7
+sid_find_artefact_71
+sid_find_artefact_8
+
+;--/ Nimble tasks
+esc_shus_find_outfit_1
+esc_shus_find_outfit_2
+esc_shus_find_outfit_3
+esc_shus_find_outfit_4
+esc_shus_find_outfit_5
+esc_shus_find_outfit_6
+esc_shus_find_outfit_7
+esc_shus_find_weapon_1
+esc_shus_find_weapon_2
+esc_shus_find_weapon_3
+esc_shus_find_weapon_4
+esc_shus_find_weapon_5
+esc_shus_find_weapon_6
+esc_shus_find_weapon_7
+esc_shus_find_weapon_8
+
+;--/ wolf
+esc_wolf_find_artefact_1
+
+;--/ gar --------------------
+
+gar_kill_zombies
+gar_kill_crane_bandits
+gar_ser_kill_bandits1
+gar_ser_kill_bandits2
+gar_ser_kill_bandits3
+gar_ser_kill_dogs
+gar_ser_kill_boars
+gar_ser_kill_chimeras
+gar_ser_bring_meat1
+gar_ser_bring_meat2
+
+gar_seriy_find_artefact_1
+gar_seriy_find_artefact_2
+gar_seriy_find_artefact_3
+
+gar_ser_bring_item1
+gar_ser_bring_item2
+gar_ser_bring_item3
+
+gar_hellcar_kill_zombies
+gar_hellcar_kill_crane_bandits
+gar_hellcar_kill_bandits1
+gar_hellcar_kill_bandits2
+gar_hellcar_kill_bandits3
+gar_hellcar_kill_dogs
+gar_hellcar_kill_boars
+gar_hellcar_kill_chimeras
+
+gar_hellcar_find_artefact_1
+gar_hellcar_find_artefact_2
+
+gar_hellcar_bring_item1
+gar_hellcar_bring_item2
+
+;--/ agr --------------------
+
+agr_mole_kill_dogs_1
+agr_mole_kill_dogs_2
+agr_mole_kill_boars
+agr_kill_swamp_flesh
+agr_kill_bandits
+agr_kill_zombies
+agr_mole_bring_item_1
+agr_mole_bring_item_2
+agr_mole_bring_item_3
+agr_mole_bring_item_4
+agr_mole_find_artefact_1
+
+;--/ dolina --------------------
+
+dolina_gusarov_kill_mutants_1
+dolina_gusarov_kill_mutants_2
+dolina_gusarov_kill_mutants_3
+dolina_gusarov_find_monster_part_1
+dolina_gusarov_find_monster_part_2
+
+;--/ bar --------------------
+
+barman_find_artefact_1
+barman_find_artefact_2
+barman_find_artefact_3
+barman_find_artefact_4
+barman_find_artefact_5
+barman_find_artefact_6
+barman_find_artefact_7
+barman_find_artefact_8
+barman_find_artefact_9
+barman_find_artefact_10
+
+barman_kill_stalker_1
+barman_kill_stalker_2
+barman_kill_stalker_3
+barman_kill_stalker_4
+;barman_kill_stalker_5
+
+barman_kill_wild_bandits
+barman_kill_mine_bandits
+barman_kill_mercs
+
+bar_informer_kill_stalker
+
+bar_petrenko_kill_wild_bandits		;disabled
+bar_petrenko_kill_mine_bandits		;disabled
+bar_petrenko_kill_mercs				;disabled
+
+bar_petrenko_kill_mutants_1
+
+;--/ forest --------------------
+
+forest_shulga_kill_chimeras
+forest_shulga_kill_sucker_1
+forest_shulga_kill_zombie
+forest_shulga_kill_cats
+forest_shulga_kill_boars_1
+forest_shulga_kill_sucker_2
+forest_shulga_kill_zombied_1
+forest_shulga_kill_swampbeast_1
+forest_shulga_kill_flesh
+forest_shulga_kill_boars_2
+forest_shulga_kill_flesh_2
+forest_shulga_kill_sucker_4
+forest_shulga_kill_burer_1
+forest_shulga_kill_burer_2
+forest_shulga_kill_swampbeast_3
+forest_shulga_kill_sucker_3
+forest_shulga_kill_zombied_2
+forest_shulga_kill_swampbeast_2
+
+forest_shulga_find_jaw
+forest_shulga_find_brain_beast
+forest_shulga_find_brain_polter
+
+forest_shulga_kill_one_zombied_1
+forest_shulga_kill_one_zombied_2
+
+;--/ yan --------------------
+
+yan_professor_find_artefact_1
+yan_professor_find_artefact_2
+yan_professor_find_artefact_3
+yan_professor_find_artefact_4
+yan_professor_find_artefact_5
+yan_professor_find_artefact_6
+yan_professor_find_artefact_7
+yan_professor_find_artefact_8
+yan_professor_find_artefact_9
+yan_professor_find_artefact_10
+yan_professor_find_artefact_11
+yan_professor_find_artefact_12
+yan_professor_find_artefact_13
+yan_professor_find_artefact_14
+yan_professor_find_artefact_15
+yan_professor_find_artefact_16
+yan_professor_find_artefact_17
+yan_professor_find_artefact_18
+yan_professor_find_artefact_19
+yan_professor_find_artefact_20
+
+yan_find_psevdodog_tail_1
+yan_find_zombie_hand_1
+yan_find_burer_hand_2
+yan_find_boar_leg_2
+yan_find_krovosos_jaw_3
+yan_find_chimera_hand_3
+yan_find_controller_foot_4
+yan_find_giant_eye_4
+
+yan_kill_zombied2_terrain
+yan_kill_zombied
+yan_kill_radar_zombies
+yan_kill_wild_pseudo
+yan_kill_village2_bandit
+
+;--/ military ---------------------------------------------
+
+mil_supplier_kill_chimera_1
+
+;--/ swamp --------------------
+
+swa_doctor_monster_part_1
+swa_doctor_monster_part_2
+swa_doctor_monster_part_3
+
+;--/ out --------------------
+
+out_barman_find_artefact_1
+out_barman_find_artefact_2
+out_barman_find_artefact_3
+out_barman_find_artefact_4
+out_barman_find_artefact_5
+out_barman_find_artefact_6
+out_barman_find_artefact_7
+out_barman_find_artefact_8
+out_barman_find_artefact_9
+
+out_bar_barman_kill_banditos
+out_bar_barman_boars_1
+out_bar_barman_boars_2
+out_bar_barman_flesh_1
+out_bar_barman_mutants
+
+lukash_kill_mono_1
+lukash_kill_mono_2
+lukash_kill_cats
+lukash_kill_bloodsuckers_1
+lukash_kill_bloodsuckers_2
+lukash_kill_dogs_3
+
+lukash_kill_zombied_1
+
+;--/ north hills -----------
+
+country_hermit_kill_bandits
+country_hermit_kill_boars
+
+;--/ lost factory -----------
+deedee_kill_snorks
+
+deedee_find_artefact_1
+deedee_find_artefact_2
+deedee_find_artefact_3
+deedee_find_artefact_4
+deedee_find_artefact_5
+deedee_find_artefact_6
+deedee_find_artefact_7
+deedee_find_artefact_8
+deedee_find_artefact_9
+deedee_find_artefact_10
+deedee_find_artefact_11
+deedee_find_artefact_12
+deedee_find_artefact_13
+deedee_find_artefact_14
+deedee_find_artefact_15
+deedee_find_artefact_16
+deedee_find_artefact_17
+deedee_find_artefact_18
+deedee_find_artefact_19
+deedee_find_artefact_20
+deedee_find_artefact_21
+
+deedee_flesh_eye
+deedee_swampbeast_nose
+deedee_poltergeist_brain
+deedee_snork_foot
+deedee_burer_hand
+deedee_izlom_arm
+deedee_karlik_ear
+
+deedee_find_item_3
+
+;--/=================================================================
+;--/ SIDE TASKS
+;--/=================================================================
+;--/ esc --------------------
+
+[sid_task_base]
+parent = trader
+community = actor
+idle_time	= 1036800
+reward_rank = 3
+
+[sid_kill_zombies]:sid_task_base
+type = eliminate_lager
+init_condition = {!is_gulag_population_inactive(esc_tunnel_zombie_terrain) +esc_sid_gives_zombie_task}
+need_return = true
+text = sid_kill_zombies_text
+description = sid_kill_zombies_descr
+target = esc_tunnel_zombie_terrain
+reward_reputation = 3
+reward_relation = stalker, +5
+reward_money = 2800
+reward_item = medkit, bandage, mineral_water
+time = 604800
+
+[sid_find_eye]:sid_task_base
+type = monster_part
+condlist = {+esc_factory_cleaned}
+text = sid_find_eye_text
+description = sid_find_eye_descr
+parent = trader
+target = mutant_flesh_eye
+reward_money = 360
+time = 1209600
+prior = 1
+
+[sid_find_tail]:sid_task_base
+type = monster_part
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_tail_text
+description = sid_find_monster_part_descr
+parent = trader
+target = mutant_dog_tail
+reward_money = 150
+time = 1209600
+prior = 2
+
+[sid_find_zombie_hand]:sid_task_base
+type = monster_part
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_zombie_hand_text
+description = sid_find_monster_part_descr
+parent = trader
+target = mutant_zombie_hand
+reward_money = 165
+time = 1209600
+prior = 3
+
+[sid_find_karlik_ear]:sid_task_base
+type = monster_part
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_karlik_ear_text
+description = sid_find_monster_part_descr
+parent = trader
+target = mutant_karlik_ear
+reward_rank = 1
+reward_money = 750
+time = 1209600
+prior = 4
+
+[sid_find_tushkano_tail]:sid_task_base
+type = monster_part
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_tushkano_tail_text
+description = sid_find_monster_part_descr
+parent = trader
+target = mutant_tushkano_tail
+reward_money = 120
+time = 1209600
+prior = 4
+idx = 1
+
+[sid_find_pseudo_tail]:sid_task_base
+type = monster_part
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_pseudo_tail_text
+description = sid_find_monster_part_descr
+parent = trader
+target = mutant_psevdodog_tail
+reward_money = 750
+time = 1209600
+prior = 5
+
+[sid_find_poltergeist_brain]:sid_task_base
+type = monster_part
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_poltergeist_brain_text
+description = sid_find_monster_part_descr
+parent = trader
+target = mutant_poltergeist_brain
+reward_rank = 1
+reward_money = 1500
+time = 1209600
+prior = 5
+idx = 1
+
+[sid_find_cat_head]:sid_task_base
+type = monster_part
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_cat_head_text
+description = sid_find_monster_part_descr
+parent = trader
+target = mutant_cat_head
+reward_rank = 1
+reward_money = 450
+time = 1209600
+prior = 6
+
+[sid_find_artefact_1]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_1_text
+description = sid_find_artefact_descr_1
+parent = trader
+target = af_medusa
+reward_money = 3300
+reward_rank = 5
+prior = 1
+
+[sid_find_artefact_11]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_11_text
+description = sid_find_artefact_descr
+parent = trader
+target = af_quartz
+reward_money = 3300
+reward_rank = 5
+prior = 1
+idx = 1
+
+[sid_find_artefact_2]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_2_text
+description = sid_find_artefact_descr_2
+parent = trader
+target = af_vyvert
+reward_money = 3300
+reward_rank = 6
+prior = 2
+
+[sid_find_artefact_21]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_21_text
+description = sid_find_artefact_descr
+parent = trader
+target = af_red_beads
+reward_money = 3300
+reward_rank = 6
+prior = 2
+idx = 1
+
+[sid_find_artefact_3]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_3_text
+description = sid_find_artefact_descr_3
+parent = trader
+target = af_ameba_slime
+reward_money = 3300
+reward_rank = 7
+prior = 3
+
+[sid_find_artefact_31]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_31_text
+description = sid_find_artefact_descr
+parent = trader
+target = af_cake
+reward_money = 3300
+reward_rank = 7
+prior = 3
+idx = 1
+
+[sid_find_artefact_4]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_4_text
+description = sid_find_artefact_descr_4
+parent = trader
+target = af_drops
+reward_money = 3300
+reward_rank = 8
+prior = 4
+
+[sid_find_artefact_41]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_41_text
+description = sid_find_artefact_descr
+parent = trader
+target = af_bouquet
+reward_money = 3300
+reward_rank = 8
+prior = 4
+idx = 1
+
+[sid_find_artefact_5]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_5_text
+description = sid_find_artefact_descr_5
+parent = trader
+target = af_blood
+reward_money = 3300
+reward_rank = 9
+prior = 5
+
+[sid_find_artefact_51]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_51_text
+description = sid_find_artefact_descr
+parent = trader
+target = af_rock
+reward_money = 3300
+reward_rank = 9
+prior = 5
+idx = 1
+
+[sid_find_artefact_6]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_6_text
+description = sid_find_artefact_descr_6
+parent = trader
+target = af_electra_sparkler
+reward_money = 3300
+reward_rank = 10
+prior = 6
+
+[sid_find_artefact_61]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_61_text
+description = sid_find_artefact_descr
+parent = trader
+target = af_accumulator
+reward_money = 3300
+reward_rank = 10
+prior = 6
+idx = 1
+
+[sid_find_artefact_7]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_7_text
+description = sid_find_artefact_descr_7
+parent = trader
+target = af_rusty_thorn
+reward_money = 3300
+reward_rank = 11
+prior = 7
+
+[sid_find_artefact_71]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_71_text
+description = sid_find_artefact_descr
+parent = trader
+target = af_glass_ball
+reward_money = 3300
+reward_rank = 11
+prior = 7
+idx = 1
+
+[sid_find_artefact_8]:sid_task_base
+type = artefact
+community = actor
+condlist = {+esc_factory_cleaned}
+text = sid_find_artefact_8_text
+description = sid_find_artefact_descr_8
+parent = trader
+target = af_fuzz_bagel
+reward_money = 3300
+reward_rank = 12
+prior = 8
+
+[sid_kill_boars]:sid_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_boars_lair) +esc_fox_rescued}
+text = sid_kill_boars_text
+description = sid_kill_boars_descr
+parent = trader
+target = esc_boars_lair
+reward_reputation = 1
+reward_rank = 3
+reward_relation = stalker, +3
+reward_money = 2400
+reward_item = medkit, bandage
+time = 604800
+prior = 1
+
+[sid_kill_flesh]:sid_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_fleshes_blockpost) +esc_fox_rescued}
+text = sid_kill_flesh_text
+description = sid_kill_flesh_descr
+parent = trader
+target = esc_fleshes_blockpost
+reward_reputation = 1
+reward_rank = 3
+reward_relation = stalker, +5
+reward_money = 2160
+time = 604800
+prior = 1
+idx = 1
+
+[sid_kill_dogs]:sid_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_mixed_lair) +esc_fox_rescued}
+text = sid_kill_dogs_text
+description = sid_kill_mutant_descr
+parent = trader
+target = esc_mixed_lair
+reward_reputation = 1
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 2160
+reward_item = medkit
+time = 1204800
+prior = 2
+
+[sid_kill_polter]:sid_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_poltergeist_terrain) +esc_fox_rescued}		
+text = sid_kill_polter_text
+description = sid_kill_mutant_descr
+parent = trader
+target = esc_poltergeist_terrain
+reward_reputation = 1
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 1400
+time = 1204800
+prior = 2
+idx = 1
+
+[sid_kill_tushkano]:sid_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_tuishkano_lair) +esc_fox_rescued}
+text = sid_kill_tushkano_text
+description = sid_kill_mutant_descr
+parent = trader
+target = esc_tuishkano_lair
+reward_reputation = 1
+reward_rank = 2
+reward_relation = stalker, +2
+reward_money = 1750
+time = 1204800
+prior = 2
+idx = 2
+
+[sid_kill_sucker]:sid_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_gar_bloodsucker_terrain) +esc_fox_rescued}
+text = sid_kill_sucker_text
+description = sid_kill_mutant_descr
+parent = trader
+target = ladc_gar_bloodsucker_terrain
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +10
+reward_money = 4000
+reward_item = medkit
+time = 1209600
+prior = 3
+
+[sid_kill_dogs_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_dogs_lair1) +esc_fox_rescued}
+text = sid_kill_dogs_2_text
+description = sid_kill_mutant_descr
+parent = trader
+target = gar_dogs_lair1
+reward_reputation = 1
+reward_rank = 3
+reward_money = 1300
+reward_item = medkit
+time = 432000
+prior = 3
+idx = 1
+
+[sid_kill_chimera]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ds_chimera_terrain) +dol_get_doc_about_x18_done}
+text = sid_kill_chimera_text
+description = sid_kill_mutant_descr
+parent = trader
+target = ds_chimera_terrain
+reward_reputation = 4
+reward_rank = 2
+reward_money = 4900
+reward_item = medkit
+time = 432000
+prior = 4
+
+[sid_kill_stalker_base]:sid_task_base
+reward_reputation = +4
+reward_rank = 3
+condlist = {+esc_fox_rescued}
+
+
+[sid_kill_stalker_6]:sid_kill_stalker_base
+type = kill_stalker
+community = actor
+text = sid_kill_stalker_6_text
+description = sid_kill_stalker_6_descr
+target = sim_stalker_t1_novice
+reward_money = 2500
+prior = 2
+
+[sid_kill_stalker_1]:sid_kill_stalker_base
+type = kill_stalker
+community = actor
+text = sid_kill_stalker_1_text
+description = sid_kill_stalker_1_descr
+target = sim_bandit_t1_veteran
+reward_reputation = 10
+reward_money = 3300
+prior = 1
+
+[sid_kill_stalker_2]:sid_kill_stalker_base
+type = kill_stalker
+community = actor
+text = sid_kill_stalker_2_text
+description = sid_kill_stalker_2_descr
+target = sim_stalker_t1_veteran
+reward_money = 3500
+prior = 2
+
+[sid_kill_stalker_3]:sid_kill_stalker_base
+type = kill_stalker
+community = actor
+text = sid_kill_stalker_3_text
+description = sid_kill_stalker_3_descr
+target = sim_stalker_t2_novice
+reward_money = 4000
+prior = 3
+
+[sid_kill_stalker_4]:sid_kill_stalker_base
+type = kill_stalker
+condlist = {+rosf_petrenko_meet_done}
+community = actor
+text = sid_kill_stalker_4_text
+description = sid_kill_stalker_4_descr
+target = credits_stalker_raven
+reward_money = 4500
+prior = 4
+
+
+[esc_shus_task_base]
+idle_time = 2228000
+
+[esc_shus_find_outfit_1]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_mail_jacket_text
+description = shus_find_mail_jacket_descr
+parent = a_esc_shustriy
+target = outfit_bandit_m2
+reward_money = 2500
+prior = 1
+
+[esc_shus_find_weapon_1]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_mp5_text
+description = shus_find_mp5_descr
+parent = a_esc_shustriy
+target = wpn_mp5_m1
+reward_money = 2800
+prior = 1
+
+[esc_shus_find_outfit_2]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_anom_jacket_text
+description = shus_find_anom_jacket_descr
+parent = a_esc_shustriy
+target = outfit_novice_m1
+reward_money = 4000
+reward_item = medkit
+prior = 2
+
+[esc_shus_find_weapon_4]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_walther_text
+description =  shus_find_walther_descr
+parent = a_esc_shustriy
+target = wpn_walther_m1
+reward_money = 3250
+prior = 2
+
+[esc_shus_find_weapon_5]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_aksu_text
+description = shus_find_aksu_descr
+parent = a_esc_shustriy
+target = wpn_ak74u_m1
+reward_money = 3850
+prior = 3
+
+[esc_shus_find_outfit_3]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_outf_killer_text
+description = shus_find_outf_killer_descr
+parent = a_esc_shustriy
+target = outfit_killer_m1
+reward_money = 13500
+prior = 4
+
+[esc_shus_find_weapon_2]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_l85_text
+description = shus_find_l85_descr
+parent = a_esc_shustriy
+target = wpn_l85_m1
+reward_money = 5000
+prior = 4
+
+[esc_shus_find_outfit_4]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_outf_stalker_light_text
+description = shus_find_outf_stalker_light_descr
+parent = a_esc_shustriy
+target = stalker_light_outfit_m1
+reward_money = 10000
+prior = 5
+
+[esc_shus_find_weapon_6]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_colt_text
+description = shus_find_colt_descr
+parent = a_esc_shustriy
+target = wpn_colt_m1
+reward_money = 4150
+prior = 5
+
+[esc_shus_find_outfit_5]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_outf_duty_text
+description = shus_find_outf_duty_descr
+parent = a_esc_shustriy
+target = dolg_medium_outfit_m1
+reward_money = 21000
+reward_item = medkit
+prior = 6
+
+[esc_shus_find_weapon_3]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_lr300_text
+description = shus_find_lr300_descr
+parent = a_esc_shustriy
+target = wpn_lr300_m1
+reward_money = 11500
+prior = 6
+
+[esc_shus_find_outfit_6]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_outf_military_text
+description =  shus_find_outf_military_descr
+parent = a_esc_shustriy
+target = military_medium_outfit_m1
+reward_money = 23300
+prior = 7
+
+[esc_shus_find_weapon_7]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_abakan_text
+description = shus_find_abakan_descr
+parent = a_esc_shustriy
+target = wpn_abakan_m1
+reward_money = 20500
+prior = 7
+
+[esc_shus_find_outfit_7]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_outf_stalker_heavy_text
+description = shus_find_outf_stalker_heavy_descr
+parent = a_esc_shustriy
+target = stalker_heavy_outfit_m1
+reward_money = 21450
+prior = 8
+
+[esc_shus_find_weapon_8]:esc_shus_task_base
+type = find_item_hide
+community = actor
+condlist = {+esc_nimble_work_start}
+text = shus_find_spas_text
+description = shus_find_spas_descr
+parent = a_esc_shustriy
+target = wpn_spas12_m1
+reward_money = 22000
+prior = 8
+
+;-- Wolf
+
+[esc_wolf_find_artefact_1]:sid_task_base
+type = artefact
+condlist = {+esc_factory_cleaned}
+text = esc_wolf_find_artefact_1_text
+description = esc_wolf_find_artefact_1_descr
+parent = esc_wolf
+target = af_glass_ball
+reward_money = 3300
+reward_rank = 5
+prior = 1
+
+;--/gar --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[gar_kill_zombies]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_zombies_graveyard) +gar_hangar_cleaned}
+text = gar_kill_zombies_text
+description = gar_kill_zombies_descr
+parent = gar_seriy
+target = gar_zombies_graveyard
+reward_reputation = 3
+reward_rank = 10
+reward_relation = stalker, +10, dolg, +5
+reward_money = 4000
+reward_item = medkit, mineral_water, bandage
+time = 1204800
+prior = 1
+
+[gar_kill_crane_bandits]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_bandit_crane_lager) +gar_hangar_cleaned}
+text = gar_kill_crane_bandits_text
+description = gar_kill_crane_bandits_descr
+parent = gar_seriy
+target = gar_bandit_crane_lager
+reward_reputation = 1
+reward_rank = 4
+reward_relation = stalker, +5
+reward_money = 3600
+reward_item = antirad, antirad
+prior = 2
+
+[gar_ser_kill_dogs]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_dogs_lair2) +gar_hangar_cleaned}
+text = gar_ser_kill_dogs_text
+description = gar_ser_kill_mutants_descr
+parent = gar_seriy
+target = gar_dogs_lair2
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +5, dolg, +5
+reward_money = 4100
+prior = 6
+
+[gar_ser_kill_bandits1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_wandering_terrain) +gar_hangar_cleaned}
+text = gar_ser_kill_bandits_text
+description = gar_ser_kill_bandits_descr
+parent = gar_seriy
+target = gar_wandering_terrain
+reward_reputation = 2
+reward_rank = 4
+reward_relation = stalker, +5
+reward_money = 3400
+prior = 3
+
+[gar_ser_kill_boars]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_dump_boar_terrain3) +gar_hangar_cleaned}
+text = gar_ser_kill_boars_text
+description = gar_ser_kill_mutants_descr
+parent = gar_seriy
+target = ladc_dump_boar_terrain3
+reward_reputation = 1
+reward_rank = 4
+reward_relation = stalker, +4, dolg, +2
+reward_money = 3600
+prior = 4
+
+[gar_ser_kill_bandits2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_wandering_terrain1) +gar_hangar_cleaned}
+text = gar_ser_kill_bandits_text
+description = gar_ser_kill_bandits_descr
+parent = gar_seriy
+target = gar_wandering_terrain1
+reward_reputation = 3
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 3700
+prior = 4
+
+[gar_ser_kill_chimeras]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_chimeras_lair1) +gar_hangar_cleaned}
+text = gar_ser_kill_chimeras_text
+description = gar_ser_kill_mutants_descr
+parent = gar_seriy
+target = gar_chimeras_lair1
+reward_reputation = 3
+reward_rank = 10
+reward_relation = stalker, +10, dolg, +5
+reward_money = 4600
+prior = 5
+
+[gar_ser_kill_bandits3]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_wandering_terrain2) +gar_seriy_give_info}
+text = gar_ser_kill_bandits_text
+description = gar_ser_kill_bandits_descr
+parent = gar_seriy
+target = gar_wandering_terrain2
+reward_reputation = 3
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 3500
+prior = 5
+
+[gar_ser_kill_dol_general_terrain2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(dol_general_terrain2) +gar_hangar_cleaned}
+text = gar_ser_kill_dol_general_terrain2_text
+description = gar_ser_kill_mutants_descr
+parent = gar_seriy
+target = dol_general_terrain2
+reward_reputation = 3
+reward_rank = 6
+reward_relation = stalker, +10, dolg, +5
+reward_money = 4500
+prior = 6
+
+[gar_ser_bring_meat1]
+type = monster_part
+community = actor
+condlist = {+gar_seriy_give_info}
+text = gar_ser_bring_meat_1_text
+description = gar_ser_bring_meat_descr
+parent = gar_seriy
+target = crow_meat
+reward_money = 300
+prior = 1
+
+[gar_ser_bring_meat2]
+type = monster_part
+community = actor
+condlist = {+gar_seriy_give_info}
+text = gar_ser_bring_meat_2_text
+description = gar_ser_bring_meat_descr
+parent = gar_seriy
+target = rat_meat
+reward_money = 300
+prior = 2
+
+[gar_seriy_find_artefact_1] 					;id квеста + id фразы/заголовка квеста, обязательно нужно прописать в секцию list в task_manager.ltx
+type = artefact									;тип квеста
+community = actor								;рудимент, указывать только строго actor
+condlist = {+gar_seriy_give_info}				;условие доступности квеста
+text = gar_seriy_find_artefact_1_text			;фраза-описание в диалоге + текст метки задания (если метка есть)
+description = gar_seriy_find_artefact_descr		;id статьи с описанием именно в ПДА при переходе в описание квеста. Статью зарегистрировать storyline_info_taskmanager.xml
+parent = gar_seriy								;id квестодателя из секции parent_by_story_id в task_manager.ltx
+target = af_blood								;цель квеста: имя секции предмета, имя смарт-террейна/ов, либо текстовый story id сталкера
+reward_money = 3200								;денежная награда
+;reward_item = antirad							;предметы в награду
+reward_rank = 6									;опыт за выполнение
+;reward_reputation = 5							;репутация за выполнение
+;reward_relation = dolg, +5, freedom, -2		;отношение к группировкам за выполнение, указывать только парами, "id группировки, число", число как положительное так и отрицательное
+;time = 604800									;время на выполнение в секундах, если не указано, то бесконечно
+idle_time = 2228000								;тайм-аут квеста, через сколько его можно вновь получить
+prior = 1										;порядковый номер квеста относительно других квестов того же типа. Вам покажет только квест с самым низким prior из доступных, если у нескольких квестов одинаковый prior покажет все их
+
+[gar_seriy_find_artefact_2]
+type = artefact
+community = actor
+condlist = {+gar_seriy_give_info}
+text = gar_seriy_find_artefact_2_text
+description = gar_seriy_find_artefact_descr
+parent = gar_seriy
+target = af_fuzz_bagel
+reward_money = 3300
+reward_rank = 7
+idle_time = 2228000
+prior = 2
+
+[gar_seriy_find_artefact_3]
+type = artefact
+community = actor
+condlist = {+gar_seriy_give_info}
+text = gar_seriy_find_artefact_3_text
+description = gar_seriy_find_artefact_descr
+parent = gar_seriy
+target = af_rock
+reward_money = 3400
+reward_rank = 8
+idle_time = 2228000
+prior = 3
+
+[gar_ser_bring_item1]
+type = monster_part
+community = actor
+condlist = {+gar_seriy_give_info}
+text = gar_ser_bring_zombie_hand_text
+description = gar_ser_bring_mutant_part_descr
+parent = gar_seriy
+target = mutant_zombie_hand
+reward_money = 200
+prior = 3
+
+[gar_ser_bring_item2]
+type = monster_part
+community = actor
+condlist = {+gar_seriy_give_info}
+text = gar_ser_bring_fracture_hand_text
+description = gar_ser_bring_mutant_part_descr
+parent = gar_seriy
+target = mutant_izlom_arm
+reward_money = 1300
+prior = 4
+
+[gar_ser_bring_item3]
+type = find_item
+community = actor
+condlist = {+gar_seriy_give_info}
+text = gar_ser_bring_fracture_hand_text
+description = general_bring_item_descr
+parent = gar_seriy
+target = tranceiver_2
+reward_money = 400
+prior = 1
+
+[gar_hellcar_kill_zombies]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_zombies_graveyard) +small_hangar_leader_dead}
+text = gar_kill_zombies_text
+description = gar_kill_zombies_descr
+parent = gar_hellcar
+target = gar_zombies_graveyard
+reward_reputation = 3
+reward_rank = 10
+reward_relation = stalker, +10, dolg, +5
+reward_money = 4000
+reward_item = medkit, mineral_water, bandage
+time = 1204800
+prior = 1
+
+[gar_hellcar_kill_crane_bandits]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_bandit_crane_lager) +small_hangar_leader_dead}
+text = gar_kill_crane_bandits_text
+description = gar_kill_crane_bandits_descr
+parent = gar_hellcar
+target = gar_bandit_crane_lager
+reward_reputation = 1
+reward_rank = 4
+reward_relation = stalker, +5
+reward_money = 3600
+reward_item = antirad, antirad
+prior = 2
+
+[gar_hellcar_kill_dogs]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_dogs_lair2) +small_hangar_leader_dead}
+text = gar_ser_kill_dogs_text
+description = gar_ser_kill_mutants_descr
+parent = gar_hellcar
+target = gar_dogs_lair2
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +5, dolg, +5
+reward_money = 4100
+prior = 6
+
+[gar_hellcar_kill_bandits1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_wandering_terrain) +small_hangar_leader_dead}
+text = gar_ser_kill_bandits_text
+description = gar_ser_kill_bandits_descr
+parent = gar_hellcar
+target = gar_wandering_terrain
+reward_reputation = 2
+reward_rank = 4
+reward_relation = stalker, +5
+reward_money = 3400
+prior = 3
+
+[gar_hellcar_kill_boars]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_dump_boar_terrain3) +small_hangar_leader_dead}
+text = gar_ser_kill_boars_text
+description = gar_ser_kill_mutants_descr
+parent = gar_hellcar
+target = ladc_dump_boar_terrain3
+reward_reputation = 1
+reward_rank = 4
+reward_relation = stalker, +4, dolg, +2
+reward_money = 3600
+prior = 4
+
+[gar_hellcar_kill_bandits2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(gar_wandering_terrain1) +small_hangar_leader_dead}
+text = gar_ser_kill_bandits_text
+description = gar_ser_kill_bandits_descr
+parent = gar_hellcar
+target = gar_wandering_terrain1
+reward_reputation = 3
+reward_rank = 4
+reward_relation = stalker, +5
+reward_money = 3700
+prior = 4
+
+[gar_hellcar_kill_chimeras]
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(gar_chimeras_lair1) +small_hangar_leader_dead}
+text = gar_ser_kill_chimeras_text
+description = gar_ser_kill_mutants_descr
+parent = gar_hellcar
+target = gar_chimeras_lair1
+reward_reputation = 3
+reward_rank = 10
+reward_relation = stalker, +10, dolg, +5
+reward_money = 4600
+prior = 5
+
+[gar_hellcar_kill_bandits3]
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(gar_wandering_terrain2) +small_hangar_leader_dead}
+text = gar_ser_kill_bandits_text
+description = gar_ser_kill_bandits_descr
+parent = gar_hellcar
+target = gar_wandering_terrain2
+reward_reputation = 3
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 3500
+prior = 5
+
+[gar_hellcar_kill_dol_general_terrain2]
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(dol_general_terrain2) +small_hangar_leader_dead}
+text = gar_ser_kill_dol_general_terrain2_text
+description = gar_ser_kill_mutants_descr
+parent = gar_hellcar
+target = dol_general_terrain2
+reward_reputation = 1
+reward_rank = 6
+reward_relation = stalker, +10, dolg, +5
+reward_money = 4500
+prior = 6
+
+[gar_hellcar_bring_meat1]
+type = monster_part
+condlist = {+small_hangar_leader_dead}
+text = gar_ser_bring_meat_1_text
+description = gar_ser_bring_meat_descr
+parent = gar_hellcar
+target = crow_meat
+reward_money = 300
+prior = 1
+
+[gar_hellcar_bring_meat2]
+type = monster_part
+condlist = {+small_hangar_leader_dead}
+text = gar_ser_bring_meat_2_text
+description = gar_ser_bring_meat_descr
+parent = gar_hellcar
+target = rat_meat
+reward_money = 300
+prior = 2
+
+[gar_hellcar_find_artefact_1]
+type = artefact
+condlist = {+small_hangar_leader_dead}
+text = gar_seriy_find_artefact_1_text
+description = gar_seriy_find_artefact_descr
+parent = gar_hellcar
+target = af_blood
+reward_money = 3300
+reward_rank = 6
+idle_time = 2228000
+prior = 1
+
+[gar_hellcar_find_artefact_2]
+type = artefact
+condlist = {+small_hangar_leader_dead}
+community = actor
+text = gar_seriy_find_artefact_2_text
+description = gar_seriy_find_artefact_descr
+parent = gar_hellcar
+target = af_fuzz_bagel
+reward_money = 3300
+reward_rank = 6
+idle_time = 2228000
+prior = 2
+
+[gar_hellcar_bring_item1]
+type = monster_part
+condlist = {+small_hangar_leader_dead}
+community = actor
+text = gar_ser_bring_zombie_hand_text
+description = gar_ser_bring_mutant_part_descr
+parent = gar_hellcar
+target = mutant_zombie_hand
+reward_money = 200
+prior = 3
+
+[gar_hellcar_bring_item2]
+type = monster_part
+condlist = {+small_hangar_leader_dead}
+community = actor
+text = gar_ser_bring_fracture_hand_text
+description = gar_ser_bring_mutant_part_descr
+parent = gar_hellcar
+target = mutant_izlom_arm
+reward_money = 1300
+prior = 4
+
+;--/agr ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[agr_mole_task_base]
+parent = agr_krot
+reward_rank = 3
+reward_relation = stalker, +5
+
+[agr_mole_kill_dogs_1]:agr_mole_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(agr_rush) +agr_ratcatcher_start}
+text = agr_mole_kill_dogs_1_text
+description = agr_mole_kill_mutants_descr
+target = agr_rush
+reward_reputation = 1
+reward_money = 2600
+prior = 4
+
+[agr_mole_kill_dogs_2]:agr_mole_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(agr_general_terrain) +agr_ratcatcher_start}
+text = agr_mole_kill_dogs_2_text
+description = agr_mole_kill_mutants_descr
+target = agr_general_terrain
+reward_reputation = 3
+reward_money = 2900
+reward_item = bandage
+prior = 2
+
+[agr_mole_kill_boars]:agr_mole_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(ladc_agro_boar_terrain2) +agr_ratcatcher_start}
+text = agr_mole_kill_boars_text
+description = agr_mole_kill_mutants_descr
+target = ladc_agro_boar_terrain2
+reward_reputation = 3
+reward_money = 3200
+prior = 1
+
+[agr_kill_swamp_flesh]:agr_mole_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(agr2_flesh_nes1) +agr_ratcatcher_start}
+text = agr_kill_swamp_flesh_text
+description = agr_kill_swamp_flesh_descr
+target = agr2_flesh_nes1
+reward_reputation = 1
+reward_money = 3050
+reward_item = bandage
+prior = 3
+
+[agr_kill_bandits]:agr_mole_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(agr2_bandit_st) +agroprom_military_case_done}
+text = agr_kill_bandits_text
+description = agr_kill_bandits_descr
+target = agr2_bandit_st
+reward_reputation = 3
+reward_money = 2800
+reward_item = ammo_5.45x39_fmj, grenade_gd-05
+time = 604800
+prior = 3
+
+[agr_kill_zombies]:agr_mole_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(agr_ug_zombie_terrain) +agroprom_military_case_done}
+text = agr_kill_zombies_text
+description = agr_kill_zombies_descr
+target = agr_ug_zombie_terrain
+reward_reputation = 3
+reward_money = 3100
+reward_item = ammo_5.45x39_fmj, grenade_gd-05
+time = 604800
+prior = 4
+
+[agr_mole_bring_item_base]:agr_mole_task_base
+type = find_item_hide
+targer_check = false
+reward_reputation = 3
+reward_rank = 2
+idle_time = 2400000
+
+[agr_mole_bring_item_1]:agr_mole_bring_item_base
+text = agr_mole_bring_item_1_text
+description = agr_mole_bring_item_1_descr
+parent = agr_krot
+target = detector_radiation
+reward_money = 2500
+prior = 1
+
+[agr_mole_bring_item_2]:agr_mole_bring_item_base
+text = agr_mole_bring_item_2_text
+description = agr_mole_bring_item_2_descr
+target = detector_af_bad
+target_count = 3
+reward_money = 2400
+prior = 2
+
+[agr_mole_bring_item_3]:agr_mole_bring_item_base
+text = agr_mole_bring_item_3_text
+description = agr_mole_bring_item_3_descr
+target = detector_simple
+reward_money = 10000
+prior = 3
+
+[agr_mole_bring_item_4]:agr_mole_bring_item_base
+text = agr_mole_bring_item_4_text
+description = agr_mole_bring_item_4_descr
+target = detector_af_simple
+reward_money = 10000
+prior = 4
+
+[agr_mole_find_artefact_1]
+type = artefact
+text = agr_mole_find_artefact_1_text
+description = agr_mole_find_artefact_1_descr
+parent = agr_krot
+target = af_soul
+reward_money = 10000
+reward_rank = 12
+prior = 1
+
+;--/Dolina-------------------
+
+[dolina_gusarov_task_base]
+community = actor
+parent = dolina_gusarov
+time = 604800
+idle_time = 604800
+
+[dolina_gusarov_kill_mutants_1]:dolina_gusarov_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(dol_cat_terrain)}
+text = dolina_gusarov_kill_mutants_1_text
+description = dolina_gusarov_kill_mutants_descr
+target = dol_cat_terrain
+reward_rank = 3
+reward_money = 3400
+prior = 1
+
+[dolina_gusarov_kill_mutants_2]:dolina_gusarov_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(dol_swampbeast_terrain)}
+text = dolina_gusarov_kill_mutants_2_text
+description = dolina_gusarov_kill_mutants_descr
+target = dol_swampbeast_terrain
+reward_rank = 3
+reward_money = 4000
+prior = 1
+
+[dolina_gusarov_kill_mutants_3]:dolina_gusarov_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(dol_bloodsucker_terrain1)}
+text = dolina_gusarov_kill_mutants_3_text
+description = dolina_gusarov_kill_mutants_descr
+target = dol_bloodsucker_terrain1
+reward_rank = 3
+reward_money = 5000
+prior = 2
+
+[dolina_gusarov_find_monster_part_1]:dolina_gusarov_task_base
+type = monster_part
+text = dolina_gusarov_find_monster_part_1_text
+description = dolina_gusarov_find_monster_part_descr
+target = mutant_cat_head
+reward_money = 450
+prior = 1
+
+[dolina_gusarov_find_monster_part_2]:dolina_gusarov_task_base
+type = monster_part
+text = dolina_gusarov_find_monster_part_2_text
+description = dolina_gusarov_find_monster_part_descr
+target = mutant_burer_hand
+reward_money = 1500
+prior = 2
+
+;--/bar --------------------
+
+[barman_task_base]
+reward_rank = 3
+
+[barman_find_artefact_1]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_1_text
+description = barman_find_artefact_1_descr
+parent = barman
+target = af_cake
+reward_money = 3300
+reward_rank = 5
+prior = 1
+
+[barman_find_artefact_2]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_2_text
+description = barman_find_artefact_2_descr
+parent = barman
+target = af_bouquet
+reward_money = 3300
+reward_rank = 7
+prior = 2
+
+[barman_find_artefact_3]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_3_text
+description = barman_find_artefact_3_descr
+parent = barman
+target = af_cristall_flower
+reward_money = 6600
+reward_rank = 8
+prior = 3
+
+[barman_find_artefact_4]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_4_text
+description = barman_find_artefact_4_descr
+parent = barman
+target = af_gravi
+reward_money = 6600
+reward_rank = 10
+prior = 4
+
+[barman_find_artefact_5]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_5_text
+description = barman_find_artefact_5_descr
+parent = barman
+target = af_mincer_meat
+reward_money = 6600
+reward_rank = 11
+prior = 5
+
+[barman_find_artefact_6]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_6_text
+description = barman_find_artefact_6_descr
+parent = barman
+target = af_night_star
+reward_money = 9900
+reward_rank = 15
+prior = 6
+
+[barman_find_artefact_7]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_7_text
+description = barman_find_artefact_7_descr
+parent = barman
+target = af_liver
+reward_money = 6600
+reward_rank = 13
+prior = 7
+
+[barman_find_artefact_8]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_8_text
+description = barman_find_artefact_8_descr
+parent = barman
+target = af_electra_flash
+reward_money = 9900
+reward_rank = 14
+prior = 8
+
+[barman_find_artefact_9]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_9_text
+description = barman_find_artefact_9_descr
+parent = barman
+target = af_rusty_kristall
+reward_money = 6600
+reward_rank = 15
+prior = 9
+
+[barman_find_artefact_10]:barman_task_base
+type = artefact
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_find_artefact_10_text
+description = barman_find_artefact_10_descr
+parent = barman
+target = af_gold_fish
+reward_money = 13200
+reward_rank = 25
+prior = 10
+
+[barman_kill_stalker_1]
+type = kill_stalker
+condlist = {+agroprom_military_case_done}
+text = barman_kill_stalker_1_text
+description = barman_kill_stalker_1_descr
+parent = barman
+target = sim_milstalker_t3_vereran
+reward_reputation = +2
+reward_rank = 3
+reward_item = af_ameba_slug
+prior = 4
+
+[barman_kill_stalker_2]
+type = kill_stalker
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_kill_stalker_2_text
+description = barman_kill_stalker_2_descr
+parent = barman
+target = sim_stalker_t1_veteran
+reward_money = 4000
+reward_reputation = +3
+reward_rank = 2
+prior = 2
+
+[barman_kill_stalker_3]
+type = kill_stalker
+community = actor
+condlist = {+agroprom_military_case_done}
+text = barman_kill_stalker_3_text
+description = barman_kill_stalker_3_descr
+parent = barman
+target = sim_monolith_t3_master
+reward_money = 6100
+reward_reputation = +15
+reward_rank = 3
+prior = 5
+
+[barman_kill_stalker_4]
+condlist = {+rosf_petrenko_meet_done}
+type = kill_stalker
+community = actor
+text = barman_kill_stalker_4_text
+description = barman_kill_stalker_4_descr
+parent = barman
+target = credits_stalker_rimantas
+reward_money = 5950
+reward_reputation = +3
+reward_rank = 2
+prior = 3
+
+[barman_kill_stalker_5]
+type = kill_stalker
+community = actor
+condlist = {+bar_darklab_document_done}
+text = barman_kill_stalker_5_text
+description = barman_kill_stalker_5_descr
+parent = barman
+target = sim_stalker_veteran_vorobey
+reward_reputation = +3
+reward_rank = 5
+prior = 4
+
+[barman_kill_wild_bandits]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(wild_bandit_terrain)}
+text = bar_kill_wild_bandits_text
+description = bar_kill_wild_bandits_descr
+parent = barman
+target = wild_bandit_terrain
+reward_reputation = 1
+reward_money = 5500
+prior = 1
+
+[barman_kill_mine_bandits]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(forest_mine_bandits)}
+text = bar_kill_mine_bandits_text
+description = bar_kill_mine_bandits_descr
+parent = barman
+target = forest_mine_bandits
+reward_reputation = 1
+reward_money = 7500
+prior = 2
+
+[barman_kill_mercs]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ds_autostop)}
+text = bar_kill_mercs_text
+description = bar_kill_mercs_descr
+parent = barman
+target = ds_autostop
+reward_reputation = 1
+reward_rank = 10
+reward_money = 15000
+prior = 3
+
+[bar_informer_kill_stalker]
+type = kill_stalker
+text = bar_informer_kill_stalker_text
+description = bar_informer_kill_stalker_descr
+parent = bar_informer
+target = sim_stalker_t3_master
+reward_money = 5000
+reward_reputation = +10
+reward_rank = 6
+prior = 3
+
+[bar_petrenko_kill_wild_bandits]
+type = eliminate_lager
+community = actor
+condlist = {+has_no_infos}
+text = bar_kill_wild_bandits_text
+description = bar_kill_wild_bandits_descr
+parent = bar_petrenko
+target = wild_bandit_terrain
+reward_reputation = 1
+reward_money = 5500
+reward_relation = dolg, +5
+prior = 1
+
+[bar_petrenko_kill_mine_bandits]
+type = eliminate_lager
+community = actor
+condlist = {+has_no_infos}
+text = bar_kill_mine_bandits_text
+description = bar_kill_mine_bandits_descr
+parent = bar_petrenko
+target = forest_mine_bandits
+reward_money = 7500
+reward_relation = dolg, +5
+prior = 2
+
+[bar_petrenko_kill_mercs]
+type = eliminate_lager
+community = actor
+condlist = {+has_no_infos}
+text = bar_kill_mercs_text
+description = bar_kill_mercs_descr
+parent = bar_petrenko
+target = ds_autostop
+reward_reputation = 5
+reward_money = 18000
+reward_relation = dolg, +5
+prior = 3
+
+[bar_petrenko_kill_mutants_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_bar_mixed_terrain1)}
+text = bar_kill_mutants_1_text
+description = bar_kill_mutants_1_descr
+parent = bar_petrenko
+target = ladc_bar_mixed_terrain1
+reward_reputation = 4
+reward_money = 4500
+reward_rank = 6
+reward_relation = dolg, +15
+time = 732000
+idle_time = 604000
+prior = 3
+
+;--/forest---------------------------------------------
+
+[forest_shulga_task_base]
+parent = a_fore_dolg_leader
+idle_time = 864000
+reward_rank = 5
+reward_reputation = 5
+reward_relation = dolg, +5
+
+[forest_shulga_kill_boars_1]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_boar_terrain1)}
+text = forest_shulga_kill_boars_1_text
+description = forest_shulga_kill_mutants_descr
+target = forest_boar_terrain1
+reward_money = 1300
+prior = 1
+idx = 4
+
+[forest_shulga_kill_sucker_1]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_bloodsucker_terrain1)}
+text = forest_shulga_kill_sucker_1_text
+description = forest_shulga_kill_mutants_descr
+target = forest_bloodsucker_terrain1
+reward_money = 3300
+prior = 1
+idx = 1
+
+[forest_shulga_kill_chimeras]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_chimera_terrain1)}
+text = forest_shulga_kill_chimeras_text
+description = forest_shulga_kill_mutants_descr
+target = forest_chimera_terrain1
+reward_money = 6600
+prior = 1
+
+[forest_shulga_kill_zombie]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_diseased)}
+text = forest_shulga_kill_zombie_text
+description = forest_shulga_kill_mutants_descr
+target = forest_diseased
+reward_money = 3300
+prior = 1
+idx = 2
+
+[forest_shulga_kill_sucker_2]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_bloodsucker_terrain2)}
+text = forest_shulga_kill_sucker_2_text
+description = forest_shulga_kill_mutants_descr
+target = forest_bloodsucker_terrain2
+reward_money = 5800
+prior = 2
+
+[forest_shulga_kill_flesh]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_flesh_terrain1)}
+text = forest_shulga_kill_flesh_text
+description = forest_shulga_kill_mutants_descr
+target = forest_flesh_terrain1
+reward_money = 3400
+prior = 2
+idx = 3
+
+[forest_shulga_kill_cats]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_cat_terrain1)}
+text = forest_shulga_kill_cats_text
+description = forest_shulga_kill_mutants_descr
+target = forest_cat_terrain1
+reward_money = 5000
+prior = 1
+idx = 3
+
+[forest_shulga_kill_zombied_1]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_zombied_terrain1)}
+text = forest_shulga_kill_zombied_1_text
+description = forest_shulga_kill_mutants_descr
+target = forest_zombied_terrain1
+reward_money = 4200
+prior = 2
+idx = 1
+
+[forest_shulga_kill_swampbeast_1]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_swampbeast_terrain1)}
+text = forest_shulga_kill_swampbeast_1_text
+description = forest_shulga_kill_mutants_descr
+target = forest_swampbeast_terrain1
+reward_money = 5500
+prior = 2
+idx = 2
+
+[forest_shulga_kill_boars_2]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_boar_terrain2)}
+text = forest_shulga_kill_boars_2_text
+description = forest_shulga_kill_mutants_descr
+target = forest_boar_terrain2
+reward_money = 4000
+prior = 2
+idx = 4
+
+[forest_shulga_kill_flesh_2]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_flesh_terrain2)}
+text = forest_shulga_kill_flesh_2_text
+description = forest_shulga_kill_mutants_descr
+target = forest_flesh_terrain2
+reward_money = 4200
+prior = 3
+idx = 1
+
+[forest_shulga_kill_sucker_4]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_bloodsucker_terrain3)}
+text = forest_shulga_kill_sucker_4_text
+description = forest_shulga_kill_mutants_descr
+target = forest_bloodsucker_terrain3
+reward_money = 5800
+prior = 3
+idx = 3
+
+[forest_shulga_kill_swampbeast_3]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_swampbeast_terrain2)}
+text = forest_shulga_kill_swampbeast_3_text
+description = forest_shulga_kill_mutants_descr
+target = forest_swampbeast_terrain2
+reward_money = 5600
+prior = 3
+idx = 2
+
+[forest_shulga_kill_burer_1]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_burer_outdoor_terrain_2)}
+text = forest_shulga_kill_burer_1_text
+description = forest_shulga_kill_mutants_descr
+target = forest_burer_outdoor_terrain_2
+reward_money = 4500
+prior = 3
+idx = 3
+
+[forest_shulga_kill_burer_2]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(forest_burer_outdoor_terrain_3)}
+text = forest_shulga_kill_burer_2_text
+description = forest_shulga_kill_mutants_descr
+target = forest_burer_outdoor_terrain_3
+reward_money = 4500
+prior = 4
+idx = 3
+
+[forest_shulga_kill_sucker_3]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(old_village_bloodsucker_terrain) =mil_rad_blocker}
+text = forest_shulga_kill_sucker_3_text
+description = forest_shulga_kill_mutants_descr
+target = old_village_bloodsucker_terrain
+reward_money = 8900
+prior = 4
+
+[forest_shulga_kill_zombied_2]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(old_village_zombie_terrain) =mil_rad_blocker}
+text = forest_shulga_kill_zombied_2_text
+description = forest_shulga_kill_mutants_descr
+target = old_village_zombie_terrain
+reward_money = 6700
+prior = 4
+idx = 1
+
+[forest_shulga_kill_swampbeast_2]:forest_shulga_task_base
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(old_swamp_swampbeast_terrain) =mil_rad_blocker}
+text = forest_shulga_kill_swampbeast_2_text
+description = forest_shulga_kill_mutants_descr
+target = old_swamp_swampbeast_terrain
+reward_money = 7000
+prior = 4
+idx = 2
+
+[forest_shulga_find_jaw]
+type = monster_part
+community = actor
+text = forest_shulga_find_jaw_text
+description = forest_shulga_find_part_descr
+parent = a_fore_dolg_leader
+target = mutant_krovosos_jaw
+reward_money = 1400
+prior = 1
+
+[forest_shulga_find_brain_beast]
+type = monster_part
+text = forest_shulga_find_brain_beast_text
+description = forest_shulga_find_part_descr
+parent = a_fore_dolg_leader
+target = mutant_swampbeast_nose
+reward_money = 1100
+prior = 2
+
+[forest_shulga_find_brain_polter]
+type = monster_part
+community = actor
+text = forest_shulga_find_brain_polter_text
+description = forest_shulga_find_part_descr
+parent = a_fore_dolg_leader
+target = mutant_poltergeist_brain
+reward_money = 1600
+prior = 2
+
+[forest_shulga_kill_one_zombied_1]
+type = kill_stalker
+text = forest_shulga_kill_one_zombied_1_text
+description = forest_shulga_kill_zombied_descr
+parent = a_fore_dolg_leader
+target = yan_zombied_t2_veteran
+reward_money = 3100
+reward_reputation = 4
+reward_rank = 3
+prior = 1
+
+[forest_shulga_kill_one_zombied_2]
+type = kill_stalker
+text = forest_shulga_kill_one_zombied_2_text
+description = forest_shulga_kill_zombied_descr
+parent = a_fore_dolg_leader
+target = sim_zombied_t2_master
+reward_money = 4200
+reward_reputation = 4
+reward_rank = 5
+prior = 2
+
+;--/yantar---------------------------------------------
+
+[yan_professor_task_base]
+;time		= 864000
+idle_time	= 1036800
+reward_rank = 5
+reward_relation = clear_sky, +5
+
+[yan_professor_find_artefact_1]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_1_text
+description = yan_professor_find_artefact_1_descr
+parent = yan_professor
+target = af_electra_sparkler
+reward_money = 3300
+reward_rank = 6
+prior = 1
+
+[yan_professor_find_artefact_2]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_2_text
+description = yan_professor_find_artefact_2_descr
+parent = yan_professor
+target = af_drops
+reward_money = 3300
+reward_rank = 6
+prior = 1
+idx = 1
+
+[yan_professor_find_artefact_3]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_3_text
+description = yan_professor_find_artefact_3_descr
+parent = yan_professor
+target = af_twine
+reward_money = 6600
+reward_rank = 9
+prior = 1
+idx = 2
+
+[yan_professor_find_artefact_4]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_4_text
+description = yan_professor_find_artefact_4_descr
+parent = yan_professor
+target = af_quartz
+reward_money = 3300
+reward_rank = 6
+prior = 1
+idx = 3
+
+[yan_professor_find_artefact_5]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_5_text
+description = yan_professor_find_artefact_5_descr
+parent = yan_professor
+target = af_red_beads
+reward_money = 3300
+reward_rank = 7
+prior = 2
+
+[yan_professor_find_artefact_6]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_6_text
+description = yan_professor_find_artefact_6_descr
+parent = yan_professor
+target = af_gold_fish
+reward_money = 13200
+reward_rank = 16
+prior = 2
+idx = 1
+
+[yan_professor_find_artefact_7]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_7_text
+description = yan_professor_find_artefact_7_descr
+parent = yan_professor
+target = af_devils_guts
+reward_money = 6600
+reward_rank = 10
+prior = 2
+idx = 2
+
+[yan_professor_find_artefact_8]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_8_text
+description = yan_professor_find_artefact_8_descr
+parent = yan_professor
+target = af_twinkle
+reward_money = 6600
+reward_rank = 10
+prior = 2
+idx = 3
+
+[yan_professor_find_artefact_9]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_9_text
+description = yan_professor_find_artefact_9_descr
+parent = yan_professor
+target = af_electra_moonlight
+reward_money = 9900
+reward_rank = 14
+prior = 3
+
+[yan_professor_find_artefact_10]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_10_text
+description = yan_professor_find_artefact_10_descr
+parent = yan_professor
+target = af_cuttlefish
+reward_money = 9900
+reward_rank = 14
+prior = 3
+idx = 1
+
+[yan_professor_find_artefact_11]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_11_text
+description = yan_professor_find_artefact_11_descr
+parent = yan_professor
+target = af_eye
+reward_money = 6600
+reward_rank = 11
+prior = 3
+idx = 2
+
+[yan_professor_find_artefact_12]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_12_text
+description = yan_professor_find_artefact_12_descr
+parent = yan_professor
+target = af_rock
+reward_money = 3300
+reward_rank = 8
+prior = 3
+idx = 3
+
+[yan_professor_find_artefact_13]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_13_text
+description = yan_professor_find_artefact_13_descr
+parent = yan_professor
+target = af_ameba_slug
+reward_money = 6600
+reward_rank = 12
+prior = 4
+
+[yan_professor_find_artefact_14]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_14_text
+description = yan_professor_find_artefact_14_descr
+parent = yan_professor
+target = af_gold_beads
+reward_money = 13200
+reward_rank = 18
+prior = 4
+idx = 1
+
+[yan_professor_find_artefact_15]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_15_text
+description = yan_professor_find_artefact_15_descr
+parent = yan_professor
+target = af_crescent
+reward_money = 6600
+reward_rank = 12
+prior = 4
+idx = 2
+
+[yan_professor_find_artefact_16]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_16_text
+description = yan_professor_find_artefact_16_descr
+parent = yan_professor
+target = af_accumulator
+reward_money = 3300
+reward_rank = 9
+prior = 4
+idx = 3
+
+[yan_professor_find_artefact_17]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_17_text
+description = yan_professor_find_artefact_17_descr
+parent = yan_professor
+target = af_jewel
+reward_money = 6600
+reward_rank = 13
+prior = 5
+
+[yan_professor_find_artefact_18]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_18_text
+description = yan_professor_find_artefact_18_descr
+parent = yan_professor
+target = af_dummy_pellicle
+reward_money = 13200
+reward_rank = 20
+prior = 5
+idx = 1
+
+[yan_professor_find_artefact_19]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_19_text
+description = yan_professor_find_artefact_19_descr
+parent = yan_professor
+target = af_electra
+reward_money = 13200
+reward_rank = 20
+prior = 5
+idx = 2
+
+[yan_professor_find_artefact_20]:yan_professor_task_base
+type = artefact
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_professor_find_artefact_20_text
+description = yan_professor_find_artefact_20_descr
+parent = yan_professor
+target = af_pupil
+reward_money = 13200
+reward_rank = 20
+prior = 5
+idx = 3
+
+[yan_find_psevdodog_tail_1]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_psevdodog_tail_1_text
+description = yan_find_psevdodog_tail_1_descr
+parent = yan_professor
+target = mutant_psevdodog_tail
+reward_money = 800
+prior = 1
+
+[yan_find_zombie_hand_1]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_zombie_hand_1_text
+description = yan_find_zombie_hand_1_descr
+parent = yan_professor
+target = mutant_zombie_hand
+reward_money = 170
+prior = 1
+idx = 1
+
+[yan_find_burer_hand_2]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_burer_hand_2_text
+description = yan_find_burer_hand_2_descr
+parent = yan_professor
+target = mutant_burer_hand
+reward_money = 1600
+prior = 2
+
+[yan_find_boar_leg_2]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_boar_leg_2_text
+description = yan_find_boar_leg_2_descr
+parent = yan_professor
+target = mutant_boar_leg
+reward_money = 650
+prior = 2
+idx = 1
+
+[yan_find_krovosos_jaw_3]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_krovosos_jaw_3_text
+description = yan_find_krovosos_jaw_3_descr
+parent = yan_professor
+target = mutant_krovosos_jaw
+reward_money = 1450
+prior = 3
+
+[yan_find_chimera_hand_3]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_chimera_hand_3_text
+description = yan_find_chimera_hand_3_descr
+parent = yan_professor
+target = mutant_chimera_hand
+reward_money = 2100
+prior = 3
+idx = 1
+
+[yan_find_controller_foot_4]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_controller_foot_4_text
+description = yan_find_controller_foot_4_descr
+parent = yan_professor
+target = mutant_controller_foot
+reward_money = 2000
+prior = 4
+
+[yan_find_giant_eye_4]:yan_professor_task_base
+type = monster_part
+community = actor
+condlist = {+yan_scientist_package_start}
+text = yan_find_giant_eye_4_text
+description = yan_find_giant_eye_4_descr
+parent = yan_professor
+target = mutant_giant_eye
+reward_money = 3200
+prior = 4
+idx = 1
+
+;--/parts
+
+[yan_kill_zombied2_terrain]:yan_professor_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(yan_zombied2_terrain_ladc) +yan_scientist_package_start}
+text = yan_kill_zombied2_terrain_text
+description = yan_kill_zombied2_terrain_descr
+parent = yan_professor
+target = yan_zombied2_terrain_ladc
+reward_reputation = 3
+reward_rank = 5
+reward_money = 2800
+reward_relation = clear_sky, +15
+time = 300800
+prior = 1
+
+[yan_kill_zombied]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(yan_zombied1_terrain_ladc)}
+text = yan_kill_zombied_text
+description = yan_kill_zombied_descr
+parent = yan_professor
+target = yan_zombied1_terrain_ladc
+reward_reputation = 2
+reward_rank = 3
+reward_money = 2200
+reward_relation = clear_sky, +15
+time = 432000
+prior = 1
+idx = 1
+
+[yan_kill_radar_zombies]:yan_professor_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(yan_zombie_terrain1) +yan_scientist_parts_start}
+text = yan_kill_radar_zombies_text
+description = yan_kill_radar_zombies_descr
+parent = yan_professor
+target = yan_zombie_terrain1
+reward_reputation = 2
+reward_money = 2200
+reward_relation = clear_sky, +15
+reward_item = medkit_scientic, antirad
+time = 604800
+prior = 2
+
+[yan_kill_wild_pseudo]:yan_professor_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_bar_pseudodog_terrain1)}
+text = yan_kill_wild_pseudo_text
+description = yan_kill_wild_pseudo_descr
+parent = yan_professor
+target = ladc_bar_pseudodog_terrain1
+reward_reputation = 2
+reward_rank = 2
+reward_money = 3300
+reward_item = medkit_scientic, item_battery, antirad
+prior = 2
+idx = 1
+
+[yan_kill_village2_bandit]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(yan_village2_bandit_terrain) +yan_dolg_bandits_report_veronin}
+text = yan_kill_village2_bandit_text
+description = yan_kill_village2_bandit_descr
+parent = forg_alex
+target = yan_village2_bandit_terrain
+reward_reputation = 2
+reward_rank = 4
+reward_money = 3300
+reward_item = medkit_scientic
+prior = 4
+
+;--/military---------------------------------------------
+
+[mil_supplier_kill_chimera_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(mil_chimeras_smart) +mil_crazy_lr_found +pri_ghost_meet_start}
+text = mil_supplier_kill_chimera_1_text
+description = mil_supplier_kill_chimera_1_descr
+parent = mil_supplier
+target = mil_chimeras_smart
+reward_money = 6100
+reward_rank = 6
+reward_relation = stalker, +10
+idle_time = 1409600
+prior = 1
+idx = 1
+
+;--/swamp---------------------------------------------
+[swa_doctor_task_base]
+time		= 1864000
+idle_time	= 864000
+reward_rank = 5
+parent = swa_doctor
+
+[swa_doctor_monster_part_1]:swa_doctor_task_base
+type = monster_part
+text = swa_doctor_monster_part_1_text
+description = swa_doctor_monster_part_1_descr
+target = mutant_boar_leg
+target_count = 3
+reward_money = 2100
+prior = 1
+
+[swa_doctor_monster_part_2]:swa_doctor_task_base
+type = monster_part
+text = swa_doctor_monster_part_2_text
+description = swa_doctor_monster_part_2_descr
+target = mutant_tushkano_tail
+target_count = 10
+reward_money = 1400
+prior = 2
+
+[swa_doctor_monster_part_3]:swa_doctor_task_base
+type = monster_part
+text = swa_doctor_monster_part_3_text
+description = swa_doctor_monster_part_3_descr
+target = mutant_poltergeist_brain
+target_count = 4
+reward_money = 6250
+prior = 3
+
+;--/outskirts-----------------------------------------
+
+[out_barman_task_base]
+reward_rank = 6
+
+[out_barman_find_artefact_1]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_1_text
+description = barman_find_artefact_1_descr
+parent = out_bar_barman
+target = af_cake
+reward_money = 3500
+prior = 1
+
+[out_barman_find_artefact_2]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_2_text
+description = barman_find_artefact_2_descr
+parent = out_bar_barman
+target = af_bouquet
+reward_money = 3500
+prior = 2
+
+[out_barman_find_artefact_3]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_3_text
+description = barman_find_artefact_3_descr
+parent = out_bar_barman
+target = af_cristall_flower
+reward_money = 6500
+prior = 3
+
+[out_barman_find_artefact_4]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_4_text
+description = barman_find_artefact_4_descr
+parent = out_bar_barman
+target = af_gravi
+reward_money = 6500
+prior = 4
+
+[out_barman_find_artefact_5]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_5_text
+description = barman_find_artefact_5_descr
+parent = out_bar_barman
+target = af_mincer_meat
+reward_money = 6500
+prior = 5
+
+[out_barman_find_artefact_6]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_6_text
+description = barman_find_artefact_6_descr
+parent = out_bar_barman
+target = af_night_star
+reward_money = 10000
+prior = 6
+
+[out_barman_find_artefact_7]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_7_text
+description = barman_find_artefact_7_descr
+parent = out_bar_barman
+target = af_liver
+reward_money = 10000
+prior = 7
+
+[out_barman_find_artefact_8]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_8_text
+description = barman_find_artefact_8_descr
+parent = out_bar_barman
+target = af_electra_flash
+reward_money = 10000
+prior = 8
+
+[out_barman_find_artefact_9]:out_barman_task_base
+type = artefact
+community = actor
+text = barman_find_artefact_9_text
+description = barman_find_artefact_9_descr
+parent = out_bar_barman
+target = af_rusty_kristall
+reward_money = 6500
+prior = 9
+
+[out_bar_barman_boars_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_boar_terrain1)}
+text = out_bar_barman_boars_1_text
+description = out_bar_barman_boars_descr
+parent = out_bar_barman
+target = out_boar_terrain1
+reward_reputation = 2
+reward_rank = 3
+reward_money = 4400
+prior = 2
+
+[out_bar_barman_boars_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_boar_terrain2)}
+text = out_bar_barman_boars_2_text
+description = out_bar_barman_boars_descr
+parent = out_bar_barman
+target = out_boar_terrain2
+reward_reputation = 2
+reward_rank = 3
+reward_money = 4400
+time = 432000
+prior = 2
+idx = 1
+
+[out_bar_barman_flesh_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_flesh_terrain1)}
+text = out_bar_barman_flesh_1_text
+description = out_bar_barman_flesh_1_descr
+parent = out_bar_barman
+target = out_flesh_terrain1
+reward_rank = 3
+reward_money = 3800
+prior = 2
+idx = 2
+
+[out_bar_barman_mutants]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_mixed_terrain)}
+text = out_bar_barman_mutants_text
+description = out_bar_barman_mutants_descr
+parent = out_bar_barman
+target = out_mixed_terrain
+reward_reputation = 2
+reward_rank = 4
+reward_money = 4500
+prior = 3
+
+[out_bar_barman_kill_banditos]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(cit_bandit_village) +dol_find_cit_bandit_leader}
+text = out_bar_barman_kill_banditos_text
+description = out_bar_barman_kill_banditos_descr
+parent = out_bar_barman
+target = cit_bandit_village
+reward_money = 7000
+reward_reputation = 1
+reward_rank = 1
+prior = 4
+
+[lukash_kill_mono_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_dam_mono_terrain) -bar_dolg_actor_joined}
+text = lukash_kill_mono_1_text
+description = lukash_kill_mono_1_descr
+parent = lukash
+target = out_dam_mono_terrain
+reward_money = 8000
+reward_relation = freedom, +5
+reward_rank = 5
+time = 604800
+idle_time = 1696000
+prior = 1
+
+[lukash_kill_mono_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(old_bath_monolith_terrain) -bar_dolg_actor_joined}
+text = lukash_kill_mono_2_text
+description = lukash_kill_mono_2_descr
+parent = lukash
+target = old_bath_monolith_terrain
+reward_money = 14500
+reward_relation = freedom, +5
+reward_rank = 5
+time = 604800
+idle_time = 1696000
+prior = 2
+
+[lukash_kill_cats]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_cat_terrain) -bar_dolg_actor_joined}
+text = lukash_kill_cats_text
+description = lukash_kill_mutants_descr
+parent = lukash
+target = out_cat_terrain
+reward_reputation = 1
+reward_rank = 2
+reward_relation = freedom, +5
+reward_money = 3800
+prior = 1
+idx = 1
+
+[lukash_kill_bloodsuckers_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_bloodsucker_terrain1) -bar_dolg_actor_joined}
+text = lukash_kill_bloodsuckers_1_text
+description = lukash_kill_mutants_descr
+parent = lukash
+target = out_bloodsucker_terrain1
+reward_reputation = 1
+reward_rank = 3
+reward_relation = freedom, +5
+reward_money = 5000
+time = 432000
+prior = 1
+idx = 2
+
+[lukash_kill_bloodsuckers_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(swamp_bloodsucker_terrain2) -bar_dolg_actor_joined}
+text = lukash_kill_bloodsuckers_2_text
+description = lukash_kill_mutants_descr
+parent = lukash
+target = swamp_bloodsucker_terrain2
+reward_reputation = 1
+reward_rank = 3
+reward_relation = freedom, +5
+reward_money = 4600
+reward_item = ammo_7.62x51_fmj
+prior = 2
+idx = 1
+
+[lukash_kill_dogs_3]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_dog_terrain3) -bar_dolg_actor_joined}
+text = lukash_kill_dogs_3_text
+description = lukash_kill_mutants_descr
+parent = lukash
+target = out_dog_terrain3
+reward_reputation = 1
+reward_rank = 1
+reward_relation = freedom, +5
+reward_money = 3700
+prior = 2
+idx = 2
+
+
+[lukash_kill_zombied_1]
+type = kill_stalker
+community = actor
+condlist = {-bar_dolg_actor_joined}
+text = lukash_kill_zombied_1_text
+description = lukash_kill_zombied_1_descr
+parent = lukash
+target = sim_zombied_t2_veteran
+reward_money = 3500
+prior = 4
+
+;--/lost factory---------------------------------------
+
+[deedee_task_base]
+;time		= 864000
+idle_time	= 604800
+reward_rank = 3
+reward_relation = clear_sky, +5
+
+[deedee_kill_snorks]:deedee_task_base
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(lost_snork_terrain)}
+text = deedee_kill_snorks_text
+description = deedee_kill_snorks_descr
+parent = deedee
+target = lost_snork_terrain
+reward_reputation = 3
+reward_rank = 5
+reward_money = 4000
+reward_item = medkit_scientic, booster_weight
+reward_relation = clear_sky, +15
+time = 604800
+prior = 1
+
+[deedee_flesh_eye]:deedee_task_base
+type = monster_part
+community = actor
+text = deedee_flesh_eye_text
+description = deedee_monster_part_descr
+parent = deedee
+target = mutant_flesh_eye
+reward_money = 400
+prior = 1
+
+[deedee_swampbeast_nose]:deedee_task_base
+type = monster_part
+community = actor
+text = deedee_swampbeast_nose_text
+description = deedee_monster_part_descr
+parent = deedee
+target = mutant_swampbeast_nose
+reward_money = 1000
+prior = 2
+
+[deedee_poltergeist_brain]:deedee_task_base
+type = monster_part
+community = actor
+text = deedee_poltergeist_brain_text
+description = deedee_monster_part_descr
+parent = deedee
+target = mutant_poltergeist_brain
+reward_money = 1700
+prior = 2
+idx = 1
+
+[deedee_snork_foot]:deedee_task_base
+type = monster_part
+community = actor
+text = deedee_snork_foot_text
+description = deedee_monster_part_descr
+parent = deedee
+target = mutant_snork_leg
+reward_money = 1050
+prior = 3
+
+[deedee_burer_hand]:deedee_task_base
+type = monster_part
+community = actor
+text = deedee_burer_hand_text
+description = deedee_monster_part_descr
+parent = deedee
+target = mutant_burer_hand
+reward_money = 1800
+prior = 4
+
+[deedee_izlom_arm]:deedee_task_base
+type = monster_part
+community = actor
+text = deedee_izlom_arm_text
+description = deedee_monster_part_descr
+parent = deedee
+target = mutant_izlom_arm
+reward_money = 1400
+prior = 5
+
+[deedee_karlik_ear]:deedee_task_base
+type = monster_part
+community = actor
+text = deedee_karlik_ear_text
+description = deedee_monster_part_descr
+parent = deedee
+target = mutant_karlik_ear
+reward_money = 850
+prior = 5
+idx = 1
+
+[deedee_find_artefact_1]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_1_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_fireball
+reward_money = 6600
+prior = 1
+reward_rank = 8
+
+[deedee_find_artefact_2]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_2_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_dummy_battery
+reward_money = 9900
+reward_rank = 12
+prior = 1
+idx = 1
+
+[deedee_find_artefact_3]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_3_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_glass
+reward_money = 9900
+reward_rank = 12
+prior = 1
+idx = 2
+
+[deedee_find_artefact_4]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_4_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_fire
+reward_money = 9900
+reward_rank = 12
+prior = 2
+
+[deedee_find_artefact_5]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_5_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_spine
+reward_money = 9900
+reward_rank = 13
+prior = 2
+idx = 1
+
+[deedee_find_artefact_6]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_6_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_soother
+reward_money = 9900
+reward_rank = 13
+prior = 2
+idx = 2
+
+[deedee_find_artefact_7]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_7_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_glass_ball
+reward_money = 3300
+reward_rank = 6
+prior = 3
+
+[deedee_find_artefact_8]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_8_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_blue_beads
+reward_money = 13200
+reward_rank = 16
+prior = 3
+idx = 1
+
+[deedee_find_artefact_9]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_9_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_fuzz_cupcake
+reward_money = 9900
+reward_rank = 14
+prior = 3
+idx = 2
+
+[deedee_find_artefact_10]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_10_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_ivory
+reward_money = 6600
+reward_rank = 10
+prior = 4
+
+[deedee_find_artefact_11]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_11_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_baloon
+reward_money = 9900
+reward_rank = 15
+prior = 4
+idx = 1
+
+[deedee_find_artefact_12]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_12_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_ice
+reward_money = 9900
+reward_rank = 15
+prior = 4
+idx = 2
+
+[deedee_find_artefact_13]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_13_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_rusty_sea_urchin
+reward_money = 9900
+reward_rank = 15
+prior = 5
+
+[deedee_find_artefact_14]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_14_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_fuzz_kolobok
+reward_money = 6600
+reward_rank = 15
+prior = 5
+idx = 1
+
+[deedee_find_artefact_15]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_15_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_white_sun
+reward_money = 13200
+reward_rank = 20
+prior = 5
+idx = 2
+
+[deedee_find_artefact_16]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_16_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_electra_moonlight
+reward_money = 9900
+reward_rank = 16
+prior = 6
+
+[deedee_find_artefact_17]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_17_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_ameba_mica
+reward_money = 9900
+reward_rank = 16
+prior = 6
+idx = 1
+
+[deedee_find_artefact_18]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_18_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_cristall
+reward_money = 13200
+reward_rank = 16
+prior = 6
+idx = 2
+
+[deedee_find_artefact_19]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_19_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_dummy_dummy
+reward_money = 13200
+reward_rank = 20
+prior = 7
+
+[deedee_find_artefact_20]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_20_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_dummy_spring
+reward_money = 13200
+reward_rank = 20
+prior = 7
+idx = 1
+
+[deedee_find_artefact_21]:deedee_task_base
+type = artefact
+community = actor
+text = deedee_find_artefact_21_text
+description = deedee_find_artefact_descr
+parent = deedee
+target = af_dummy_glassbeads
+reward_money = 13200
+reward_rank = 20
+prior = 7
+idx = 2
+
+[deedee_find_item_3]:deedee_task_base
+type = find_item
+community = actor
+text = deedee_find_item_3_text
+description = deedee_find_item_3_descr
+parent = deedee
+target = bcr_condensors
+reward_money = 5500
+prior = 1
+
+;--/ country-----------------------------------
+
+[country_hermit_kill_bandits]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(country_bandit_terrain1)}
+text = country_hermit_kill_bandits_text
+description = country_hermit_kill_bandits_descr
+parent = hermit
+target = country_bandit_terrain1
+reward_reputation = 5
+reward_rank = 3
+reward_money = 5000
+prior = 1
+
+[country_hermit_kill_boars]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(bcr_boar_terrain2)}
+text = country_hermit_kill_boars_text
+description = country_hermit_kill_boars_descr
+parent = hermit
+target = bcr_boar_terrain2
+reward_reputation = 5
+reward_rank = 5
+reward_money = 5200
+prior = 1
+
+;--/ pripyat-----------------------------------
+
+[pri_trader_task_base]
+idle_time	= 604800
+community = actor
+parent = pri_secret_trader
+
+[pri_trader_find_artefact_1]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_1_text
+description = pri_trader_find_artefact_descr
+target = af_dummy_dummy
+reward_money = 13200
+reward_rank = 16
+prior = 1
+
+[pri_trader_find_artefact_2]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_2_text
+description = pri_trader_find_artefact_descr
+target = af_mercury_ball
+reward_money = 13200
+reward_rank = 16
+prior = 1
+idx = 1
+
+[pri_trader_find_artefact_3]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_3_text
+description = pri_trader_find_artefact_descr
+target = af_white_sun
+reward_money = 13200
+reward_rank = 16
+prior = 1
+idx = 2
+
+[pri_trader_find_artefact_4]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_4_text
+description = pri_trader_find_artefact_descr
+target = af_dummy_pellicle
+reward_money = 13200
+reward_rank = 16
+prior = 1
+idx = 3
+
+[pri_trader_find_artefact_5]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_5_text
+description = pri_trader_find_artefact_descr
+target = af_green_beads
+reward_money = 13200
+reward_rank = 18
+prior = 2
+
+[pri_trader_find_artefact_6]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_6_text
+description = pri_trader_find_artefact_descr
+target = af_blue_beads
+reward_money = 13200
+reward_rank = 18
+prior = 2
+idx = 1
+
+[pri_trader_find_artefact_7]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_7_text
+description = pri_trader_find_artefact_descr
+target = af_gold_beads
+reward_money = 13200
+reward_rank = 18
+prior = 2
+idx = 2
+
+[pri_trader_find_artefact_8]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_8_text
+description = pri_trader_find_artefact_descr
+target = af_dummy_glassbeads
+reward_money = 13200
+reward_rank = 18
+prior = 2
+idx = 3
+
+[pri_trader_find_artefact_9]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_9_text
+description = pri_trader_find_artefact_descr
+target = af_pupil
+reward_money = 13200
+reward_rank = 20
+prior = 3
+
+[pri_trader_find_artefact_10]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_10_text
+description = pri_trader_find_artefact_descr
+target = af_cristall
+reward_money = 13200
+reward_rank = 20
+prior = 3
+idx = 1
+
+[pri_trader_find_artefact_11]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_11_text
+description = pri_trader_find_artefact_descr
+target = af_electra
+reward_money = 13200
+reward_rank = 20
+prior = 3
+idx = 2
+
+[pri_trader_find_artefact_12]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_12_text
+description = pri_trader_find_artefact_descr
+target = af_fungus
+reward_money = 13200
+reward_rank = 20
+prior = 3
+idx = 3
+
+[pri_trader_find_artefact_13]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_13_text
+description = pri_trader_find_artefact_descr
+target = af_chestnut
+reward_money = 13200
+reward_rank = 22
+prior = 4
+
+[pri_trader_find_artefact_14]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_14_text
+description = pri_trader_find_artefact_descr
+target = af_dummy_spring
+reward_money = 13200
+reward_rank = 22
+prior = 4
+idx = 1
+
+[pri_trader_find_artefact_15]:pri_trader_task_base
+type = artefact
+text = pri_trader_find_artefact_15_text
+description = pri_trader_find_artefact_descr
+target = af_gold_fish
+reward_money = 13200
+reward_rank = 22
+prior = 4
+idx = 1

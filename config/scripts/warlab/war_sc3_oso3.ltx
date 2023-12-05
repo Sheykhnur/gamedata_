@@ -1,0 +1,34 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc3_oso3
+combat_ignore = combat_ignore
+
+[remark@war_sc3_oso3]
+anim = war_oso_colbes_0
+target = war_sc3_oso3, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc3_falture} remark@war_sc3_oso32
+
+[remark@war_sc3_oso32]
+anim = war_oso_colbes_1
+target = war_sc3_oso3, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc3_wake_up} remark@war_sc3_oso32_synth
+
+[remark@war_sc3_oso32_synth]
+anim = war_oso_colbes_1
+target = war_sc3_oso3, 0
+meet = no_meet
+combat_ignore_cond = always
+anim_reset = false
+on_timer = 9700 | remark@war_sc3_oso33
+
+[remark@war_sc3_oso33]
+anim = war_oso_colbes_0
+target = war_sc3_oso3, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc3_end} %=release%

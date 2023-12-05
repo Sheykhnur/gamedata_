@@ -1,0 +1,38 @@
+[anomaly_base]
+shape_transp_color		= 255, 0, 0, 60
+shape_edge_color		= 32, 32, 32, 255
+
+$prefetch 					= 16
+
+hit_impulse_scale			= 0.0
+effective_radius			= 1.0
+
+postprocess					=
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= true
+art_onstart_spawn_prob		= 0.015
+art_onstart_spawn_cicles	= 1
+
+idle_particles_dont_stop	= true
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+visible_by_detector 		= on
+
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts 	= on
+artefact_spawn_probability 	= 0.01									;вероятность, что во время погибания существа в аномалии будет рожден артефакт
+throw_out_power				= 1.5									;импульс с которым артефакт будет выброшен из зоны в произвольном направлении
+artefact_spawn_height		= 1										;(м) высота на центром зоны где будет рожден артефакт
+artefact_spawn_cicles		= 1										;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2
+
+[anomaly_base_noart]
+art_onstart_spawn_prob		= 0.01
+artefact_spawn_probability	= 0.01
+artefact_spawn_cicles		= 1										;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2

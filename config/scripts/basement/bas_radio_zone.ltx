@@ -1,0 +1,22 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = sr_idle@2
+
+[sr_idle@2]
+on_info = {+bas_sc6_lamps_finished} sr_sound_act %=run_postprocess(radio_blink)%
+on_actor_outside = sr_sound_act %=run_postprocess(radio_blink)%
+
+[sr_sound_act]
+snd = ambient\random\radio_crazy
+delay = 5
+delay_max = 500
+on_signal = sound_end | sr_particle@zone %=play_snd(anomaly\gravi_blowout6)%
+
+[sr_particle@zone]
+name = anomaly2\gravity_blast_03
+path = bas_sc6_particle
+mode = 2
+looped = false
+on_timer = 1000 | %+bas_sc6_finale%

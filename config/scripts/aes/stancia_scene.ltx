@@ -1,0 +1,12 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {=tasks_stancia.aes_cam_cond -aes_scene_start} sr_cutscene@stancia %+aes_scene_start%
+on_actor_outside = {-aes_scene_start +aes_heli_raid =tasks_stancia.aes_cam_cond} nil %=release%
+
+[sr_cutscene@stancia]
+point = aes_cam_point
+look = aes_cam_look
+cam_effector = aes_cam1,aes_cam2
+on_signal = cameff_end | nil %+aes_scene_end =release%

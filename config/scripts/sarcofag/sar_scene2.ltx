@@ -1,0 +1,9 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = sr_idle@2 %=rad_psy_basic_clear +sar_scene2_start =set_only_hands(true) =disable_ui_elements(input)%
+
+[sr_idle@2]
+on_info = {+sar_scene2_end} nil %=tasks_sarcofag.sar_voice() =enable_ui_elements(input) =release%
+on_timer = 12000| nil %=tasks_sarcofag.sar_voice() =enable_ui_elements(input) +sar_scene2_end =release%

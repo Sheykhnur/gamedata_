@@ -1,0 +1,17 @@
+
+
+;[collide]
+;ignore_static
+;ignore_ragdoll
+
+[logic]
+active = ph_car
+
+[ph_car]
+invulnerable = true
+headlights = on
+path_walk = mil_zaz_walk
+on_signal = reached | ph_idle 
+
+[ph_idle]
+on_timer = 2500 | %+mil_contact_arrived%

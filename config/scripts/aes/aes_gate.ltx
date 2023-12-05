@@ -1,0 +1,26 @@
+;MILITARY AMBUSH GATE
+[logic]
+active = ph_gate@aes_locked
+
+[ph_gate@aes_locked]
+state = closed
+locking = hard
+breakable = false
+on_info = {+npp_chose_dolg1} ph_gate@aes_open %+aes_attack_initiated%
+on_info2 = {+aes_help_raiders_refuse} ph_gate@aes_open %+aes_attack_initiated%
+on_info3 = {+aes_open_the_gate} ph_gate@aes_unlocked
+
+
+[ph_gate@aes_unlocked]
+state = closed
+locking = hard
+breakable = false
+tip_open = tip_gate_open
+on_use = ph_gate@aes_open %+aes_attack_initiated%
+
+[ph_gate@aes_open]
+state = open
+locking = soft
+breakable = false
+tip_close = tip_gate_close
+on_timer = 1500 | %+aes_gates_opened%

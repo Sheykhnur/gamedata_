@@ -1,0 +1,25 @@
+[logic]
+active = sr_idle@scene
+
+[sr_idle@scene]
+on_actor_inside = {-gen2_start_scene_end} %=run_postprocess(gen_out) =play_snd(characters_voice\scenario\gen2\gen_teleport) +gen2_start_scene +gen2_actor_start =disable_level_sounds% sr_idle@gen_wait
+
+[sr_idle@gen_wait]
+on_timer = 4100 | sr_cutscene@gen_start_final
+
+[sr_cutscene@gen_start_final]
+point = gen2_actor_teleport
+look = gen2_actor_teleport_look
+cam_effector = gen_start_final1
+pp_effector = nil
+on_timer = 1000 | %+gen2_actor_shift%
+on_timer2 = 2300 |  %+gen2_particle_shift%
+on_info = {+gen2_cam_synth} sr_cutscene@gen_second
+
+[sr_cutscene@gen_second]
+point = gen2_actor_teleport
+look = gen2_actor_teleport_look
+cam_effector = gen_start_final2, gen_start_final3
+pp_effector = nil
+on_signal = cameff_end | nil %+gen2_start_scene_end =enable_level_sounds =enable_ui%
+

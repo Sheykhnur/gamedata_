@@ -1,0 +1,13 @@
+[logic]
+active = sr_idle@waiting
+
+[sr_idle@waiting]
+on_info = {+forest_spawn_music} sr_idle@wait
+
+[sr_idle@wait]
+on_info = {+forest_piano_bammed} nil %=stop_sound_looped(characters_voice\scenario\for\forest_piano_melody_looped) =release%
+on_actor_inside = {-forest_piano_bammed} sr_idle@playing %=play_sound_looped(characters_voice\scenario\for\forest_piano_melody_looped:9009)%
+
+[sr_idle@playing]
+on_info = {+forest_piano_bammed} nil %=stop_sound_looped(characters_voice\scenario\for\forest_piano_melody_looped) =release%
+on_actor_outside = sr_idle@wait

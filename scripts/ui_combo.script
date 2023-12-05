@@ -1,0 +1,259 @@
+
+-- file: ui_combo.script
+-- author: barin
+-- date: 2009-08-29
+-- edited by: barin
+-- last edited: 2010-08-15
+
+class "ListViewItem" (CUIListItemEx)
+
+function ListViewItem:__init(key, value, font, color, list_width) super()
+	self.key = key
+	self.value = value
+	
+	self.item_name = CUIStatic()
+	self.item_name:SetAutoDelete(true)
+	self.item_name:SetWndRect(5, 0, list_width - 25, 20)
+	self.item_name:SetText(value)
+	self.item_name:SetTextAlign(CGameFont.alLeft)
+	self.item_name:SetFont(pcTextViewer.get_font(font))
+	self.item_name:SetTextColor(pcTextViewer.get_colour(color))
+	self:AttachChild(self.item_name)
+end
+
+-- ******************************************************************************** --
+
+class "uiComboBox" (CUIScriptWnd)
+
+function uiComboBox:__init(parent, dynamic_list, x, y, xml, combo_name) super()
+	self.parent = parent
+	self.items = {}
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self.combo_name = combo_name
+	self.xml = xml
+	
+	--self.dynamic_list = dynamic_list -- not working ...
+	self.dynamic_list = false
+	
+	self.list_visible = false
+	self.selected_item = -1
+	self.selected_key = nil
+	self.selected_valye = nil
+	
+	self:InitControls(combo_name)
+	self:InitCallBacks()
+end
+
+function uiComboBox:__finalize()
+end
+
+function uiComboBox:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiComboBox:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.frame = self.xml:InitFrame(self.combo_name .. ":frame", self)
+	self.first_item = self.xml:InitButton(self.combo_name .. ":first_item", self)
+	self:Register(self.first_item, "first_item")
+	--self.first_item = self.xml:InitStatic(self.combo_name .. ":first_item", self)
+	
+	self.btn_arrow = self.xml:Init3tButton(self.combo_name .. ":btn_arrow_down", self)
+	self:Register(self.btn_arrow, "btn_arrow")
+	
+	self.list_frame = self.xml:InitFrame(self.combo_name .. ":list_frame", self)
+	self.list_frame:Show(self.list_visible)
+	
+	self.list = self.xml:InitList(self.combo_name .. ":items_list", self)
+	self.list:Show(self.list_visible)
+	self:Register(self.list, "items_list")
+	
+	local w = self.frame:GetWidth() + 10
+	local h = self.frame:GetHeight() + self.list_frame:GetHeight() + 10
+	self:SetWndRect(self.wnd_x, self.wnd_y, w, h)
+end
+
+function uiComboBox:InitCallBacks()
+	self:AddCallback("first_item", ui_events.BUTTON_CLICKED, self.OnArrowBtnClick, self)
+	self:AddCallback("btn_arrow", ui_events.BUTTON_CLICKED, self.OnArrowBtnClick, self)
+	self:AddCallback("items_list", ui_events.LIST_ITEM_CLICKED, self.OnListItemClick, self)
+end
+
+function uiComboBox:OnArrowBtnClick()
+	self.list_visible = not self.list_visible
+	
+	if self.dynamic_list then
+		-- cries during detaching because callback is set ...
+		--[[
+		if self.list_visible then
+			if self.list then
+				self:DetachChild(self.list_frame)
+				self:DetachChild(self.list)
+				self.list_frame = nil
+				self.list = nil
+			end
+			self.list_frame = self.xml:InitFrame(self.combo_name .. ":list_frame", self)
+			self.list_frame:SetAutoDelete(true)
+			self:Register(self.list_frame)
+			
+			self.list = self.xml:InitListBox(self.combo_name .. ":items_list", self)
+			self.list:SetAutoDelete(true)
+			self:Register(self.list, "items_list")
+			
+			self:FillItemList()
+		else
+			self:DetachChild(self.list_frame)
+			self.list_frame = nil
+			
+			self.list:RemoveAll()
+			self:DetachChild(self.list)
+			self.list = nil
+			
+			self.list = self.xml:InitListBox(self.combo_name .. ":items_list", self)
+			self.list:SetAutoDelete(true)
+			self:Register(self.list, "items_list")
+			self.list:Show(false)
+		end
+		--]]
+	else
+		self.list_frame:Show(self.list_visible)
+		self.list:Show(self.list_visible)
+	end
+end
+
+function uiComboBox:OnListItemClick()
+	self.selected_key = nil
+	self.selected_valye = nil
+	
+	self.selected_item = self.list:GetSelectedItem()
+	if self.selected_item and self.selected_item ~= -1 then
+		local s = self.list:GetItem(self.selected_item)
+		self.first_item:SetText(s.value)
+		
+		self.selected_key = s.key
+		self.selected_valye = s.value
+		
+		if self.parent then
+			self.parent:OnComboBoxItemChange(self:WindowName(), s.key, s.value)
+		end
+	end
+	
+	self:OnArrowBtnClick()
+end
+
+function uiComboBox:AddItems(items, font, color)
+	self.items_font = if_then_else(font, font, "letterica16")
+	self.items_color = if_then_else(color, color, "full_white")
+	self.items = items
+	
+	if not self.dynamic_list then
+		self.list:RemoveAll()
+		self:FillItemList()
+	end
+end
+
+function uiComboBox:FillItemList()
+	for k, v in ipairs(self.items) do
+		self.list:AddItem(ListViewItem(v.key, v.value, self.items_font,
+			self.items_color, self.list:GetWidth()))
+	end
+end
+
+function uiComboBox:SetFirstItem(str)
+	str = game.translate_string(str)
+	self.first_item:SetText(str)
+end
+
+function uiComboBox:GetSelectedItemKey()
+	--[[
+	if self.selected_item ~= -1 then
+		local s = self.list:GetItem(self.selected_item)
+		return s.key
+	end
+	
+	return nil
+	--]]
+	return self.selected_key
+end
+
+function uiComboBox:GetSelectedItemValue()
+	--[[
+	if self.selected_item ~= -1 then
+		local s = self.list:GetItem(self.selected_item)
+		return s.value
+	end
+	
+	return nil
+	--]]
+	return self.selected_valye
+end
+
+function uiComboBox:GetFirstItemValue()
+	return self.first_item:GetText()
+end
+
+-- ******************************************************************************** --
+
+class "uiComboTestWnd" (CUIScriptWnd)
+
+function uiComboTestWnd:__init() super()
+	self.wnd_x, self.wnd_y = la_utils.get_hud_center(400, 300)
+	
+	self.wnd_width = 400
+	self.wnd_height = 300
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiComboTestWnd:__finalize()
+end
+
+function uiComboTestWnd:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiComboTestWnd:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width + 50, self.wnd_height + 100)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_combo_box.xml")
+	
+	self:Register(xml:InitFrame("frame", self), "wnd_frame")
+	self:Register(xml:Init3tButton("btn_quit", self), "btn_quit")
+	
+	self.combobox = uiComboBox(nil, false, 30, 30, xml, "combobox")
+	self.combobox:SetAutoDelete(true)
+	self:AttachChild(self.combobox)
+	self.combobox:SetFirstItem("Click me ...")
+	self.combobox:Show(true)
+	
+	local items =
+	{
+		{key = "key1", value = "item 1"},
+		{key = "key2", value = "item 2"},
+		{key = "key3", value = "item 3"},
+	}
+	
+	self.combobox:AddItems(items)
+end
+
+function uiComboTestWnd:InitCallBacks()
+	self:AddCallback("btn_quit", ui_events.BUTTON_CLICKED, self.OnQuit, self)
+end
+
+function uiComboTestWnd:OnQuit()
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+-- ******************************************************************************** --
+
+function test()
+	local wnd = uiComboTestWnd()
+	level.start_stop_menu(wnd, true)
+end

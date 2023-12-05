@@ -1,0 +1,265 @@
+[wpn_sig550]:weapon_base,weapon_5.56x45,weapon_m209
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\sig550"
+animation_slot                          = 2
+class                                   = WP_AK74
+ef_main_weapon_type                     = 2
+ef_weapon_type                          = 6
+hand_dependence                         = 1
+repair_compatibility                    = sig
+scheduled                               = off
+weapon_class                            = assault_rifle
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 5
+inv_grid_y                              = 2
+grenade_launcher_x                      = 125
+grenade_launcher_y                      = 34
+silencer_x                              = 216
+silencer_y                              = 18
+
+; Text
+inv_name                                = wpn-sig550
+inv_name_short                          = wpn-sig550
+description                             = enc_weapons1_wpn-sig550
+
+; Visual
+hud                                     = wpn_sig550_hud
+position                                = -0.026, -0.097, 0.0
+orientation                             = 0, 0, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+strap_position                          = -0.26, -0.11, 0.25
+strap_orientation                       = -15, -9, 110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_sig550\wpn_sig550.ogf
+
+; Effects
+fire_point                              = 0.000000, 0.137000, 0.649000
+fire_point2                             = 0.0, 0.097, 0.722
+shell_point                             = -0.020000, 0.167000, 0.082000
+shell_dir                               = 0.0, 0.0, 0.4
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 5
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+
+; Sounds
+snd_draw                                = weapons\sig550\sig550_draw
+snd_empty                               = weapons\sig550\sig550_empty
+snd_holster                             = weapons\rifle_holster
+snd_reload                              = weapons\sig550\sig550_reload
+snd_reload_grenade                      = weapons\sig550\sig550_grenload
+snd_shoot                               = weapons\sig550\sig550_shoot
+snd_silncer_shot                        = weapons\sig550\sig550_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_SGI_5K
+upgr_icon_x                             = 598
+upgr_icon_y                             = 476
+upgr_icon_width                         = 296
+upgr_icon_height                        = 81
+
+; Cost & Weight
+cost                                    = 44330
+inv_weight                              = 4.1
+ph_mass                                 = 4
+
+; Ammo
+ammo_mag_size                           = 30
+
+; Features
+fire_modes                              = 1, -1
+scopes_sect                             = scope_susat_sig, scope_susat_x1.6_sig, scope_susat_custom_sig, scope_susat_dusk_sig, scope_susat_night_sig
+scope_status                            = 2
+silencer_status                         = 2
+grenade_launcher_status                 = 2
+
+; Impact
+hit_power                               = 1.06
+
+; Ballistics
+fire_dispersion_base                    = 0.44
+
+; Performance
+rpm                                     = 600
+rpm_empty_click                         = 200
+
+; Reliability
+condition_shot_dec                      = 0.0003333
+condition_queue_shot_dec                = 0.0003333
+
+; Handling
+control_inertion_factor                 = 1.3f
+PDM_disp_base                           = 3.
+PDM_disp_vel_factor                     = 1.2
+PDM_disp_accel_factor                   = 1.2
+
+; Recoil
+cam_dispersion                          = 1.0
+cam_dispersion_inc                      = 0.3
+cam_dispersion_frac                     = 0.7
+cam_step_angle_horz                     = 2.2
+zoom_cam_dispersion                     = 0.5
+zoom_cam_dispersion_inc                 = 0.2
+zoom_cam_step_angle_horz                = 1.8
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_sig550
+upgrades                                = up_gr_firstab_sig550, up_gr_seconab_sig550, up_gr_thirdab_sig550, up_gr_fourtab_sig550, up_gr_fifthab_sig550, up_gr_fifthcd_sig550
+installed_upgrades                      =
+
+; AI Params
+min_radius                              = 30
+max_radius                              = 100
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 0.7
+
+
+[wpn_sig550_hud]:hud_base
+aim_hud_offset_pos                      = -0.0892,0.078,-0.12
+aim_hud_offset_pos_16x9                 = -0.0892,0.078,-0.12
+aim_hud_offset_rot                      = 0.0475,0.009,-0.01
+aim_hud_offset_rot_16x9                 = 0.0475,0.009,-0.01
+anim_bore                               = sg550_aim
+anim_bore_g                             = sg550_aim_g
+anim_bore_w_gl                          = sg550_aim_w_gl
+anim_hide                               = sg550_holster,,3.0
+anim_hide_g                             = sg550_holster_g,,3.0
+anim_hide_w_gl                          = sg550_holster_w_gl,,3.0
+anim_idle                               = sg550_idle
+anim_idle_aim                           = sg550_aim
+anim_idle_g                             = sg550_idle_g
+anim_idle_g_aim                         = sg550_aim_g
+anim_idle_moving                        = sg550_move
+anim_idle_moving_crouch                 = sg550_crouch
+anim_idle_moving_crouch_g               = sg550_crouch_g
+anim_idle_moving_crouch_w_gl            = sg550_crouch_w_gl
+anim_idle_moving_g                      = sg550_move_g
+anim_idle_moving_w_gl                   = sg550_move_w_gl
+anim_idle_sprint                        = sg550_sprint
+anim_idle_sprint_g                      = sg550_sprint_g
+anim_idle_sprint_w_gl                   = sg550_sprint_w_gl
+anim_idle_w_gl                          = sg550_idle_w_gl
+anim_idle_w_gl_aim                      = sg550_aim_w_gl
+anim_reload                             = sg550_reload_empty, reload_empty
+anim_reload_g                           = sg550_reload_g, reload_g
+anim_reload_w_gl                        = sg550_reload_empty_w_gl, reload_empty
+anim_shots                              = sg550_shoot, shoot
+anim_shots_g                            = sg550_shoot_g, shoot_g
+anim_shots_w_gl                         = sg550_shoot_w_gl, shoot
+anim_show                               = sg550_draw
+anim_show_g                             = sg550_draw_g
+anim_show_w_gl                          = sg550_draw_w_gl
+anim_switch                             = sg550_switch_off
+anim_switch_g                           = sg550_switch_on
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = muzzle_gl
+fire_point                              = 0,0,0
+fire_point2                             = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_pos_16x9                  = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+gl_hud_offset_rot_16x9                  = 0,0,0
+hands_orientation                       = 0.55,2.4,0.15
+hands_orientation_16x9                  = 0.55,2.4,0.15
+hands_position                          = -0.064,-0.18,0.1355
+hands_position_16x9                     = -0.064,-0.18,0.1355
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_sig550\wpn_sig550_hud
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = gilza
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true
+
+
+[scope_susat_sig]
+scope_name                              = wpn_addon_scope_susat
+scope_x                                 = 71
+scope_y                                 = -1
+
+
+[scope_susat_x1.6_sig]:scope_susat_sig
+scope_name                              = wpn_addon_scope_susat_x1.6
+
+[scope_susat_custom_sig]:scope_susat_sig
+scope_name                              = wpn_addon_scope_susat_custom
+
+[scope_susat_dusk_sig]:scope_susat_sig
+scope_name                              = wpn_addon_scope_susat_dusk
+
+[scope_susat_night_sig]:scope_susat_sig
+scope_name                              = wpn_addon_scope_susat_night
+
+
+;---------Штурмовой SiG / Assault SIG
+[wpn_sig_m1]:wpn_sig550
+$spawn                                  = "weapons\uniq\wpn_sig_m1"
+unique_item                             = true
+
+; Text
+inv_name                                = wpn-sig_m1
+inv_name_short                          = wpn-sig_m1
+description                             = enc_weapons1_wpn-sig_m1
+
+; Cost & Weight
+inv_weight                              = 3.3
+
+; Features
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Upgrades
+installed_upgrades                      = up_fourta_sig550 ; -0.7 weight = 2.6 kg
+
+
+;---------SiG снайперский / Sniper SIG
+[wpn_sig_m2]:wpn_sig550
+$spawn                                  = "weapons\uniq\wpn_sig_m2"
+unique_item                             = true
+
+; Inventory icon
+scope_force_icon                        = true
+
+; Text
+inv_name                                = wpn-sig_m2
+inv_name_short                          = wpn-sig_m2
+description                             = enc_weapons1_wpn-sig_m2
+
+; Visual
+scope_texture                           = wpn_crosshair_sig
+
+; Cost & Weight
+cost                                    = 46780
+
+; Features
+scope_status                            = 1
+scope_zoom_factor                       = 20
+
+; Aiming
+zoom_inertion_factor                    = 1.2
+
+; Upgrades
+installed_upgrades                      = up_secona_sig550, up_seconc_sig550, up_seconf_sig550
+
+holder_range_modifier                   = 1.5
+holder_fov_modifier                     = 0.6

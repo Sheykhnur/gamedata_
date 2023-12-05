@@ -1,0 +1,17 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+war_thing_talking} %=play_snd(characters_voice\scenario\war\war_thing6)% sr_idle@2
+
+[sr_idle@2]
+on_info = {+war_thing_defeated} sr_idle@3
+
+[sr_idle@3]
+on_timer = 1000 | %+war_oso_death_particle =play_snd(characters_voice\scenario\war\war_oso_fx)%
+on_timer2 = 6000 | %=play_snd(monsters\thing\oso_death)% sr_idle@4
+
+[sr_idle@4]
+on_timer = 3000 | %=play_snd(anomaly\gravi_blowout6)% sr_idle@5
+
+[sr_idle@5]

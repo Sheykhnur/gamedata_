@@ -1,0 +1,29 @@
+[logic]
+active = ph_door@closed
+
+[ph_door@closed]
+closed = true
+locked = false
+on_use = ph_door@open
+on_info = {+war_sc4_start -war_sc4_end} ph_door@open
+
+[ph_door@open]
+closed = false
+locked = false
+on_use = ph_door@closed
+on_info = {+war_sc4_toxic_finished} ph_door@closed_gas
+
+[ph_door@closed_gas]
+closed = true
+locked = true
+on_info = {+war_sc4_end} ph_door@end
+
+[ph_door@end]
+closed = true
+locked = false
+on_use = ph_door@end_open
+
+[ph_door@end_open]
+closed = false
+locked = false
+on_use = ph_door@end

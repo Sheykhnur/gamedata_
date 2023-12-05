@@ -1,0 +1,30 @@
+[logic]
+active = ph_button@power
+
+[ph_button@power]
+tooltip = tips_sar_computer
+on_press = %+sar_pc_found% ph_computer@malfunction
+
+[ph_computer@malfunction]
+availability = malfunction
+pc_type = desktop
+icons_alignment = horizontal
+on_info = {+sar_power_level_restored} ph_computer@unlocked
+
+[ph_computer@unlocked]
+availability = accessible
+cerberus = true
+pc_type = desktop
+password = 
+icons_alignment = vertical
+wallpaper = wallpaper_iaea
+show_tips = true
+tetris = false
+puzzle = false
+solitare = true
+known_info = sar_gen_decoding_hexcode
+on_use = ;%+pc_on_use_callback%
+
+
+
+

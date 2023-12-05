@@ -1,0 +1,76 @@
+
+[combat_ignore@gar_seriy_group]
+
+; *** STATE 0 ***
+
+[logic@gar_seriy_group_seriy_off]
+active = remark@gar_seriy_group_seriy_off
+combat_ignore = combat_ignore@gar_seriy_group
+
+[remark@gar_seriy_group_seriy_off]
+path_walk = off1
+combat_ignore_cond = always
+anim = guard
+
+[logic@gar_seriy_group_stalker1_off]
+active = remark@gar_seriy_group_stalker1_off
+combat_ignore = combat_ignore@gar_seriy_group
+
+[remark@gar_seriy_group_stalker1_off]
+path_walk = off2
+combat_ignore_cond = always
+anim = guard
+
+[logic@gar_seriy_group_stalker2_off]
+active = remark@gar_seriy_group_stalker2_off
+combat_ignore = combat_ignore@gar_seriy_group
+
+[remark@gar_seriy_group_stalker2_off]
+path_walk = off3
+combat_ignore_cond = always
+anim = guard
+
+; *** STATE 1 ***
+
+[death@small_hangar_leader]
+on_info = %+small_hangar_leader_dead%
+
+[logic@gar_seriy_group_seriy_fight]
+active = {+gar_hangar_cleaned} walker@seriy_after_fight, {-gar_hangar_cleaned} walker@gar_seriy_group_seriy_fight
+combat_ignore = combat_ignore@gar_seriy_group
+on_death = death@small_hangar_leader
+
+[walker@gar_seriy_group_seriy_fight]
+path_walk = walk1a
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+gar_hangar_cleaned} walker@seriy_after_fight %+gar_talk_to_seriy%
+
+[walker@seriy_after_fight]
+path_walk = walk1a
+combat_ignore_cond = always
+
+
+[logic@gar_seriy_group_stalker1_fight]
+active = walker@gar_seriy_group_stalker1_fight
+combat_ignore = combat_ignore@gar_seriy_group
+
+[walker@gar_seriy_group_stalker1_fight]
+path_walk = walk2a
+;combat_ignore_cond = always
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@gar_seriy_group_stalker2_fight]
+active = walker@gar_seriy_group_stalker2_fight
+combat_ignore = combat_ignore@gar_seriy_group
+
+[walker@gar_seriy_group_stalker2_fight]
+path_walk = walk3a
+;combat_ignore_cond = always
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+

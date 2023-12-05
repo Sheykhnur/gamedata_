@@ -1,0 +1,158 @@
+[combat_ignore@holo]
+
+[death@holo]
+on_info = %=bar_petrenko_demo%
+
+[danger@holo]
+ignore_types                = grenade, corpse, sound, hit
+ignore_distance          = 0
+
+[threshold@holo]
+max_ignore_distance = 0
+ignore_monster      = 0
+
+[logic]
+active = remark@holo_pre
+combat_ignore = combat_ignore@holo
+on_death = death@holo
+
+[remark@holo_pre]
+anim = sci_panel
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+meet = no_meet
+on_info = {+bas_player_holo_pre} remark@holo_start
+on_info2 = {+bas_actor_bad} follower@hologram_follow
+
+[remark@holo_start]
+anim = sci_panel
+snd = bas_replics33
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+meet = no_meet
+on_info = {+bas_player_holo_zone} remark@holo_rotate
+on_info2 = {+bas_actor_bad} follower@hologram_follow
+
+[remark@holo_rotate]
+anim = stand_wait
+snd = bas_replics34
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+target = bas_holo_to_actor, 0
+meet = no_meet
+on_signal = sound_end |  %+bas_info_1%
+on_info = {+bas_info_2} remark@holo_dialog1
+on_info2 = {+bas_actor_bad} follower@hologram_follow
+
+[remark@holo_dialog1]
+anim = wait
+snd = bas_replics36
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+meet = no_meet
+on_signal = sound_end | %+bas_info_3%
+on_info = {+bas_info_4} remark@holo_dialog2
+on_info2 = {+bas_actor_bad} follower@hologram_follow
+
+[remark@holo_dialog2]
+anim = mil_nope
+snd = bas_replics38
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+target = actor
+on_death = death
+meet = no_meet
+on_signal = sound_end | %+bas_info_5%
+on_info = {+bas_info_6} remark@holo_dialog3
+on_info2 = {+bas_actor_bad} follower@hologram_follow
+
+[remark@holo_dialog3]
+anim = press
+snd = bas_replics40
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+target = actor
+meet = no_meet
+on_death = death
+on_info = {+bas_actor_bad} follower@hologram_follow
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[follower@hologram_follow]
+leader = actor
+target = actor
+formation_line = false
+distance = 5
+anim_walk = run
+anim_run = run
+anim_sprint = blow_no_cover_panic
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+on_info = {=dist_to_actor_le(5) =see_actor} draining@1
+on_info2 = {+bas_stop_holo -bas_holo_teleported} %=teleport_npc(teleport_holo:bas_holo_teleported)%
+on_info3 = {=npc_inside_space_restrictor(bas_npc_holo_rest) =dist_to_actor_ge(5)} remark@2
+on_info4 = {+bas_holo_teleported} remark@holo_denial
+
+[draining@1]
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+on_signal = draining_complete | %=rad_psy_basic_clear +bas_draining_end% remark@1
+on_info = {+bas_stop_holo -bas_holo_teleported} %=teleport_npc(teleport_holo:bas_holo_teleported)%
+on_info2 = {=npc_inside_space_restrictor(bas_npc_holo_rest) =dist_to_actor_ge(5)} remark@2
+on_info3 = {+bas_holo_teleported} remark@holo_denial
+on_info4 = {=dist_to_actor_ge(8)} follower@hologram_follow
+
+[remark@1]
+anim = holo_relaxing
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+on_timer = 3000 | follower@hologram_follow
+on_info = {+bas_stop_holo -bas_holo_teleported} %=teleport_npc(teleport_holo:bas_holo_teleported)%
+on_info2 = {+bas_holo_teleported} remark@holo_denial
+
+[remark@2]
+anim = choose
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+on_info = {+bas_holo_wait -bas_holo_teleported_pre} %=teleport_npc(teleport_holo_0:bas_holo_teleported_pre)%
+on_info2 = {+bas_holo_teleported_pre} remark@1
+on_info3 = {=dist_to_actor_le(5)} draining@1
+
+[remark@holo_denial]
+anim = press
+snd = bas_holo_threat
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+on_death = death
+target = actor
+meet = no_meet
+on_info = {+bas_switcher_off} remark@holo_death
+
+[remark@holo_death]
+anim = robo_death
+snd = bas_holo_death
+combat_ignore_cond = always
+danger = danger@holo
+threshold = threshold@holo
+meet = no_meet
+on_death = death
+on_signal = sound_end | %+bas_explode =play_snd(weapons\f1_explode) =release%

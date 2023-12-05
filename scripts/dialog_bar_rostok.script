@@ -1,0 +1,559 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_bar_rostok.script
+ Description: Dialog & InfoPortions Function for bar_rostok
+ Copyright  : 2004 © GSC Game World
+ Author     : gr1ph00n
+ Editors    : gr1ph00n, vintar, lox
+ Last edit  : 25.03.2013 [...]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function can_meet_barman()
+	return has_info("agroprom_military_case_have") and not has_info("bar_meet_petrenko_start")
+end
+
+function can_meet_petrenko()
+	return has_info("bar_meet_petrenko_start") and not has_info("dol_meet_gusarov_start")
+end
+
+function king_bloodsucker_precond()
+	return has_info("rosf_petrenko_meet") and not has_info("rosf_petrenko_meet_done") and not has_info("rosf_gaszone_cleared")
+end
+
+function king_bloodsucker_hold_precond()
+	return has_info("rosf_petrenko_meet_done")  and not has_info("bar_king_told") and not has_info("secret_bloodsuckers_dead")
+end
+
+function king_bloodsucker_killed()
+	return has_info("rosf_petrenko_meet_done") and not has_info("bar_king_killed") and has_info("secret_bloodsuckers_dead")
+end
+
+function petrenko_king_reward()
+	dialogs.give_items("medkit_army", 2)
+	dialogs.give_items("vodka", 1)
+	dialogs.give_items("detector_advances", 1)
+	dialogs.give_money(5000)
+end
+
+function bar_petrenko_prisoner_reward()
+	dialogs.give_items("medkit_army", 2)
+	dialogs.give_money(4000)
+end
+
+function give_dolg_deposite(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oNPC, 1000, "out")
+end
+
+function has_dolg_deposite()
+	return db.actor:money() >= 1000
+end
+
+function pet_gives_missiles()
+	dialogs.give_items("ammo_og-7b", 3)
+end
+
+function bar_loner_reward()
+	dialogs.give_items("conserva", 1)
+	dialogs.give_items("vodka", 1)
+	dialogs.give_items("medkit", 1)
+	dialogs.give_items("ammo_5.45x39_fmj", 2)
+end
+
+function has_500_rubles()
+	return db.actor:money() >= 500
+end
+
+function has_1000_rubles()
+	return db.actor:money() >= 1000 --/#?# 100 -> 1000
+end
+
+function has_1500_rubles()
+	return db.actor:money() >= 1500
+end
+
+function has_2000_rubles()
+	return db.actor:money() >= 2000
+end
+
+function has_3000_rubles()
+	return db.actor:money() >= 3000
+end
+
+function has_5000_rubles()
+	return db.actor:money() >= 5000
+end
+
+function has_8000_rubles()
+	return db.actor:money() >= 8000
+end
+
+function has_10000_rubles()
+	return db.actor:money() >= 10000
+end
+
+function has_15000_rubles()
+	return db.actor:money() >= 15000
+end
+
+function has_20000_rubles()
+	return db.actor:money() >= 20000
+end
+
+function has_40000_rubles()
+	return db.actor:money() >= 40000
+end
+
+function dont_has_8000_rubles()
+	return not this.has_8000_rubles()
+end
+
+function dont_has_10000_rubles()
+	return not this.has_10000_rubles()
+end
+
+function give_500_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)	
+	dialogs.relocate_money(oNPC, 500, "out")
+end
+
+function give_1000_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oNPC, 1000, "out")
+end
+
+function give_1500_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oNPC, 1500, "out")
+end
+
+function give_2000_rubles(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oNPC, 2000, "out")
+end
+
+function give_3000_rubles(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oSpeaker2, 3000, "out")
+end
+
+function give_10000_rubles(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oSpeaker2, 10000, "out")
+end
+
+function give_15000_rubles(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oSpeaker2, 15000, "out")
+end
+
+function give_20000_rubles(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oSpeaker2, 15000, "out")
+end
+
+function give_40000_rubles(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oSpeaker2, 40000, "out")
+end
+
+function give_anom_treasure()
+	treasure_manager.give_treasure("forest_anomalous_cache")
+end
+
+function give_random_treasure()
+	treasure_manager.give_treasure_random()
+end
+
+function actor_got_b_informer_info()
+	if	has_info("bar_informer_info_b_2a") and
+		has_info("bar_informer_info_b_2b") and
+		has_info("bar_informer_info_b_2c") and
+		has_info("bar_informer_info_b_2d") and
+		has_info("bar_informer_info_b_2e") and
+		has_info("bar_informer_info_b_2f") and
+		has_info("bar_informer_info_b_2g") then
+		return true
+	end
+	return false
+end
+
+function actor_got_c_informer_info()
+	if	has_info("bar_informer_info_c_2a") and
+		has_info("bar_informer_info_c_2b") and
+		has_info("bar_informer_info_c_2c") and
+		has_info("bar_informer_info_c_2d") and
+		has_info("bar_informer_info_c_2e") and
+		has_info("bar_informer_info_c_2f") then
+		return true
+	end
+	return false
+end
+
+function actor_got_d_informer_info()
+	if	has_info("bar_informer_info_d_2a") and
+		has_info("bar_informer_info_d_2b") and
+		has_info("bar_informer_info_d_2c") and
+		has_info("bar_informer_info_d_2d") and
+		has_info("bar_informer_info_d_2e") and
+		has_info("bar_informer_info_d_2f") then
+		return true
+	end
+	return false
+end
+
+function actor_got_e_informer_info()
+	if	has_info("bar_informer_info_e_2a") and
+		has_info("bar_informer_info_e_2b") then
+		return true
+	end
+	return false
+end
+
+function actor_got_all_informer_info()
+	if	has_info("bar_informer_info_b_all") and
+		has_info("bar_informer_info_c_all") and
+		--has_info("bar_informer_info_d_all") and
+		has_info("bar_informer_info_e_all") then
+		return true
+	end
+	return false
+end
+
+--/ join dolg
+
+function has_dolg_clan_money_low()
+	return db.actor:money() >= 5000
+end
+
+function dolg_join_5000(oSpeaker1, oSpeaker2)
+	local oActor,oNPC = dialogs.get_actor_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_money(oNPC, 5000, "out")
+end
+
+function give_dolg_supplies()
+	dialogs.give_items("ammo_5.45x39_ap", 10)
+	dialogs.give_items("conserva", 10)
+	dialogs.give_items("korn_conserva", 10)
+	dialogs.give_items("medkit_army", 10)
+end
+
+function actor_in_dolg_veronin(actor, npc)
+	--dialogs.give_items("dolg_medium_outfit", 1)
+	if db.actor then
+		db.actor:set_character_community("actor_dolg", 0, 0)
+	end
+end
+
+--/ dolg bandits task
+
+function give_dolg_task_first_reward(first, second)
+	dialogs.give_items("medkit_army", 3)
+	dialogs.give_items("bandage", 5)
+	dialogs.give_items("grenade_f1", 2)
+	dialogs.give_money(4000)
+end
+
+function give_dolg_task_first_reward_good(oSpeaker1, oSpeaker2)
+	local oActor = dialogs.get_actor(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oActor, "yan_badge")
+	dialogs.give_items("medkit_army", 3)
+	dialogs.give_items("bandage", 5)
+	dialogs.give_items("grenade_f1", 2)
+	dialogs.give_money(4000)
+end
+
+function dolg_task_first_reward_special()
+	dialogs.give_items("wpn_ak74_m1", 1)
+end
+
+function dolg_first_task_precond_good()
+	return db.actor:object("yan_badge") ~= nil
+end
+
+function dolg_first_task_precond()
+	return db.actor:object("yan_badge") == nil
+end
+
+--/ dolg spy task
+
+function dolg_freedom_flash_has()
+	return db.actor:object("out_freedom_flash") ~= nil
+end
+
+function give_dolg_task_second_reward(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "out_freedom_flash")
+	dialogs.give_items("medkit_scientic", 5)
+	dialogs.give_items("antirad", 8)
+	dialogs.give_money(7000)
+end
+
+function give_dolg_task_second_fail(first, second)
+	dialogs.give_money(3000)
+end
+
+function dolg_spy_task_failed(first, second)
+	dialogs.give_money(2000)
+	if db.actor then
+		db.actor:set_character_community("actor", 0, 0)
+	end
+end
+
+function dolg_task_last_reward_special(first, second)
+	dialogs.give_items("wpn_rg6_m1", 1)
+end
+
+--/ dolg sin task
+
+function dolg_third_cond_done()
+	return (db.actor:object("gar_dolg_disc") and db.actor:object("ds_dolg_disc") and has_info("ds_prisoner_task_done"))
+end
+
+function dolg_second_cond_done()
+	return (db.actor:object("gar_dolg_disc") and db.actor:object("ds_dolg_disc") and not has_info("ds_prisoner_task_done"))
+end
+
+function dolg_first_cond_done()
+	return (db.actor:object("gar_dolg_disc") and not db.actor:object("ds_dolg_disc"))
+end
+
+function dolg_need_more_work()
+	return not dolg_third_cond_done() and not dolg_second_cond_done() and not dolg_first_cond_done()
+end
+
+function give_dolg_task_sin_reward(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "gar_dolg_disc")
+	dialogs.relocate_items(oNPC, "ds_dolg_disc")
+	dialogs.give_items("medkit_scientic", 4)
+	dialogs.give_items("antirad", 5)
+	dialogs.give_money(6000)
+end
+
+function dolg_task_third_reward_special()
+	dialogs.give_items("wpn_svd_m1", 1)
+end
+
+--/ dolg monsters task
+
+function give_dolg_task_last_reward()
+	dialogs.give_items("medkit_scientic", 5)
+	dialogs.give_money(7000)
+end
+
+function dolg_task_second_reward_special()
+	dialogs.give_items("wpn_akm_m2", 1)
+end
+
+function dolg_last_monsters_precond_fail()
+	return has_info("forg_wounded1_dead") and has_info("forg_wounded2_dead") or has_info("forg_dolg_raid_dead")
+end
+
+function dolg_last_monsters_precond_middle()
+	return has_info("forg_wounded2_dead") or has_info("forg_wounded1_dead")
+end
+
+function give_dolg_task_last_reward_fail(first, second)
+	dialogs.give_money(4000)
+end
+
+function dolg_last_monsters_precond_good()
+	return check_info_portions( {
+		["forg_wounded1_dead"] = false,
+		["forg_wounded2_dead"] = false,
+		["forg_dolg_raid_dead"] = false,
+	} )
+end
+
+function actor_leaves_duty(actor, npc)
+	if db.actor then
+		db.actor:set_character_community("actor", 0, 0)
+	end
+end
+--/ dolg tasks preconditions
+
+function dolg_second_task_precond()
+	if has_info("yan_dolg_bandits_report_veronin") and has_info("bar_dolg_mp5_give") and has_info("bar_dolg_mp5_given") or
+		 has_info("yan_dolg_bandits_report_veronin") and not has_info("bar_dolg_mp5_give") and not has_info("bar_dolg_mp5_given") then
+		return true
+	end
+	return false
+end
+
+function dolg_third_task_precond()
+	if has_info("bar_second_job_done") and has_info("bar_dolg_groza_get") and has_info("bar_dolg_groza_given") or
+		 has_info("bar_second_job_done") and not has_info("bar_dolg_groza_get") and not has_info("bar_dolg_groza_given") then
+		return true
+	end
+	return false
+end
+
+function give_mil_docs(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "quest_case_02" )
+end
+
+function give_x18_docs(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "dar_document1" )
+	dialogs.relocate_items(oNPC, "dar_document2" )
+	dialogs.relocate_items(oNPC, "dar_document3" )
+	dialogs.relocate_items(oNPC, "dar_document4" )
+	dialogs.relocate_items(oNPC, "dar_document5" )
+end
+
+function give_topsecret_docs(oSpeaker1, oSpeaker2)
+	local oNPC = dialogs.get_npc(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oNPC, "documents" )
+end
+
+function bar_give_hunter_weapon(oSpeaker1, oSpeaker2)
+	local oActor = dialogs.get_actor(oSpeaker1, oSpeaker2)
+	dialogs.relocate_items(oActor, "bar_hunter_weapon")
+	dialogs.give_money(6000)
+end
+
+--/ ----------------------------------------------
+--/ ARENA
+--/ ----------------------------------------------
+
+function arena_has_no_monsters(npc, actor)
+	if arena_has_dogs(npc, actor) or
+	   arena_has_pseudodog(npc, actor) or
+	   arena_has_snork(npc, actor) or
+	   arena_has_bloodsucker(npc, actor) or
+	   arena_has_burer(npc, actor) or
+	   arena_has_savage(npc, actor)
+		then
+		return false
+	end
+	return true
+end
+
+function arena_empty(actor,npc)
+	return arena_has_no_monsters(npc, actor)
+end
+function arena_not_empty(actor,npc)
+	return not arena_empty(actor,npc)
+end
+
+function arena_has_dogs(npc, actor)
+	return db.actor:dont_has_info("bar_arena_dogs_defeated")
+	   and db.actor:dont_has_info("bar_arena_pause")
+end
+function arena_has_pseudodog(npc, actor)
+	return db.actor:has_info("bar_arena_dogs_defeated")
+	   and db.actor:dont_has_info("bar_arena_pseudodog_defeated")
+	   and db.actor:dont_has_info("bar_arena_pause")
+end
+function arena_has_snork(npc, actor)
+	return db.actor:has_info("bar_arena_pseudodog_defeated")
+	   and db.actor:dont_has_info("bar_arena_snork_defeated")
+	   and db.actor:dont_has_info("bar_arena_pause")
+end
+function arena_has_bloodsucker(npc, actor)
+	return db.actor:has_info("bar_arena_snork_defeated")
+	   and db.actor:dont_has_info("bar_arena_bloodsucker_defeated")
+	   and db.actor:dont_has_info("bar_arena_pause")
+end
+function arena_has_burer(npc, actor)
+	return db.actor:has_info("bar_arena_bloodsucker_defeated")
+	   and db.actor:dont_has_info("bar_arena_burer_defeated")
+	   and db.actor:dont_has_info("bar_arena_pause")
+end
+function arena_has_savage(npc, actor)
+	return db.actor:has_info("bar_arena_burer_defeated")
+	   and db.actor:dont_has_info("bar_arena_savage_defeated")
+	   and db.actor:dont_has_info("bar_arena_pause")
+end
+
+function arena_give_reward(actor, npc)
+	local money = 0
+	if db.actor:has_info("bar_arena_1000_r") and not db.actor:has_info("bar_arena_1500_r") then
+		money = 1000
+	elseif db.actor:has_info("bar_arena_1500_r") and not db.actor:has_info("bar_arena_2000_r") then
+		money = 1500
+	elseif db.actor:has_info("bar_arena_2000_r") and not db.actor:has_info("bar_arena_3000_r") then
+		money = 2000
+	elseif db.actor:has_info("bar_arena_3000_r") and not db.actor:has_info("bar_arena_5000_r") then
+		money = 3000
+	elseif db.actor:has_info("bar_arena_5000_r") then
+		money = 5000
+	end
+	local p = 0
+	if db.actor:has_info("bar_arena_20_p") and not db.actor:has_info("bar_arena_50_p") then
+		p = 1.5
+	elseif db.actor:has_info("bar_arena_50_p") and not db.actor:has_info("bar_arena_100_p") then
+		p = 2
+	elseif db.actor:has_info("bar_arena_100_p") then
+		p = 3
+	end
+
+	dialogs.relocate_money(npc, money*p, "in")
+	--db.actor:give_info_portion("bar_arena_reset")
+	
+	this.bar_arena_result()
+end
+
+function bar_vipcard_precond(oSpeaker1, oSpeaker2)
+	return db.actor:object("bar_vip_card") ~= nil
+end
+
+function not_bar_vipcard_precond(oSpeaker1, oSpeaker2)
+	return not bar_vipcard_precond(oSpeaker1, oSpeaker2)
+end
+	
+function bar_arena_result()
+	if has_info("bar_arena_20_p") then
+		disable_info("bar_arena_20_p")
+	end
+	if has_info("bar_arena_50_p") then
+		disable_info("bar_arena_50_p")
+	end
+	if has_info("bar_arena_100_p") then
+		disable_info("bar_arena_100_p")
+	end
+	if has_info("bar_arena_actor_victory") then
+		disable_info("bar_arena_actor_victory")
+	end
+	if has_info("bar_arena_actor_lose") then
+		disable_info("bar_arena_actor_lose")
+	end
+	if has_info("bar_arena_mute") then
+		disable_info("bar_arena_mute")
+	end
+end
+
+function bar_arena_reward_precond()
+	if has_info("bar_arena_monstr_dead") or not has_info("bar_arena_start") then
+		return true
+	end
+	return false
+end
+
+function give_money_1000(actor, npc)
+	dialogs.relocate_money(npc, 1000, "out")
+end
+
+function give_money_1500(actor, npc)
+	dialogs.relocate_money(npc, 1500, "out")
+end
+
+function give_money_2000(actor, npc)
+	dialogs.relocate_money(npc, 2000, "out")
+end
+
+function give_money_3000(actor, npc)
+	dialogs.relocate_money(npc, 3000, "out")
+end
+
+function give_money_5000(actor, npc)
+	dialogs.relocate_money(npc, 5000, "out")
+end
+
+function give_money_8000(actor, npc)
+	dialogs.relocate_money(npc, 8000, "out")
+end
+--/ -----------------------------------------------------------------------------------------------

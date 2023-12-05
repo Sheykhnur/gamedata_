@@ -1,0 +1,53 @@
+[spawner]
+cond = {+has_freeplay_info}
+
+[smart_terrains]
+none = true
+
+[combat_ignore@gar_weird_wounded]
+
+[death@gar_weird_wounded]
+on_info = {=killed_by_actor} %+gar_weird_died%
+
+[logic]
+active = walker@gar_weird_wounded_mute
+combat_ignore = combat_ignore@gar_weird_wounded
+on_death = death@gar_weird_wounded
+
+[walker@gar_weird_wounded_mute]
+path_walk = gar_weird_wounded_walk
+path_look = gar_weird_wounded_look
+on_info = {+gar_weird_gave_medkit +gar_weird_right} walker@gar_weird_wounded_fixed, {+gar_weird_died} nil %=suicide%
+;on_info = {+gar_weird_chose} walker@gar_weird_wounded %+gar_weird_test%
+wounded = wounded@gar_weird_wounded_mute
+
+[wounded@gar_weird_wounded_mute]
+hp_state = 10|wounded_heavy@help_heavy
+hp_state_see = 10|wounded_heavy@help_heavy
+hp_victim = 20|nil|10|actor
+hp_cover = 10|false
+hp_fight = 10|false
+use_medkit = false
+help_dialog = gar_weird_wounded_dialog
+
+[walker@gar_weird_wounded]
+path_walk = gar_weird_wounded_walk
+path_look = gar_weird_wounded_look
+wounded = wounded@gar_weird_wounded
+on_info = {+gar_weird_gave_medkit +gar_weird_right} walker@gar_weird_wounded_fixed, {+gar_weird_died} nil %=suicide%
+
+[wounded@gar_weird_wounded]
+hp_state = 10|wounded_heavy@help_heavy
+hp_state_see = 10|wounded_heavy@help_heavy
+hp_victim = 20|nil|10|actor
+hp_cover = 10|false
+hp_fight = 10|false
+use_medkit = false
+help_dialog = gar_weird_wounded_dialog
+;help_start_dialog = gar_weird_wounded_dialog
+
+[walker@gar_weird_wounded_fixed]
+path_walk = gar_weird_wounded_walk
+path_look = gar_weird_wounded_look
+combat_ignore_cond = {=fighting_actor =dist_to_enemy_ge(10)}
+on_info = {+gar_weird_reward_have} %=release_not_seen%

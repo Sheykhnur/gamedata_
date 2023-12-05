@@ -1,0 +1,93 @@
+;[spawner]
+;cond = {+country_hermit_5947_talked}
+
+[combat_ignore@country_military_leader]
+
+[threshold@country_military_leader]
+max_ignore_distance = 10
+ignore_monster = 0
+
+[hit@country_leader]
+on_info = {=hit_by_actor} %+country_military_hostile%
+
+[logic]
+active = walker@country_military_leader
+combat_ignore = combat_ignore@country_military_leader
+threshold = threshold@country_military_leader
+on_hit = hit@country_leader
+
+[walker@country_military_leader]
+path_walk = country_military_leader_walk
+path_look = country_military_leader_look
+threshold = threshold@country_military_leader
+meet = meet@country_military_leader
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_info = {+country_major_third_mutant_quest_start00} camper@country_military_leader1
+
+[camper@country_military_leader1]
+path_walk = leader_atack_stay_walk
+path_look = country_blockpost_atack_look
+team = count_blokpost
+meet = no_meet
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_military_leader
+
+[remark@country_military_leader]
+snd = wounded_psy
+anim = psycho_pain
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} | remark@country_military_leader1
+
+[remark@country_military_leader1]
+anim = ispug
+on_signal = anim_end | walker@country_military_leader1
+
+[walker@country_military_leader1]
+path_walk = country_military_leader_walk
+path_look = country_military_leader_look
+threshold = threshold@country_military_leader
+meet = meet@country_military_leader
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+
+[walker@second]
+path_walk = country_military_leader_walk
+path_look = country_military_leader_look
+threshold = threshold@country_military_leader
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_info = {+country_major_third_mutant_quest_start00} camper@country_military_leader2
+
+[camper@country_military_leader2]
+path_walk = leader_atack_stay_walk
+path_look = country_blockpost_atack_look
+team = count_blokpost
+meet = no_meet
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_military_leader2
+
+[remark@country_military_leader2]
+snd = wounded_psy
+anim = psycho_pain
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} | remark@country_military_leader3
+
+[remark@country_military_leader3]
+anim = ispug
+on_signal = anim_end | walker@second1
+
+[walker@second1]
+path_walk = country_military_leader_walk
+path_look = country_military_leader_look
+threshold = threshold@country_military_leader
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+
+[meet@country_military_leader]
+abuse = false
+use = true
+use_wpn = true
+victim 			=  10 | actor
+victim_wpn 		= 10 | actor
+meet_state = 10|guard
+meet_state_wpn = 10|guard
+precond			= visibility

@@ -1,0 +1,40 @@
+[combat_ignore@sc4]
+
+[danger@bas_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[threshold@bas_sc4]
+max_ignore_distance   = 0
+ignore_monster        = 0
+
+[logic]
+active = remark@sc4_guard
+combat_ignore = combat_ignore@sc4
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+
+[remark@sc4_guard]
+anim = ward
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_info = {+bas_cs4_info3} remark@sc4_no
+meet = no_meet
+target = bas_sc4_guard, 0
+
+[remark@sc4_no]
+anim = mil_nope
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+meet = no_meet
+target = bas_cs4_sci1, 0
+on_timer = 3000 | walker@sc4_going_away
+
+[walker@sc4_going_away]
+path_walk = bas_sc4_away
+combat_ignore_cond = always
+danger = danger@bas_sc4
+threshold = threshold@bas_sc4
+on_timer = 5 | %+bas_sc4_hey%

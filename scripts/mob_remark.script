@@ -1,0 +1,200 @@
+--[[------------------------------------------------------------------------------------------------
+ File       : mob_remark.script
+ Description: mob remark scheme
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey) af@svitonline.com
+ Editors    : Gr1ph00n
+ Last edit  : 02.08.2013 [...]
+--]]------------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/-------------------------------------------------------------------------------------------------
+class "mob_remark"
+--/-------------------------------------------------------------------------------------------------
+function mob_remark:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+	self.target_pos = nil
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function mob_remark:reset_scheme()
+	if self.log then log("reset_scheme:NPC=[%s],state=[%s]", self.object:name(), self.st.state, "") end --/#~#
+	mob_state_mgr.set_state(self.object, nil, self.st.state)
+	self.object:disable_talk() --/#?#
+	xr_logic.mob_capture(self.object, true, sModule) --/ берем под управление скриптом (not self.st.no_reset)
+	--/#+#
+	self.target_pos = self:get_target_pos()
+	if self.target_pos then
+		action(self.object, look(look.point, self.target_pos), cond(cond.time_end, 1000))
+	else
+		action(self.object, look(look.cur_dir), cond(cond.time_end, 1000))
+	end
+	--/<
+	local tAnims = self.st.anim and parse_names(self.st.anim) or {}
+	local tSnds  = self.st.snd  and parse_names(self.st.snd)  or {}
+	local tTimes = self.st.time and parse_names(self.st.time) or {}
+	local sSetSnd,iSetTime,act_cnd
+	for idx,a in pairs(tAnims) do
+		if a then --/ имеется анимация
+			sSetSnd = tSnds[idx]
+			iTimeEnd = tTimes[idx] and tonumber(tTimes[idx])
+			if iTimeEnd then
+				act_cnd = cond(cond.time_end, iTimeEnd)
+			end
+			if sSetSnd then --/ имеется звук
+				local sSnd = mob_sound.pick_sound_from_set(self.object, sSetSnd, {})
+				if sSnd then
+					local act_snd = sound(sSnd, "bip01_head")
+					if not act_cnd then
+						act_cnd = cond(cond.sound_end)
+					end
+					if self.st.anim_head then
+						act_snd = sound(sSnd, "bip01_head", MonsterSpace[self.st.anim_head])
+						action(self.object, anim(a), act_snd, act_cnd)
+					else
+						if self.st.anim_movement == true then
+							action(self.object, anim(a, true), act_snd, act_cnd)
+						else
+							action(self.object, anim(a), act_snd, act_cnd)
+						end
+					end
+--					log("reset_scheme:NPC=[%s] ~ action_set%s", self.object:name(), "") --/#~#
+				else
+					abort("%s:reset_scheme:NPC=[%s]:Section=[%s]:SetSnd=[%s]~does_not_exist", sModule, self.object:name(), self.st.section, sSetSnd)
+				end
+			else
+				if not act_cnd then
+					act_cnd = cond(cond.anim_end)
+				end
+--				log("reset_scheme:NPC=[%s]~action_set", self.object:name()) --/#~#
+				if self.st.anim_movement == true then
+					action(self.object, anim(a, true), act_cnd)
+				else
+					action(self.object, anim(a), act_cnd)
+				end
+			end
+		--elseif npc:get_script() then npc:script(false, sModule)
+		end
+	end
+	self.tip_sent = false
+	self.st.signals = {}
+	self.action_end_signalled = false
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function mob_remark:update(delta)
+--	log("update:NPC=[%s]", self.object:name(), "") --/#~#
+	--if not xr_logic.is_active(self.object, self.st) then return end --/>
+	local oActor = db.actor
+	if xr_logic.try_switch_to_another_section(self.object, self.st, oActor) then
+		return --/>
+	end
+	if self.st.dialog_cond and xr_logic.pick_section_from_condlist(oActor, self.object, self.st.dialog_cond.condlist) then
+--		if st.log then log("update: NPC=[%s] enable talk", self.object:name(), "") end --/#~#
+		if not self.object:is_talk_enabled() then
+			self.object:enable_talk()
+		end
+	elseif self.object:is_talk_enabled() then
+		self.object:disable_talk()
+	end
+	if not self.tip_sent then
+		self.tip_sent = true
+		if self.st.tip and self.st.tip ~= "" then
+			news_manager.send_tip(oActor, self.st.tip)
+		end
+	end
+	if self.object:get_script() and not self.object:action() then
+		--self.object:script(false, self.object:get_script_name())
+		if not self.action_end_signalled then
+			self.action_end_signalled = true
+			if not self.st.signals then self.st.signals = {} end
+			self.st.signals["action_end"] = true
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/#+# SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function mob_remark:get_target_pos()
+	if not self.st.target then
+		return nil --/>
+	end
+	if self.st.target == "actor" then
+		return db.actor:position() --/>
+	else --/ Возможные варианты:
+		--/ 1. передан story_id или имя (number: story_id | string: name)
+		--/ 2. передан патрульный путь и номер вейпоинта (string+number: path, 0)
+		--/ 3. переданы координаты позиции (number x 3: x, y, z)
+		local t = string.split(self.st.target,",",false) --/ парсим по разделителю(,) и переводим в числа(если возможно)
+		if t[3] then --/ если задан 3-й параметр, то это однозначно координаты позиции.
+			if type(t[1]) == 'number' and type(t[2]) == 'number' and type(t[3]) == 'number' then
+				return vector():set(t[1],t[2],t[3]) --/>
+			end
+			abort("%s:initialize_target:=[%s],x=[%s],y=[%s],z=[%s] :<%s>", sModule, self.st.target, t[1], t[2], t[3], "Error!")
+		elseif t[2] then --/ если имеется 2-й параметр(number: point_index) - это должен быть патрульный путь:
+			if type(t[2]) == 'number' then
+				local oPatrol = get_patrol(t[1])
+				if oPatrol and oPatrol:count() >= t[2] then
+					return oPatrol:point(t[2]) --/>
+				end
+			end
+			abort("%s:initialize_target:=[%s],path=[%s],point=[%s] :<%s>", sModule, self.st.target, t[1], t[2], "Error!")
+		elseif t[1] then
+			local sobj
+			if type(t[1]) == 'number' then --/ это story_id
+				sobj = alife():story_object(t[1])
+			else --/ это name
+				sobj = alife():object(t[1])
+			end
+			if sobj then
+				return sobj.position --/>
+			end
+			abort("%s:initialize_target:=[%s] param=[%s] :<%s>", sModule, self.st.target, t[1], "Error!")
+		else
+			abort("%s:find_target: Wrong target=[%s] :<%s>", sModule, self.st.target, "Error!")
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.action = this.mob_remark(npc, st)
+	--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	--/ fot debug:
+	if st.log then log("add_to_binder: Mob=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, sGulagName)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	st.state = mob_state_mgr.get_state(ini, section, npc)
+	st.dialog_cond = xr_logic.cfg_get_condlist(ini, section, "dialog_cond", npc)
+	st.tip           = Get_Cfg_String(ini, section, "tip")
+	st.snd           = Get_Cfg_String(ini, section, "snd")
+	st.time          = Get_Cfg_String(ini, section, "time")
+	st.anim          = Get_Cfg_String(ini, section, "anim")
+	st.anim_head     = Get_Cfg_String(ini, section, "anim_head")
+	st.anim_movement = Get_Cfg_Bool  (ini, section, "anim_movement", false) --/#+# анимация с перемещением или нет
+	st.no_reset      = Get_Cfg_Bool  (ini, section, "no_reset", true) --/#?#
+	st.target        = Get_Cfg_String(ini, section, "target") --/#+#
+	--/ fot debug:
+	if st.log then log("set_scheme: Mob=[%s],scheme=[%s],section=[%s],target=[%s]", npc:name(), scheme, section, st.target, "") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

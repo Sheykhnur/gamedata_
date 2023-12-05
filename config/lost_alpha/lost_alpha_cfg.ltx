@@ -1,0 +1,85 @@
+;==================================================================================================
+;--/ LOST ALPHA CONFIG
+;--/ Last edit: 17.06.2013 [...]
+;==================================================================================================
+
+#include "la_ver.ltx"
+#include "la_fix.ltx"
+
+[lost_alpha_cfg]
+dynamic_huds = false
+console = 220
+max_repkit_usage = 3
+weather_changer = 4
+
+;--/#+# callback functions
+on_load_store_callback  = _G.load_store_callback
+on_save_store_callback  = _G.save_store_callback
+on_synchronization_done = _G.synchronized_callback ;--/#?# not claimed!
+
+on_use_trunk            = bind_car.on_use_trunk ;--/when use trunk bone
+
+get_script_pda_window   = pdaManager.get_pda_window_instance
+
+on_init_pda_spot          = la_pda_spot.InitWindow         ;--/spot window in pda
+on_init_settings_pda_spot = la_pda_spot.InitWindowSettings ;--/spot window in pda
+
+on_checking_repair_wpn    = ui_repair_kit.isRepairable     ;--/repair weapons
+on_repair_wpn_clicked     = ui_repair_kit.repair           ;--/repair weapons
+
+[ui_hud_types]
+; hud_1 = 1
+hud_2 = 2
+hud_3 = 3
+
+[la_main_ingame_indicators_thresholds]
+radiation               = 0.1,0.4,0.7 ;skyloader: item count should be 3 because: green icon (0.1-0.4), yellow icon (0.4-0.7), red icon (0.7-1.0)
+wounds                  = 0.01,0.3,0.7
+jammed                  = 0.25,0.55,0.8
+starvation              = 0.5,0.7,0.9
+thirst	                = 0.5,0.7,0.9
+fatigue                 = 0.3,0.7,0.9
+
+[stalker_network]
+stories_count = 11
+spam_count = 26
+rumors_count = 13
+fakes_count = 14
+jokes_count = 11
+
+
+[edibles]
+conserva = true
+korn_conserva = true
+yantar_food = true
+tushenka_conserva = true
+crow_meat = true
+rat_meat = true
+
+[drinks]
+mineral_water = true
+energy_drink = true
+vodka = true
+pripiat_beer = true
+hemupob_vodka = true
+cmuphob_vodka = true
+
+[meds]
+bandage = true
+medkit = true
+medkit_army = true
+medkit_scientic = true
+antirad = true
+
+
+[cooking_foods]
+
+; =============== new weather system for la dc ===================
+[weather_manager_periods]
+		very_good	= af_clear, 50, la_clear, 50
+		good		= la_sunny, 25, wtc_clear, 25, la_rain, 25, af_partly, 25
+		neutral		= af_cloudy, 25, af_partly, 25, la_dully, 25, ladc_cloudy, 25
+		bad			= af_thunder, 20, af_rain, 20, ladc_dark, 20, la_storm, 20, aa_grey, 20
+		very_bad	= af_foggy, 20, af_foggy_sun, 25, la_silenthill, 20, aa_foggy, 20, la_silenthill_sun, 20, la_bluefog, 20
+		neutral2	= la_dully_fog, 25, af_cloudy_sun, 25, af_partly, 25
+		good2		= la_sunny, 50, wtc_clear, 50

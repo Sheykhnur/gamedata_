@@ -1,0 +1,56 @@
+[combat_ignore@gen_actor_final]
+
+[danger@gen_actor_ignore]
+ignore_distance = 0
+
+[threshold@gen_actor_ignore]
+max_ignore_distance = 0
+ignore_monster      = 0
+
+[logic]
+active = remark@gen_actor_wait_sec
+combat_ignore = combat_ignore@gen_actor_final
+
+[remark@gen_actor_wait_sec]
+anim = stand_wait
+combat_ignore_cond = always
+target = gen2_actor_end_target, 0
+meet = no_meet
+on_timer = 1600 | walker@gen_actor_start_final
+
+[walker@gen_actor_start_final]
+path_walk = gen2_actor_walk
+path_look = gen2_actor_walk_look
+combat_ignore_cond = always
+meet = no_meet
+on_signal = reached | remark@gen_actor_start_final %+gen2_dog_stop =tasks_generators.gen_final_mus()%
+threshold = threshold@gen_actor_ignore
+danger = danger@gen_actor_ignore
+
+[remark@gen_actor_start_final]
+anim = gen_actor_final_start
+combat_ignore_cond = always
+target = gen2_actor_end_target, 0
+meet = no_meet
+on_signal = anim_end | %+gen2_ghost_walk%
+on_timer = 20000 | remark@gen_actor_start_wait
+threshold = threshold@gen_actor_ignore
+danger = danger@gen_actor_ignore
+
+[remark@gen_actor_start_wait]
+anim = stand_wait
+combat_ignore_cond = always
+target = gen2_actor_end_target, 0
+meet = no_meet
+on_info = {+gen2_ghost_actor} remark@gen_actor_final
+threshold = threshold@gen_actor_ignore
+danger = danger@gen_actor_ignore
+
+[remark@gen_actor_final]
+anim = gen_actor_final_action
+combat_ignore_cond = always
+target = gen2_actor_end_target, 0
+meet = no_meet
+threshold = threshold@gen_actor_ignore
+danger = danger@gen_actor_ignore
+on_info = {+has_freeplay_info} %=release%

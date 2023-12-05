@@ -1,0 +1,30 @@
+[combat_ignore]
+
+[logic]
+active = remark@cage
+combat_ignore = combat_ignore
+
+[remark@cage]
+anim = dog_teach_no_into
+combat_ignore_cond = always
+meet = no_meet
+target = x16_cages_check, 0
+;on_signal = anim_end | remark@cage
+on_info = {=dist_to_actor_le(5) -x16_additional4} remark@to_actor
+on_info2 = {=dist_to_actor_le(3) +x16_additional4} remark@get_away
+
+[remark@to_actor]
+anim = wait
+snd = x16_replics31
+combat_ignore_cond = always
+meet = no_meet
+target = actor
+on_timer = 23000 | remark@cage %+x16_additional4%
+
+[remark@get_away]
+anim = dog_teach
+snd = x16_replics32
+meet = no_meet
+target = actor
+on_signal = sound_end | remark@cage
+target = x16_cages_check, 0

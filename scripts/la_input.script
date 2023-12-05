@@ -1,0 +1,310 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_input.script
+ Description: Key logger
+ Copyright  : 2011 © LA-team
+ Author     : Gr1ph00n
+ Editors    : Gr1ph00n, lox(13.02.2013), SkyLoader(24.08.2013)
+ Last edit  : 28.12.2019 [ValeroK]
+--]] ----------------------------------------------------------------------------------------------
+--]] fixed not proper dialog, when save not allowed
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local input_manager = nil
+local pressed_keys = {}
+local INVALID_KEY = 257
+local EVENTS =  {
+	key_press   = 1,
+	key_release = 2,
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+
+function PreSets(e)
+	event("actor_update"):register(update)
+	event("on_key_press"):register(on_key_press)
+	event("on_key_free"):register(on_key_free)
+	bind()
+end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "InputManager"
+--/ -----------------------------------------------------------------------------------------------
+function InputManager:__init()
+	self:Reset()
+	--self.binded_actions = {}
+	--self.console = get_console()
+	--self.mm = main_menu.get_main_menu()
+end
+
+function InputManager:__finalize()
+end
+
+function InputManager:Bind(key, event, predicate, action, is_bind_action)
+	if is_bind_action then
+		key = bind_to_dik(key)
+	end
+
+	if not (key and event and predicate and action) then
+		abort("InputManager: error binding key, one or more arguments are nil!")
+	elseif not this[predicate] then
+		abort("InputManager: predicate '%s' does not exist for [%d]!", predicate, key)
+	end
+	local script, func = la_utils.get_script_func_name(action)
+	if script and not _G[script] then
+		abort("InputManager: %s.script does not exist!", script)
+	end
+	if not script then
+		script = sModule
+	end
+	if not _G[script][func] then
+		abort("InputManager: function '%s' does not exist in %s.script!", func, script)
+	end
+	if self.binded_actions[key] then
+		abort("InputManager: key [%d] is already binded!", key)
+	end
+	self.binded_actions[key] = { event = event, predicate = predicate, action = {} }
+	self.binded_actions[key].action.script = script
+	self.binded_actions[key].action.func   = func
+end
+
+function InputManager:Update()
+	if not self:CanCaptureKey() then return end --/>
+	local key_pressed  = keyboard.get_pressed_key()
+	local key_released = keyboard.get_released_key()
+	if key_pressed ~= INVALID_KEY and not pressed_keys[key_pressed] then
+		self:CheckKey(key_pressed, EVENTS.key_press)
+		pressed_keys[key_pressed] = true
+	end
+	if key_released ~= INVALID_KEY and pressed_keys[key_released] then
+		self:CheckKey(key_released, EVENTS.key_release)
+		pressed_keys[key_released] = nil
+	end
+end
+
+function InputManager:CanCaptureKey()
+	if self.console:is_active() or self.mm:IsActive() or has_info("la_ui_custom_wnd_show") then
+		return false --/>
+	end
+	return true --/>
+end
+
+function InputManager:CheckKey(key, state)
+	local k = self.binded_actions[key]
+	if k and k.event == state and self:CheckPredicate(k.predicate) then
+		self:ExecuteAction(k.action)
+	end
+end
+
+function InputManager:CheckPredicate(predicate)
+	return this[predicate]() --/>
+end
+
+function InputManager:ExecuteAction(callback)
+	_G[callback.script][callback.func]()
+end
+
+function InputManager:Reset()
+	self.binded_actions = {}
+	self.console = get_console()
+	self.mm = main_menu.get_main_menu()
+end
+
+--/ -----------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------
+function get_input_manager()
+	if not input_manager then
+		input_manager = InputManager()
+	end
+	return input_manager
+end
+
+function bind()
+	local mgr = get_input_manager()
+	mgr:Reset()
+	--mgr:Bind(DIK_keys.DIK_F1,          EVENTS.key_press, "can_display_ui_window", "ui_hud_tools.displayWindow")
+	--mgr:Bind(DIK_keys.DIK_F1,          EVENTS.key_press, "can_display_ui_window", "dbg_gulag")
+	--mgr:Bind(DIK_keys.DIK_F2,          EVENTS.key_press, "can_display_ui_window", "dbg_show_spawn_menu")
+	--mgr:Bind(DIK_keys.DIK_F3,          EVENTS.key_press, "can_display_ui_window", "dbg_show_toolskit_menu")
+
+	--mgr:Bind(DIK_keys.DIK_F5,          EVENTS.key_press, "always",                "deactivate_weather")
+	--mgr:Bind(DIK_keys.DIK_F10,         EVENTS.key_press, "always",                "activate_weather")
+end	
+
+function dbg_gulag()
+	give_info("esc_factory_cleaned")
+	--#????
+	xr_gulag.smart_force_update("esc_assault")
+	return
+end
+
+function dbg_show_spawn_menu() --/#+# (debug spawn)
+	if db.is_debug and (ui_spawn_menu) then --/ and self:check_game()
+		if not spawn_dlg then
+			spawn_dlg = ui_spawn_menu.get_ui_menu()
+			spawn_dlg.owner = self
+		end
+		level.start_stop_menu(get_spawn_menu(), true)
+	end
+	return spawn_dlg
+end
+
+function dbg_show_toolskit_menu() --/#+# (debug tools)
+	if db.is_debug and (ui_hud_toolskit) then --/ and self:check_game()
+		if not toolskit_dlg then
+			toolskit_dlg = ui_hud_toolskit.get_ui_menu()
+			toolskit_dlg.owner = self
+		end
+		level.start_stop_menu(get_toolskit_menu(), true)
+	end
+	return toolskit_dlg
+end
+
+function get_spawn_menu()
+	if not dbg_spawn_mgr then
+		dbg_spawn_mgr = ui_spawn_menu.get_ui_menu() --ui_spawn_menu.UI_SpawnMenu()
+	end
+	return dbg_spawn_mgr
+end
+
+function get_toolskit_menu()
+	if not dbg_toolskit_mgr then
+		dbg_toolskit_mgr = ui_hud_toolskit.UI_TabController()
+	end
+	return dbg_toolskit_mgr
+end
+
+function on_key_press(e)
+	if not can_display_ui_window() then
+		return --/>
+	--/ Script callbacks ---------------------------
+	--elseif e.bind == key_bindings.kUSE_BANDAGE then --/#?#
+	elseif e.dik == key_bindings.kUSE_BANDAGE then --/ dik=[73] bind=[78]
+		if bind_car.is_actor_inside_car() and bind_car.can_use_bandage() then
+			item_usage.use_bandage()
+		end
+	--elseif e.bind == key_bindings.kUSE_MEDKIT then --/#?#
+	elseif e.dik == key_bindings.kUSE_MEDKIT then --/ dik=[74],bind=[21]
+		if bind_car.is_actor_inside_car() and bind_car.can_use_medkit() then
+			item_usage.use_medkit()
+		end
+	--/ Other functions ----------------------------
+	--/#?# DIK_U: dik=[22] bind=[78] <L>
+	elseif e.dik == DIK_keys.DIK_ADD then --/#?# dik=[78],bind=[20]
+		bind_car.play_horn_sound()
+	end
+end
+
+function on_key_free(e)
+	--/#?# DIK_U: dik=[22] bind=[78] <L>
+	if e.dik == DIK_keys.DIK_ADD then --/#?# dik=[78],bind=[20]
+		bind_car.stop_horn_sound()
+	end
+end
+
+function update(e)
+	get_input_manager():Update()
+end
+--/ -----------------------------------------------------------------
+--/ Predicates
+--/ -----------------------------------------------------------------
+function always()
+	return true
+end
+
+function never()
+	return false
+end
+
+function can_display_ui_window()
+	return la_hud_mgr.can_display_ui_window()
+end
+
+function is_level_on()
+	if level.present() and db.actor and db.actor:alive() and not (la_actor_sleep and la_actor_sleep.is_sleep_active()) then
+		return true
+	end
+	return false
+end
+
+function can_use_medkit() --/#x# 
+	if bind_car.can_use_medkit() then
+		return actor_inside_vehicle() --/#?# can heal only in cars?
+	end
+	return false
+end
+
+function can_use_bandage() --/#x#
+	if bind_car.can_use_bandage() then
+		return actor_inside_vehicle() --/#?# can heal only in cars?
+	end
+	return false
+end
+
+function actor_inside_vehicle()
+	if can_display_ui_window() then
+		return bind_car.is_actor_inside_car()
+	end
+	return false
+end
+--/ -----------------------------------------------------------------
+--/ Actions
+--/ -----------------------------------------------------------------
+function increase_time_factor()
+	level.set_time_factor(level.get_time_factor() + 100)
+end
+
+function decrease_time_factor()
+	level.set_time_factor(level.get_time_factor() - 100)
+end
+
+function set_default_time_factor()
+	level.set_time_factor(10)
+end
+
+function activate_weather()
+	level_weathers.get_weather_manager():Active(true)
+end
+
+function deactivate_weather()
+	level_weathers.get_weather_manager():Active(false)
+end
+
+function quick_save() -- return true to disable engine quicksave handling
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then
+		return true
+	end
+	return false
+end
+
+function quick_load() -- return true to disable engine quickload handling
+	return false
+end
+
+--/ Quicksave Refuse callback
+function quicksave_refuse() -- called from engine
+	log("! Can not make saved game because thats is not allowed now.")
+	local hud = get_hud()
+	hud:AddCustomStatic("main_task", true)
+	hud:GetCustomStatic("main_task"):wnd():SetText(game.translate_string("la_input_save_prog"))
+	hud:GetCustomStatic("main_task").m_endTime = time_global() / 1000 + 5
+end
+
+--/ Quickload callback
+function quickload_callback()
+	get_console():execute("main_menu on")
+	get_console():execute(string.format("load %s_quicksave", user_name()))
+	get_console():execute("main_menu off")
+end
+
+--/ -----------------------------------------------------------------------------------------------

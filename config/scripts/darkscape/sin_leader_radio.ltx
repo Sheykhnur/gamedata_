@@ -1,0 +1,28 @@
+;-- radio of sin leader
+;new so user can turn radio off or on
+
+[logic]
+active = ph_radio@sin_radio
+
+[ph_radio@sin_radio_off]
+snd = music
+status = off
+
+[ph_radio@sin_radio]
+snd = music
+status = off ;couldnt hear the leaders voice
+random = true
+no_hit = true
+min_idle = 500
+max_idle = 2000
+
+
+;tutorial for ph_radio.script
+
+;snd - sound theme, it's in blablabla.ltx which has all sound themes for bar for instance etc
+;looped - whether radio should be looped or not (true/false)
+;random - whether randomly select sounds from sound theme (snd) - true/false
+;min_idle, max_idle - in miliseconds, idle time (no sound) between playing another
+;no_hit - this is for hit, if you want to disable (permanently) radio when it receive hit callback
+;so you shoot and it's destroyed and won't play music again - true/false 
+

@@ -1,0 +1,33 @@
+[death@bandit]
+on_info = %+dol_gusarov_bandit_task_companion_dead%
+
+[combat_ignore@bandit]
+
+[danger@bandit_walk]
+ignore_distance = 30
+danger_inertion_time = 5000
+
+[logic]
+active = {-dol_gusarov_bandit_task_companion_go} walker@bandit_start, {+dol_gusarov_bandit_task_companion_go} walker@bandit_go
+combat_ignore = combat_ignore@bandit
+on_death = death@bandit
+
+[walker@bandit_start]
+path_walk = dol_bandit_companion_walk_0
+path_look = dol_bandit_companion_look_0
+combat_ignore_cond = {=fighting_dist_ge(10)}
+danger = danger@bandit_walk
+def_state_standing = sit_knee
+on_info = {+dol_gusarov_bandit_task_companion_go} walker@bandit_go %=spawn_object_count(boar_forest_normal:dol_general_terrain1_home3:5:0:180)%
+invulnerable = true
+
+[walker@bandit_go]
+path_walk = dol_bandit_companion_walk_1
+path_look = dol_bandit_companion_look_1
+combat_ignore_cond = {=fighting_dist_ge(30)}
+danger = danger@bandit_walk
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+invulnerable = false
+meet = no_meet

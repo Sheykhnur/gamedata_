@@ -1,0 +1,17 @@
+[logic]
+active = mob_home@kon
+on_death = death@kon
+on_hit = hit@kon
+
+[death@kon]
+on_info = %+third_wave_contr_dead =stop_postprocess(5000) =play_snd(ambient\random\rnd_the_horror1) =set_weather(la_rain)%
+
+
+[hit@kon]
+on_info = {=hit_by_actor} %=run_postprocess(psi4:5000:true) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker)%
+
+[mob_home@kon]
+path_home = blockpost_atack
+home_min_radius = 5
+home_max_radius = 25
+aggressive_home

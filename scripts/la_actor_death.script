@@ -1,0 +1,55 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_actor_death.script
+ Description: Actor death effect
+ Copyright  : 2012 © LA-team
+ Author     : SkyLoader
+ Editors    : gr1ph00n
+ Last edit  : 29.12.2013 [SkyLoader]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local bCycle = false
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("actor_death"):register(this.OnDeath)
+end
+--/ -----------------------------------------------------------------
+function OnDeath(e)
+	local console = get_console()
+	if console and console:get_bool("g_first_person_death") then
+		if bCycle then
+			level.add_pp_effector("actor_death_cycle.ppe", 4467, true)
+			return
+		end
+
+		local dir = device().cam_dir
+		db.actor:set_actor_direction(dir:getH())
+		level.add_cam_effector("actor_death.anm", 2532, false, "")
+		level.add_pp_effector("actor_death.ppe", 2011, false)
+		level.disable_input()
+		local cam_inert_s = console:get_float("cam_inert") or 0
+		start_quick_timer(3, this.StartPP, {cam_inert = console:get_float("cam_inert")}) --/ ~3 real-sec
+		console:execute("cam_inert 0")
+		console:execute("cam_inert "..cam_inert_s)
+	end
+end
+
+function StartPP(t)
+	level.enable_input()
+	level.add_pp_effector("actor_death_cycle.ppe", 4467, true)
+	get_console():execute("cam_inert "..(t.cam_inert or 0))
+end
+
+--/ if you want to do black screen after kill (if use db.actor:kill())
+function DoBlackScreen()
+	bCycle = true
+end
+--/ -----------------------------------------------------------------------------------------------

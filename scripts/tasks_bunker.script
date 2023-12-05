@@ -1,0 +1,96 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_bunker.script
+ Description: Tasks bunker
+ Copyright  : 2011 © LA-team
+ Author     : lox
+ Editors    : vintar(08.02.2013)
+ Last edit  : 22.06.18 (tomilovsenya) – PDA messages fix
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"bun_wait1",
+	"bun_wait2",
+	"bun_wait3",
+	"bun_wait4"
+}
+local control_info_tbl = {
+	"bun_control_switch_1_off",
+	"bun_control_switch_2_off",
+	"bun_control_switch_3_off",
+	"bun_control_switch_4_off"
+}
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if info_tbl and has_info_portions(info_tbl) then
+		info_tbl = nil --/ clear
+		give_info("bun_levitate")
+	end
+end
+
+function process_info_portion(info_id)
+	if info_id:match("bun_control_switch_") then
+		if control_info_tbl and has_info_portions(control_info_tbl) then
+			control_info_tbl = nil --/ clear
+			give_info("deactivate_radar_done")
+			start_real_timer(5.5, "xr_effects.rad_psy_finale") --/ ~ 5.5 real-sec
+		end
+		return true --/>
+	end
+	if info_id:match("bunker_security_switch_") then
+		if has_info("bunker_security_switch_1_off") and has_info("bunker_security_switch_2_off") then
+			give_info("bunker_security_off")
+			start_real_timer(4, nil, {info_id = "bunker_security_off_delay"})
+		end
+		return true --/>
+	end
+	if info_id == "bun_levitate" then
+		start_real_timer(4, "tasks_bunker.polter_sound")
+		return true
+	end
+	if info_id == "dead_sci_pda_1" then
+		if not has_info("bun_code_given") then
+			give_info("bun_code_given")
+			news_manager.send_tip_hud(game.translate_string("scientist_dead_header"), game.translate_string("bun_scientist_code_msg"), "ecolog")
+			local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\bun\\bun_scientist_code")
+				snd:play(db.actor, 0, sound_object.s2d)
+		else
+			local snd = xr_sound.get_safe_sound_object("device\\pda\\pda_objective")
+			snd:play(db.actor, 0, sound_object.s2d)
+		end
+		return true
+	end
+	if info_id == "dead_sci_pda_2" then
+		if not has_info("bun_code_given") then
+			give_info("bun_code_given")
+			news_manager.send_tip_hud(game.translate_string("scientist_dead_header"), game.translate_string("bun_scientist_code_msg"), "ecolog")
+			local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\bun\\bun_scientist_code")
+			snd:play(db.actor, 0, sound_object.s2d)
+		else
+			local snd = xr_sound.get_safe_sound_object("device\\pda\\pda_objective")
+			snd:play(db.actor, 0, sound_object.s2d)
+		end
+		return true
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function polter_sound()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\bun\\poltergeist")
+	if snd then
+		snd:play(db.actor, 0, sound_object.s3d)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

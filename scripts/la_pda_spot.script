@@ -1,0 +1,216 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_pda_spot.script -> pdaSpots
+ Description: ...
+ Copyright  : 2012 © LA-team
+ Author     : rus_phantom (ghost) (03.08.2012)
+ Editors    : gr1ph00n
+ Last edit  : 08.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--[[ Note: Fixed only header and the beggining.
+--]]
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local types = {
+	{spot = "crlc_big",       texture_name = "crlc_big_spot"},
+	{spot = "crlc_mdl",       texture_name = "crlc_mdl_spot"},
+	{spot = "crlc_small",     texture_name = "crlc_small_spot"},
+	{spot = "blue_location",  texture_name = "blue_spot"},
+	{spot = "green_location", texture_name = "green_spot"},
+	{spot = "red_location",   texture_name = "red_spot"},
+	{spot = "treasure_looked",texture_name = "treasure_spot_looked"},
+	{spot = "save_zone",      texture_name = "save_zone_spot"}
+}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+--/#?# For what needed two function if by number of arguments 'from engine' action we need can be determined?
+
+function InitWindow(levelName, position) --/ creating main window
+	local wnd = UIPdaSpot({levelName, position}, true)
+	level.start_stop_menu(wnd, true)
+end
+--/#?# what's a reason to change arguments order (reletively to first function)?
+function InitWindowSettings(spot_id, spot_type, position, levelName) --/ creating secondary window
+	local wnd = UIPdaSpot({levelName, position, spot_id, spot_type}, false)
+	level.start_stop_menu(wnd, true)
+end
+--/#!# Example: it's possible to use just one universal function! (and we don't need event to wrap arguments to table)
+function init_pda_spot(...) --/ order of arguments should be the same!
+	level.start_stop_menu(this.UIPdaSpot({...}), true)
+end
+--/ --------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "UIPdaSpot" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function UIPdaSpot:__init(data,mainWnd) super()
+	--log(string.format("%f,%f,%f on %s",position.x,position.y,position.z,levelName))
+
+	
+	self.mainWnd = mainWnd
+	self.levelName = data[1]
+	self.position = data[2]
+	if not self.mainWnd then	-- Create not New Spot Wnd
+		self.id = data[3]
+		self.spot_type = data[4]
+	end
+	self.size = 0
+	self.CurrentID = 0
+
+	self:InitControls()
+	self:InitCallBacks()
+	self:GetTableSize()
+	if self.mainWnd then
+		self:SetRandomType()
+	else
+		self:GetCurrentID()
+		log("self:SetType(self.CurrentID)")
+		self:SetType(self.CurrentID)
+		self.editBox:SetText(level.map_get_spot_hint(self.id, self.spot_type))
+		level.map_highlight_spot(self.id,self.spot_type,true)
+	end
+end
+
+function UIPdaSpot:__finalize() end
+
+function UIPdaSpot:InitControls()
+	local x,y = 77, 62
+	self:Init(x, y, 800, 400)
+
+	self.xml_spot = CScriptXmlInit()
+	self.xml_spot:ParseFile("map_spots.xml")
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("pda_spot.xml")
+
+	xml:InitStatic("background", self)
+
+	if self.mainWnd then
+		self:Register(xml:Init3tButton("btn_add", self), "btn_add")
+	else
+		self:Register(xml:Init3tButton("btn_remove", self), "btn_remove")
+		self:Register(xml:Init3tButton("btn_apply", self), "btn_apply")
+	end
+	self.editBox = xml:InitEditBox("spot_name_edit", self)
+	
+	self.ImageFrame = xml:InitStatic("image_frames", self)
+	
+	self:Register(xml:Init3tButton("btn_right", self), "btn_right")
+	self:Register(xml:Init3tButton("btn_left", self), "btn_left")
+
+end
+
+function UIPdaSpot:InitNewType(text)
+	self.ImageFrame:DetachChild(self.ST)
+	self.ST = self.xml_spot:InitStatic(text, self.ImageFrame)
+	self.ST:SetWndPos(self.ImageFrame:GetWidth()/2, self.ImageFrame:GetHeight()/2)
+	self.ST:SetHeight(self.ST:GetHeight()*4)
+	self.ST:SetWidth(self.ST:GetWidth()*4)
+end
+
+function UIPdaSpot:InitCallBacks()
+	if self.mainWnd then
+		self:AddCallback("btn_add", ui_events.BUTTON_CLICKED, self.OnAdd, self)
+	else
+		self:AddCallback("btn_apply", ui_events.BUTTON_CLICKED, self.OnApply, self)
+		self:AddCallback("btn_remove", ui_events.BUTTON_CLICKED, self.OnRemove, self)
+	end
+	self:AddCallback("btn_right", ui_events.BUTTON_CLICKED, self.OnRight, self)
+	self:AddCallback("btn_left", ui_events.BUTTON_CLICKED, self.OnLeft, self)
+end
+
+function UIPdaSpot:OnRight()
+	self:SetType(self.CurrentID+1)
+end
+
+function UIPdaSpot:OnLeft()
+	self:SetType(self.CurrentID-1)
+end
+
+function UIPdaSpot:OnAdd()
+	log(string.format("( vector(%f,%f,%f), %s, %s, %s)", self.position.x, self.position.y, self.position.z, self.levelName, self:GetSpotByCurrentID(), self.editBox:GetText()))
+	level.map_add_position_spot_ser(self.position, self.levelName, self:GetSpotByCurrentID(), self.editBox:GetText())
+	self:OnExit()
+end
+
+function UIPdaSpot:OnApply()
+	if self.spot_type == self:GetSpotByCurrentID() then
+		if self.editBox:GetText() ~= level.map_get_spot_hint(self.id, self.spot_type) then
+			level.map_change_spot_hint(self.id, self.spot_type, self.editBox:GetText())
+		end
+	else
+		level.map_remove_object_spot(self.id, self.spot_type)
+		level.map_add_position_spot_ser(self.position, self.levelName, self:GetSpotByCurrentID(), self.editBox:GetText())
+	end
+	self:OnExit()
+end
+
+function UIPdaSpot:OnRemove()
+	log(string.format("remove %d %s",self.id, self.spot_type))
+	level.map_remove_object_spot(self.id, self.spot_type)
+	self:OnExit()
+end
+
+function UIPdaSpot:OnExit()
+	if not self.mainWnd then
+		level.map_highlight_spot(self.id,self.spot_type,false)	-- if map spot exists, we reset color, in other way we do nothing
+	end
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function UIPdaSpot:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnExit()
+		end
+	end
+	
+	return true
+end
+
+function UIPdaSpot:GetTableSize()
+	self.size = #types
+end
+
+function UIPdaSpot:SetRandomType()
+	if self.size and self.size~=0 then
+		self:SetType(math.random(self.size))
+	end
+end
+
+function UIPdaSpot:normalize(TargetID)
+	if TargetID < 1 then TargetID = self.size end
+	if TargetID > self.size then TargetID = 1 end
+	return TargetID
+end
+
+function UIPdaSpot:SetType(tgtID)
+	self.CurrentID = self:normalize(tgtID)
+	
+	self:InitNewType(types[self.CurrentID].texture_name)
+end
+
+function UIPdaSpot:GetSpotByCurrentID()
+	if types[self.CurrentID] then
+		return types[self.CurrentID].spot
+	end
+	return "crlc_big"
+end
+
+function UIPdaSpot:GetCurrentID()
+	for idx=1,self.size do
+		if types[idx].spot == self.spot_type then
+			self.CurrentID = idx
+			return
+		end
+	end
+end

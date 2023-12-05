@@ -1,0 +1,168 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : pdaDownloads.script
+ Description: PDA: "Downloads" field (3)
+ Copyright  : 2009 © LA-team
+ Author     : barin (19.04.2009)
+ Editors    : barin(09.09.2009), gr1ph00n[22.05.2013], SkyLoader[18.01.2014]
+ Last edit  : 18.01.2014 [SkyLoader]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+
+local downloads_list = {} --'skyloader: current downloads
+
+--/ -----------------------------------------------------------------
+--/ Initialization and preset module (from pdaManager.script)
+--/ -----------------------------------------------------------------
+function PreSets(e)
+	event("actor_save"):register(save)
+
+	downloads_list = GetVar("pda_downloads", {})
+end
+
+function save(e)
+	SetVar("pda_downloads", downloads_list)
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "ListItem" (CUIListBoxItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function ListItem:__init(txt) super()
+	self.name = txt
+
+	self.text = CUIStatic()
+	self.text:SetAutoDelete(true)
+	self.text:SetWndRect(0, 2, 247, 18)
+	self.text:SetText(game.translate_string(txt))
+	self.text:SetTextAlign(CGameFont.alLeft)
+	self.text:SetTextColor(GetColourByName(downloads_list[txt].readed and "dark_grey" or "green"))
+	self.text:SetFont(GetFontByName("letterica18"))
+	
+	self:AttachChild(self.text)
+end
+
+function ListItem:Invalidate(colour)
+	self.text:SetTextColor(GetColourByName(colour))
+end
+
+function ListItem:GetName()
+	return self.name
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "uiPdaDownloads" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function uiPdaDownloads:__init(name,rect,active) super()
+	self:SetWindowName("pda_"..name)
+	self:SetAutoDelete(false)
+	self.rect = rect
+	self.active = active
+	self.initialized = false
+	self:initialize()
+end
+
+function uiPdaDownloads:initialize()
+	self:InitControls()
+	self:InitCallBacks()
+	self.initialized = true
+end
+
+function uiPdaDownloads:InitControls()
+	--self.rect[1] = device():is_widescreen() and self.rect[1] - 15 or self.rect[1]
+	self:Init( unpack(self.rect) )
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_"..self:WindowName()..".xml")
+	--/ left panel
+	xml:InitFrame("left_frame_window", self)
+	xml:InitFrameLine("left_frame_header", self)
+	xml:InitAnimStatic("anim_static", self)
+	
+	self.list = xml:InitListBox("list", self)
+	self:Register(self.list, "list")
+	if self.active then
+		for k,v in pairs(downloads_list) do
+			self.list:AddItem(this.ListItem(k))
+		end
+	end
+	--/ right panel
+	xml:InitFrame("right_frame_window", self)
+	self.title = xml:InitFrameLine("right_frame_header", self):GetTitleStatic()
+
+	self.scroll = xml:InitScrollView("download_descr", self)
+	self.info_pic = xml:InitStatic("download_descr:image", self.scroll)
+	self.info_text = xml:InitStatic("download_descr:text_cont", self.scroll)
+end
+
+function uiPdaDownloads:InitCallBacks()
+	self:AddCallback("list", ui_events.LIST_ITEM_CLICKED, self.OnItemClicked, self)
+end
+
+function uiPdaDownloads:OnItemClicked()
+	if self.list:GetSize() > 0 then
+		local idx = self.list:GetSelectedIndex()
+		if idx >= 0 then
+			local item_name = ""
+			if self.active_idx and self.active_idx ~= idx then
+				item_name = self.list:GetItem(self.active_idx):GetName()
+				self.list:GetItem(self.active_idx):Invalidate(downloads_list[item_name].readed and "dark_grey" or "green") --'SkyLoader: as in encyclopedia
+			end
+
+			item_name = self.list:GetItem(idx):GetName()
+			self.list:GetItem(idx):Invalidate("full_white")
+			self.title:SetText(game.translate_string("ui_pda_downloads") .. "/" .. game.translate_string(item_name))
+			self.info_text:SetText(game.translate_string(downloads_list[item_name].descr))
+			self.info_text:AdjustHeightToText()
+
+			local item_image = downloads_list[item_name].image
+			if item_image then
+				self.info_pic:InitTexture(item_image)
+				self.info_pic:Show(true)
+				local rect = self.info_pic:GetTextureRect() 
+				self.info_pic:SetWndPos(self.info_text:GetWidth()/2-(rect.x2-rect.x1)/2,4)
+				self.info_text:SetWndPos(4,rect.y2-rect.y1+10)
+			else
+				self.info_pic:Show(false)
+				self.info_text:SetWndPos(4,4)
+			end
+
+			downloads_list[item_name].readed = true
+			self.active_idx = idx
+		end
+	end
+end
+
+function uiPdaDownloads:Dispatch(cmd, param)
+	log("uiPdaDownloads:Dispatch(%d, %d)", cmd, param)
+	self:OnShow(param == 1)
+	return CUIScriptWnd.Dispatch(self, cmd, param)
+end
+
+function uiPdaDownloads:OnShow(show)
+	if not self.initialized then
+		self:initialize()
+	end
+
+	if show then --/reset articles
+		self.list:RemoveAll()
+		for k,v in pairs(downloads_list) do
+			self.list:AddItem(this.ListItem(k))
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+
+function add_article(tbl)
+	if not tbl[1] or not tbl[2] or downloads_list[tbl[1]] then return end --/>
+
+	downloads_list[tbl[1]] = {descr = tbl[2], image = tbl[3], readed = false}
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,467 @@
+;**************************************state 0*******************************************
+
+[combat_ignore@ros_duty_base]
+
+[danger@ros_duty_base]
+;ignore_distance = 0
+
+[threshold@ros_duty_base]
+;ignore_distance = 0
+
+[hit@ros_duty_voronin]
+on_info = {=hit_by_actor} %+bar_voronin_hitted =actor_enemy%
+
+[logic@ros_duty_base_voronin]
+active = walker@ros_duty_base_voronin
+threshold = threshold@ros_duty_base
+on_hit = hit@ros_duty_voronin
+combat_ignore = combat_ignore@ros_duty_base
+
+[walker@ros_duty_base_voronin]
+path_walk = voronin_walk
+path_look = voronin_look
+danger = danger@ros_duty_base
+def_state_standing = ward
+def_state_moving1 = walk
+meet = meet@ros_duty_base_voronin
+threshold = threshold@ros_duty_base
+combat_ignore_cond = always
+
+[meet@ros_duty_base_voronin]
+use = true
+use_wpn = true
+precond	= visibility
+victim 	= 9| actor
+victim_wpn = 9| actor
+meet_state = 9|ward@bar_dolg_leader_hello|3|ward
+meet_state_wpn = 9|ward@bar_dolg_leader_hello|3|ward
+
+
+[logic@ros_duty_base_petrenko]
+active = walker@ros_duty_base_petrenko
+trade = misc\trade\trade_dolg.ltx
+inv_max_weight = 10000
+threshold = threshold@ros_duty_base
+
+[walker@ros_duty_base_petrenko]
+path_walk = petrenko_walk
+path_look = petrenko_look
+danger = danger@ros_duty_base
+def_state_standing = ward
+def_state_moving1 = walk
+meet = meet@ros_duty_base_petrenko
+threshold = threshold@ros_duty_base
+on_actor_dist_le_nvis = 5| %=set_relation_by_sid(6508:neutral)%
+
+[meet@ros_duty_base_petrenko]
+use = true
+use_wpn = true
+meet_talk_enabled = true
+victim = 10|actor
+victim_wpn = 10|actor
+meet_state = 10|ward@bar_dolg_petrenko_hello|2|ward
+meet_state_wpn = 10|ward@bar_dolg_petrenko_hello|2|ward
+
+[logic@ros_duty_base_ivancov]
+active = walker@ros_duty_base_ivancov
+inv_max_weight = 10000
+threshold = threshold@ros_duty_base
+
+[walker@ros_duty_base_ivancov]
+path_walk = ivancov_walk
+path_look = ivancov_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+meet = meet@ros_duty_base_ivancov
+threshold = threshold@ros_duty_base
+
+[meet@ros_duty_base_ivancov]
+abuse = false
+use = true
+use_wpn = true
+victim 			=  10 | actor
+victim_wpn 		= 10 | actor
+meet_state = 10|guard
+meet_state_wpn = 10|guard
+precond			= visibility
+
+[logic@ros_duty_base_roof_observer]
+active = walker@ros_duty_base_roof_observer
+threshold = threshold@ros_duty_base
+
+[walker@ros_duty_base_roof_observer]
+path_walk = observer_walk
+path_look = observer_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_yard_patroler]
+active = walker@ros_duty_base_yard_patroler
+threshold = threshold@ros_duty_base
+
+[walker@ros_duty_base_yard_patroler]
+path_walk = guard_walk
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_zastava]
+active = walker@ros_duty_base_zastava
+threshold = threshold@ros_duty_base
+
+[walker@ros_duty_base_zastava]
+path_walk = zastava_walk
+path_look = zastava_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_zastava1
+meet = meet@bar_dolg_zastava1
+threshold = threshold@ros_duty_base
+
+[meet@bar_dolg_zastava1]
+meet_state 		= 20| guard@wait|4| guard
+meet_state_wpn 	= 20| guard@wait| 15| threat@threat_weap
+victim 			= 20| actor
+victim_wpn 		= 20| actor
+use = true
+use_wpn = true
+;meet_dialog = bar_dolg_zastava
+precond			= visibility
+
+[logic@ros_duty_base_dutier1]
+active = walker@ros_duty_base_dutier1
+threshold = threshold@ros_duty_base
+
+[walker@ros_duty_base_dutier1]
+path_walk = guard1_walk
+path_look = guard1_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_zastava1
+meet = meet@bar_dolg_zastava1
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier2]
+active = walker@ros_duty_base_dutier2
+threshold = threshold@ros_duty_base
+
+[walker@ros_duty_base_dutier2]
+path_walk = guard2_walk
+path_look = guard2_look
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_zastava1
+meet = meet@bar_dolg_zastava1
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier3]
+active = kamper@ros_duty_base_dutier3
+threshold = threshold@ros_duty_base
+
+[kamper@ros_duty_base_dutier3]
+path_walk = kamper1_walk
+path_look = kamper1_look
+danger = danger@ros_duty_base
+kamp_name = kamp1
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier4]
+active = kamper@ros_duty_base_dutier4
+threshold = threshold@ros_duty_base
+
+[kamper@ros_duty_base_dutier4]
+path_walk = kamper2_walk
+path_look = kamper2_look
+danger = danger@ros_duty_base
+kamp_name = kamp1
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier5]
+active = kamper@ros_duty_base_dutier5
+threshold = threshold@ros_duty_base
+
+[kamper@ros_duty_base_dutier5]
+path_walk = kamper3_walk
+path_look = kamper3_look
+danger = danger@ros_duty_base
+kamp_name = kamp1
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier6]
+active = kamper@ros_duty_base_dutier6
+threshold = threshold@ros_duty_base
+
+[kamper@ros_duty_base_dutier6]
+path_walk = kamp2_kamper1_walk
+path_look = kamp2_kamper1_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier7]
+active = kamper@ros_duty_base_dutier7
+threshold = threshold@ros_duty_base
+
+[kamper@ros_duty_base_dutier7]
+path_walk = kamp2_kamper2_walk
+path_look = kamp2_kamper2_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier8]
+active = kamper@ros_duty_base_dutier8
+threshold = threshold@ros_duty_base
+
+[kamper@ros_duty_base_dutier8]
+path_walk = kamp2_kamper3_walk
+path_look = kamp2_kamper3_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+threshold = threshold@ros_duty_base
+
+[logic@ros_duty_base_dutier9]
+active = kamper@ros_duty_base_dutier9
+threshold = threshold@ros_duty_base
+
+[kamper@ros_duty_base_dutier9]
+path_walk = kamp2_kamper4_walk
+path_look = kamp2_kamper4_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+threshold = threshold@ros_duty_base
+
+
+*************************************state 1***********************************************
+
+[logic@ros_duty_base_off_voronin]
+active = walker@ros_duty_base_off_voronin
+
+[walker@ros_duty_base_off_voronin]
+path_walk = voronin_walk
+path_look = voronin_look
+
+;[logic@ros_duty_base_off_petrenko]
+;active = walker@ros_duty_base_off_petrenko
+
+;[walker@ros_duty_base_off_petrenko]
+;path_walk = petrenko_walk
+;path_look = petrenko_look
+
+[logic@ros_duty_base_off_ivancov]
+active = walker@ros_duty_base_off_ivancov
+
+[walker@ros_duty_base_off_ivancov]
+path_walk = ivancov_walk
+path_look = ivancov_look
+
+[logic@ros_duty_base_off_roof_observer]
+active = walker@ros_duty_base_off_roof_observer
+
+[walker@ros_duty_base_off_roof_observer]
+path_walk = observer_walk
+path_look = observer_look
+
+[logic@ros_duty_base_off_yard_patroler]
+active = walker@ros_duty_base_off_yard_patroler
+
+[walker@ros_duty_base_off_yard_patroler]
+path_walk = guard_walk
+danger = danger@ros_duty_base
+soundgroup = bar_dolg_base_guard1
+
+[logic@ros_duty_base_off_zastava]
+active = walker@ros_duty_base_off_zastava
+
+[walker@ros_duty_base_off_zastava]
+path_walk = zastava_walk
+path_look = zastava_look
+
+[logic@ros_duty_base_off_dutier1]
+active = walker@ros_duty_base_dutier1
+
+[walker@ros_duty_base_off_dutier1]
+path_walk = guard1_walk
+path_look = guard1_look
+
+[logic@ros_duty_base_off_dutier2]
+active = walker@ros_duty_base_off_dutier2
+
+[walker@ros_duty_base_off_dutier2]
+path_walk = guard2_walk
+path_look = guard2_look
+
+[logic@ros_duty_base_off_dutier3]
+active = kamper@ros_duty_base_off_dutier3
+
+[kamper@ros_duty_base_off_dutier3]
+path_walk = kamper1_walk
+path_look = kamper1_look
+danger = danger@ros_duty_base
+kamp_name = kamp1
+
+[logic@ros_duty_base_off_dutier4]
+active = kamper@ros_duty_base_off_dutier4
+
+[kamper@ros_duty_base_off_dutier4]
+path_walk = kamper2_walk
+path_look = kamper2_look
+danger = danger@ros_duty_base
+kamp_name = kamp1
+
+[logic@ros_duty_base_off_dutier5]
+active = kamper@ros_duty_base_off_dutier5
+
+[kamper@ros_duty_base_off_dutier5]
+path_walk = kamper3_walk
+path_look = kamper3_look
+danger = danger@ros_duty_base
+kamp_name = kamp1
+
+[logic@ros_duty_base_off_dutier6]
+active = kamper@ros_duty_base_off_dutier6
+
+[kamper@ros_duty_base_off_dutier6]
+path_walk = kamp2_kamper1_walk
+path_look = kamp2_kamper1_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+
+[logic@ros_duty_base_off_dutier7]
+active = kamper@ros_duty_base_off_dutier7
+
+[kamper@ros_duty_base_off_dutier7]
+path_walk = kamp2_kamper2_walk
+path_look = kamp2_kamper2_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+
+[logic@ros_duty_base_off_dutier8]
+active = kamper@ros_duty_base_off_dutier8
+
+[kamper@ros_duty_base_off_dutier8]
+path_walk = kamp2_kamper3_walk
+path_look = kamp2_kamper3_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+
+[logic@ros_duty_base_off_dutier9]
+active = kamper@ros_duty_base_off_dutier9
+
+[kamper@ros_duty_base_off_dutier9]
+path_walk = kamp2_kamper4_walk
+path_look = kamp2_kamper4_look
+danger = danger@ros_duty_base
+kamp_name = kamp2
+
+*************************************arena state***********************************************
+[hit@ros_arena_croud]
+on_info = {=hit_by_actor} %+bar_actor_attacked_croud%
+
+[logic@ros_duty_base_dutier_arena_4]
+active = kamper@ros_duty_base_dutier_arena_4
+threshold = threshold@ros_duty_base
+combat_ignore = combat_ignore@ros_duty_base
+on_hit = hit@ros_arena_croud
+
+[kamper@ros_duty_base_dutier_arena_4]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+on_info = {-bar_visitor_5_teleported} %=teleport_npc_not_seen(bar_arena_walk3:bar_visitor_5_teleported)%
+on_info2 = {+bar_visitor_5_teleported} remark@ros_duty_base_dutier_arena_4_scene
+
+[remark@ros_duty_base_dutier_arena_4_scene]
+anim = arena_expressions
+target = bar_arena_walk3_look, 0
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight} remark@ros_duty_base_dutier_arena_4_silence
+
+[remark@ros_duty_base_dutier_arena_4_silence]
+anim = arena_expressions
+target = actor
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight -bar_arena_monstr_dead} remark@ros_duty_base_dutier_arena_4
+
+[remark@ros_duty_base_dutier_arena_4]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_duty_base_dutier_arena_4_cycle
+on_timer = 5000 | remark@ros_duty_base_dutier_arena_4_silence
+
+[remark@ros_duty_base_dutier_arena_4_cycle]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_duty_base_dutier_arena_4
+on_timer = 5000 | remark@ros_duty_base_dutier_arena_4_silence
+
+[logic@ros_duty_base_dutier_arena_5]
+active = kamper@ros_duty_base_dutier_arena_5
+threshold = threshold@ros_duty_base
+combat_ignore = combat_ignore@ros_duty_base
+on_hit = hit@ros_arena_croud
+
+[kamper@ros_duty_base_dutier_arena_5]
+path_walk = kamper3_walk
+path_look = kamper3_look
+kamp_name = kamp1
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+on_info = {-bar_visitor_6_teleported} %=teleport_npc_not_seen(bar_arena_walk2:bar_visitor_6_teleported)%
+on_info2 = {+bar_visitor_6_teleported} remark@ros_duty_base_dutier_arena_5_scene
+
+[remark@ros_duty_base_dutier_arena_5_scene]
+anim = arena_expressions
+target = bar_arena_walk2_look, 0
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight} remark@ros_duty_base_dutier_arena_5_silence
+
+[remark@ros_duty_base_dutier_arena_5_silence]
+anim = arena_expressions
+target = actor
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_info = {+bar_arena_fight -bar_arena_monstr_dead} remark@ros_duty_base_dutier_arena_5
+
+[remark@ros_duty_base_dutier_arena_5]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_duty_base_dutier_arena_5_cycle
+on_timer = 5000 | remark@ros_duty_base_dutier_arena_5_silence
+
+[remark@ros_duty_base_dutier_arena_5_cycle]
+anim = arena_expressions
+snd = bar_arena_public
+target = actor
+meet = no_meet
+danger = danger@ros_duty_base
+threshold = threshold@ros_duty_base
+combat_ignore_cond = {!fighting_actor -bar_actor_attacked_croud}
+on_signal = sound_end | {~50 -bar_arena_monstr_dead} remark@ros_duty_base_dutier_arena_5
+on_timer = 5000 | remark@ros_duty_base_dutier_arena_5_silence

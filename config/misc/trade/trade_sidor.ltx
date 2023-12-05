@@ -1,0 +1,286 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = trader_generic_buy
+sell_condition = {+esc_rescue_fox_done}trader_after_fox_sell, trader_start_sell
+buy_supplies =  {+has_freeplay_info}supplies_freeplay, {+bas_switcher_off +deactivate_radar_done}supplies_before_prip, {+x16_main_power_disabled}supplies_after_brain, {+yan_good_helmet_start}supplies_after_helmet, {+yan_scientist_package_done}supplies_after_yan, {+dar_barman_has_all_x18_docs}supplies_after_darkvalley, {+esc_rescue_fox_done}supplies_after_fox, supplies_start
+discounts = discount_start
+
+buy_item_condition_factor = 0.1
+
+[discount_start]
+buy  = 0.92
+sell = 1.1
+
+
+[trader_generic_buy]:buy_misc_high,buy_artefacts_normal,buy_mutant_normal,buy_ammo_cheap,buy_food_normal,buy_outfit_normal,buy_weapons_cheap,buy_devices_normal
+
+
+[supplies_start]:basic_supplies
+novice_outfit                        = 2, 0.5
+bandit_outfit                        = 2, 0.45
+
+helm_respirator                      = 1, 1.0
+
+ammo_11.43x23_fmj                    = 3, 0.6
+ammo_12x70_cart                      = 6, 0.8
+ammo_12x70_buck                      = 6, 0.8
+ammo_12x76_zhekan                    = 3, 0.6
+ammo_5.45x39_fmj                     = 3, 0.8
+
+wpn_bm16                             = 2, 0.7
+wpn_bm16_long                        = 2, 0.9
+wpn_pm                               = 3, 0.6
+
+wpn_knife                            = 1, 1.0
+
+detector_radiation                   = 1, 1.0
+detector_simple                      = 1, 1.0
+night_vision_worst					 = 1, 1.0
+night_vision_bad					 = 1, 1.0 
+detector_af_simple                   = 1, 1.0
+
+
+[supplies_after_fox]:supplies_start,fancy_food_supplies,booster_supplies
+military_light_outfit            	 = 3, 0.8
+bandit_cloak_outfit                  = 2, 0.95
+stalker_light_outfit                 = 2, 0.9
+killer_light_outfit                  = 2, 0.9
+
+helm_gasmask                         = 2, 0.9
+helm_hardhat	                     = 2, 0.75
+
+ammo_.44_reg						 = 10, 0.6
+ammo_11.43x23_fmj                    = 10, 0.8
+ammo_12x70_cart                      = 10, 0.8
+ammo_12x70_buck                      = 10, 0.8
+ammo_12x76_zhekan                    = 8, 0.6
+ammo_12x76_dart                      = 4, 0.6
+ammo_5.45x39_fmj                     = 12, 0.8
+ammo_5.45x39_ap                      = 6, 0.6
+ammo_5.56x45_ss190		             = 12, 0.7
+ammo_9x18_pbp                        = 4, 0.6
+ammo_9x18_pmm                        = 4, 0.6
+ammo_9x19_pbp                        = 4, 0.8
+ammo_7.62x39_s						 = 12, 0.6
+ammo_7.62x54_7h1                     = 12, 0.6
+ammo_9x39_pab9                       = 12, 0.6
+
+grenade_f1                           = 1, 0.6
+grenade_rgd5                         = 1, 0.6
+
+wpn_ak74u                            = 2, 0.9
+wpn_ak74u_m2                         = 1, 0.9
+wpn_bizon                            = 2, 0.8
+wpn_colt1911						 = 2, 0.7
+wpn_fort                             = 2, 0.9
+wpn_fort_m3                          = 1, 0.5
+wpn_m1891                            = 1, 0.7
+wpn_mp5                              = 2, 0.8
+wpn_walther							 = 1, 0.9
+wpn_sks                              = 2, 0.6
+wpn_stubby_magnum                    = 1, 0.75
+
+wpn_knife_metro                      = 2, 0.7
+wpn_knife_konservniy                 = 2, 0.8
+
+medkit_army                          = 8, 0.8
+
+
+[supplies_after_darkvalley]:supplies_after_fox
+bandit_heavy_outfit                  = 2, 0.7
+stalker_protoexo_outfit		       	 = 2, 0.55
+stalker_medium_outfit                = 2, 0.8
+military_medium_outfit          	 = 2, 0.85
+scientific_outfit                    = 2, 0.7
+
+helm_protective	                     = 2, 0.85
+helm_tactic			                 = 2, 0.8
+
+ammo_11.43x23_hydro                  = 7, 0.6
+ammo_5.56x45_ap                      = 7, 0.6
+ammo_7.62x39_s                       = 10, 0.6
+ammo_7.62x51_fmj					 = 5, 0.8
+ammo_7.62x54_7h14                    = 10, 0.7
+ammo_23x75_buck                      = 6, 0.5
+
+wpn_ak74                             = 1, 0.9
+wpn_akm                              = 1, 0.5
+wpn_beretta                          = 1, 0.7
+wpn_hpsa                             = 2, 0.8
+wpn_sig220                           = 1, 0.7
+wpn_toz34                            = 2, 0.9
+wpn_svd								 = 1, 0.5
+wpn_wincheaster1300					 = 2, 0.5
+
+wpn_shtik                            = 1, 1
+
+wpn_addon_scope_pu                   = 1, 0.8
+
+device_torch_eco					 = 2, 0.7
+device_torch_adv					 = 1, 0.9
+night_vision_good					 = 1, 0.9
+
+;stop selling junk
+novice_outfit                        =
+bandit_outfit                        =
+bandit_cloak_outfit					 =
+military_light_outfit             	 =
+stalker_light_outfit                 =
+killer_light_outfit                  =
+helm_respirator                      =
+helm_gasmask                         =
+wpn_ak74u                            =
+wpn_ak74u_m2                         =
+wpn_bm16                             =
+wpn_bm16_long                        =
+wpn_fort                             =
+wpn_fort_m3                          =
+wpn_mp5                              =
+wpn_pm                               =
+wpn_pb                               =
+wpn_stubby_magnum                    =
+wpn_colt1911                         =
+wpn_walther                          =
+wpn_bizon                            =
+wpn_sks                              =
+wpn_l85                              =
+detector_simple                      =
+detector_af_simple                   =
+night_vision_bad					 =
+night_vision_worst					 =
+wpn_knife                            =
+wpn_knife_metro                      =
+wpn_knife_konservniy                 =
+
+[supplies_after_yan]:supplies_after_darkvalley
+scientific_outfit                    = 2, 0.75
+cs_medium_outfit	                 = 1, 0.15
+
+ammo_.44_reg                         = 6, 0.7
+ammo_.44_frag                        = 2, 0.5
+ammo_5.7x28_ap                       = 10, 0.7
+ammo_5.7x28_jhp                      = 10, 0.7
+ammo_7.62x39_ap		             	 = 4, 0.7
+ammo_7.62x51_fmj					 = 8, 0.8
+ammo_7.62x51_ap						 = 2, 0.6
+ammo_7.62x54_ap                      = 4, 0.7
+ammo_9x39_pab9                       = 9, 0.7
+
+wpn_44_magnum                        = 1, 0.7
+
+detector_advances                    = 1, 0.8
+detector_af_advanced				 = 1, 1.0
+
+
+[supplies_after_helmet]:supplies_after_yan
+stalker_outfit                       = 2, 0.75
+exo_outfit                           = 1, 0.8
+military_heavy_outfit	         	 = 2, 0.6
+cs_medium_outfit	                 = 1, 0.8
+cs_heavy_outfit	                     = 1, 0.15
+killer_outfit		                 = 2, 0.5
+
+helm_battle_stalker					 = 1, 0.5
+helm_battle_military				 = 1, 0.5
+
+ammo_.44_frag                        = 7, 0.8
+ammo_23x75_buck                      = 12, 0.7
+ammo_23x75_buck_ap                   = 4, 0.3
+ammo_11.43x23_hydro                  = 8, 0.6
+ammo_7.62x51_fmj                     = 12, 0.6
+ammo_7.62x51_ap					 	 = 8, 0.6
+ammo_7.62x54_7h1                     = 10, 0.6
+ammo_7.62x54_7h14                    = 15, 0.8
+ammo_7.62x54_ap                      = 8, 0.6
+ammo_8.6x70_ap                       = 5, 0.7
+ammo_9x39_ap                         = 6, 0.6
+ammo_9x39_sp5                        = 12, 0.6
+ammo_m209                            = 2, 0.7
+ammo_vog-25                          = 2, 0.65
+ammo_vog-25p                         = 2, 0.65
+
+cmuphob_vodka                        = 4, 0.7
+
+wpn_sig550                           = 1, 0.7
+wpn_desert_eagle                     = 2, 0.7
+wpn_ks23                             = 2, 0.9
+wpn_vepr                             = 2, 0.9
+wpn_rpk                              = 2, 0.8
+wpn_rpk74m                           = 2, 0.8
+wpn_oc33                             = 2, 0.9
+wpn_usp                              = 2, 0.9
+wpn_ump45                            = 2, 0.9
+
+wpn_axe                              = 1, 0.9
+wpn_knife_m9                         = 1, 0.9
+
+device_torch_adv					 = 1, 1
+wpn_electron_binoc                   = 1, 1.0
+
+;stop selling junk
+wpn_wincheaster1300	                 =
+wpn_toz34                            =
+stalker_protoexo_outfit		         =
+cs_light_outfit		                 =
+wpn_ak74                             =
+wpn_beretta                          =
+wpn_lr300                            =
+wpn_stubby_magnum                    =
+wpn_m1891                            =
+ammo_7.62x54_7h1                     =
+ammo_9x39_pab9                       =
+
+
+[supplies_after_brain]:supplies_after_helmet
+exo_outfit                           = 1, 1
+military_heavy_outfit	         	 = 2, 0.9
+protection_outfit		         	 = 2, 0.5
+dolg_scientific_outfit               = 1, 1
+
+helm_battle_stalker					 = 2, 0.8
+helm_battle_military				 = 2, 0.8
+
+ammo_7.62x51_fmj					 = 8, 0.8
+ammo_7.62x51_ap					 	 = 8, 0.8
+ammo_7.62x54_7h14                    = 8, 0.6
+ammo_7.62x54_ap                      = 8, 0.6
+ammo_23x75_buck_ap                   = 8, 0.7
+ammo_23x75_barr                      = 8, 0.7
+
+wpn_rpk                              = 2, 1
+wpn_rpk74m                           = 2, 1
+
+detector_af_elite				 	 = 1, 1
+
+;stop selling junk
+bandit_heavy_outfit					 =
+stalker_medium_outfit				 =
+helm_hardhat	                     =
+wpn_hpsa                             =
+wpn_sig220                           =
+wpn_aps								 =
+detector_advances                    =
+
+
+[supplies_before_prip]:supplies_after_brain
+military_ultraheavy_outfit         	 = 1, 0.75
+cs_ultraheavy_outfit                 = 1, 0.15
+
+ammo_pkm_100						 = 10, 0.75
+
+;stop selling junk
+military_medium_outfit				 =
+helm_tactic		                     =
+wpn_44_magnum                        =
+
+[supplies_freeplay]:supplies_before_prip
+military_ultraheavy_outfit        	 = 1, 1
+cs_ultraheavy_outfit                 = 1, 1
+stalker_exo_heavy_outfit             = 1, 1
+
+
+[trader_start_sell]:sell_all_high,sell_outfit_normal,sell_ammo_normal
+
+[trader_after_fox_sell]:sell_all_normal,sell_ammo_cheap,sell_outfit_cheap,sell_weapons_cheap
+

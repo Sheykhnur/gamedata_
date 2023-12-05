@@ -1,0 +1,44 @@
+;********************************state 0*****************************************
+
+[combat_ignore@out_freedom2]
+
+[logic@out_freedom2_terrain_kamper1]
+active = kamper@out_freedom2_kamper1
+combat_ignore = combat_ignore@out_freedom2
+
+[kamper@out_freedom2_kamper1]
+path_walk = kamper1_walk
+path_look = kamper1_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_dist_ge(50)}
+
+[logic@out_freedom2_terrain_kamper2]
+active = kamper@out_freedom2_kamper2
+combat_ignore = combat_ignore@out_freedom2
+
+[kamper@out_freedom2_kamper2]
+path_walk = kamper2_walk
+path_look = kamper2_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_dist_ge(50)}
+
+
+;********************************state 1******************************************
+
+[logic@out_freedom2_terrain_sleeper1]
+active = sleeper@out_freedom2_sleeper1
+combat_ignore = combat_ignore@out_freedom2
+
+[sleeper@out_freedom2_sleeper1]
+path_main = sleep1
+wakeable = false
+combat_ignore_cond = {=fighting_dist_ge(50)}
+
+[logic@out_freedom2_terrain_sleeper2]
+active = sleeper@out_freedom2_sleeper2
+combat_ignore = combat_ignore@out_freedom2
+
+[sleeper@out_freedom2_sleeper2]
+path_main = sleep2
+wakeable = false
+combat_ignore_cond = {=fighting_dist_ge(50)}

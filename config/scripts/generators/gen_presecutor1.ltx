@@ -1,0 +1,31 @@
+; stalker_custom_data.ltx
+[game_info]
+
+[logic]
+active = walker@exam1
+combat_ignore = combat_ignore
+
+[walker@exam1]
+path_walk = exsamine_01
+combat_ignore_cond = always
+on_timer = 5 | remark@ghost_anim
+
+[remark@ghost_anim]
+anim = sci_ghost_fly_static
+combat_ignore_cond = always
+target = exsamine_01, 0
+on_info = {+gen_sc1_start} remark@ghost_drain
+
+[remark@ghost_drain]
+anim = ghost_pletenii
+combat_ignore_cond = always
+target = exsamine_01, 0
+on_info = {+gen_zov} remark@ghost_zov
+
+[remark@ghost_zov]
+anim = ghost_zov
+combat_ignore_cond = always
+target = actor
+on_info = {+gen_release_ghosts} %=release%
+
+[combat_ignore]

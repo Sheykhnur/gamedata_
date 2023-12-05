@@ -1,0 +1,82 @@
+[combat_ignore@fore_looser0]
+
+[death@fore_looser0]
+on_info = %+fore_looser_dead%
+
+[danger@fore_looser0]
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0
+danger_inertion_time_grenade = 0
+danger_inertion_time_corpse  = 0
+danger_inertion_time_hit     = 0 
+danger_inertion_time_sound   = 0
+
+[logic]
+active = walker@fore_looser0
+combat_ignore = combat_ignore@fore_looser0
+on_death = death@fore_looser0
+
+[walker@fore_looser0]
+path_walk = fore_looser_stay0
+path_look = fore_looser_look0
+combat_ignore_cond = always
+danger = danger@fore_looser0
+on_info = {+fore_looser_dvinuli} walker@fore_looser1
+
+[walker@fore_looser1]
+path_walk = fore_looser_walk1
+combat_ignore_cond = always
+meet = no_meet
+danger = danger@fore_looser0
+on_info = {=gulag_empty(forest_flesh_terrain1)} walker@fore_looser2
+on_signal = sicotno | walker@fore_looser10 %+fore_looser_sicotno%
+
+[walker@fore_looser10]
+path_walk = fore_looser_remark0
+path_look = fore_looser_look00
+combat_ignore_cond = always
+danger = danger@fore_looser0
+on_info = {=gulag_empty(forest_flesh_terrain1)} walker@fore_looser2
+
+
+[walker@fore_looser2]
+path_walk = fore_looser_walk2
+combat_ignore_cond = always
+meet = no_meet
+danger = danger@fore_looser0
+on_signal = looser_prishli | walker@fore_looser21 %+fore_looser_prishli%
+;on_signal2 = looser_prishli2 | {+fore_looser_pribili} walker@fore_looser3
+
+[walker@fore_looser21]
+path_walk = fore_looser_remark1
+path_look = fore_looser_look1
+combat_ignore_cond = always
+;meet = no_meet
+danger = danger@fore_looser0
+on_info = {+fore_looser_pribili} walker@fore_looser3
+
+[walker@fore_looser3]
+path_walk = fore_looser_walk3
+combat_ignore_cond = always
+meet = no_meet
+danger = danger@fore_looser0
+on_signal = prishoool | walker@fore_looser31 %+fore_looser_pribili2%
+
+[walker@fore_looser31]
+path_walk = fore_looser_remark2
+path_look = fore_looser_look2
+combat_ignore_cond = always
+danger = danger@fore_looser0
+on_info = {=actor_out_zone(looser_pereodev)} %+looser_outfit_spawn =release%
+
+[meet@fore_looser0]
+meet_state		= hello
+meet_state_wpn	= hello
+victim		= actor
+victim_wpn		= actor
+use			= true
+use_wpn		= true
+;syndata = hello@hail

@@ -1,0 +1,22 @@
+[logic]
+active = mob_remark@dog_watch
+
+[mob_remark@dog_watch]
+anim = stand_idle_0,stand_idle_1_s
+invulnerable = true
+braindead = true
+target = gen2_dog_target, 0
+on_info = {+gen2_dog_stop} mob_remark@dog_work
+
+[mob_remark@dog_work]
+anim = dog_actor_1
+invulnerable = true
+braindead = true
+target = gen2_dog_target, 0
+on_signal = anim_end | mob_remark@dog_idle
+
+[mob_remark@dog_idle]
+anim = stand_idle_0
+invulnerable = true
+braindead = true
+target = gen2_dog_target, 0

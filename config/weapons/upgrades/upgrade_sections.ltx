@@ -1,0 +1,62 @@
+[up_sect_speed_base]
+bullet_speed@mult                      = 1
+hit_impulse@mult                       = 0.6
+air_resistance_factor@mult             = -0.5
+
+[up_sect_rpm_base]
+rpm@mult                               = 1
+
+[up_sect_rpm_semi_base]
+rpm_semi@mult                          = 1
+
+[up_sect_launch_speed_base]
+launch_speed@mult                      = 1
+hit_impulse@mult                       = 1
+
+[up_sect_disp_base]
+fire_dispersion_base@mult              = -1
+fire_dispersion_condition_factor@mult  = -0.25
+
+[up_sect_calibre_base]
+condition_queue_shot_dec@mult          = 0.5 ; deterioration per shot in autofire
+condition_shot_dec@mult                = 0.5 ; normal deterioration
+mult                          			= 0.5
+
+[up_sect_recoil_base]
+cam_dispersion@mult                    = 1
+cam_dispersion_inc@mult                = 1
+cam_relax_speed@mult                   = 1
+cam_step_angle_horz@mult               = 1
+zoom_cam_dispersion@mult               = 1
+zoom_cam_dispersion_inc@mult           = 1
+zoom_cam_relax_speed@mult              = 1
+zoom_cam_step_angle_horz@mult          = 1
+
+[up_sect_reliab_base]
+condition_queue_shot_dec@mult          = -0.5
+condition_shot_dec@mult                = -0.5
+
+[up_sect_inert_base]
+control_inertion_factor@mult           = -1
+crosshair_inertion@mult                = -0.8
+PDM_disp_accel_factor@mult             = -0.8
+PDM_disp_base@mult                     = -0.4 ; affects both sway and hipfire accuracy
+PDM_disp_crouch@mult                   = 1
+PDM_disp_crouch_no_acc@mult            = 1
+PDM_disp_vel_factor@mult               = -0.8
+zoom_inertion_factor                   = -0.4 ; directly affects weapon sway
+
+
+[upgrade_base]
+known                   = 1
+
+precondition_functor    = inventory_upgrades.precondition_functor_a
+precondition_parameter  = a & b
+
+effect_functor          = inventory_upgrades.effect_functor_a
+effect_parameter        = on_weapon_upgrade_something_here
+
+; ui
+prereq_functor          = inventory_upgrades.prereq_functor_a
+prereq_tooltip_functor  = inventory_upgrades.prereq_tooltip_functor_a
+prereq_params           = 

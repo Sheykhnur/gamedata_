@@ -1,0 +1,68 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_labx16.script
+ Description: Tasks labx16
+ Copyright  : 2011 © LA-team
+ Author     : lox
+ Editors    : vintar, lox(16.09.2011), skyloader(06.07.2014)
+ Last edit  : 22.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+--]] fixed hud save\load, tho bolt spawning called in engine earlier, then bind_actor --lox
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local switcher_info_tbl = {
+	"x16_cs_switcher_1",
+	"x16_cs_switcher_2",
+	"x16_cs_switcher_3"
+}
+local info_tbl = {
+	"x16_disabled_power_sup_01",
+	"x16_disabled_power_sup_02",
+	"x16_disabled_power_sup_03",
+	"x16_main_power_disabled"
+}
+--/--------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:name() == "x16_item_pda" then
+			give_info("x16_dead_sci_pda")
+		end
+	end
+	if has_info("lab_good_psy_helmet_have") and not has_info("x16_initial_teleport_activate") then
+		give_info("x16_initial_teleport_activate")
+	end
+	if switcher_info_tbl and has_info_portions(switcher_info_tbl) then
+		switcher_info_tbl = nil --/ clear
+		give_info("x16_cutscene_switched")
+	end
+	if info_tbl and has_info_portions(info_tbl) and not has_info("lab_generator_off") then
+		info_tbl = nil --/ clear
+		give_info("lab_generator_off")
+		local snd = xr_sound.get_safe_sound_object("ambient\\x18\\cooling_stop")
+		snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+		start_real_timer(1.5, "tasks_labx16.x16_finale") --/ ~ 1.5sec (real-time)
+	end
+end
+
+function process_info_portion(info_id)
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+
+function x16_finale()
+	local snd = xr_sound.get_safe_sound_object("ambient\\x16\\x16_brain_death")
+	snd:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+end
+--/ -----------------------------------------------------------------------------------------------

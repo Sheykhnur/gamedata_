@@ -1,0 +1,74 @@
+[combat_ignore@sar_sci1]
+
+[logic]
+active = remark@sar_sci1_1
+combat_ignore = combat_ignore@sar_sci1
+
+[remark@sar_sci1_1]
+anim = sar_launch2_idle
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_6} remark@sar_sci1_2 %+sar_sc4_synth2%
+
+[remark@sar_sci1_2]
+anim = sar_launch2_start
+snd = sar_replics6
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+anim_reset = false
+on_signal = sound_end | %+sar_scene4_info_7%
+on_info = {+sar_scene4_info_16} remark@sar_sci1_3
+
+[remark@sar_sci1_3]
+anim = sar_launch2_idle
+snd = sar_replics16a
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+anim_reset = false
+on_info = {+sar_scene4_info_18} remark@sar_sci1_4
+
+[remark@sar_sci1_4]
+anim = sar_launch2_start
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+anim_reset = false
+on_signal = anim_end | remark@sar_sci1_4_synth
+
+[remark@sar_sci1_4_synth]
+anim = sar_launch2_idle
+snd = sar_replics18d
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+anim_reset = false
+on_signal = sound_end |  %=sar_reactor_broken% remark@sar_sci1_4_fail
+
+[remark@sar_sci1_4_fail]
+anim = sar_launch2_idle
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+anim_reset = false
+on_info = {+sar_scene4_info_22} remark@sar_sci1_5
+
+[remark@sar_sci1_5]
+anim = sar_launch2_idle
+snd = sar_replics22
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+anim_reset = false
+on_signal = sound_end | %+sar_scene4_info_23%
+on_info = {+sar_scene4_info_29} remark@sar_sci1_finale
+
+[remark@sar_sci1_finale]
+anim = sar_launch2_start
+meet = no_meet
+target = sar_scene_4_sci8_look, 0
+combat_ignore_cond = always
+anim_reset = false
+on_info = {+sar_scene4_info_30} %=release% 

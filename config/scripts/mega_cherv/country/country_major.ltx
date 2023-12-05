@@ -1,0 +1,92 @@
+[combat_ignore@country_soldier_major]
+
+[threshold@country_soldier_major]
+max_ignore_distance = 10
+ignore_monster = 0
+
+[hit@country_soldier_major]
+on_info = {=hit_by_actor} %+country_military_hostile%
+
+[logic]
+active = walker@country_soldier_major_0
+combat_ignore = combat_ignore@country_soldier_major
+on_hit = hit@country_soldier_major
+on_death = death@country_soldier_major
+
+[death@country_soldier_major]
+on_info = %+country_soldier_major_dead%
+
+[walker@country_soldier_major_0]
+path_walk = patrol2_atack_stay_walk
+path_look = blockpost_atack
+threshold = threshold@country_soldier_major
+meet = meet@country_soldier_major_0
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_info = {+country_major_intro} walker@country_soldier_major
+on_info2 = {+country_blowout_start} walker@country_soldier_major_afterblow
+
+[walker@country_soldier_major_afterblow]
+path_walk = patrol2_atack_stay_walk
+path_look = major_atack_stay_way
+threshold = threshold@country_soldier_major
+meet = meet@country_soldier_major_0
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_info = {+country_major_intro} walker@country_soldier_major
+
+[walker@country_soldier_major]
+path_walk = country_soldier_major_walk
+path_look = country_soldier_major_look
+threshold = threshold@country_soldier_major
+meet = meet@country_soldier_major
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_info = {+country_major_third_mutant_quest_start00} camper@country_soldier_major
+
+[camper@country_soldier_major]
+path_walk = major_atack_stay_way
+path_look = country_blockpost_atack_look
+team = count_blokpost
+meet = no_meet
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_soldier_major1 %+country_major_wave_kontr%
+on_info = {+third_wave_contr_dead} remark@country_soldier_major2
+
+[remark@country_soldier_major1]
+snd = wounded_psy
+anim = psycho_pain
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} remark@country_soldier_major2
+
+[remark@country_soldier_major2]
+anim = ispug
+combat_ignore_cond = always
+on_signal = anim_end | walker@country_soldier_major2
+
+[walker@country_soldier_major2]
+path_walk = country_soldier_major_walk
+path_look = country_soldier_major_look
+threshold = threshold@country_soldier_major
+meet = meet@country_soldier_major
+combat_ignore_cond = {-country_military_hostile =fighting_actor}
+
+
+[meet@country_soldier_major_0]
+abuse = false
+use = {-country_major_intro} self, {+country_major_intro} true
+use_wpn = {-country_major_intro} self, {+country_major_intro} true
+victim 			=  50|actor|2|actor
+victim_wpn 		= 50|actor|2|actor
+meet_state = 50|hello@hail|2|guard@wait
+meet_state_wpn = 50|hello@hail|2|guard@wait
+trade_enable = false
+
+[meet@country_soldier_major]
+abuse = false
+use = true
+use_wpn = true
+victim 			=  15|actor|2|actor
+victim_wpn 		= 15|actor|2|actor
+meet_state = 15|hello@hail|2|guard@wait
+meet_state_wpn = 15|hello@hail|2|guard@wait
+precond			= visibility
+trade_enable = false

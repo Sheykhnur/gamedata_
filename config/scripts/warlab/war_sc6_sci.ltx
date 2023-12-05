@@ -1,0 +1,20 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc6_talk
+combat_ignore = combat_ignore
+
+[remark@war_sc6_talk]
+anim = sci_worried
+snd = war_replics52
+target = war_sc6_look, 0
+meet = no_meet
+combat_ignore_cond = always
+on_signal = sound_end | walker@war_sc6_sci %-war_sc6_teleport_npc -war_sc6_teleport_npc_end%
+
+[walker@war_sc6_sci]
+path_walk = war_sc6_walk_portal
+meet = no_meet
+combat_ignore_cond = always 
+on_signal = scisc6rch | %+war_sc6_teleport_npc%
+on_info = {+war_sc6_teleport_npc -war_sc6_teleport_npc_end} %=teleport_npc(war_sc6_teleport:war_sc6_teleport_npc_end)% nil

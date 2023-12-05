@@ -1,0 +1,147 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_light.script
+ Description: 
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin, skyloader, gr1ph00n
+ Last edit  : 27.08.2013 [SkyLoader]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tLightZones = {}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_light"
+--/ -----------------------------------------------------------------------------------------------
+function action_light:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+	self.active = false
+	self.obj_id = obj:id()
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_light:reset_scheme()
+	if self.log then log("ac:reset_scheme: Obj=[%s]", self.object:name(), "") end --/#~#
+	tLightZones[self.obj_id] = self
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_light:update(delta)
+	self.active = xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) == false
+	if not self.active then
+		tLightZones[self.obj_id] = nil
+	end
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function action_light:check_stalker(npc, pos)
+	if self.active ~= false and self.object:inside( pos or npc:position() ) then
+		return self.st.light == true, true --/>
+	end
+	return false, false
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, ">") --/#~#
+	st.action = this.action_light(obj, st)
+	--/ регистраци€ 'action', дл€ вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+	--/ for debug!
+	if st.log then log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	st.light = Get_Cfg_Bool(ini, section, "light_on", false)
+	--/ for debug!
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------------------------------------
+--/ HELPERs
+--/------------------------------------------------------------------------------------------------
+function clean_up() --/ from "on_actor_destroy"
+	tLightZones = {}
+end
+
+function check_light(npc,npc_id) --/ from "npc_update" & "npc_death"
+	local oNPC = (npc_id and level.object_by_id(npc_id)) or npc
+	local oTorch = oNPC and (oNPC:object("device_torch") or oNPC:object("device_torch_adv") or oNPC:object("device_torch_eco"))
+	if not oTorch then
+		return --/> не имеет фонарика
+	elseif not oNPC:alive() then --/ проверка: погиб - гасим фонарик
+		--/ рандомно на некоторое врем€ после смерти оставл€ем фонарик в прежнем состо€нии
+		if math.random() < (time_global() - oNPC:death_time())*0.1^6 then --/ < 0.75 --/skyloader: need to increase this time
+--			log("check_light:NPC=[%s],death_time=[%s]s", oNPC:name(), (time_global() - oNPC:death_time())*0.1^3, "") --/#~#
+			oTorch:enable_attachable_item(false)
+			oTorch:set_torch_battery_status(0)
+		end
+		return --/>
+	end
+	--/ дл€ живых:
+	local bLight   = false --/ флаг: светит фонарик или нет
+	local bChecked = false --/ флаг: уже проверен?
+	
+	if oNPC:name() == "x16_worker2" and has_info("x16_worker_light_off") then
+		oTorch:enable_attachable_item(false)
+		return
+	end
+
+	if xr_sleeper.is_npc_asleep(oNPC) then
+		bLight, bChecked = false, true --/ у сп€щих всегда выключен
+	elseif next(tLightZones) then
+		--/ проверка: гасим фонарик в лайт-зонах
+		local vPos = oNPC:position()
+		for _,v in pairs(tLightZones) do
+			bLight,bChecked = v:check_stalker(oNPC,vPos)
+			if bChecked == true then
+				break
+			end
+		end
+	end
+	
+	if not bChecked then
+		if IsUnderground(db.sMapNow) then
+			bLight = true --/ в подземель€х всегда светить
+		else --/ проверка по времени суток
+			local iHour = level.get_time_hours()
+			if iHour <= 4 or iHour >= 22 then
+				bLight = true --/ ночью всегда включено
+			end
+		end
+		--/ ѕроверка по активному действию
+		if bLight == true then
+			local stor = db.storage[npc_id or oNPC:id()]
+			local sActiveScheme = stor and stor.active_scheme or ""
+			if sActiveScheme == "kamp" or sActiveScheme == "kamper" or sActiveScheme == "camper" then
+				bLight = false --/ у костра или в патруле фонарики должны быть выключены
+			else
+				--/ если идет поиск врага - фонарик включен, но:
+				local oEnemy = oNPC:best_enemy() --/#+#
+				if oEnemy and oNPC:see(oEnemy) then --/ видим врага?
+					bLight = false --/ в бою фонарик должен быть выключен
+				end
+			end
+		end
+	end
+	--/ в(ы)ключаем фонарик (true|false)
+	oTorch:enable_attachable_item(bLight)
+end
+--/ -----------------------------------------------------------------------------------------------

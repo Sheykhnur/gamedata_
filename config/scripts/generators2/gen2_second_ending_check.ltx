@@ -1,0 +1,17 @@
+[logic]
+active = sr_idle@check
+
+[sr_idle@check]
+on_info = {=secret_ending_cond -gen_recieve_invitation +gen_postfinal_ghost_talked} sr_idle@wait
+
+[sr_idle@wait]
+on_timer = 4000| sr_tip
+
+[sr_tip]
+header = unknown_message_header
+name = zones_mystery_text
+sender = o_soznanie
+type = tips
+single = true
+on_signal = tip_sended|nil %+gen_recieve_invitation =scenario_autosave(gen_meet_oversight_title)%
+showtime = 20000

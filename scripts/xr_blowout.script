@@ -1,0 +1,686 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_blowout.script
+ Description: scheme: "NPC: hiding from blowout"
+ Copyright  : 2008 © LA-team
+ Author     : barin (23.07.2008)
+ Editors    : gr1ph00n, ghost, 08.12.2013 [vintar]
+ Last edit  : lox (22.10.17)
+--]] ----------------------------------------------------------------------------------------------
+-- fixed actions switching crash
+-- tried to add anim for blowout stage in shelter
+-- npc doesn't die still, cause of actions switching... sorry
+-- added standing npc section to leave who we need on their 
+-- original position without moving to cover wayp
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local shelter_mgr  = nil
+
+local tExcludedNPCs = {}
+--/ -----------------------------------------------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local bEnabled    = false --/ flag of permission of activity of the scheme
+local sSchemeName = "ai_blowout" --/ string name of the scheme
+local iEvl_AI_Blowout = 0 --/ property_base
+local iAct_AI_Blowout = 0 --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+local tBindActs = {} --/ array of 'external' actions disconnected in case of the active scheme
+local iEvl_IsWounded = xr_evaluators_id.sidor_wounded_base
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end
+	iEvl_AI_Blowout, iAct_AI_Blowout = register_ai_module(sModule,sSchemeName)
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ --------------------------
+function get_ai_evl(idx)
+	return iEvl_AI_Blowout + (idx or 0) --/>
+end
+function get_ai_act(idx)
+	return iAct_AI_Blowout + (idx or 0) --/>
+end
+--/ --------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	local ltx = ini_file("lost_alpha\\ai_schemes\\" .. sModule .. ".ltx")
+	bEnabled = Get_Cfg_Bool(ltx, "options", "enabled", bEnabled)
+	tExcludedNPCs = Get_IniSection(ltx, "excluded_npcs", "true")
+	tStandingNPCs = Get_IniSection(ltx, "standing_npcs", "true")
+	tBindEvls = {
+		[1] = { iEvl_IsWounded, false } --/ not wounded
+	}
+	tBindActs = {
+		[1] = stalker_ids.action_alife_planner, --/ alife
+		[2] = stalker_ids.action_combat_planner, --/ combat
+		[3] = stalker_ids.action_danger_planner, --/ panic
+		[4] = stalker_ids.action_anomaly_planner, --/ bypass anomalies
+		[5] = stalker_ids.action_gather_items --/#+?# gathering (of items)
+		--[6] = stalker_ids.action_throw_grenade, --/#+?# grenade-throwing
+	}
+	this.get_shelter_mgr()
+end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+
+function get_shelter_mgr()
+	if not shelter_mgr then
+		shelter_mgr = bind_shelter.get_shelter_mgr()
+	end
+	return shelter_mgr --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATORs
+--/ -----------------------------------------------------------------------------------------------
+--/ ------------------------------------------------------------------
+class "evaluator_see_blowout" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/[0] - NPC 'see' blowout
+--/ ----------------------------------------------
+function evaluator_see_blowout:__init(name, st, npc) super(npc, name)
+	self.st = st
+end
+
+function evaluator_see_blowout:evaluate()
+if not (self.object and self.object:alive()) then return false end --/>
+	if level_weathers.is_blowout_active() then
+		if not self.free_restr and self.object:character_community() ~= "zombied" then
+			self.free_restr = true
+			if IsStalker(self.object) then
+				self.st.out_restr = self.object:out_restrictions()
+				self.st.in_restr  = self.object:in_restrictions()
+				self.object:remove_all_restrictions()
+			else --/ CRestrictedObject : cannot access class member out(in)_restrictions!
+				--log("ev_see_blowout: NPC=[%s], clsid=[%s] ~ cannot access class member _restrictions", self.object:name(), self.object:clsid(), "") --/#~#
+				self.st.out_restr, self.st.in_restr = "",""
+			end
+		end
+		--log("[%s] evaluated can see blowout",self.object:name())
+	return true --/> 'see' blowout
+	elseif self.free_restr then
+		self.free_restr = false
+		if get_shelter_mgr():isAssigned(self.object) then
+			shelter_mgr:RemoveNpc(self.object)
+		end
+	end
+	--log("xr_blowout not see blowout")
+	return false --/>
+end
+
+--/ ------------------------------------------------------------------
+class "evaluator_inside_shelter" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/(1) - NPC in 'attached' cover (during blowout)
+--/ ----------------------------------------------
+function evaluator_inside_shelter:__init(name, st, npc) super(npc, name)
+	self.st = st
+end
+
+function evaluator_inside_shelter:evaluate()
+
+	if self.object:alive() then
+		if get_shelter_mgr():isAssigned(self.object) then
+			--log("[%s] evaluated is in shelter = [%s]",self.object:name(),tostring(shelter_mgr:isInside(self.object)))
+			return shelter_mgr:isInside(self.object) --/>
+		end
+	end
+	--log("[%s] evaluated not in shelter",self.object:name())
+	return false --/>
+end
+
+--/ ------------------------------------------------------------------
+class "evaluator_outside_shelter" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/(2) - NPC not in cover (during blowout)
+--/ ----------------------------------------------
+function evaluator_outside_shelter:__init(name, st, npc) super(npc, name)
+	self.st = st
+end
+
+function evaluator_outside_shelter:evaluate()
+	if level_weathers.is_blowout_active() then
+		if surge_manager.is_preblow() or psi_storm_manager.is_preblow() then
+			if shelter_mgr:isAssigned(self.object) then --/ cover specified
+				if not shelter_mgr:isInside(self.object) then --/ not in cover
+					if surge_manager.is_surge() or psi_storm_manager.is_surge() then
+						--log("xr_blowout outside cover")
+						return true --/> not in cover during active blowout (TODO: finish in case  of 'not specified inside')
+					end
+					--log("[%s] is not in shelter and distance to shelter = [%s]",self.object:name(),tostring(shelter_mgr:GetDistToShelter(self.object)))
+					return shelter_mgr:GetDistToShelter(self.object) > 60 --/> far from cover (#?#)
+				end
+			end
+			--log("surge preblow = [%s] and psi preblow = [%s]",tostring(surge_manager.is_preblow()),tostring(psi_storm_manager.is_preblow()))
+		elseif surge_manager.is_surge() or psi_storm_manager.is_surge() then
+			--log("xr_blowout outside cover and not isAssigned")
+			return true --/> without cover during active blowout
+		end
+	end
+	--log("xr_blowout surge blow = [%s] and psi blow = [%s]",tostring(surge_manager.is_blowout_visible()),tostring(psi_storm_manager.is_blowout_visible()))
+	return false --/>
+end
+
+--/ ------------------------------------------------------------------
+class "evaluator_is_zombied" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/(3) - active phase of blowout for zombied
+--/ ----------------------------------------------
+function evaluator_is_zombied:__init(name, st, npc) super(npc, name)
+	self.st = st
+end
+
+function evaluator_is_zombied:evaluate()
+	if self.object:alive() and self.object:character_community() == "zombied" then
+		return surge_manager.is_surge() or psi_storm_manager.is_surge() --/> blowout
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+local dir_vertex = {
+	vector():set( 1, 0,  0), vector():set( 1, 0,  1),
+	vector():set( 0, 0,  1), vector():set(-1, 0,  1),
+	vector():set(-1, 0,  0), vector():set(-1, 0, -1),
+	vector():set( 0, 0, -1), vector():set( 1, 0, -1)
+}
+local panic_sounds = {
+	"characters_voice\\human_01\\bandit\\states\\panic_human\\panic_human_5",
+	"characters_voice\\human_01\\bandit\\states\\panic_monster\\panic_monster_4",
+	"characters_voice\\human_01\\ecolog\\states\\panic_monster\\panic_1",
+	"characters_voice\\human_01\\ecolog\\states\\panic_monster\\panic_2",
+	"characters_voice\\human_01\\ecolog\\states\\panic_monster\\panic_3"
+}
+
+--/ ------------------------------------------------------------------
+class "action_wait_till_end" (action_base)
+--/ ------------------------------------------------------------------
+--/(0) - waiting finishing of blowout in cover
+--/ ----------------------------------------------
+function action_wait_till_end:__init(action_name, st, npc) super(npc, action_name)
+	self.st = st
+end
+
+function action_wait_till_end:initialize()
+	if not (self.object and self.object:alive()) then return false end --/>
+	
+	if not shelter_mgr:isAssigned(self.object) then
+		return
+	end	
+	
+	action_base.initialize(self)
+	
+	if not tStandingNPCs[self.object:name()] then	
+		--log("ac:wait_till_end:ini: NPC=[%s]", self.object:name(), "") --/#~#
+		self.object:set_desired_position()
+		self.object:set_desired_direction()
+		--log("ac:wait_till_end setting pos")
+	end
+
+	self.anim = shelter_mgr:GetAnim(self.object)
+	self.blow = "blow_cover"
+
+end
+
+
+function action_wait_till_end:execute()
+	action_base.execute(self)
+	--log("action_wait_till_end:action")
+	if shelter_mgr:isAssigned(self.object) then
+		if shelter_mgr:isOnPosition(self.object) then
+			if level_weathers.is_blowout_active() then
+				if surge_manager.is_preblow() or psi_storm_manager.is_preblow() then 	
+					if state_mgr.get_state(self.object) ~= self.anim then
+						--log("NORMAL ANIM IN SHELTER") 
+						--log("ac:wait_till_end:animation: NPC=[%s] <~ anim=[%s]", self.object:name(), self.anim, "") --/#~#
+						state_mgr.set_state(self.object, self.anim, nil, nil, {look_position = shelter_mgr:GetLookPoint(self.object)}, {animation = true}, nil)	
+					end
+				elseif surge_manager.is_surge() or psi_storm_manager.is_surge() then
+					if not tExcludedNPCs[self.object:name()] and not tStandingNPCs[self.object:name()] and state_mgr.get_state(self.object) ~= self.blow then
+						--log("SURGE_ANIM!!!!!!!!!!!!")
+						state_mgr.set_state(self.object, self.blow, nil, nil, {look_position = shelter_mgr:GetLookPoint(self.object)}, {animation = true}, nil)	
+					end
+				end
+			end
+		else
+			self.object:set_dest_level_vertex_id( shelter_mgr:GetInShelterLvid(self.object) )
+			if self.object:path_type() ~= game_object.level_path then
+				self.object:set_path_type(game_object.level_path)
+			end
+			--set_anim(self.object, shelter_mgr:GetInShelterPos(self.object))
+			state_mgr.set_state(self.object, "walk", nil, nil, nil, {animation = true}, nil) -- walking to pos in shelter
+			--log("ac:wait_till_end:exe:pos NPC=[%s] :(%s)", self.object:name(), ">") --/#~#
+		end
+	end
+	--else log("ac:wait_till_end:exe: NPC=[%s] ~ not assigned :(%s)", self.object:name(), "x") --/#~#
+	--end
+end
+
+function action_wait_till_end:finalize()
+	--log("ac:wait_till_end:fin: NPC=[%s] :(%s)", self.object:name(), "x") --/#~#
+	if self.st.out_restr or self.st.in_restr then
+		self.object:add_restrictions(self.st.out_restr or "", self.st.in_restr or "")
+	end
+	shelter_mgr:UnregisterNpc(self.object)
+	action_base.finalize(self)
+
+end
+
+--/ ------------------------------------------------------------------
+class "action_goto_shelter" (action_base)
+--/ ------------------------------------------------------------------
+--/(1) go-run to cover
+--/ ----------------------------------------------
+function action_goto_shelter:__init(action_name, st, npc) super(npc, action_name)
+	self.st = st
+end
+
+function action_goto_shelter:initialize()
+	if not (self.object and self.object:alive()) then return false end --/>
+	action_base.initialize(self)	
+	--self.no_shelter_panic = false
+	--self.death = false
+	--log("ac:goto_shelter:ini: NPC=[%s]", self.object:name(), "") --/#~#
+	if not tStandingNPCs[self.object:name()] then
+		self.object:set_desired_position()
+		self.object:set_desired_direction()
+		--log("ac:action_goto_shelter setting pos")	
+		--self:panic_mode() --testing
+	end	
+end
+
+function action_goto_shelter:execute()
+	action_base.execute(self)
+	
+	if not shelter_mgr:isAssigned(self.object) then
+		shelter_mgr:AssignShelter(self.object)
+		--log("shelter assigned")
+	end
+	if  self.no_shelter_panic and not self.object:name() == "cordon_fox" then
+		self:panic_mode()
+		return --/>
+	end
+	if self.st.out_restr or self.st.in_restr then
+		self.object:remove_restrictions(self.st.out_restr, self.st.in_restr)
+		self.object:remove_all_restrictions()
+	end
+	if not shelter_mgr:isAssigned(self.object) then
+		--shelter_mgr:AssignShelter(self.object)
+		if not shelter_mgr:isAssigned(self.object) then --/ cover not specified
+			if not shelter_mgr:isAvailable(self.object) then --/ no avaliable covers
+				--log("goto shelter no available cover so set panic for npc [%s]",self.object:name())
+				self:panic_mode()
+			end
+		end
+		--log("goto shelter check is not assigned to shelter so returning for npc [%s]",self.object:name())
+		return --/>
+	end
+
+	if not tStandingNPCs[self.object:name()] then
+		--log("ac:goto_shelter:exe: NPC=[%s]", self.object:name(), "") --/#~#
+		local lvid = shelter_mgr:GetInShelterLvid(self.object)
+		if not self.object:accessible(lvid) then
+			--log("ac:goto_shelter:exe: NPC=[%s] <~ vertex[%d] is not accessible:<%s>", self.object:name(), lvid, "Warning!")
+			lvid = self.object:accessible_nearest(shelter_mgr:GetInShelterPos(self.object), vector():set(0,0,0))
+			if not lvid then
+				shelter_mgr:RemoveNpc(self.object)
+				abort("%s:ac:goto_shelter:exe: NPC=[%s] not accessible", sModule, self.object:name(), "")
+				return --/>
+			end
+		else
+			shelter_mgr:SetInShelterPos(self.object, lvid)
+			--log("setting lvid [%s] and game path [%s] for npc [%s]",tostring(lvid),tostring(game_object.level_path),self.object:name())
+			self.object:set_dest_level_vertex_id( lvid )
+		
+		if self.object:path_type() ~= game_object.level_path then
+			self.object:set_path_type(game_object.level_path)
+		end
+			self:set_anim_state()
+		end
+	else
+		shelter_mgr:SetInShelterPos(self.object, self.object:level_vertex_id())
+		if self.object:path_type() ~= game_object.level_path then
+			self.object:set_path_type(game_object.level_path)
+		end
+		--log("all fine :D")
+	end
+
+end
+
+function action_goto_shelter:set_anim_state()
+	self.anim = "blow_no_cover_panic"
+	
+	local shelter_pos = shelter_mgr:GetInShelterPos(self.object)
+	local dist = self.object:position():distance_to(shelter_pos)
+		if dist <= 15 then
+			self.anim = "walk"
+		elseif dist > 15 and dist <= 40 then
+			self.anim = "rush"
+		elseif dist > 40 and dist <= 50 then
+			self.anim = "assault"
+		elseif dist > 50 and dist <= 60 then
+			self.anim = "sprint"
+		end
+		
+	if state_mgr.get_state(self.object) ~= self.anim then
+		state_mgr.set_state(self.object, self.anim, nil, nil, nil, {animation = true}, nil)
+		--log("ac:goto_shelter:set_anim_state: NPC=[%s] <~ anim=[%s]", self.object:name(), self.anim, "") --/#~#
+	end
+	
+end
+
+function action_goto_shelter:get_dest_vertex()
+	local npc_lvid, lvid = self.object:level_vertex_id(), nil
+	for _,v in ipairs(dir_vertex) do
+		lvid = level.vertex_in_direction(npc_lvid, v, 5)
+		if lvid ~= npc_lvid and self.object:accessible(lvid) then
+			return lvid --/>
+		end
+	end
+	return nil
+end
+
+function action_goto_shelter:panic_mode_action()
+	local oPlanner = self.object:motivation_action_manager()
+	local oAction
+	for idx,v in ipairs(tBindActs) do
+		oAction = oPlanner:action(v)
+		oAction:add_precondition (world_property(iEvl_AI_Blowout +2, false))
+		if idx == 1 or idx == 5 then
+			oAction:add_precondition (world_property(iEvl_AI_Blowout, false))
+		end
+	end
+end
+
+function action_goto_shelter:panic_mode()
+
+	if not self.no_shelter_panic then
+		self.no_shelter_panic = true
+		self.dest_lvid = self:get_dest_vertex()
+		self.prev_dest_lvid = self.dest_lvid
+		self.snd_time  = time_global() + 4000
+	end
+	
+	if self.snd_time < time_global() then
+		self.snd_time = time_global() + 4000
+		if math.random() > 0.5 and not (self.snd_panic and self.snd_panic:playing()) then
+			self.snd_panic = xr_sound.get_safe_sound_object( panic_sounds[math.random(#panic_sounds)] )
+			self.snd_panic:play_at_pos(self.object, self.object:position(), 0, sound_object.s3d)
+		end
+	end
+
+	if not self.dest_lvid then
+		if shelter_mgr:isAssigned(self.object) then
+			shelter_mgr:UnregisterNpc(self.object)
+		end
+		self:panic_mode_action()
+		if state_mgr.get_state(self.object) ~= "blow_no_cover" then
+			state_mgr.set_state(self.object, "blow_no_cover", nil, nil, nil, {animation = true}, nil)
+		end
+	elseif self.object:position():distance_to(level.vertex_position(self.dest_lvid)) > 3 then
+		if shelter_mgr:isAssigned(self.object) then
+			shelter_mgr:UnregisterNpc(self.object)
+		end
+		self:panic_mode_action()
+		self.object:set_dest_level_vertex_id(self.dest_lvid)
+		self.object:set_path_type(game_object.level_path)
+		--log("panic mode setting lvid [%s] and game path [%s] for npc [%s]",tostring(lvid),tostring(game_object.level_path),self.object:name())
+
+		if state_mgr.get_state(self.object) ~= "blow_no_cover" then
+			state_mgr.set_state(self.object, "blow_no_cover", nil, nil, nil, {animation = true}, nil)
+		end
+		
+		
+	else --/ almost in cover...
+		self.dest_lvid = self:get_dest_vertex()
+		if self.dest_lvid == self.prev_dest_lvid then
+			self.prev_dest_lvid = nil
+			self.dest_lvid = nil
+		else
+			self.prev_dest_lvid = self.dest_lvid
+		end
+
+	
+		return --/>
+	end
+end
+
+function action_goto_shelter:finalize()
+	--log("finalising goto shelter for npc [%s] and is in shelter = [%s] and blowout surge started = [%s]",self.object:name(),tostring(shelter_mgr:isInside(self.object)),tostring(psi_storm_manager.is_surge()))
+	--log("ac:goto_shelter:fin: NPC=[%s] :(%s)", self.object:name(), "x") --/#~#
+	if not self.object:alive() then
+		if shelter_mgr:isAssigned(self.object) then
+			shelter_mgr:UnregisterNpc(self.object)
+		end
+	end
+	action_base.finalize(self)
+end
+
+--/ ------------------------------------------------------------------
+class "action_outside_shelter" (action_base)
+--/ ------------------------------------------------------------------
+--/(2) - preparing to die...
+--/ ----------------------------------------------
+function action_outside_shelter:__init(action_name, st, npc) super(npc, action_name)
+	self.st = st
+end
+
+function action_outside_shelter:initialize()
+	if not (self.object and self.object:alive()) then return false end --/>
+	action_base.initialize(self)	
+	
+	if shelter_mgr:isAssigned(self.object) then
+		if shelter_mgr:isInside(self.object) then
+			return
+		end
+	end
+	if not tStandingNPCs[self.object:name()] then
+		--log("ac:outside_shelter:ini: NPC=[%s]", self.object:name(), "") --/#~#
+		self.object:set_desired_position()
+		self.object:set_desired_direction()
+	end
+	self.anim = "blow_no_cover"
+	--if math.random(1000, 10000) % 3 == 1 then
+		--self.anim = "blow_no_cover"
+	--else
+		--self.anim = "blow_no_cover"
+	--end
+	self.time_death = time_global() + math.random(10,24)*1000
+	--log("time to die = [%s]",tostring(self.time_death),"")
+end
+
+function action_outside_shelter:execute()
+	action_base.execute(self)
+
+	if shelter_mgr:isAssigned(self.object) then
+		if shelter_mgr:isInside(self.object) then
+			return
+		end
+	end
+	if self.object:name() == "cordon_fox" then
+		return
+	end
+
+	if state_mgr.get_state(self.object) ~= self.anim then
+		--log("ac:outside_shelter:exe: NPC=[%s] <~ anim=[%s]", self.object:name(), self.anim, "") --/#~#
+		state_mgr.set_state(self.object, self.anim, nil, nil, nil, {animation = true}, nil)
+	end
+	
+	if time_global() > self.time_death then
+		if not tExcludedNPCs[self.object:name()] and not tStandingNPCs[self.object:name()] then
+			--log("ac:outside_shelter:exe: NPC=[%s] <~ anim=[%s] time to die is now!", self.object:name(), self.anim, "") --/#~#
+			self.object:kill(self.object)
+		end
+	end
+end
+
+function action_outside_shelter:finalize()
+	--log("ac:outside_shelter:fin: NPC=[%s] :(%s)", self.object:name(), "x") --/#~#
+	shelter_mgr:UnregisterNpc(self.object)
+	action_base.finalize(self)
+end
+
+--/ ------------------------------------------------------------------
+class "action_zombied_fall" (action_base)
+--/ ------------------------------------------------------------------
+--/(3) - zombied 'get high' from blowout
+--/ ----------------------------------------------
+function action_zombied_fall:__init(action_name, st, npc) super(npc, action_name)
+	self.st = st
+end
+
+function action_zombied_fall:initialize()
+	if not (self.object and self.object:alive()) then return false end --/>
+	action_base.initialize(self)	
+	--log("ac:zombied_fall:ini: NPC=[%s]", self.object:name(), "") --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	--log("ac:zombied_fall setting pos")
+	
+	self.anim = "wounded_zombie"
+end
+
+function action_zombied_fall:execute()
+	action_base.execute(self)
+	
+	self:set_anim_state()
+end
+
+function action_zombied_fall:set_anim_state()
+	if state_mgr.get_state(self.object) ~= self.anim then
+		state_mgr.set_state(self.object, self.anim, nil, nil, nil, {animation = true}, nil)
+	end
+end
+
+function action_zombied_fall:finalize()
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	if st.log then log("add_to_binder: NPC=[%s], scheme=[%s], section=[%s]:%s", npc:name(), scheme, section, ">") end --/#~#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	if not bEnabled then
+		--/ Evaluators (stub) -------------------------------------------
+		oPlanner:add_evaluator(iEvl_AI_Blowout,    property_evaluator_const(false))
+		oPlanner:add_evaluator(iEvl_AI_Blowout +1, property_evaluator_const(false))
+		oPlanner:add_evaluator(iEvl_AI_Blowout +2, property_evaluator_const(false))
+		oPlanner:add_evaluator(iEvl_AI_Blowout +3, property_evaluator_const(false))
+	elseif npc:character_community() == "zombied" then
+		st.is_zombied = true
+		--/ Evaluators (zombied) ----------------------------------------
+		oPlanner:add_evaluator(iEvl_AI_Blowout,    property_evaluator_const(false)) --/ stub
+		oPlanner:add_evaluator(iEvl_AI_Blowout +1, property_evaluator_const(false)) --/ stub
+		oPlanner:add_evaluator(iEvl_AI_Blowout +2, property_evaluator_const(false)) --/ stub
+		oPlanner:add_evaluator(iEvl_AI_Blowout +3, this.evaluator_is_zombied("ev_is_zombied",st,npc))
+		--/ New Action(3) (zombied)
+
+		local oNewAction = this.action_zombied_fall("ac_zombied_fall",st,npc)
+		xr_motivator.addMainPrecondition(oNewAction)
+		oNewAction:add_precondition(world_property(iEvl_IsWounded, false)) --/ not wounded
+		oNewAction:add_precondition(world_property(iEvl_AI_Blowout +3, true ))
+		oNewAction:add_effect(world_property(iEvl_AI_Blowout +3, false))
+		oPlanner:add_action(iAct_AI_Blowout +3, oNewAction)
+		st.action = oNewAction --/#!# for subscribe
+		--/ Actions (zombied)
+		local oAction = oPlanner:action(stalker_ids.action_alife_planner)
+		oAction:add_precondition(world_property(iEvl_AI_Blowout +3, false))
+
+	else
+		--/ Evaluators --------------------------------------------------
+		oPlanner:add_evaluator(iEvl_AI_Blowout,    this.evaluator_see_blowout    ("ev_see_blowout",    st,npc))
+		oPlanner:add_evaluator(iEvl_AI_Blowout +1, this.evaluator_inside_shelter ("ev_inside_shelter", st,npc))
+		oPlanner:add_evaluator(iEvl_AI_Blowout +2, this.evaluator_outside_shelter("ev_outside_shelter",st,npc))
+		oPlanner:add_evaluator(iEvl_AI_Blowout +3, property_evaluator_const(false)) --/ stub (zombied)
+		
+	
+			--/ New Action(0) - sitting in cover (wait blowout to finish)
+		local oNewAction = this.action_wait_till_end("ac_wait_till_end",st,npc)
+		xr_motivator.addMainPrecondition(oNewAction)
+		for _,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+		end
+		oNewAction:add_precondition(world_property(iEvl_AI_Blowout,    true ))
+		oNewAction:add_precondition(world_property(iEvl_AI_Blowout +1, true )) --/ inside cover
+		oNewAction:add_effect(world_property(iEvl_AI_Blowout, false))
+		oPlanner:add_action(iAct_AI_Blowout, oNewAction)
+		st.action = oNewAction --/#!# for subscribe
+		
+		--/ New Action(1) - running to shelter(cover)
+		oAction = this.action_goto_shelter("ac_goto_shelter",st,npc)
+		--/ Note: not using conditions on enemies(property_enemy) and in danger(property_danger)
+		
+		oAction:add_precondition(world_property(stalker_ids.property_alive,    true)) --/ alive
+		oAction:add_precondition(world_property(stalker_ids.property_anomaly, false)) --/ no anomalies
+		
+		for idx,v in ipairs(tBindEvls) do
+			oAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+		end
+		oAction:add_precondition(world_property(iEvl_AI_Blowout,    true ))
+		oAction:add_precondition(world_property(iEvl_AI_Blowout +1, false))
+		oAction:add_effect(world_property(iEvl_AI_Blowout +1, true))
+		oAction:add_effect(world_property(iEvl_AI_Blowout, false))
+		oPlanner:add_action(iAct_AI_Blowout +1, oAction)
+			
+		--/ New Action(2) - staying outside...
+		oOutAction = this.action_outside_shelter("ac_outside_shelter",st,npc)
+		xr_motivator.addMainPrecondition(oOutAction)
+		for _,v in ipairs(tBindEvls) do
+			oOutAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+		end
+		oOutAction:add_precondition(world_property(iEvl_AI_Blowout,    true ))
+		oOutAction:add_precondition(world_property(iEvl_AI_Blowout +1, false))
+		oOutAction:add_precondition(world_property(iEvl_AI_Blowout +2, true ))
+		oOutAction:add_effect(world_property(iEvl_AI_Blowout +2, false))
+		oOutAction:add_effect(world_property(iEvl_AI_Blowout,    false))
+		oPlanner:add_action(iAct_AI_Blowout +2, oOutAction)
+		
+
+		--/ Actions (additional preconditions for some standard operators)
+			local oAction = oPlanner:action(xr_actions_id.alife)
+			oAction:add_precondition (world_property(iEvl_AI_Blowout, false)) -- включаем алайф при заходе в укрытие, если не видит выброс
+			
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	--log("set_scheme: NPC=[%s], scheme=[%s], section=[%s], gulag=[%s]:%s", npc:name(), scheme, section, gulag_name, ">")
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	if st.action then
+		--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+		subscribe_ai_event(npc, st.action, scheme)
+	end
+	st.enable = bEnabled
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme) --/#+#
+	local idNPC = npc and npc:id()
+	local st = idNPC and db.storage[idNPC] and db.storage[idNPC][scheme]
+	if st then
+		if st.action then
+			unsubscribe_ai_event(idNPC, st.action, scheme)
+		end
+		--log("disable_scheme:NPC=[%s],scheme=[%s]", npc:name(), scheme, "") --/#~#
+		st.enabled = false
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

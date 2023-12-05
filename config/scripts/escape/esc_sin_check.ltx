@@ -1,0 +1,11 @@
+[logic]
+active = sr_idle@check
+
+[sr_idle@check]
+on_actor_inside = {+esc_rescue_fox_start +esc_fox_rescued} sr_idle@check_out
+
+[sr_idle@check_out]
+on_actor_outside = {+esc_fox_rescued} sr_idle@check_in
+
+[sr_idle@check_in]
+on_actor_inside = {+esc_fox_rescued} nil %+esc_actor_attacks_dstalker =release%

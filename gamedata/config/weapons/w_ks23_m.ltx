@@ -1,0 +1,180 @@
+[wpn_ks23_m]:weapon_base
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\ks23"
+animation_slot                          = 9
+class                                   = WP_SHOTG
+hand_dependence                         = 1
+repair_compatibility                    = spas
+scheduled                               = off
+weapon_class                            = shotgun
+weapon_rank                             = 3
+
+; Inventory icon
+inv_grid_width                          = 5
+inv_grid_height                         = 2
+inv_grid_x                              = 6
+inv_grid_y                              = 22
+
+; Text
+inv_name                                = wpn-ks23_m
+inv_name_short                          = wpn-ks23_m
+description                             = enc_weapons1_wpn-ks23_m
+
+; Visual
+hud                                     = wpn_ks23_hud
+position                                = -0.024, -0.097, 0.
+orientation                             = 0, -4, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+strap_position                          = -0.26, -0.10, 0.05
+strap_orientation                       = -15, -9, 110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_ks23\wpn_ks23.ogf
+
+; Effects
+fire_point                              = 0.0, 0.158, 0.647
+flame_particles                         = weapons\generic_weapon06
+smoke_particles                         = amik\weapons\smoke_particles\smoke_particles_pump_01
+shell_point                             = 0.0, 0.180, 0.647
+shell_particles                         = ; shell is in the anim
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 6.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+
+; Sounds
+snd_add_cartridge                       = weapons\ks23\load
+snd_close_weapon                        = weapons\ks23\close, 1.0, 0.25
+snd_draw                                = weapons\ks23\draw
+snd_empty                               = weapons\ks23\empty, 	0.5
+snd_holster                             = weapons\ks23\holster
+snd_open_weapon                         = weapons\ks23\open
+snd_reload                              = weapons\ks23\reload	
+snd_shoot                               = weapons\ks23\shoot
+snd_shoot_duplet                        = weapons\ks23\shoot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 300
+upgr_icon_y                             = 800
+upgr_icon_width                         = 300
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 6400
+inv_weight                              = 3.85
+ph_mass                                 = 4
+
+; Ammo
+ammo_limit                              = 60
+ammo_class                              = ammo_23x75_buck, ammo_23x75_buck_ap, ammo_23x75_barr
+ammo_mag_size                           = 20
+
+; Features
+fire_modes                              = 1
+scope_status                            = 0
+silencer_status                         = 0
+tri_state_reload                        = off
+
+; Impact
+hit_impulse                             = 800
+hit_type                                = fire_wound
+hit_power                               = 5.0
+hit_probability_gd_novice               = 5.00
+hit_probability_gd_stalker              = 5.00
+hit_probability_gd_veteran              = 5.00
+hit_probability_gd_master               = 5.00
+
+; Ballistics
+bullet_speed                            = 780
+fire_distance                           = 350
+fire_dispersion_base                    = 0.006 ; Like wincheaster
+
+; Performance
+rpm_semi                                = 255
+
+; Reliability
+;The same as Wincheaster
+misfire_start_prob                      = 0.05
+misfire_end_prob                        = 0.1
+condition_shot_dec                      = 0.00165
+condition_queue_shot_dec                = 0.00165
+
+; Handling
+control_inertion_factor                 = 1.5f
+PDM_disp_base                           = 0.03
+PDM_disp_vel_factor                     = 0.03
+PDM_disp_accel_factor                   = 0.03
+
+; Recoil
+;The same as Wincheaster
+cam_relax_speed                         = 2.0
+cam_dispersion                          = 3.5
+cam_dispersion_inc                      = 0.05
+cam_dispersion_frac                     = 0.05
+cam_step_angle_horz                     = 2.0
+zoom_cam_relax_speed                    = 1.0
+zoom_cam_dispersion                     = 2.0
+zoom_cam_step_angle_horz                = 1.0
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_wincheaster1300
+upgrades                                = up_gr_firstab_wincheaster1300, up_gr_seconab_wincheaster1300, up_gr_thirdab_wincheaster1300, up_gr_fourtab_ks23
+installed_upgrades                      = 
+
+; AI Params
+ef_main_weapon_type                     = 1
+ef_weapon_type                          = 7 ; Shotgun
+min_radius                              = 0
+max_radius                              = 50
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 1.0
+
+
+[wpn_ks23_m_hud]:hud_base
+
+aim_hud_offset_pos                      = -0.136030,0.071300,-0.082000
+aim_hud_offset_rot                      = -0.011000,0.003600,0
+
+aim_hud_offset_pos_16x9			= -0.136530,0.073800,-0.082000
+aim_hud_offset_rot_16x9			= -0.006000,0.003600,0.000000
+
+anim_add_cartridge                      = ks23_reload, reload, 1.5
+anim_bore                               = ks23_idle_aim
+anim_close                              = ks23_reload_end, reload_end, 1.5
+anim_hide                               = ks23_holster,, 2.0
+anim_idle                               = ks23_idle
+anim_idle_aim                           = ks23_idle_aim
+anim_idle_moving                        = ks23_idle_move
+anim_idle_moving_crouch                 = ks23_idle_move
+anim_idle_sprint                        = ks23_idle_sprint
+anim_open                               = ks23_reload_start, reload_start, 1.5
+anim_reload                             = ks23_reload,, 1.5
+anim_shots                              = ks23_shoot, shoot
+anim_show                               = ks23_draw
+
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_bone2                              = muzzle
+fire_point                              = 0,0,0
+fire_point2                             = 0,0,0
+
+hands_position                          = -0.1,-0.12,0.25
+hands_orientation                       = 0,0,0
+
+hands_position_16x9                     = -0.1,-0.12,0.25
+hands_orientation_16x9                  = 0,0,0
+
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+
+item_visual                             = dynamics\weapons\wpn_ks23\wpn_ks23_hud
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+shell_bone                              = gilza

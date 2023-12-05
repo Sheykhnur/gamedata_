@@ -1,0 +1,48 @@
+[combat_ignore@ghost]
+
+[logic]
+active = remark@start
+combat_ignore = combat_ignore@ghost
+
+[remark@start]
+no_move = true
+no_rotate = true
+meet = no_meet
+on_timer = 1000 | remark@ghost_timeout
+combat_ignore_cond = always
+target = bun_ghost_troubles_1_look, 0
+
+;zaglushka
+on_info = {+bun_ghost_1_done} walker@ghost_checking_hydrogen %-bun_ghost_1_done%
+on_info2 = {+bun_ghost_1_1_done} remark@ghost_timeout %-bun_ghost_1_1_done%
+on_info3 = {+deactivate_radar_done} %=release%
+
+[remark@ghost_timeout]
+anim = probe
+snd = bun_replics1
+no_move = true
+no_rotate = true
+meet = no_meet
+on_signal = action_end |  walker@ghost_checking_hydrogen %+bun_ghost_1_done -bun_ghost_1%
+combat_ignore_cond = always
+target = bun_ghost_troubles_1_look, 0
+on_info = {+deactivate_radar_done} %=release%
+
+[walker@ghost_checking_hydrogen]
+path_walk = bun_ghost_troubles_2_go
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+bun_ghost_1_done -bun_ghost_1} %=teleport_npc(bun_ghost_troubles_2_walk:bun_ghost_1)%
+on_info2 = {+deactivate_radar_done} %=release%
+on_timer = 10000 | remark@ghost_timeout_finish
+
+[remark@ghost_timeout_finish]
+anim = probe_2n
+no_move = true
+no_rotate = true
+meet = no_meet
+on_signal = action_end | %+bun_ghost_1_1_done -bun_ghost_1_1%
+on_info = {+bun_ghost_1_1_done -bun_ghost_1_1} %=teleport_npc(bun_ghost_troubles_1_walk:bun_ghost_1_1)%
+on_info2 = {+deactivate_radar_done} %=release%
+combat_ignore_cond = always
+target = bun_ghost_troubles_1_look, 0

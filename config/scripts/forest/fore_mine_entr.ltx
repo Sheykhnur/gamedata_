@@ -1,0 +1,9 @@
+[logic]
+active = {-fore_mine_saved} sr_idle@1, {+fore_mine_saved} sr_idle@nil
+
+[sr_idle@1]
+on_actor_inside = {-fore_mine_saved} sr_idle@nil %+fore_mine_saved =scenario_autosave(fore_mine)%
+on_info = {+fore_mine_saved} sr_idle@nil
+
+[sr_idle@nil]
+on_info = nil

@@ -1,0 +1,158 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_tasks.script
+ Description: Gulags
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 23.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ----------------------------------------------------------------
+--/ VARIABLEs
+--/ ----------------------------------------------------------------
+local level_gulags  = xr_gulag.level_gulags --/ import
+local gulag_by_type = {} --/ tbl[gtype] = gulag
+local dynamic_ltx   = {}
+local tblHandlerLtx = { --/#+# handlers dynamic ltx
+	["mob_home"]       = gulag_dynltx.getLtx_mob_home,
+	["mob_camp"]       = gulag_dynltx.getLtx_mob_camp,
+	["mob_walker"]     = gulag_dynltx.getLtx_mob_walker,
+	["mob_eluder"]     = gulag_dynltx.getLtx_mob_eluder, --/#?# for test
+	["mob_fake_death"] = gulag_dynltx.getLtx_mob_fake_death,
+}
+--/ --------------------------
+local sModule = script_name()
+--/ ----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ----------------------------------------------------------------
+--/ Process
+--/ ----------------------------------------------------------------
+function get_gulag_by_type(gtype)
+	local g = gulag_by_type[gtype]
+	if g == nil then
+		for lname,file in pairs(level_gulags) do
+			g = file.getGulag and file.getGulag(gtype)
+			if g then
+				gulag_by_type[gtype] = g
+				return g --/>
+			end
+		end
+		gulag_by_type[gtype] = false
+		log("get_gulag_by_type: Could not find for gulag's type=[%s] :<%s>", gtype, "Warning!")
+	end
+	return g --/>
+end
+--/ -----------------------------------------------------------------
+--/ Jobs: загрузка работ
+--/ -----------------------------------------------------------------
+function loadJob(sj, gname, gtype, squad, groups, gulag)
+	local g = get_gulag_by_type(gtype)
+	if g and g.jobs then
+		g.jobs(sj, gname, gtype, squad, groups)
+	end
+end
+--/#+# заполнение таблицы секции логики работы для гулага
+function getJob(job_name, idle, prior, states, squad, group, in_rest, out_rest, online, gulag_name, predicate)
+	local tbl = {
+		section = "logic@" .. gulag_name .. "_" .. job_name, --/ string
+		idle      = idle,      --/ number
+		prior     = prior,     --/ number
+		squad     = squad,     --/ number
+		group     = group,     --/ table
+		in_rest   = in_rest,   --/ string
+		out_rest  = out_rest,  --/ string
+		online    = online,    --/ boolean or nil or string
+		predicate = predicate, --/ function or nil
+		--position_threshold = ???, --/ number (m - distance to job_location) or string ("graph" - idGv by job)
+		--timeout = 0, --/ number or nil - время (game_seconds) до прекращения работы
+		--fill_idle = 0, --/ number or nil - время (game_seconds) (не)доступности работы после смерти 'работника'
+		state = {} --/ table
+	}
+	for i=1, #states do
+		table.insert(tbl.state, states[i])
+	end
+	if predicate ~= nil and type(predicate) ~= 'function' then
+		log("getJob: gulag=[%s] job_name=[%s] predicate type=(%s)~?:<%s>", gulag_name, job_name, type(predicate), "Warning!")
+		tbl.predicate = nil
+	end
+	return tbl --/>
+end
+--/ -----------------------------------------------------------------
+--/ Dynamic ltx
+--/ -----------------------------------------------------------------
+function loadLtx(gname, gtype)
+	local h = "*" .. gname .. "*" .. gtype
+	if dynamic_ltx[h] then
+		return dynamic_ltx[h], h --/>
+	end
+	local g = get_gulag_by_type(gtype)
+	if g and g.ltx then
+		dynamic_ltx[h] = create_ini_file(g.ltx)
+		return dynamic_ltx[h], h --/>
+	end
+	return nil, nil --/>
+end
+--/#+#
+function getLtx(scheme, gname, params)
+	if tblHandlerLtx[scheme] then
+		return tblHandlerLtx[scheme](gname, params or {})
+	end
+	return "" --/>
+end
+--/ -----------------------------------------------------------------
+--/ State: проверка состояний гулагов
+--/ -----------------------------------------------------------------
+function loadStates(gname, gtype)
+	local g = get_gulag_by_type(gtype)
+	if g then
+		return g.state or (function() return 0 end) --/> or stub
+	end
+	abort("%s:loadStates: unrecognized gulag's type=[%s] or is not specified", sModule, gtype, "")
+end
+--/ -----------------------------------------------------------------
+--/#+# Проверка принадлежности объектов гулагам
+--/ -----------------------------------------------------------------
+function checkNpc(community, is_stalker, gtype, rank, se_obj)
+	local g = get_gulag_by_type(gtype)
+	if g then
+		if g.comm then
+			local lua_type = type(g.comm)
+			if lua_type == 'table' then
+				for _,v in ipairs(g.comm) do
+					if v == community then
+						return true --/>
+					end
+				end
+				return false --/>
+			elseif lua_type == 'boolean' then
+				return g.comm == is_stalker --/>
+			elseif lua_type == 'function' then
+				return g.comm(community, gtype, rank, se_obj, is_stalker) --/>
+			end
+			log("checkNpc: wrong communities type=(%s) by gtype=[%s] :<%s>", type(g.comm), gtype, "Warning!")
+		else log("checkNpc: could not find communities by gtype=[%s] :<%s>", gtype, "Warning!")
+		end
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------
+--/#+# чтение количества работ (параметр 'count' из 0-й точки пути)
+--/ -----------------------------------------------------------------
+function get_job_count(way_name,def_value)
+	if (la_patrols) then
+		return la_patrols.get_count_by_waypoint(way_name,def_value) --/>
+	end
+	local way = get_patrol(way_name)
+	local t = way and utils.parse_waypoint_data(way_name, way:flags(0), way:name(0))
+	return t and t.count and tonumber(t.count) or def_value --/>
+end
+--/ -----------------------------------------------------------------
+--/#+# чтение параметров i-oй точки пути
+--/ -----------------------------------------------------------------
+function get_waypoint_data(way_name,...)
+	if (la_patrols) then
+		return la_patrols.parse_waypoint_data(way_name,...) --/>
+	end
+	return utils.parse_waypoint_data(way_name,...) --/>
+end
+--/ -----------------------------------------------------------------------------------------------

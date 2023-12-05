@@ -1,0 +1,52 @@
+[common_ph_friction_params_on_npc_death] ;--Параметры для задания изменения трения в момент смерти персонажа
+ph_skeleton_airr_lin_factor = 1.0 ;--/ вероятно: "вязкость воздуха", но ещё и что-то похожее на инерцию
+ph_skeleton_airr_ang_factor = 0.0 ;--/ вероятно: коэффициент "трение в суставах"
+ph_skeleton_hinger_factor1  = 1.0
+ph_skeleton_ddelay          = 5.0 ;-- время изменения значения трения в суставе с момента создания шелла, сек
+
+ph_skel_fatal_impulse_factor = 1.0 ;--/ вероятно: коэффициент, определяющий степень проявления хит_импульса
+ph_after_death_velocity_factor = 0.75
+ph_skel_shot_up_factor       = 0.25
+
+ph_skeleton_skin_friction_start = 0.0 ;--Стартовое значение трения для оболочки
+ph_skeleton_skin_friction_end   = 1.0 ;--Финальное значение трения для оболочки
+ph_skeleton_skin_ddelay         = 4.0 ;--Время изменения значения трения с момента создания шелла, сек.
+ph_skeleton_skin_ddelay_after_wound = 2.0 ;--Время изменения значения трения с момента создания шелла, сек.(для персонажа после ранения)
+ph_pelvis_factor_low_pose_detect = 0.3 ;--длина луча на коллизию с землёй из центра пелвиса
+;--если коллизиться, то персонаж находиться в нижней позе(или ранен)
+;--(в этом случае для него задаются другие параметры трения и отсутствует домножение импульса для первого хита)
+ph_character_have_wounded_state = true ;--имеет ли персонаж состояние раненый
+ph_death_impulse_cooldown_speed = 1500 ;--скорость снижения накопленного импульса (в момент смерти к импульсу последней пули добавляется накопленный импульс)
+
+[monster_base]:common_ph_friction_params_on_npc_death
+actor_hit_effect = effector_monster_hit
+ph_skel_collision_enable = false ;--/#+# collision of dead bodies
+Friend_Community_Overrides          = stranger
+
+[human_base]:common_ph_friction_params_on_npc_death
+ph_skel_collision_enable = true ;--/#+# collision of dead bodies
+attachable_items = device_torch,hand_radio,bread,kolbasa,vodka,vodka_a,energy_drink,bandage,medkit_a,guitar_a,harmonica_a,wpn_binoc,decoder,kruglov_flash,sar_tube,sar_brick,sar_box,righthand_pda,hand_megafon
+
+[weak_profile_base]
+rank                                = 0
+spec_rank                           = weak
+
+[normal_profile_base]
+rank                                = 200
+spec_rank                           = normal
+
+[middle_strong_profile_base]
+rank                                = 400
+spec_rank                           = middle_strong
+
+[strong_profile_base]
+rank                                = 600
+spec_rank                           = strong
+
+[very_strong_profile_base]
+rank                                = 900
+spec_rank                           = very_strong
+
+[uniq_profile_base]
+rank                                = 1500
+spec_rank                           = uniq

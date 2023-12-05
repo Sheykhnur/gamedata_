@@ -1,0 +1,107 @@
+[danger@esc_stalker_factory]
+;ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 75
+
+[threshold@esc_stalker_factory]
+max_ignore_distance = 12
+ignore_monster = 0
+
+[combat_ignore@esc_stalker_factory]
+
+[danger@esc_stalker_factory_wolf]
+ignore_distance  = 75
+danger_inertion_time = 3000
+danger_inertion_time_corpse = 0
+
+[danger@esc_stalker_factory_wolf_after]
+ignore_distance  = 0
+danger_inertion_time = 5000
+
+[threshold@esc_stalker_factory_wolf]
+ignore_monster = 1
+
+[death@factory_wolf]
+on_info = %+esc_factory_wolf_dead%
+
+[logic@esc_stalker_factory_wolf]
+active = walker@esc_stalker_factory_wolf
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory_wolf
+on_death = death@factory_wolf
+
+[walker@esc_stalker_factory_wolf]
+path_walk = wolf_run
+combat_ignore_cond = {=fighting_dist_ge(30)} 
+def_state_standing = guard
+danger = danger@esc_stalker_factory_wolf
+threshold = threshold@esc_stalker_factory_wolf
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+meet = meet@esc_stalker_factory_wolf
+on_info = {+esc_wolf_changing_smart} %+esc_wolf_registered%
+on_info2 = {+esc_wolf_teleported} walker@esc_stalker_factory_wolf_guard
+;on_info3 = {+esc_wolf_registered -esc_wolf_teleported} %=teleport_distance_npc_not_seen(esc_stalker_factory_wolf_path:esc_wolf_teleported)%
+
+
+[meet@esc_stalker_factory_wolf]
+use = true
+use_wpn = true
+victim 	= 10| actor
+victim_wpn = 10| actor
+meet_state = 5|guard
+meet_state_wpn = 5|guard
+
+[walker@esc_stalker_factory_wolf_guard]
+path_walk = wolf_path
+path_look = wolf_look
+combat_ignore_cond = {=fighting_dist_ge(30)}
+danger = danger@esc_stalker_factory_wolf_after
+threshold = threshold@esc_stalker_factory_wolf
+def_state_standing = guard
+on_signal = rds | %+esc_spawn_fanatic%
+
+[logic@esc_stalker_factory_wolf_off]
+active = walker@esc_stalker_factory_wolf_off
+
+[walker@esc_stalker_factory_wolf_off]
+path_walk = wolf_path
+path_look = wolf_look
+
+[logic@esc_stalker_factory_guard]
+active = walker@esc_stalker_factory_guard
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[walker@esc_stalker_factory_guard]
+path_walk = guard_path
+path_look = guard_look
+combat_ignore_cond = {=fighting_dist_ge(20)} 
+def_state_standing = guard
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+danger = danger@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[logic@esc_stalker_factory_walker1]
+active = walker@esc_stalker_factory_walker1
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[walker@esc_stalker_factory_walker1]
+path_walk = walker1_path
+combat_ignore_cond = {=fighting_dist_ge(15)} 
+danger = danger@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[logic@esc_stalker_factory_walker2]
+active = walker@esc_stalker_factory_walker2
+combat_ignore = combat_ignore@esc_stalker_factory
+threshold = threshold@esc_stalker_factory
+
+[walker@esc_stalker_factory_walker2]
+path_walk = walker2_path
+combat_ignore_cond = {=fighting_dist_ge(15)} 
+danger = danger@esc_stalker_factory
+threshold = threshold@esc_stalker_factory

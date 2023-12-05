@@ -1,0 +1,15 @@
+[logic]
+active = ph_idle@locked
+
+[ph_idle@locked]
+nonscript_usable = false
+tips = tip_box_unknown
+on_info = {+esc_safe_task} ph_idle@esc_blockpost
+
+[ph_idle@esc_blockpost]
+nonscript_usable = true
+is_safe = true
+code = 4, 7, 1
+on_unlock = esc_safe_task_done
+tips = action_open_safe
+

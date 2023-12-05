@@ -1,0 +1,225 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : db.script
+ Description: Database of alive online objects, zones and restrictors, actor
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : Gr1ph00n, ...
+ Last edit  : 27.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+actor_proxy         = actor_proxy.actor_proxy() --/ server-object by class 'actor_proxy'
+actor               = nil --/ game-object by class 'actor_binder'
+trader              = nil --/ game-object by class 'trader_binder'
+storehouse          = {} --/#+# (the general storehouse)
+storage             = {}
+zone_by_name        = {}
+sl_by_name          = {} --/ projectors
+sound               = {}
+heli                = {}
+camp_storage        = {}
+story_by_id         = {}
+smart_terrain_by_id = {}
+info_restr          = {}
+strn_by_respawn     = {}
+flame_zones         = {} --/#+# Gr1ph00n
+tStorNPC            = {} --/#+# array online NPC (true - human, false - monster, exept trader) ( Tab[ID] = boolean )
+tStorHum            = {} --/#+# array all humans in game (on all locations) ( Tab[ID] = boolean )
+tStorMob            = {} --/#+# array all monsters in game (on all locations) ( Tab[ID] = boolean )
+
+iSSVer              = script_server_object_version() or -1 --/ 'Script-Server version' (7)
+iGSVer              = -1 --/ 'Game-Server version' (7)
+iBuildMod           = -1 --/ 'Build-Mod  version' (5xxx)
+sTxtVerGS           = "" --/ text label 'Game-Server' version ("1.1000 RC2")
+sTxtVerLA           = "" --/ text label
+sTxtErr             = ""
+
+is_mixed_mode       = ( type(IsMixedMode) == 'function' and IsMixedMode() ) --/ or string.match(command_line(),"_mixed") ~= nil
+iMax_s32            = is_mixed_mode and 4294967295 or 4294967296
+
+idMapNow            = 0 --/ ID for current level
+sMapNow             = "" --/ current level name
+sMapSav             = "" --/ pre level name	
+--/ min&max Id-vertexes for current level
+idGvMinNow          = -1
+idGvMaxNow          = -1
+idLvMaxNow          = -1
+
+bServerStart        = false
+bGameLoaded         = false
+
+sLanguage           = "eng"
+
+is_dbg1, is_dbg2, is_dbg3 = false, false, false
+
+iHud                = 0 --/ index: stock/trade/box - opening/closings
+
+oCTime_Start        = nil
+tMaxVertexIds       = {}
+
+lost_alpha_cfg      = ini_file("lost_alpha\\lost_alpha_cfg.ltx")
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+function add_actor(obj)
+	actor = obj
+	actor_proxy:net_spawn(obj)
+	add_obj( obj )
+end
+
+function del_actor()
+	del_obj(actor)
+	actor_proxy:net_destroy()
+	actor = nil
+end
+
+function add_obj(obj,id,cid)
+	local idObj, iClassId = id or obj:id(), cid or obj:clsid()
+	if IsStalker(obj,iClassId) then
+		tStorNPC[idObj] = true
+	elseif IsMonster(obj,iClassId) then
+		tStorNPC[idObj] = false
+	end
+end
+
+function del_obj(obj,id,cid)
+	local idObj = id or (obj and (type(obj.id) == 'number' and obj.id) or obj:id())
+	if idObj then
+		storage[idObj] = nil
+		if cid and IsNPC(obj,cid) then
+			tStorNPC[idObj] = nil
+		end
+	end
+end
+
+function add_zone(zone)
+	zone_by_name[zone:name()] = zone
+end
+
+function del_zone(zone)
+	zone_by_name[zone:name()] = nil
+	del_obj(zone)
+end
+
+function add_sl(sl)
+	sl_by_name[sl:name()] = sl
+end
+
+function del_sl(sl)
+	sl_by_name[sl:name()] = nil
+	del_obj( sl )
+end
+
+function add_heli(obj)
+	heli[obj:id()] = obj
+end
+
+function del_heli(obj)
+	heli[obj:id()] = nil
+end
+
+function add_smart_terrain(obj,id)
+	smart_terrain_by_id[id or obj.id] = obj
+end
+
+function del_smart_terrain(obj,id)
+	smart_terrain_by_id[id or obj.id] = nil
+end
+--/------------------------------------------------------------------
+--/#+#
+--/------------------------------------------------------------------
+function Add_Hum(idObj)
+	if idObj then
+		tStorHum[idObj] = true
+	end
+end
+function Del_Hum(idObj)
+	if idObj and tStorHum[idObj]  then
+		tStorHum[idObj] = nil
+	end
+end
+
+function Add_Mob(idObj)
+	if idObj then
+		tStorMob[idObj] = true
+	end
+end
+function Del_Mob(idObj)
+	if idObj and tStorMob[idObj] then
+		tStorMob[idObj] = nil
+	end
+end
+
+--/ ---------------------------------------------
+--/#+# Switchings 'online->offline->online'
+--/ ---------------------------------------------
+local tbl_switchings = {} --/ ID-array of flags/counters for switching
+local switchings_active = false --/ flag of launched callback of switching
+local sim = alife()
+
+local execute_switchings = function()
+	local can_switch = next(tbl_switchings) ~= nil --/ flag: exist switches
+	if can_switch then
+		for id,v in pairs(tbl_switchings) do
+			local se_obj = sim:object(id) --/ server_object
+			can_switch = se_obj ~= nil --/ flag: exist server_object?
+			if can_switch then
+				v.cnt = (v.cnt or 0) +1
+				if se_obj.online then --/ object in 'online'
+					if not v.off then
+						if v.off == false and v.cnt == 1 then --/ phase-1: need switch 'online->offline'
+							v.off = true --/ change flag
+							sim:set_switch_online(id, false)
+							sim:set_switch_offline(id, true)
+						else --/ already switched
+							can_switch = false --/ switches finished -> clear
+						end
+					end
+				else --/ object in 'offline' - set switches 'offline->online'
+					if v.off == true then --/ phase-2: flag: need switch to 'online'
+						v.off,v.cnt = nil,1 --/ clear flag & reset count
+						sim:set_switch_online (id, true)
+						sim:set_switch_offline(id, false)
+					end
+				end
+			end
+			if not can_switch or v.cnt > 48 then --/ or if limit is exceeded -> clear:
+				if v and v.cnt > 32 then --/#~#
+--					log("db:execute_switchings:Obj=[%s/%s]:cnt(%s):flag(%s)=>online(%s):<%s>", se_obj and se_obj:name(), id, v.cnt, v.off, se_obj and se_obj.online, "Warning!")
+				end
+				tbl_switchings[id] = nil
+			end
+		end
+		can_switch = next(tbl_switchings) ~= nil --/ flag: swithes finished?
+	end
+	return not can_switch --/>
+end
+
+function do_switchings(id)
+	if not sim then sim = alife() end
+	local se_obj = type(id) == 'number' and id >= 0 and sim:object(id)
+	if se_obj then
+		--/ added to table 'online->offline->online'
+		tbl_switchings[id] = {cnt = 0, off = not se_obj.online}
+		--/ start callback for 'online->offline->online'
+		if not switchings_active then
+			switchings_active = true --/ set flag: active
+			level.add_call(execute_switchings, function() switchings_active = false end)
+		end
+	end
+end
+
+function callback_do_switch(uo, id, obj)
+	do_switchings(id) --/ add to transition array 'online->offline->online'
+end
+
+function is_switchings(id)
+	if id and tbl_switchings[id] then
+		return tbl_switchings[id].off ~= nil --/>
+	end
+	return nil --/>
+end
+--/------------------------------------------------------------------------------------------------

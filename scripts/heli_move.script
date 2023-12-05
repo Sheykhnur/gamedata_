@@ -1,0 +1,468 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : heli_move.script
+ Description: Helicopter movement
+ Copyright  : 2004 © GSC Game World
+ Editors    : 
+ Last edit  : 05.05.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tHeliMover  = {}
+local iState_Move = 0
+local iState_Look = 1
+local iDefaultVelocity = Get_Cfg_Num32(system_ini(), "helicopter", "velocity", 30, true)
+local sFreePath = "heli_point_fake"
+local vDummyVector = vector()
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function get_heli_mover(obj, st)
+	local id = obj and obj:id()
+	if id and tHeliMover[id] == nil and st then
+		tHeliMover[id] = CHeli_Move_Manager(obj, st)
+	end
+	return tHeliMover[id] --/>
+end
+function del_heli_mover(obj, obj_id)
+	local id = obj_id or (obj and obj:id())
+	if id and tHeliMover[id] then
+		tHeliMover[id] = nil
+	end
+	heli_combat.del_heli_combat(obj, id)
+end
+--/ ---------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "CHeli_Move_Manager"
+--/ -----------------------------------------------------------------------------------------------
+function CHeli_Move_Manager:__init( obj, st )
+	self.object = obj
+	self.obj_id = obj:id()
+	self.CHeli  = obj:get_helicopter()
+	self.st     = st
+	self.log    = st.log --/ for debug
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function CHeli_Move_Manager:reset_scheme( bLoading )
+	self.max_velocity = self.st.default_velocity or iDefaultVelocity --/#fix#
+	self.CHeli:TurnEngineSound( self.st.engine_sound )
+	self.st.signals = {}
+	--/ waypoints
+	if self.st.path_move then --/ and (level.patrol_path_exists(self.st.path_move) or self.st.path_move == sFreePath)
+		self.patrol_move = get_patrol(self.st.path_move)
+		if self.patrol_move then
+			self.st.path_move_info = utils.path_parse_waypoints(self.st.path_move)
+			self.path_move_info = self.st.path_move_info
+			self.on_points = not level.patrol_path_exists(self.st.path_move) --/#+# flight by points
+		else
+			abort("%s:obj=[%s]:unable to find path_move=[%s] on the map", sModule, self.object:name(), self.st.path_move)
+		end
+	else
+		abort("%s:reset_scheme:obj=[%s]:path_move=[%s]~doesnt exist:<%s>", sModule, self.object:name(), type(self.st.path_move), "Error!")
+	end
+	
+	if self.st.path_look then --/ and level.patrol_path_exists(self.st.path_look)
+		self.patrol_look = get_patrol(self.st.path_look)
+		if self.patrol_look then
+			self.st.path_look_info = utils.path_parse_waypoints(self.st.path_look)
+			self.path_look_info = self.st.path_look_info
+		else
+			abort("%s:obj=[%s]:unable to find path_look=[%s] on the map", sModule, self.object:name(), self.st.path_look)
+		end
+	else
+		self.patrol_look = nil
+		self.path_look_info = nil
+	end
+	if self.log then log("reset_scheme:obj=[%s/%d],path_move=[%s]:(%s)", self.object:name(), self.obj_id, self.st.path_move, ">") end --/#~#
+	
+	self.combat_mgr = self.st.combat_mgr --/ external 'combat' module
+	--/#+#
+	self.flight_mgr = self.st.flight_mgr --/ external module of 'controlled' flight
+	if self.flight_mgr then
+		if self.log then log("reset_scheme:[%d]~fly", self.obj_id, "") end --/#~#
+		self.flight_mgr:reset_state()
+	end
+	self.object:set_tip_text("")
+	self.usable = self.st.usable ~= nil
+	if self.usable then
+		local sCondUsable = xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.usable.condlist)
+		local bUsable = (sCondUsable == "true" or sCondUsable == "")
+		if bUsable then
+			if self.st.show_tips and self.st.tip_use then
+				self.object:set_tip_text(self.st.tip_use)
+			end
+		elseif self.st.show_tips and self.st.tip_locked then
+			self.object:set_tip_text(self.st.tip_locked)
+		end
+		self.object:set_nonscript_usable(bUsable)
+	end
+--	log("reset_scheme:obj=[%s/%d],Usable=[%s]", self.object:section(), self.obj_id, self.usable, "") --/#~#
+	--/<
+	if bLoading then
+--		log("reset_scheme:Heli=[%s/%d]", self.object:name(), self.obj_id, "") --/#~#
+		local oHeli = self.object
+		self.was_callback     = GetVarObj(oHeli, "wc" , false)
+		self.state            = GetVarObj(oHeli, "st" , nil)
+		self.last_index       = GetVarObj(oHeli, "li" , nil)
+		self.next_index       = GetVarObj(oHeli, "ni" , nil)
+		self.look_index       = GetVarObj(oHeli, "lki", nil)
+		self.look_finish_time = GetVarObj(oHeli, "lft", nil)
+		self.look_duration    = GetVarObj(oHeli, "ld" , nil)
+		if self.look_finish_time then
+			self.look_finish_time = self.look_finish_time + time_global()
+		end
+		if self.combat_mgr then --/#+#
+			self.combat_mgr:load()
+		end
+	else
+		self.CHeli:ClearEnemy()
+		self.CHeli:SetMaxVelocity( self.max_velocity )
+		
+		self.state            = nil
+		self.last_index       = nil
+		self.next_index       = nil
+		self.look_index       = nil
+		self.look_finish_time = nil
+		self.look_duration    = nil
+		self.was_callback     = false
+		
+		self:update_movement_state()
+	end
+--	log("reset_scheme:obj=[%s/%d],path_move=[%s],Usable=[%s]:(%s)", self.object:section(), self.obj_id, self.st.path_move, self.usable, "<") --/#~#
+end
+--/------------------------------------------------------------------
+--/ SAVE
+--/------------------------------------------------------------------
+function CHeli_Move_Manager:save()
+--	log("save:Heli=[%s/%d]:(%s)", self.object:section(), self.obj_id, ">") --/#~#
+	local oHeli = self.object
+	SetVarObj(oHeli, "wc",  self.was_callback or false)
+	SetVarObj(oHeli, "st",  self.state)
+	SetVarObj(oHeli, "li",  self.last_index)
+	SetVarObj(oHeli, "ni",  self.next_index)
+	SetVarObj(oHeli, "lki", self.look_index)
+	SetVarObj(oHeli, "ld",  self.look_duration)
+	if self.look_finish_time then
+		SetVarObj(oHeli, "lft", self.look_finish_time - time_global() )
+	end
+	if self.combat_mgr then --/#+#
+		self.combat_mgr:save()
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function CHeli_Move_Manager:update(delta)
+--	log("update:obj=[%s]:(%s)", self.object:name(), self.flight_mgr ~= nil, "") --/#~#
+	if xr_logic.try_switch_to_another_section( self.object, self.st, db.actor ) then
+		if self.log then log("update:obj=[%s]~switch_to=[%s]:(%s)", self.object:name(), db.storage[self.obj_id].active_section, "<") end --/#~#
+		if self.flight_mgr then self.flight_mgr:update(delta) end --/#+#
+		return --/>
+	elseif self.combat_mgr and self.combat_mgr:update() then
+		if self.flight_mgr then self.flight_mgr:update(delta) end --/#+#
+		return --/> fighting ...
+	elseif self.flight_mgr and self.flight_mgr:update(delta) then --/#+#
+		return --/> controlled flight by actor
+	end
+	if self.was_callback then
+		if self.look_index then
+			self:update_look_state()
+		else
+			self:update_movement_state()
+		end
+		self.was_callback = false
+	end
+	
+	if self.state == iState_Look and self.look_finish_time < time_global() then
+		self:update_movement_state()
+	end
+end
+--/------------------------------------------------------------------
+--/ CALLBACK
+--/------------------------------------------------------------------
+function CHeli_Move_Manager:waypoint_callback( oObj, action_type, iPointIndex )
+--	log("waypoint_callback:Obj=[%s],pIdx=[%s]:Pos=[%s],idLv=[%s],idGv=[%s]:(%s)", self.object:name(), iPointIndex, self.object:position(), self.object:level_vertex_id(), self.object:game_vertex_id(), self.st.path_move, "") --/#~#
+	if self.combat_mgr and self.combat_mgr:waypoint_callback() then
+		return --/>
+	elseif iPointIndex == self.last_index then
+		return --/>
+	elseif iPointIndex ~= -1 then
+		self.last_index = iPointIndex
+	else
+		self.last_index = self.next_index
+	end
+	self.was_callback = true
+end
+
+--/ search of point to look by flags
+function CHeli_Move_Manager:search_look_waypoint()
+	if self.patrol_look and self.next_index then
+		local oFlags = self.path_move_info[self.next_index].flags --/ search_for (flags of next point of way)
+		if oFlags and oFlags:get() > 0 then --/ selection from point ways with same flags
+			local iIdxChosen = move_mgr.choose_look_point( self.patrol_look, self.path_look_info, oFlags )
+			if iIdxChosen then
+				return iIdxChosen --/> index of selected point
+			end
+			abort("%s:obj=[%s]:path_move=[%s],index=[%d]:cannot find corresponding point(s) on path_look=[%s]", sModule, self.object:name(), self.path_move, index, self.path_look)
+		end
+	end
+	return nil --/>
+end
+
+function CHeli_Move_Manager:waypoint_param_num( path_info, idx, field, default )
+	if idx and path_info[idx] then
+		return tonumber( path_info[idx][field] ) or default --/>
+	end
+	return default --/>
+end
+
+function CHeli_Move_Manager:waypoint_param( path_info, idx, field, default )
+	if idx and path_info[idx] then
+		return path_info[idx][field] or default --/>
+	end
+	return default --/>
+end
+
+function CHeli_Move_Manager:check_signals()
+	local sig = self:waypoint_param( self.path_move_info, self.last_index, "sig" )
+	if sig then --log("check_signals:sig=[%s]", sig, "") --/#~#
+		self.st.signals[sig] = true
+	end
+end
+
+function CHeli_Move_Manager:check_health_flags()
+	local flame = self:waypoint_param( self.path_move_info, self.last_index, "flame" )
+	local die   = self:waypoint_param( self.path_move_info, self.last_index, "die" )
+	if flame then
+		bind_heli.heli_start_flame( self.object )
+	end
+	if die then
+		bind_heli.heli_die( self.object )
+	end
+end
+
+--/ search flags to next point of way and continue moving accordingly
+function CHeli_Move_Manager:update_movement_state()
+--	log("update_movement_state:last_index=[%s]", self.last_index, "") --/#~#
+	self.state = iState_Move
+	if self.last_index then
+		if self.on_points and self.patrol_move.get_next then --/#+?#
+			self.next_index = self.patrol_move:get_next(self.last_index) or self.last_index +1
+			if self.log then log("update_movement_state:last_index=[%s]=>[%s]", self.last_index, self.next_index, "") end --/#~#
+		else
+			self.next_index = self.last_index +1
+		end
+		if self.next_index >= self.patrol_move:count() then
+			self.next_index = 0
+		end
+		self:check_signals()
+		self:check_health_flags()
+	else
+		self.next_index = 0
+	end
+	
+	self.look_index = self:search_look_waypoint( self.next_index ) --/ point 'where to look'
+	if self.look_index then
+		self:prepare_look()
+	else
+		self:prepare_move()
+	end
+end
+--[[
+"v"  - max velocity
+"dv" - dest velocity (in dest point)
+"t" - look_duration, timeout(ms)
+"e" - enemy - attacj
+"w" - weapons (1-mgun,2-rocket)
+"sig" - 
+"flame" - start flame
+"die" - 
+--]]
+--/ prepare normal flight to next point
+function CHeli_Move_Manager:prepare_move()
+	if self.next_index == 0 or self.CHeli:GetState() ~= CHelicopter.eMovPatrolPath then
+		self.CHeli:SetMaxVelocity     ( self:waypoint_param_num( self.path_move_info, self.last_index, "v",  self.max_velocity ) )
+		self.CHeli:SetSpeedInDestPoint( self:waypoint_param_num( self.path_move_info, self.next_index, "dv", self.max_velocity ) )
+		if self.on_points then --/#+#
+--			log("prepare_move:obj=[%s],path_move=[%s],next_point=[%s]~>pos=[%s]", self.object:name(), self.st.path_move, self.next_index, self.patrol_move:point(self.next_index), "") --/#~#
+			self.CHeli:SetDestPosition( self.patrol_move:point(self.next_index) )
+		else
+			self.CHeli:GoPatrolByPatrolPath( self.st.path_move, self.next_index )
+		end
+	end
+	self.CHeli:LookAtPoint( vDummyVector, false ) --/ look forward
+	--/ attack selected point when close, if setted flag "e" in next point path_move
+	self:process_attack_params( self.path_move_info, self.next_index )
+end
+	
+--/ prepare flight to next point depending from that we won't look to point from path_look
+function CHeli_Move_Manager:prepare_look()
+--	log("prepare_look:obj=[%s],going to look in the next point=[%d]", self.object:name(), self.next_index, "") --/#~#
+	self.look_duration = self:waypoint_param_num( self.path_look_info, self.look_index, "t" )
+	--/ if need to stay in next point, then send to point (destspeed=0), otherwise send by path (destspeed="dv")
+	if self.look_duration then --log("prepare_look:obj=[%s],sent_to_position", self.object:name() ) --/#~#
+		self.CHeli:SetSpeedInDestPoint(0)
+		self.CHeli:SetDestPosition( self.patrol_move:point( self.next_index ) )
+	else --log("prepare_look:obj=[%s],sent_to_patrol_path", self.object:name() ) --/#~#
+		self.CHeli:SetSpeedInDestPoint( self:waypoint_param_num( self.path_move_info, self.next_index, "dv", self.max_velocity ) )
+		if self.on_points then --/#+#
+			self.CHeli:SetDestPosition( self.patrol_move:point(self.next_index) )
+		else
+			self.CHeli:GoPatrolByPatrolPath( self.st.path_move, self.next_index )
+		end
+	end
+	self.CHeli:LookAtPoint( self.patrol_look:point(self.look_index), true )
+	--/ attack selected point when close, if setted "e" in next point path_move
+	self:process_attack_params( self.path_move_info, self.next_index )
+--	log("prepare_look:obj=[%s],dest_speed=[%d]", self.object:name(), self.CHeli:GetSpeedInDestPoint(0) ) --/#~#
+end
+
+--/ we are at point in which written looking to another point
+function CHeli_Move_Manager:update_look_state()
+--	log("update_look_state:obj=[%s]:start_looking", self.object:name() ) --/#~#
+	self.state = iState_Look
+	--/ if wanted to stay, then calculate time of delay ending, othewise it's already happened
+	if self.look_duration then
+		self.look_finish_time = self.look_duration + time_global()
+		self:process_attack_params( self.path_look_info, self.look_index )
+	else
+		self.look_finish_time = 0
+	end
+end
+
+--/ setting of enemy (target) or reset.
+--/ calls on every vertex of path
+function CHeli_Move_Manager:process_attack_params( path_info, index )
+	local flg_wpn = self:waypoint_param( path_info, index, "w" )
+	self.CHeli.m_use_mgun_on_attack   = flg_wpn == nil or flg_wpn == "1"
+	self.CHeli.m_use_rocket_on_attack = flg_wpn == nil or flg_wpn == "2"
+	
+	self.CHeli.m_max_mgun_dist = 1000
+--	log("process_attack_params:mgun=[%s],rockets=[%s]", self.CHeli.m_use_mgun_on_attack, self.CHeli.m_use_rocket_on_attack) --/#~#
+	--/ attack target, if setted flag "e" in point of way (index)
+	local sEnemy = self:waypoint_param( path_info, index, "e" )
+	if sEnemy == nil then
+--		log("process_attack_params:obj=[%s]:not_attacking", self.object:name() ) --/#~#
+		self.CHeli:ClearEnemy()
+		return --/>
+	end
+	
+	if self.st.rocket_delay then
+--		log("process_attack_params:set rocket delay=%s", self.st.rocket_delay ) --/#~#
+		self.CHeli.m_time_between_rocket_attack = self.st.rocket_delay
+	end
+	
+	if sEnemy == "true" then
+		if not self.look_index then
+			abort(sModule..":you_specified 'e' in path_look, but didn't set any flags!" )
+		end
+--		log("process_attack_params:attacking_point!") --/#~#
+		self.CHeli:SetEnemy( self.patrol_look:point( self.look_index ) )
+	elseif sEnemy == "actor" or sEnemy == "a" then
+--		log("process_attack_params:attacking_the_actor!") --/#~#
+		if db.actor then
+			self.CHeli:LookAtPoint( db.actor:position(), true )
+			self.CHeli:SetEnemy( db.actor )
+		else
+			self.CHeli:ClearEnemy()
+		end
+	else
+--		log("process_attack_params:attacking_object_sid=[%s]", sEnemy ) --/#~#
+		local oObj = level_object_by_sid( tonumber(sEnemy) )
+		if oObj then
+			self.CHeli:SetEnemy(oObj)
+		else
+			self.CHeli:ClearEnemy()
+		end
+	end
+end
+
+function CHeli_Move_Manager:death_callback()
+	xr_logic.pick_section_from_condlist(db.actor, self.object, 
+			xr_logic.parse_condlist(self.object, "heli_move", "on_heli_death", self.st.on_heli_death))
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oHeli, ini, sScheme, sSection, st)
+--	log("add_to_binder:Heli=[%s/%s],Scheme=[%s],Section=[%s]", oHeli:name(), oHeli:id(), sScheme, sSection, "") --/#~#
+	st.action = this.get_heli_mover(oHeli, st)
+	--/ Register all actions, in which should be called method reset_scheme when changing settings of scheme:
+	xr_logic.subscribe_action_for_events(oHeli, st, st.action)
+	--/ for debug!
+	if st.log then log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", oHeli:name(), sScheme, sSection, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(oHeli, ini, sScheme, sSection)
+--	log("set_scheme:Heli=[%s/%s/%s],Scheme=[%s],Section=[%s]:(%s)", oHeli:section(), oHeli:name(), oHeli:id(), sScheme, sSection, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(oHeli, ini, sScheme, sSection)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, sSection, oHeli)
+	if not iDefaultVelocity then
+		iDefaultVelocity  = Get_Cfg_Num32(system_ini(), "helicopter", "velocity", 30, true)
+	end
+	--/ scheme settings
+	st.path_move_info   = nil --/ will be initialized in reset(),
+	st.path_look_info   = nil --/ now ways can still be not loaded.
+	st.path_move        = Get_Cfg_String(ini, sSection, "path_move",        nil) --/#!#
+	st.path_look        = Get_Cfg_String(ini, sSection, "path_look",        nil)
+	st.rocket_delay     = Get_Cfg_Num32 (ini, sSection, "rocket_delay",     nil) --/ time between attack
+	st.default_velocity = Get_Cfg_Num32 (ini, sSection, "default_velocity", iDefaultVelocity)
+	st.engine_sound     = Get_Cfg_Bool  (ini, sSection, "engine_sound",    true) --/ engine sound
+	st.on_heli_death 	= Get_Cfg_String(ini, sSection, "on_heli_death",    "")
+	--/ common settings
+	local tStor = db.storage[oHeli:id()]
+	if tStor then
+		tStor.path_move    = st.path_move --/#+# for info
+		tStor.on_heli_death = st.on_heli_death
+		tStor.invulnerable = Get_Cfg_Bool(ini, sSection, "invulnerable", false) --/ invulnerable
+		tStor.immortal     = Get_Cfg_Bool(ini, sSection, "immortal",     false) --/ immortality
+		tStor.mute         = Get_Cfg_Bool(ini, sSection, "mute",         false) --/ noiseless
+		if tStor.combat then
+			st.combat_mgr = tStor.combat --/ external 'combat' module
+			tStor.combat:read_custom_data(ini, sSection) --/ settings from 'heli_combat'
+		end
+		--/#+# доп.настровки
+		if tStor.flight_mgr then
+			st.flight_mgr = tStor.flight_mgr --/ external module of 'controlled' flight
+			if not st.path_move then
+				st.path_move = sFreePath --/ fake point/way!
+			end
+			st.usable = xr_logic.cfg_get_condlist(ini, sSection, "usable", oHeli)
+			if st.usable then --/ 'for flight'
+				st.show_tips  = Get_Cfg_Bool  (ini, sSection, "show_tips" , true)
+				st.tip_use    = Get_Cfg_String(ini, sSection, "tip_use"   , "tip_car_use")
+				st.tip_locked = Get_Cfg_String(ini, sSection, "tip_locked", "tip_car_locked")
+			end
+			if st.log then log("set_scheme:Heli=[%s/%s],Scheme=[%s],Section=[%s],Usable=[%s]", oHeli:name(), oHeli:id(), sScheme, sSection, st.usable, "") end --/#~#
+		end
+	end
+	if not st.path_move then
+		abort("%s:set_scheme:Obj=[%s],Scheme=[%s],Section=[%s]:path_move~NOT exist:<%s>", sModule, oHeli:name(), sScheme, sSection, "Error!")
+	end
+	--/ for debug
+	if st.log then log("set_scheme:Heli=[%s/%s],Scheme=[%s],Section=[%s],Usable=[%s]", oHeli:section(), oHeli:id(), sScheme, sSection, st.usable, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(oObj, sScheme)
+	--/ When disabling scheme, need to pull of subscribtion, so 'hit callback' will stop sending:
+	--oObj:set_callback(callback.hit, nil)
+	local idObj = oObj and oObj:id()
+	local st = idObj and db.storage[idObj][sScheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(oObj, st, st.action)
+	end
+	this.del_heli_mover(oObj, idObj)
+end
+--/ -----------------------------------------------------------------------------------------------

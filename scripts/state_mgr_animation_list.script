@@ -1,0 +1,3096 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : state_mgr_animation_list.script
+ Description: Библиотека "Анимации"
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 16.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+animations = {
+	idle = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = {
+			[0] = { "idle_0_idle_0", "idle_0_idle_2", "idle_0_idle_3", "idle_0_idle_4" },
+			[1] = { "idle_1_idle_0", "idle_1_idle_2", "idle_1_idle_3", "idle_1_idle_4" },
+			[2] = { "idle_2_idle_0", "idle_2_idle_2", "idle_2_idle_3", "idle_2_idle_4" },
+			[3] = { "idle_3_idle_0", "idle_3_idle_2", "idle_3_idle_3", "idle_3_idle_4" },
+			[4] = { "idle_4_idle_0", "idle_4_idle_2", "idle_4_idle_3", "idle_4_idle_4" },
+			[8] = { "idle_8_idle_0", "idle_8_idle_2", "idle_8_idle_3", "idle_8_idle_4" },
+			[9] = { "idle_2_idle_0", "idle_2_idle_2", "idle_2_idle_3", "idle_2_idle_4" },
+			[10]= { "idle_10_idle_0", "idle_10_idle_2", "idle_10_idle_3", "idle_10_idle_4" }}
+	},
+	caution = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = {
+			[0] = "prisluh_0_in",
+			[1] = "prisluh_1_in",
+			[2] = "prisluh_2_in",
+			[3] = "prisluh_3_in",
+			[4] = "prisluh_4_in",
+			[8] = "prisluh_8_in",
+			[9] = "prisluh_9_in",
+			[10]= "prisluh_10_in" },
+		out  = {
+			[0] = "prisluh_0_out",
+			[1] = "prisluh_1_out",
+			[2] = "prisluh_2_out",
+			[3] = "prisluh_3_out",
+			[4] = "prisluh_4_out",
+			[8] = "prisluh_8_out",
+			[9] = "prisluh_9_out",
+			[10]= "prisluh_10_out" },
+		idle = {
+			[0] = "prisluh_0_1",
+			[1] = "prisluh_1_1",
+			[2] = "prisluh_2_1",
+			[3] = "prisluh_3_1",
+			[4] = "prisluh_4_1",
+			[8] = "prisluh_8_1",
+			[9] = "prisluh_9_1",
+			[10]= "prisluh_10_1" },
+		rnd  = {
+			[0] = { "prisluh_0_0", "prisluh_0_2" },
+			[1] = { "prisluh_1_0", "prisluh_1_2" },
+			[2] = { "prisluh_2_0", "prisluh_2_2" },
+			[3] = { "prisluh_3_0", "prisluh_3_2" },
+			[4] = { "prisluh_4_0", "prisluh_4_2" },
+			[8] = { "prisluh_8_0", "prisluh_8_2" },
+			[9] = { "prisluh_9_0", "prisluh_9_2" },
+			[10]= { "prisluh_10_0", "prisluh_10_2" }}
+	},
+	poisk = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "poisk_0_idle_1",
+			[1] = "poisk_1_idle_1",
+			[2] = "poisk_2_idle_1",
+			[3] = "poisk_3_idle_1",
+			[4] = "poisk_4_idle_1",
+			[8] = "poisk_8_idle_1",
+			[9] = "poisk_9_idle_1",
+			[10]= "poisk_10_idle_1"},
+		rnd = {
+			[0] = { "poisk_0_idle_0", "poisk_0_idle_2" },
+			[1] = { "poisk_1_idle_0", "poisk_1_idle_2" },
+			[2] = { "poisk_2_idle_0", "poisk_2_idle_2" },
+			[3] = { "poisk_3_idle_0", "poisk_3_idle_2" },
+			[4] = { "poisk_4_idle_0", "poisk_4_idle_2" },
+			[8] = { "poisk_8_idle_0", "poisk_8_idle_2" },
+			[9] = { "poisk_9_idle_0", "poisk_9_idle_2" },
+			[10]= { "poisk_10_idle_0", "poisk_10_idle_2" }}
+	},
+	hide = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = {
+			[0] = { "cr_idle_0_in" },
+			[1] = { "cr_idle_1_in" },
+			[2] = { "cr_idle_2_in" },
+			[3] = { "cr_idle_3_in" },
+			[4] = { "cr_idle_4_in" },
+			[8] = { "cr_idle_8_in" },
+			[9] = { "cr_idle_9_in" },
+			[10] ={ "cr_idle_10_in" }},
+		out  = {
+			[0] = { "cr_idle_0_out" },
+			[1] = { "cr_idle_1_out" },
+			[2] = { "cr_idle_2_out" },
+			[3] = { "cr_idle_3_out" },
+			[4] = { "cr_idle_4_out" },
+			[8] = { "cr_idle_8_out" },
+			[9] = { "cr_idle_9_out" },
+			[10] ={ "cr_idle_10_out" }},
+		idle = {
+			[0] = "cr_idle_0_1",
+			[1] = "cr_idle_1_1",
+			[2] = "cr_idle_2_1",
+			[3] = "cr_idle_3_1",
+			[4] = "cr_idle_4_1",
+			[8] = "cr_idle_8_1",
+			[9] = "cr_idle_9_1",
+			[10]= "cr_idle_10_1" },
+		rnd  = {
+			[0] = { "cr_idle_0_0", "cr_idle_0_2" },
+			[1] = { "cr_idle_1_0", "cr_idle_1_2" },
+			[2] = { "cr_idle_2_0", "cr_idle_2_2" },
+			[3] = { "cr_idle_3_0", "cr_idle_3_2" },
+			[4] = { "cr_idle_4_0", "cr_idle_4_2" },
+			[8] = { "cr_idle_8_0", "cr_idle_8_2" },
+			[9] = { "cr_idle_9_0", "cr_idle_9_2" },
+			[10]= { "cr_idle_10_0", "cr_idle_10_2" }}
+	},
+	specnaz_hide = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = {
+			[0] = { "spetsnaz_0" },
+			[1] = { "spetsnaz_1" },
+			[2] = { "spetsnaz_2" },
+			[3] = { "spetsnaz_3" }},   
+      out  = { 
+		 [0] = { "spetsnaz_0" },
+         [1] = { "spetsnaz_1" },
+         [2] = { "spetsnaz_2" },
+         [3] = { "spetsnaz_3" }},
+      idle = { 
+		 [0] = "spetsnaz_0",
+         [1] = "spetsnaz_1",
+         [2] = "spetsnaz_2",
+         [3] = "spetsnaz_3" },
+      rnd  = { 
+		 [0] = { "spetsnaz_0", "spetsnaz_1" },
+         [1] = { "spetsnaz_1", "spetsnaz_2" },
+         [2] = { "spetsnaz_2", "spetsnaz_3" },
+         [3] = { "spetsnaz_3", "spetsnaz_0" }} 
+	},
+	sit = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = { "sit_0_idle_1", "sit_0_idle_2", "sit_0_idle_3" }}
+	},
+	sit_knee = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = { "sit_1_idle_1", "sit_1_idle_2", "sit_1_idle_3" }}
+	},
+	sit_ass = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = { "sit_2_idle_1", "sit_2_idle_2", "sit_2_idle_3" }}
+	},
+	hello = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = {
+			[0] = { "hello_0_idle_0" },
+			[1] = { "hello_1_idle_0" },
+			[2] = { "hello_2_idle_0" },
+			[3] = { "hello_3_idle_0" },
+			[4] = { "hello_4_idle_0" },
+			[8] = { "hello_8_idle_0" },
+			[9] = { "hello_9_idle_0" },
+			[10]= { "hello_10_idle_0" }}
+	},
+	refuse = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = {
+			[0] = { "net_0_0" },
+			[1] = { "net_1_0" },
+			[2] = { "net_2_0" },
+			[3] = { "net_3_0" },
+			[4] = { "net_4_0" },
+			[8] = { "net_8_0" },
+			[9] = { "net_9_0" },
+			[10]= { "net_10_0" }}
+	},
+	claim = {
+		prop = { maxidle = 5, sumidle = 2, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = {
+			[0] = nil,
+			[1] = { "gop_stop_1_0" },
+			[2] = { "gop_stop_2_0" },
+			[3] = { "gop_stop_3_0" },
+			[4] = { "gop_stop_4_0" },
+			[8] = { "gop_stop_8_0" },
+			[9] = { "gop_stop_9_0" },
+			[10]= { "gop_stop_10_0" }}
+	},
+	backoff = {
+		prop = { maxidle = 5, sumidle = 2, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = {
+			[0] = { "uhodi_1_0", "uhodi_1_1" },
+			[1] = { "uhodi_1_0", "uhodi_1_1" },
+			[2] = { "uhodi_2_0", "uhodi_2_1" },
+			[3] = { "uhodi_3_0", "uhodi_3_1" },
+			[4] = { "uhodi_4_0", "uhodi_4_1" },
+			[8] = { "uhodi_8_0", "uhodi_8_1" },
+			[9] = { "uhodi_9_0", "uhodi_9_1" },
+			[10]= { "uhodi_10_0", "uhodi_10_1" }}
+	},
+	hide_s_left = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = {
+			[0] = { "sss_left_0", {s="speech"}, "sss_left_1" },
+			[2] = { "sss_left_0", {s="speech"}, "sss_left_1" }},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	hide_s_right = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = {
+			[0] = { "sss_right_0", {s="speech"}, "sss_right_1"},
+			[2] = { "sss_right_0", {s="speech"}, "sss_right_1"}},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	dynamite = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = { "dinamit_1" }},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	suicide = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [1] = { "kamikadze_0", {sh=1000} }},
+		out  = nil,
+		idle = { [1] = "kamikadze_1" },
+		rnd  = nil
+	},
+	punch = {
+		prop = { maxidle = 5, sumidle = 2, rnd = 100 },
+		into = {
+			[0] = { "norm_facer_0_0", {f=xr_effects.actor_punch}, "norm_facer_0_1", {f=xr_effects.clearAbuse}},
+			[1] = { "norm_facer_1_0", {f=xr_effects.actor_punch}, "norm_facer_1_1", {f=xr_effects.clearAbuse}},
+			[2] = { "norm_facer_2_0", {f=xr_effects.actor_punch}, "norm_facer_2_1", {f=xr_effects.clearAbuse}},
+			[3] = { "norm_facer_3_0", {f=xr_effects.actor_punch}, "norm_facer_3_1", {f=xr_effects.clearAbuse}},
+			[4] = { "norm_facer_4_0", {f=xr_effects.actor_punch}, "norm_facer_4_1", {f=xr_effects.clearAbuse}},
+			[8] = { "norm_facer_8_0", {f=xr_effects.actor_punch}, "norm_facer_8_1", {f=xr_effects.clearAbuse}},
+			[9] = { "norm_facer_9_0", {f=xr_effects.actor_punch}, "norm_facer_9_1", {f=xr_effects.clearAbuse}},
+			[10]= { "norm_facer_10_0", {f=xr_effects.actor_punch}, "norm_facer_10_1", {f=xr_effects.clearAbuse}}},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	punch_dc = {
+		prop = { maxidle = 5, sumidle = 2, rnd = 100 },
+		into = {
+			[0] = { "norm_facer_0_0", {f=xr_effects.punch_actor}, "norm_facer_0_1", {f=xr_effects.clearAbuse}},
+			[1] = { "norm_facer_1_0", {f=xr_effects.punch_actor}, "norm_facer_1_1", {f=xr_effects.clearAbuse}},
+			[2] = { "norm_facer_2_0", {f=xr_effects.punch_actor}, "norm_facer_2_1", {f=xr_effects.clearAbuse}},
+			[3] = { "norm_facer_3_0", {f=xr_effects.punch_actor}, "norm_facer_3_1", {f=xr_effects.clearAbuse}},
+			[4] = { "norm_facer_4_0", {f=xr_effects.punch_actor}, "norm_facer_4_1", {f=xr_effects.clearAbuse}},
+			[8] = { "norm_facer_8_0", {f=xr_effects.punch_actor}, "norm_facer_8_1", {f=xr_effects.clearAbuse}},
+			[9] = { "norm_facer_9_0", {f=xr_effects.punch_actor}, "norm_facer_9_1", {f=xr_effects.clearAbuse}},
+			[10]= { "norm_facer_10_0", {f=xr_effects.punch_actor}, "norm_facer_10_1", {f=xr_effects.clearAbuse}}},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	punch_free = { --/#?#
+		prop = { maxidle = 5, sumidle = 2, rnd = 100 },
+		into = {
+			[0] = { "free_facer_0_0", {f=xr_effects.actor_punch}, "free_facer_0_2", {f=xr_effects.clearAbuse}},
+			[1] = { "free_facer_1_0", {f=xr_effects.actor_punch}, "free_facer_1_2", {f=xr_effects.clearAbuse}},
+			[2] = { "free_facer_2_0", {f=xr_effects.actor_punch}, "free_facer_2_2", {f=xr_effects.clearAbuse}},
+			[3] = { "free_facer_3_0", {f=xr_effects.actor_punch}, "free_facer_3_2", {f=xr_effects.clearAbuse}},
+			[4] = { "free_facer_4_0", {f=xr_effects.actor_punch}, "free_facer_4_2", {f=xr_effects.clearAbuse}},
+			[8] = { "free_facer_8_0", {f=xr_effects.actor_punch}, "free_facer_8_2", {f=xr_effects.clearAbuse}},
+			[9] = { "free_facer_9_0", {f=xr_effects.actor_punch}, "free_facer_9_2", {f=xr_effects.clearAbuse}},
+			[10]= { "free_facer_10_0", {f=xr_effects.actor_punch}, "free_facer_10_2", {f=xr_effects.clearAbuse}}},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	sleeping = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = { "sleep_idle_1" }}
+	},
+	sleep_sit = {
+		prop = { maxidle = 10, sumidle = 20, rnd = 100 },
+		into = { [0] = {"sit_2_to_sleep_2"}},
+		out  = { [0] = {"sleep_2_to_sit_2"}},
+		idle = { [0] = "sleep_idle_2" },
+		rnd  = { [0] = {"sleep_idle_3" }}
+	},
+	help_me = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = { "wounded_ruka_0" }}
+	},
+	wounded = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 70 },
+		into = { [0] = {"idle_to_wounded_0"}},
+		out  = { [0] = {"wounded_to_idle_0"}},
+		idle = { [0] = "wounded_idle_0" },
+		rnd  = nil
+	},
+	wounded_heavy_1 = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 70 },
+		into = { [0] = {"idle_to_wounded_1"}},
+		out  = { [0] = {"waunded_1_out"}},
+		idle = { [0] = "waunded_1_idle_0" },
+		rnd  = nil
+	},
+	wounded_heavy_2 = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 70 },
+		into = { [0] = {"idle_to_wounded_2"}},
+		out  = { [0] = {"wounded_2_out"}},
+		idle = { [0] = "wounded_2_idle_0" },
+		rnd  = nil
+	},
+	wounded_heavy_3 = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 70 },
+		into = { [0] = {"idle_to_wounded_3"}},
+		out  = { [0] = {"wounded_3_out"}},
+		idle = { [0] = "wounded_3_idle_0" },
+		rnd  = nil
+	},
+	wounded_zombie = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 70 },
+		into = { [0] = {"idle_to_wounded_0"}},
+		out  = { [0] = {"wounded_to_idle_0"}},
+		idle = { [0] = "wounded_idle_0" },
+		rnd  = { [0] = { "wounded_idle_1" }}
+	},
+	eat_kolbasa = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 80 },
+		into = { [0] = {"item_1_draw_0", {a="kolbasa"}, "item_1_draw_1"}},
+		out  = { [0] = {"item_1_holster_0", {d="kolbasa"}, "item_1_holster_1"} },
+		idle = { [0] = "item_1_idle_1" },
+		rnd  = { [0] = { "item_1_attack_0", "item_1_idle_0" } }
+	},
+	eat_bread = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 80 },
+		into = { [0] = {"item_2_draw_0", {a="bread"}, "item_2_draw_1"} },
+		out  = { [0] = {"item_2_holster_0", {d="bread"}, "item_2_holster_1"} },
+		idle = { [0] = "item_2_aim_0" },
+		rnd  = { [0] = { "item_2_prepare_0","item_2_attack_0" } }
+	},
+	eat_vodka = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 80 },
+		into = { [0] = {"item_4_draw_0", {a="vodka"}, "item_4_draw_1"} },
+		out  = { [0] = {"item_4_holster_0", {d="vodka"}, "item_4_holster_1"} },
+		idle = { [0] = "item_4_aim_0" },
+		rnd  = { [0] = { "item_4_prepare_0", "item_4_attack_0" } }
+	},
+	eat_energy = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 80 },
+		into = { [0] = {"item_5_draw_0", {a="energy_drink"}, "item_5_draw_1"} },
+		out  = { [0] = {"item_5_holster_0", {d="energy_drink"}, "item_5_holster_1"} },
+		idle = { [0] = "item_5_aim_0" },
+		rnd  = { [0] = { "item_5_prepare_0", "item_5_attack_0" } }
+	},
+	guitar = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 80 },
+		into = { [0] = {"sit_1_guitar_0_0", {a="guitar_a"}, "sit_1_guitar_0_1"}},
+		out  = { [0] = {"guitar_0_sit_1_0", {d="guitar_a"}, "guitar_0_sit_1_1"} },
+		idle = { [0] = "guitar_3" },
+		rnd  = { [0] = { "guitar_1", "guitar_2" } },
+		subanim = { [1] = {
+			prop = { maxidle = 3, sumidle = 3, rnd = 0 },
+			into_music = "guitar",
+			into = nil,
+			out  = nil,
+			idle = { [0] = "guitar_0" },
+			rnd  = nil }}
+	},
+	harmonica = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 80 },
+		into = { [0] = {"sit_2_harmonica_1_0", {a="harmonica_a"}, "sit_2_harmonica_1_1"}},
+		out  = { [0] = {"harmonica_1_sit_2_0", {d="harmonica_a"}, "harmonica_1_sit_2_1"} },
+		idle = { [0] = "harmonica_1" },
+		rnd  = { [0] = { "harmonica_2", "harmonica_3" } },
+		subanim = { [1] = {
+			prop = { maxidle = 3, sumidle = 3, rnd = 0 },
+			into_music = "harmonica",
+			into = nil,
+			out  = nil,
+			idle = { [0] = "harmonica_0" },
+			rnd  = nil }}
+	},
+	choosing = {
+		prop = { maxidle = 8, sumidle = 10, rnd = 80 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = { "komandir_0", "komandir_1", "komandir_2" } }
+	},
+	press = {
+		prop = { maxidle = 8, sumidle = 10, rnd = 80 },
+		into = { [0] = {"knopka_0"} },
+		out  = { [0] = "knopka_1" },
+		idle = { [0] = "knopka_2" },
+		rnd  = nil
+	},
+	doctor_wakeup = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"idle_to_sit_0", {s="agr_doctor_1"}, "doc_agr_0"}},
+		out  = { [0] = {"idle_to_sit_0"}},
+		idle = nil,
+		rnd  = nil
+	},
+	warding = {
+		prop = { maxidle = 10, sumidle = 10, rnd = 0 },
+		into = { [0] = "ohrana_0"},
+		out  = { [0] = "ohrana_2"},
+		idle = { [0] = "ohrana_1"},
+		rnd  = nil
+	},
+	bar_fas = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = { [0] = "bar_0_idle_in" },
+		out  = { [0] = "bar_0_idle_out" },
+		idle = { [0] = "bar_0_idle_0" },
+		rnd  = { [0] = { "bar_0_idle_1", "bar_0_idle_2", "bar_0_idle_3" } }
+	},
+	bar_left = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = { [0] = "bar_1_idle_in" },
+		out  = { [0] = "bar_1_idle_out" },
+		idle = { [0] = "bar_1_idle_0" },
+		rnd  = { [0] = { "bar_1_idle_1", "bar_1_idle_2", "bar_1_idle_3" } }
+	},
+	bar_head = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = { [0] = "bar_2_idle_in" },
+		out  = { [0] = "bar_2_idle_out" },
+		idle = { [0] = "bar_2_idle_0" },
+		rnd  = nil
+	},
+	bar_sleep = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = { [0] = "bar_3_idle_in" },
+		out  = { [0] = "bar_3_idle_out" },
+		idle = { [0] = "bar_3_idle_0" },
+		rnd  = nil
+	},
+	bar_right = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = { [0] = "bar_4_idle_in" },
+		out  = { [0] = "bar_4_idle_out" },
+		idle = { [0] = "bar_4_idle_0" },
+		rnd  = nil
+	},
+	barman_wait = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = {	[0] = "idle_0_to_idle_1" },
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = {
+							"idle_0_idle_0",
+							"idle_0_idle_1",
+							"idle_0_idle_2",
+							"idle_0_idle_3",
+							"idle_0_idle_4",
+							"idle_0_idle_5",
+							"idle_0_idle_6", 
+							"idle_0_idle_7"} }
+	},
+	barman_talk = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = { [0] = "idle_1_to_idle_0" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	barman_tv = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = { [0] = "idle_tv_in_0" },
+		out  = { [0] = "idle_tv_out_0" },
+		idle = { [0] = "idle_tv_1" },
+		rnd  = { [0] = { "idle_tv_0", "idle_tv_2", "idle_tv_3", "idle_tv_4", "idle_tv_5" } }
+	},
+	barman_shock = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = {"idle_talk_0"}}
+	},
+	barman_free_anims = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 70 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = {"idle_0_0", "idle_0_1", "idle_0_2", "idle_0_3"}}
+	},
+	psycho_pain = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "idle_0_to_psy_0_idle_0", [1] = "idle_0_to_psy_1_idle_0" },
+		out  = { [0] = "psy_0_idle_0_to_idle_0", [1] = "psy_1_idle_0_to_idle_0" },
+		idle = { [0] = "psy_0_idle_0",           [1] = "psy_1_idle_0" },
+		rnd  = nil
+	},
+	psycho_shoot = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [1] = {"idle_0_to_psy_1_idle_0", "psy_1_shot_0", {sh=1000}} },
+		out  = nil,
+		idle = { [1] = "psy_1_death_0" },
+		rnd  = nil
+	},
+	psycho_shoot2 = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = {"idle_0_to_psy_1_idle_0", "psy_1_shot_0"} },
+		out  = nil,
+		idle = { [0] = "psy_0_idle_0" },
+		rnd  = nil
+	},
+	psy_armed = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "idle_0_to_psy_0_idle_0", [1] = "idle_0_to_psy_1_idle_0" },
+		out  = { [0] = "psy_0_idle_0_to_idle_0", [1] = "psy_1_idle_0_to_idle_0" },
+		idle = { [0] = "psy_0_idle_0",           [1] = "psy_1_idle_0" },
+		rnd  = { [0] = { "psy_0_idle_1", "psy_0_idle_2", "psy_0_idle_3" },
+		         [1] = { "psy_1_idle_1", "psy_1_idle_2", "psy_1_idle_3" } }
+	},
+	psy_shoot = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [1] = {"psy_1_shot_0", {sh=1000}} },
+		out  = nil,
+		idle = { [1] = "psy_1_death_0" },
+		rnd  = nil
+	},
+	binocular = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"binoculars_draw_0", {a="wpn_binoc"}, "binoculars_draw_1", "binoculars_zoom_in_0"} },
+		out  = { [0] = {"binoculars_zoom_out_0", "binoculars_hide_0", {d="wpn_binoc"}, "binoculars_hide_1"} },
+		idle = { [0] = "binoculars_zoom_idle_0" },
+		rnd  = { [0] = {"binoculars_zoom_idle_1", "binoculars_zoom_idle_2", "binoculars_zoom_idle_3", "binoculars_zoom_idle_4"} }
+	 },
+	--/#!# we HAVE salut_synth, USE IT, SALUT IS JUST STANDING ANIM FOR RADAR guys dont add here second into anim
+	salut = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"chest_0_idle_0"} },
+		out  = { [0] = {"chest_0_idle_3"} },
+		idle = { [0] = "chest_0_idle_1" },
+		rnd  = nil
+	},
+	salut_free = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"chest_1_idle_0"} },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	hands_up = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0]	= "hand_up_0" },
+		rnd  = nil
+	},
+	trans_0 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"idle_0_to_trans_0"} },
+		out  = { [0] = {"trans_0_to_idle_0"} },
+		idle = { [0] = "trans_0_idle_0" },
+		rnd  = nil
+	},
+	trans_1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"idle_0_to_trans_1"} },
+		out  = { [0] = {"trans_1_to_idle_0"} },
+		idle = { [0] = "trans_1_idle_0" },
+		rnd  = nil
+	},
+	trans_zombied = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "trans_0_idle_1" },
+		rnd  = { [0] = {"trans_0_idle_0", "trans_0_idle_2", "trans_0_idle_3",
+		                "trans_0_idle_4", "trans_0_idle_5", "trans_0_idle_6"} }
+	},
+	probe = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	probe_1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1", {s="yantar_probe_1"}, "metering_0_idle_11"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	probe_2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1", {s="yantar_probe_2"}, "metering_0_idle_12"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	probe_3 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1", {s="yantar_probe_3"}, "metering_0_idle_6"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	prisoner = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"prisoner_0_sit_down_0"}},
+		out  = { [0] = {"prisoner_0_stand_up_0"}},
+		idle = { [0] = "prisoner_0_sit_idle_0" },
+		rnd  = nil
+	},
+	mode_shlem = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"idle_shlem_0"} },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	help_agr = {
+		prop = { maxidle = 1, sumidle = 2, rnd = 100 },
+		into = { [3] = { "help_3_idle_0", {s="agr_stalker_help_2"}, "help_3_idle_1" }},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	oso_flying = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "fly_0" },
+		rnd  = nil
+	},
+	raciya = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = {
+			[0] = {"raciya_0_draw_0", {a="hand_radio"}, "raciya_0_draw_1"},
+			[1] = {"raciya_1_draw_0", {a="hand_radio"}, "raciya_1_draw_1"},
+			[2] = {"raciya_2_draw_0", {a="hand_radio"}, "raciya_2_draw_1"},
+			[3] = {"raciya_3_draw_0", {a="hand_radio"}, "raciya_3_draw_1"},
+			[4] = {"raciya_4_draw_0", {a="hand_radio"}, "raciya_4_draw_1"},
+			[8] = {"raciya_8_draw_0", {a="hand_radio"}, "raciya_8_draw_1"},
+			[9] = {"raciya_9_draw_0", {a="hand_radio"}, "raciya_9_draw_1"},
+			[10]= {"raciya_10_draw_0",{a="hand_radio"}, "raciya_10_draw_1"} },
+		out  = {
+			[0] = {"raciya_0_hide_0", {d="hand_radio"}, "raciya_0_hide_1"},
+			[1] = {"raciya_1_hide_0", {d="hand_radio"}, "raciya_1_hide_1"},
+			[2] = {"raciya_2_hide_0", {d="hand_radio"}, "raciya_2_hide_1"},
+			[3] = {"raciya_3_hide_0", {d="hand_radio"}, "raciya_3_hide_1"},
+			[4] = {"raciya_4_hide_0", {d="hand_radio"}, "raciya_4_hide_1"},
+			[8] = {"raciya_8_hide_0", {d="hand_radio"}, "raciya_8_hide_1"},
+			[9] = {"raciya_9_hide_0", {d="hand_radio"}, "raciya_9_hide_1"},
+			[10]= {"raciya_10_hide_0",{d="hand_radio"}, "raciya_10_hide_1"} },
+		idle = {
+			[0] = "raciya_0_idle_0",
+			[1] = "raciya_1_idle_0",
+			[2] = "raciya_2_idle_0",
+			[3] = "raciya_3_idle_0",
+			[4] = "raciya_4_idle_0",
+			[8] = "raciya_8_idle_0",
+			[9] = "raciya_9_idle_0",
+			[10]= "raciya_10_idle_0" },
+		rnd  = {
+			[0] = {"raciya_0_talk_0"},
+			[1] = {"raciya_1_talk_0"},
+			[2] = {"raciya_2_talk_0"},
+			[3] = {"raciya_3_talk_0"},
+			[4] = {"raciya_4_talk_0"},
+			[8] = {"raciya_8_talk_0"},
+			[9] = {"raciya_9_talk_0"},
+			[10]= {"raciya_10_talk_0"} }
+	},
+	cr_raciya = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = {
+			[0] = {"cr_raciya_0_draw_0", {a="hand_radio"}, "cr_raciya_0_draw_1"},
+			[1] = {"cr_raciya_1_draw_0", {a="hand_radio"}, "cr_raciya_1_draw_1"},
+			[2] = {"cr_raciya_2_draw_0", {a="hand_radio"}, "cr_raciya_2_draw_1"},
+			[3] = {"cr_raciya_3_draw_0", {a="hand_radio"}, "cr_raciya_3_draw_1"},
+			[4] = {"cr_raciya_4_draw_0", {a="hand_radio"}, "cr_raciya_4_draw_1"},
+			[8] = {"cr_raciya_8_draw_0", {a="hand_radio"}, "cr_raciya_8_draw_1"},
+			[9] = {"cr_raciya_9_draw_0", {a="hand_radio"}, "cr_raciya_9_draw_1"},
+			[10]= {"cr_raciya_10_draw_0",{a="hand_radio"},"cr_raciya_10_draw_1"} },
+		out  = {
+			[0] = {"cr_raciya_0_hide_0", {d="hand_radio"}, "cr_raciya_0_hide_1"},
+			[1] = {"cr_raciya_1_hide_0", {d="hand_radio"}, "cr_raciya_1_hide_1"},
+			[2] = {"cr_raciya_2_hide_0", {d="hand_radio"}, "cr_raciya_2_hide_1"},
+			[3] = {"cr_raciya_3_hide_0", {d="hand_radio"}, "cr_raciya_3_hide_1"},
+			[4] = {"cr_raciya_4_hide_0", {d="hand_radio"}, "cr_raciya_4_hide_1"},
+			[8] = {"cr_raciya_8_hide_0", {d="hand_radio"}, "cr_raciya_8_hide_1"},
+			[9] = {"cr_raciya_9_hide_0", {d="hand_radio"}, "cr_raciya_9_hide_1"},
+			[10]= {"cr_raciya_10_hide_0",{d="hand_radio"},"cr_raciya_10_hide_1"} },
+		idle = {
+			[0] = "cr_raciya_0_idle_0",
+			[1] = "cr_raciya_1_idle_0",
+			[2] = "cr_raciya_2_idle_0",
+			[3] = "cr_raciya_3_idle_0",
+			[4] = "cr_raciya_4_idle_0",
+			[8] = "cr_raciya_8_idle_0",
+			[9] = "cr_raciya_9_idle_0",
+			[10]= "cr_raciya_10_idle_0" },
+		rnd  = {
+			[0] = {"cr_raciya_0_talk_0"},
+			[1] = {"cr_raciya_1_talk_0"},
+			[2] = {"cr_raciya_2_talk_0"},
+			[3] = {"cr_raciya_3_talk_0"},
+			[4] = {"cr_raciya_4_talk_0"},
+			[8] = {"cr_raciya_8_talk_0"},
+			[9] = {"cr_raciya_9_talk_0"},
+			[10]= {"cr_raciya_10_talk_0"} }
+	},
+--/#+# barin start -------------------------------
+	sit_cop = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 100 },
+		into = { [0] = "sit_sit_down_0" },
+		out  = { [0] = "sit_stand_up_0" },
+		idle = { [0] = "sit_idle_0" },
+		rnd  = { [0] = "sit_idle_0",
+				 [1] = "sit_idle_0"}
+	},
+	sit_cop_short = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = { [0] = "sit_idle_0" },
+		out  = { [0] = "sit_idle_0" },
+		idle = { [0] = "sit_idle_0" },
+		rnd  = { [0] = "sit_idle_0" }
+	},
+	sit_cop_sleep = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sit_sleep_in_0" },
+		out  = { [0] = "sit_sleep_out_0" },
+		idle = { [0] = "sit_sleep_idle_0" },
+		rnd  = { [0] = "sit_sleep_idle_0"}
+	},
+	sit_take_item = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sit_idle_mechanic_0", {a="hand_radio"} },
+		out  = { [0] = "sit_idle_mechanic_2", {d="hand_radio"} },
+		idle = { [0] = "sit_idle_mechanic_1" },
+		rnd  = nil
+	},
+	clear_wpn = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sit_sit_down_0" },
+		out  = { [0] = "stul_podyem" },
+		idle = { [0] = "stul" },
+		rnd  = nil
+	},
+	stand_wait = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stend" },
+		rnd  = nil
+	},
+	free_walk = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "poisk_walk_0" },
+		rnd  = nil
+	},
+	blow_no_cover = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "idle_0_to_psy_0_idle_0", [1] = "idle_0_to_psy_1_idle_0" },
+		out  = { [0] = "psy_0_idle_0_to_idle_0", [1] = "psy_1_idle_0_to_idle_0" },
+		idle = { [0] = "psy_0_idle_0",           [1] = "psy_1_idle_0" },
+		rnd  = { [0] = {"psy_0_idle_1", "psy_0_idle_2", "psy_0_idle_3", "psy_1_idle_1", "psy_1_idle_2", "psy_1_idle_3"}	}
+	},
+	blow_cover = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "idle_0_to_psy_0_idle_0", [1] = "idle_0_to_psy_1_idle_0" },
+		out  = { [0] = "psy_0_idle_0_to_idle_0", [1] = "psy_1_idle_0_to_idle_0" },
+		idle = { [0] = "psy_0_idle_0"},
+		rnd  = nil
+	},
+	blow_no_cover_hide = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "norm_panic_stand_0" },
+		rnd  = { [0] = {"norm_panic_stand_0"} }
+	},
+	blow_no_cover_panic = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0]	= "norm_escape_00" },
+		rnd  = nil
+	},
+	npc_check_corpse_weapon = {
+		prop = { maxidle = 5,	sumidle = 10,	rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "cr_torso_10_check_corps_0" },
+		rnd  = nil
+	},
+	npc_check_corpse_no_weapon = {
+		prop = { maxidle = 5,	sumidle = 10,	rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "cr_torso_0_check_corps_0" },
+		rnd  = nil
+	},
+	npc_check_corpse_kick = {
+		prop = { maxidle = 1,	sumidle = 1,	rnd = 100 },
+		into = { [0] = "norm_check_corps_0", [1] = "cr_idle_10_in" },
+		out  = { [0] = "cr_idle_10_out" },
+		idle = { [0] = "cr_torso_10_check_corps_0" },
+		rnd  = nil
+	},
+	npc_pickup_item = {
+		prop = { maxidle = 1,	sumidle = 1, rnd = 100 },
+		into = { [0] = "cr_idle_0_in" },
+		out  = { [0] = "cr_idle_0_out" },
+		idle = { [0] = "cr_torso_10_drop_0" },
+		rnd  = nil
+	},
+	throw_bolt	= {
+		prop = { maxidle = 3, sumidle = 3, rnd = 80 },
+		out  = { [0] = {"norm_torso_6_attack_0"} },
+		into = { [0] = {"norm_torso_6_attack_2"} },
+		idle = { [0] = "idle_0_idle_0", "idle_0_idle_1" },
+		rnd  = nil
+	},
+--/< barin end
+--/#+# gr1ph start -------------------------------
+	climbing = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"cl_run_fwd_0"} },
+		out  = { [0] = nil },
+		idle = { [0] = nil },
+		rnd  = { [0] = nil }
+	},
+	pkm_idle = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = { [0] = "pkm_idle_0" },
+		idle = nil,
+		rnd  = nil
+	},
+	pkm_attack = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = {"pkm_attack_0", "pkm_idle_0"} },
+		rnd  = nil
+	},
+	pkm_right = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = {"pkm_turn_right_0", "pkm_idle_0"} },
+		rnd  = nil
+	},
+	pkm_left = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "pkm_turn_left_0" },
+		rnd  = nil
+	},
+	looking_anim = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = { "uslishal" } },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+--/#+# lox start ---------------------------------
+	chasovoy_4 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = { "chasovoy_4" } },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	stalker_1_s_1 = {
+		prop = { maxidle = 5, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_1_2" },
+		rnd  = { [0] = { "stalker_1_s_1" }}
+	},
+	stalker_1_s_2 = {
+		prop = { maxidle = 6, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_1_2" },
+		rnd  = { [0] = { "stalker_1_s_2" }}
+	},
+	stalker_1_s_3 = {
+		prop = { maxidle = 6, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_1_2" },
+		rnd  = { [0] = { "stalker_1_s_3" }}
+	},
+	stalker_2_s_1 = {
+		prop = { maxidle = 5, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_2_1" },
+		rnd  = { [0] = { "stalker_2_s_1" }}
+	},
+	stalker_2_s_2 = {
+		prop = { maxidle = 10, sumidle = 8, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_2_1" },
+		rnd  = { [0] = { "stalker_2_s_2" }}
+	},
+	stalker_3_s_1 = {
+		prop = { maxidle = 5, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_3_2" },
+		rnd  = { [0] = { "stalker_3_s_1" }}
+	},
+	stalker_3_s_2 = {
+		prop = { maxidle = 5, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_3_2" },
+		rnd  = { [0] = { "stalker_3_s_2" }}
+	},
+	stalker_2_1 = {
+		prop = { maxidle = 2, sumidle = 2, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_2_1" },
+		rnd  = nil
+	},
+	stalker_3_2 = {
+		prop = { maxidle = 2, sumidle = 2, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_3_2" },
+		rnd  = nil
+	},
+	stalker_1_2_spec = {
+		prop = { maxidle = 2, sumidle = 2, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_1_2" },
+		rnd  = nil},
+	stalker_1_2 = {
+		prop = { maxidle = 2, sumidle = 2, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stalker_1_2" },
+		rnd  = nil
+	},
+	raciya_10_draw_1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = { "raciya_10_draw_1" } },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	raciya_10_idle_0 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = { "raciya_10_idle_0" } },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	}, 
+	raciya_10_hide_0 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = { "raciya_10_hide_0" } },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	gop_stop_3_0 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "gop_stop_3_0" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	chasovoy_1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "chasovoy_0" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	chasovoy_2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "chasovoy_1" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	chasovoy_3 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "chasovoy_2" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	chasovoy_4 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "chasovoy_3" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	chasovoy_5 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "chasovoy_4" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	wounded_pornosh_0 = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 70 },
+		into = { [0] = {"idle_to_wounded_1"}},
+		out  = { [0] = {"wounded_pornosh_0"}},
+		idle = { [0] = "waunded_1_idle_0" },
+		rnd = nil },
+--/< lox end
+--/#!# ORIGINAL ANIM IS NOT CORRECT, IT SHOULDNT BE IN INTO, USE THIS
+	smeh = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "smeh" },
+		rnd  = nil
+	},
+	stul = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "stul" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	drunk_walk_anim = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "drunk" },
+		rnd  = nil
+	},
+	drunk_walk_anim1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "drunk_walk_0" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	drunk_walk_anim2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "drunk" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	drunk_idle_anim = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "drunk_idle_0" }, --/ dont have drink_idle_0, only drunk_idle_0
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	drunk_vomit_anim = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "drink_idle_11"},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	drunk_idle_wall_sit_anim = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "drink_idle_8" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+--/#+# vintar start ------------------------------
+	cr_raciya_draw = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"cr_raciya_0_draw_0", {a="hand_radio"}, "cr_raciya_0_draw_1"},},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	cr_raciya_talk = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into  = { [0] = {"cr_raciya_0_talk_0"},},
+		out   = nil,
+		idle  = nil,
+		rnd   = nil
+	},
+	cr_raciya_idle = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = {[0]= {"cr_raciya_0_idle_0"},},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+		},
+	cr_raciya_hide = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"cr_raciya_0_hide_0", {d="hand_radio"}, "cr_raciya_0_hide_1"},},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+--/< vintar end
+--/#+# loxo-crap ---------------------------------
+	refuse_bible = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = nil,
+		out  = { [0] = "net_10_0" },
+		idle = { [0] = "net_0_0" },
+		rnd  = { [0] = { "net_0_0" },
+						 [1] = { "net_1_0" },
+						 [2] = { "net_2_0" },
+						 [3] = { "net_3_0" },
+						 [4] = { "net_4_0" },
+						 [8] = { "net_8_0" },
+						 [9] = { "net_9_0" },
+						 [10]= { "net_10_0" }}
+	},
+	salut_synth = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"chest_0_idle_3"} },
+		idle = { [0] = "chest_0_idle_2" },
+		rnd  = nil
+	},
+	ghost_blowout = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = {"metering_0_idle_6"}, },
+	},
+	ispug = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"ispug_3"} },
+		idle = { [0] = "ispug_1" },
+		rnd  = nil
+	},
+	probe_3n = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1", {s="bun_replics10"}, "metering_0_idle_6"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	probe_1n = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1", "metering_0_idle_11"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	probe_2n = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1", {s="bun_replics2"}, "metering_0_idle_12"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	probe_2n1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="kruglov_flash"}, "metering_0_draw_1", {s="bun_replics6"}, "metering_0_idle_12"} },
+		out  = { [0] = {"metering_0_hide_0", {d="kruglov_flash"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+--/ new anims
+	prisoner_cells = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"prisoner_cells_0"} },
+		out  = { [0] = {"prisoner_cells_2"} },
+		idle = { [0] = "prisoner_cells_1" },
+		rnd  = nil
+	},
+	incapsulation = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"dark_capsula_0c", "dark_capsula_1c"} },
+		out  = nil,
+		idle = { [0] = "dark_capsula_2c" },
+		rnd  = { [0] = {	"dark_capsula_2c" }}
+	},
+	incapsulation_out = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"dark_capsula_0c", "dark_capsula_1c"} },
+		out  = { [0] = {"dark_capsula_3"} },
+		idle = { [0] = "dark_capsula_2c" },
+		rnd  = nil
+	},
+	incapsulation_out_n = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"dark_capsula_0c", "dark_capsula_1c"} },
+		out  = { [0] = {"dark_capsula_4"} },
+		idle = { [0] = "dark_capsula_2c" },
+		rnd  = nil
+	},
+	incapsulation_trans = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"dark_capsula_trans_0"} },
+		out  = nil,
+		idle = { [0] = "dark_capsula_trans_1" },
+		rnd  = nil
+	},
+	incapsulation_trans_out = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"dark_capsula_trans_0"} },
+		out  = { [0] = {"dark_capsula_trans_2"} },
+		idle = { [0] = "dark_capsula_trans_1" },
+		rnd  = nil
+	},
+	bio_wait = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "capsule_lab_0" },
+		rnd  = nil
+	},
+--/ making check on panel once, then wait
+	sci_panel = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_panel_0"} },
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = nil
+	},
+--/ repeating check on panel and wait
+	sci_panel2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"sci_panel_2"} },
+		idle = nil,
+		rnd  = { [0] = { "sci_panel_1" },
+						 [1] = { "sci_panel_1" },
+						 [2] = { "sci_panel_1" },
+						 [3] = { "sci_panel_0" },
+						 [4] = { "sci_panel_1" },
+						 [8] = { "sci_panel_1" },
+						 [9] = { "sci_panel_0" },
+						 [10]= { "sci_panel_1" }}
+	},
+	sci_panel3 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose"} },
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = { [0] = { "sci_panel_1" },
+						 [1] = { "sci_panel_1" },
+						 [2] = { "sci_panel_1" },
+						 [3] = { "sci_panel_0" },
+						 [4] = { "sci_panel_1" },
+						 [8] = { "sci_panel_1" },
+						 [9] = { "sci_panel_0" },
+						 [10]= { "sci_panel_1" }}
+	},
+	--/ only for darklab for sound synth
+	sci_panel_running = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = { "sci_panel_0", {s="dar_replics12"}, "sci_panel_0"} },
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = nil
+	},
+	--/ making check on panel then idle wait with head touching sometimes
+	sci_panel_full = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = { [0] = {"sci_panel_0"} },
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = { [0] = {"sci_panel_3"}}
+	},
+	--/ look left during work with panel
+	sci_panel_left_rotate = {
+		prop = { maxidle = 9, sumidle = 2, rnd = 100 },
+		into = { [0] = {"sci_panel_4"} },
+		out  = { [0] = {"sci_panel_6"} },
+		idle = { [0] = "sci_panel_5" },
+		rnd  = nil
+	},
+	sci_fear = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_scared_0"} },
+		out  = { [0] = {"sci_scared_2"} },
+		idle = { [0] = "sci_scared_1" },
+		rnd  = nil
+	},
+	sci_fear_danger = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_scared_0"} },
+		out  = { [0] = {"def_actor_pose"} },
+		idle = { [0] = "sci_scared_1" },
+		rnd  = nil
+	},
+	sci_whisper = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_whisper_0"} },
+		out  = nil,
+		idle = { [0] = "sci_whisper_1" },
+		rnd  = nil
+	},
+	sci_whisper_out = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_whisper_0"} },
+		out  = { [0] = {"sci_whisper_2"} },
+		idle = { [0] = "sci_whisper_1" },
+		rnd  = nil
+	},
+	sci_sit_relaxed = {
+		prop = { maxidle = 1, sumidle = 10, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "sci_sit_special_idle" },
+		rnd  = nil
+	},
+	lie_sleep = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "lie_sleep_0" },
+		rnd  = nil
+	},
+	sci_talk = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "k stene" },
+		rnd  = nil
+	},
+	--/ not working list: universal_boltovnya, stoya_0, stoya_boltaet_0
+	sit_static_chair_left = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 80 },
+		into = { [0] = {"mil_sit_chair_left_in"} },
+		out  = { [0] = "mil_sit_chair_8_left", "mil_sit_chair_left_out" },
+		idle = { [0] = "mil_sit_chair_0_left" },
+		rnd  = { [0] = { "mil_sit_chair_1_left" },
+						 [1] = { "mil_sit_chair_2_left", "mil_sit_chair_3_left", "mil_sit_chair_4_left" },
+						 [2] = { "mil_sit_chair_5_left", "mil_sit_chair_6_left", "mil_sit_chair_7_left" }}
+	},
+	sit_static_chair_left_scene = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 80 },
+		into = nil,
+		out  = { [0] = "mil_sit_chair_8_left", "mil_sit_chair_left_out" },
+		idle = { [0] = "mil_sit_chair_0_left" },
+		rnd  = { [0] = { "mil_sit_chair_1_left" },
+						 [1] = { "mil_sit_chair_2_left", "mil_sit_chair_3_left", "mil_sit_chair_4_left" },
+						 [2] = { "mil_sit_chair_5_left", "mil_sit_chair_6_left", "mil_sit_chair_7_left" }}
+	},
+	sit_static_chair_right = {
+		prop = { maxidle = 3, sumidle = 5, rnd = 80 },
+		into = { [0] = {"mil_sit_chair_in"} },
+		out  = { [0] = "mil_sit_chair_n_out" },
+		idle = { [0] = "mil_sit_chair_0" },
+		rnd  = { [0] = { "mil_sit_chair_1" },
+						 [1] = { "mil_sit_chair_2", "mil_sit_chair_3", "mil_sit_chair_4" },
+						 [2] = { "mil_sit_chair_5", "mil_sit_chair_6", "mil_sit_chair_7", "mil_sit_chair_8" },
+						 [3] = { "mil_sit_chair_9", "mil_sit_chair_9_out" }}
+	},
+	sit_static_chair_right_scene = {
+		prop = { maxidle = 2, sumidle = 4, rnd = 100 },
+		into = nil,
+		out  = { [0] = "mil_sit_chair_n_out" },
+		idle = { [0] = "mil_sit_chair_0" },
+		rnd  = nil
+	},
+	sit_static_chair_right_clava = {
+		prop = { maxidle = 2, sumidle = 4, rnd = 100 },
+		into = nil, --{ [0] = {"mil_sit_chair_0_i"} },
+		out  = { [0] = "mil_sit_chair_n_out" },
+		idle = { [0] = "mil_sit_chair_clava" },
+		rnd  = nil
+	},
+	sit_static_chair_right_head = {
+		prop = { maxidle = 2, sumidle = 25, rnd = 100 },
+		into = { [0] = { "mil_sit_chair_2", {s="bas_replics2"}, "mil_sit_chair_head_0" } },
+		--out  = { [0] = "mil_sit_chair_head_2" },
+		out  = { [0] = "mil_sit_chair_n_out" },
+		idle = { [0] = "mil_sit_chair_head_1" },
+		rnd  = nil
+	},
+	sit_static_chair_right_head1 = {
+		prop = { maxidle = 2, sumidle = 25, rnd = 100 },
+		into = nil, --{ [0] = {"mil_sit_chair_0_i"} },
+		--out  = { [0] = "mil_sit_chair_head_2" },
+		out  = { [0] = "mil_sit_chair_n_out" },
+		idle = { [0] = "mil_sit_chair_head_1" },
+		rnd  = { [0] = { "mil_sit_chair_head_0" }}
+	},
+	sit_static_chair_right_back_normal = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"mil_sit_chair_0_i"} },
+		out  = { [0] = "mil_sit_chair_n_out" },
+		idle = { [0] = "mil_sit_chair_0" },
+		rnd  = nil
+	},
+	drain = {
+		prop = { maxidle = 2, sumidle = 3, rnd = 100 },
+		into = { [0] = {"drain_0"} },
+		out  = { [0] = {"drain_2"} },
+		idle = { [0] = "drain_1" },
+		rnd  = nil
+	},
+	robo_death = {
+		prop = { maxidle = 2, sumidle = 3, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "robo_death" },
+		rnd  = nil
+	},
+	drain_fly_idle = {
+		prop = { maxidle = 3, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "drain_fly_idle" },
+		rnd  = nil
+	},
+	drain_fly = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"drain_fly_0"} },
+		out  = { [0] = {"drain_fly_2"} },
+		idle = { [0] = "drain_fly_1" },
+		rnd  = nil
+	},
+	hologram_rotate = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"hologram_rotate_out"} },
+		idle = { [0] = "hologram_rotate" },
+		rnd  = nil
+	},
+	drained = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"drained_0"} },
+		out  = { [0] = {"drained_2"} },
+		idle = { [0] = "drained_1" },
+		rnd  = nil
+	},
+	sci_incident = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"sci_ups_0"} },
+		out  = { [0] = {"sci_ups_2"} },
+		idle = { [0] = "sci_ups_1" },
+		rnd  = nil
+	},
+	sci_look_out = {
+		prop = { maxidle = 2, sumidle = 2, rnd = 100 },
+		into = { [0] = {"sci_kuku_0"} },
+		out  = { [0] = {"sci_kuku_2"} },
+		idle = { [0] = "sci_kuku_1" },
+		rnd  = nil
+	},
+	sci_suprised = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"oh_my_god_0"} },
+		out  = { [0] = {"oh_my_god_2"} },
+		idle = { [0] = "oh_my_god_1" },
+		rnd  = nil
+	},
+	sci_think = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"sci_think_0"} },
+		out  = { [0] = {"sci_think_2"} },
+		idle = { [0] = "sci_think_1" },
+		rnd  = nil
+	},
+	sci_blame = {
+		prop = { maxidle = 1, sumidle = 6, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "sci_you" },
+		rnd  = nil
+	},
+	sci_blame_facepalm = {
+		prop = { maxidle = 2, sumidle = 3, rnd = 100 },
+		into = { [0] = "sci_facepalm_0", [1] = "sci_you_0" },
+		out  = { [0] = {"sci_you_2"} },
+		idle = { [0] = "sci_you_1" },
+		rnd  = nil
+	},
+	sci_monster = {
+		prop = { maxidle = 2, sumidle = 8, rnd = 100 },
+		into = { [0] = {"sci_monster_0_0"} },
+		out  = { [0] = {"sci_monster_0_2"} },
+		idle = { [0] = "sci_monster_0_1" },
+		rnd  = nil
+	},
+	sci_monster2 = {
+		prop = { maxidle = 2, sumidle = 8, rnd = 100 },
+		into = { [0] = {"sci_monster_0"} },
+		out  = { [0] = {"sci_monster_2"} },
+		idle = { [0] = "sci_monster_1" },
+		rnd  = nil
+	},
+	sci_talking = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = {"sci_hand_talk"}}
+	},
+	sci_giving = {
+		prop = { maxidle = 3, sumidle = 5, rnd = 100 },
+		into = { [0] = {"binoculars_draw_0", {a="righthand_pda"}, "sci_hand_talk", {d="righthand_pda"} }},
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	mil_nope = {
+		prop = { maxidle = 1, sumidle = 25, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "mil_nope_0" }}
+	},
+	ghost_fly = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_ghost_fly_0"} },
+		out  = { [0] = {"sci_ghost_fly_2"} },
+		idle = { [0] = "sci_ghost_fly_1" },
+		rnd  = nil
+	},
+	sci_ghost_fly = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_ghost_fly_0"} },
+		out  = { [0] = {"sci_ghost_fly_2"} },
+		idle = nil,
+		rnd  = { [0] = { "sci_ghost_fly_1" }}
+	},
+	holo_relaxing = {
+		prop = { maxidle = 2, sumidle = 3, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "komandir_0" },
+		rnd  = nil
+	},
+	trader_lulz1 = {
+		prop = { maxidle = 2, sumidle = 6, rnd = 100 },
+		into = { [0] = {"dance_trader_0", "dance_trader_1"}},
+		out  = nil,
+		idle = { [0] = "dance_trader_2" },
+		rnd  = nil
+	},
+	trader_lulz2 = {
+		prop = { maxidle = 2, sumidle = 6, rnd = 100 },
+		into = { [0] = {"dance_trader_idle", "dance_trader_3_0"}},
+		out  = nil,
+		idle = { [0] = "dance_trader_3" },
+		rnd  = nil
+	},
+	sci_wash_hands = {
+		prop = { maxidle = 2, sumidle = 10, rnd = 100 },
+		into = { [0] = {"sci_wash_hands_10"} },
+		out  = { [0] = {"sci_wash_hands_12"} },
+		idle = { [0] = "sci_wash_hands_11" },
+		rnd  = nil
+	},
+	sci_walk_tank = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = { [0] = {"sci_walk_tank_0"} },
+		out  = { [0] = {"sci_walk_tank_2"} },
+		idle = { [0] = "sci_walk_tank_1" },
+		rnd  = nil
+	},
+	worker_ventile_sleep = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "worker_ventile_7" },
+		rnd  = nil
+	},
+	worker_ventile_listen = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = { [0] = {"worker_ventile_8", "worker_ventile_3"} },
+		out  = { [0] = {"worker_ventile_5"} },
+		idle = { [0] = "worker_ventile_4" },
+		rnd  = nil
+	},
+	worker_ventile_work = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = { [0] = {"worker_ventile_2"} },
+		out  = nil,
+		idle = { [0] = "worker_ventile_1" },
+		rnd  = nil
+	},
+	worker_ventile_normal = {
+		prop = { maxidle = 2, sumidle = 15, rnd = 100 },
+		into = { [0] = {"worker_ventile_0"} },
+		out  = nil,
+		idle = { [0] = "worker_ventile_1" },
+		rnd  = { [0] = { "worker_ventile_2" }}
+	},
+	worker_ventile_big_sleep = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "worker_ventile_big_7" },
+		rnd  = nil
+	},
+	worker_ventile_big_listen = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = { [0] = {"worker_ventile_big_8", "worker_ventile_big_3"} },
+		out  = { [0] = {"worker_ventile_big_5"} },
+		idle = { [0] = "worker_ventile_big_4" },
+		rnd  = nil
+	},
+	worker_ventile_big_work = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = { [0] = {"worker_ventile_big_2"} },
+		out  = nil,
+		idle = { [0] = "worker_ventile_big_1" },
+		rnd  = nil
+	},
+	worker_ventile_big_normal = {
+		prop = { maxidle = 2, sumidle = 15, rnd = 100 },
+		into = { [0] = {"worker_ventile_big_0"} },
+		out  = nil,
+		idle = { [0] = "worker_ventile_big_1" },
+		rnd  = { [0] = { "worker_ventile_big_2" }}
+	},
+	dog_teach = {
+		prop = { maxidle = 2, sumidle = 7, rnd = 90 },
+		into = { [0] = {"dog_teach_00"} },
+		out  = { [0] = {"dog_teach_03"} },
+		idle = { [0] = "dog_teach_01" },
+		rnd  = { [0] = { "dog_teach_02" }}
+	},
+	dog_teach_no_into = {
+		prop = { maxidle = 2, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "dog_teach_01" },
+		rnd  = { [0] = { "dog_teach_02" }}
+	},
+	hands_on_rails = {
+		prop = { maxidle = 3, sumidle = 6, rnd = 100 },
+		into = { [0] = {"on_rails_0"} },
+		out  = { [0] = {"on_rails_2"} },
+		idle = { [0] = "on_rails_1" },
+		rnd  = nil
+	}, --[[
+	psycho_mind = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"psy_to_mind_blowing"} },
+		out  = { [0] = {"psy_mind_blowing_1"} },
+		idle = { [0] = "psy_mind_blowing_0" },
+		rnd  = nil
+	}, --]]
+	psycho_mind = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"idle_0_to_psy_1_idle_0"} },
+		out  = { [0] = {"psy_1_idle_0_to_idle_0"} },
+		idle = { [0] = "psy_mind_blowing_new" },
+		rnd  = nil
+	},
+	--/ clicking stuff on shkaf panel, rotating something
+	sci_laboratory = {
+		prop = { maxidle = 5, sumidle = 6, rnd = 90 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "sci_laboratory_0" }}
+	},
+	--/ looking and clicking once on button of lab equipment
+	sci_laboratory_2 = {
+		prop = { maxidle = 10, sumidle = 5, rnd = 90 },
+		into = { [0] = {"sci_laboratory_1"} },
+		out  = { [0] = {"sci_laboratory_3"} },
+		idle = { [0] = "sci_laboratory_2" },
+		rnd  = { [0] = { "sci_laboratory_4" }}
+	},
+	--/ looking and multiple hands clicking buttons
+	sci_laboratory_3 = {
+		prop = { maxidle = 10, sumidle = 5, rnd = 90 },
+		into = { [0] = {"sci_laboratory_1"} },
+		out  = { [0] = {"sci_laboratory_3"} },
+		idle = { [0] = "sci_laboratory_2" },
+		rnd  = { [0] = { "sci_laboratory_5" }}
+	},
+	--/ looking on some lab device only
+	sci_laboratory_4 = {
+		prop = { maxidle = 10, sumidle = 5, rnd = 90 },
+		into = { [0] = {"sci_laboratory_1"} },
+		out  = { [0] = {"sci_laboratory_3"} },
+		idle = { [0] = "sci_laboratory_2" },
+		rnd = nil
+	},
+	sci_meeting = {
+		prop = { maxidle = 2, sumidle = 2, rnd = 100 },
+		into = { [0] = {"sci_meeting_0"} },
+		out  = { [0] = {"sci_meeting_2"} },
+		idle = { [0] = "sci_meeting_1" },
+		rnd  = nil
+	},
+	sci_worried = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = { [0] = {"sci_worried_0"} },
+		out  = { [0] = {"sci_worried_2"} },
+		idle = { [0] = "sci_worried_1" },
+		rnd  = nil
+	},
+	sci_blind = {
+		prop = { maxidle = 4, sumidle = 3, rnd = 100 },
+		into = { [0] = {"sci_blind_0"} },
+		out  = { [0] = {"sci_blind_2"} },
+		idle = { [0] = "sci_blind_1" },
+		rnd  = nil
+	},
+	sci_blind2 = {
+		prop = { maxidle = 4, sumidle = 3, rnd = 100 },
+		into = { [0] = {"sci_blind_1_1"} },
+		out  = { [0] = {"sci_blind_1_3"} },
+		idle = { [0] = "sci_blind_1_2" },
+		rnd  = nil
+	},
+	sci_walk_talk = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = nil,
+		rnd  = { [0] = { "sci_walk_talk_0" }}
+	},
+	sci_ball = {
+		prop = { maxidle = 4, sumidle = 3, rnd = 100 },
+		into = { [0] = {"myach_1"} },
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	sci_panel_big = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = { [0] = {"sci_panel_3"}}
+	},
+	ghost_look_full = {
+		prop = { maxidle = 4, sumidle = 3, rnd = 100 },
+		into = { [0] = {"ghost_look_0"} },
+		out  = { [0] = {"ghost_look_2"} },
+		idle = { [0] = "ghost_look_1" },
+		rnd  = nil
+	},
+	ghost_look_synth = {
+		prop = { maxidle = 4, sumidle = 3, rnd = 100 },
+		into = { [0] = {"ghost_look_0_s"} },
+		out  = { [0] = {"ghost_look_0_s"} },
+		idle = { [0] = "ghost_look_1" },
+		rnd  = { [0] = { "ghost_look_scary" }}
+	},
+	ghost_look_scary = {
+		prop = { maxidle = 4, sumidle = 3, rnd = 100 },
+		into = { [0] = {"ghost_look_scary"} },
+		out  = { [0] = {"ghost_look_0_s"} },
+		idle = { [0] = "ghost_look_1" },
+		rnd  = { [0] = { "ghost_look_scary" }}
+	},
+	ghost_look_finish = {
+		prop = { maxidle = 4, sumidle = 3, rnd = 100 },
+		into = { [0] = {"ghost_look_0_s", "ghost_look_hand_0"} },
+		out  = nil,
+		idle = { [0] = "ghost_look_hand_1" },
+		rnd  = nil
+	},
+	drink_vodka = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = { [0] = {"drink_stand_0", {a="vodka_a"}, "drink_stand_1"} },
+		out  = nil,
+		--out  = { [0] = {"drink_stand_3", {d="vodka_a"}, "drink_stand_0"} },
+		idle = { [0] = "drink_stand_2" },
+		rnd  = nil
+	},
+	drink_vodka_out = {
+		prop = { maxidle = 5, sumidle = 10, rnd = 100 },
+		into = { [0] = {"drink_stand_3", {d="vodka_a"}, "drink_stand_0"} },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	sci_ghost_fly_static = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"sci_ghost_fly_2"} },
+		idle = { [0] = "sci_ghost_fly_1" },
+		rnd  = nil
+	},
+	budda = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"budda_0"} },
+		out  = nil,
+		idle = { [0] = "budda_1" },
+		rnd  = nil
+	},
+	convulsi = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "convulsi_0" },
+		rnd  = nil
+	},
+	shooter = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "shooter_0" },
+		rnd  = nil
+	},
+	death_no_ragdoll = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "idle_0_to_psy_0_idle_0"},
+		out  = { [0] = {"vitcim_0"} },
+		idle = { [0] = "psy_0_idle_0" },
+		rnd  = nil
+	},
+	death_no_ragdoll_cycle = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "vitcim_0" },
+		out  = { [0] = {"vitcim_0"} },
+		idle = { [0] = "psy_0_idle_0" },
+		rnd  = nil
+	},
+	gen_talk_scene = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"ghost_scene_talk_0", {s="gen_ghost_scene"}, "ghost_scene_talk_1"}},
+		out  = { [0] = {"ghost_scene_talk_2"}},
+		idle = nil,
+		rnd  = nil
+	},
+	death_vision = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "ghost_vision_0" },
+		rnd  = nil
+	},
+	death_gen_repeater = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "death_special_0" },
+		rnd  = nil
+	},
+	ghost_pletenii = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "ghost_pletenii_0" },
+		out  = { [0] = {"ghost_pletenii_3"} },
+		idle = { [0] = "ghost_pletenii_1" },
+		rnd  = nil
+	},
+	ghost_zov = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "ghost_pletenii_zov_0" },
+		out  = { [0] = {"ghost_pletenii_zov_0"} },
+		idle = { [0] = "ghost_pletenii_1" },
+		rnd  = nil
+	},
+	oso_teleport = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "oso_teleport_0" },
+		out  = { [0] = {"oso_teleport_2"} },
+		idle = { [0] = "oso_teleport_1" },
+		rnd  = nil
+	},
+	oso_pompez = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "oso_pompez_0" },
+		out  = { [0] = {"oso_pompez_2"} },
+		idle = { [0] = "oso_pompez_1" },
+		rnd  = nil
+	},
+	oso_talk = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "oso_talk_0" }}
+	},
+	oso_idle = {
+		prop = { maxidle = 5, sumidle = 3, rnd = 80 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1"},
+		rnd  = { [0] = { "idle_0_idle_0", "idle_0_idle_2", "idle_0_idle_4" }}
+	},
+	curious_look = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "curious_look_0" },
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	mono_crazy = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "mono_crazy_0" },
+		rnd  = nil
+	},
+--/ specific
+	sar_scene_test_0 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "sar_scene_test_0" },
+		rnd  = nil
+	},
+	sar_scene_test_1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sar_scene_22a", {a="sar_tube"}, "sar_scene_test_1" } },
+		out  = nil,
+		idle = { [0] = "sar_scene_test_1" },
+		rnd  = nil
+	},
+	sar_scene_actor_start = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_scene_0" },
+		out  = nil,
+		idle = { [0] = "sar_scene_1" },
+		rnd  = nil
+	},
+	sar_scene_actor = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sar_scene_2_1", {f=xr_effects.sar_final_scene_cam}, "sar_scene_2_2"} },
+		out  = { [0] = {"sar_scene_2a"} },
+		idle = nil,
+		rnd  = nil
+	},
+	sar_scene_gman_start = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sar_scene_22a", {a="sar_tube"}, "sar_scene_22"} },
+		out  = { [0] = {"sar_scene_22a"} },
+		idle = nil,
+		rnd  = nil
+	},
+	sar_scene_gman_full = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sar_scene_22a", {a="sar_tube", f=tasks_sarcofag.sar_actor_hit_fx}, "sar_scene_22", "sar_scene_33"} },
+		out  = { [0] = {"sar_scene_22a"} },
+		idle = { [0] = "sar_scene_33a" },
+		rnd  = nil
+	},
+	sar_scene_actor_clicking = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_scene_2a" },
+		out  = { [0] = {"sar_scene_4a"} },
+		idle = { [0] = "sar_scene_3" },
+		rnd  = nil
+	},
+	sar_scene_gman_wait = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sar_scene_2", {a="sar_tube"}, "sar_scene_33" } },
+		out  = { [0] = {"sar_scene_22a"} },
+		idle = { [0] = "sar_scene_33a" },
+		rnd  = nil
+	},
+	sar_scene_actor_win = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sar_scene_2a", {a="sar_brick", f=tasks_sarcofag.sar_brick_fx}, "sar_scene_4"} },
+ 		out  = { [0] = {"sar_scene_5b"} },
+		idle = { [0] = "sar_scene_5a" },
+		rnd  = nil
+	},
+	sar_scene_gman_loose = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_scene_44" },
+		out  = nil,
+		idle = { [0] = "sar_scene_44a" },
+		rnd  = nil
+	},
+	sar_scene_actor_loose = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_scene_5" },
+		out  = nil,
+		idle = { [0] = "sar_scene_5a" },
+		rnd  = nil
+	},
+	sar_scene_gman_win = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sar_scene_22a", {d="sar_tube"}, "sar_scene_55"} },
+		out  = nil,
+		idle = { [0] = "sar_scene_555a" },
+		rnd  = nil
+	},
+	sar_player_end = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = { "sar_scene_5b", {d="sar_brick"}, "cr_idle_0_out", "idle_0_idle_0", "sar_player_end_0"} },
+		out  = nil,
+		idle = { [0] = "sar_player_end_1" },
+		rnd  = nil
+	},
+	sar_kgb = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_kgb_0" },
+		out  = { [0] = {"sar_kgb_3"} },
+		idle = { [0] = "sar_kgb_1" },
+		rnd  = nil
+	},
+	sar_kgb_sign = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = "sar_kgb_2" },
+		out  = { [0] = {"sar_kgb_3"} },
+		idle = { [0] = "sar_kgb_1" },
+		rnd  = nil
+	},
+	sar_launch = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_launch1_0" },
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	sar_launch2_idle = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_launch2_0a" },
+		out  = { [0] = {"sar_launch2_0a"} },
+		idle = { [0] = "sar_launch2_0" },
+		rnd  = nil
+	},
+	sar_launch2_start = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "sar_launch2_1" },
+		out  = { [0] = {"sar_launch2_0a"} },
+		idle = { [0] = "sar_launch2_0" },
+		rnd  = nil
+	},
+	sar_panel = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = "sar_panel_look_0" },
+		out  = { [0] = {"sar_panel_look_2"} },
+		idle = { [0] = "sar_panel_look_1" },
+		rnd  = nil
+	},
+	sar_angry = {
+		prop = { maxidle = 1, sumidle = 25, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "sar_angry_0" }}
+	},
+	sar_zombie = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = "sar_zombie_0" },
+		out  = nil,
+		idle = { [0] = "sar_zombie_1" },
+		rnd  = nil
+	},
+	sci_facepalm = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "sci_facepalm_0" },
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	probe_old = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"metering_0_draw_0", {a="decoder"}, "metering_0_draw_1"} },
+		out  = { [0] = {"metering_0_hide_0", {d="decoder"}, "metering_0_hide_1"} },
+		idle = { [0] = "metering_0_idle_0" },
+		rnd  = nil
+	},
+	sar_loader = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = {"sar_crates_0", {a="sar_box"} }},
+		out  = { [0] = {"sar_crates_2", {d="sar_box"}, "sar_crates_3"} },
+		idle = { [0] = "sar_crates_1" },
+		rnd  = nil
+	},
+	sar_incident = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "sar_incident_0" },
+		out  = nil,
+		idle = { [0] = "sar_incident_1" },
+		rnd  = nil
+	},
+	sar_panel_special = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_panel_0_a", {s="sar_replics3"}, "sci_panel_0"} },
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = nil
+	},
+	sar_panel_special2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_panel_0_a", {s="sar_replics4"}, "sci_panel_0"} },
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = nil
+	},
+	sar_panel_special3 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_panel_0_a", {s="sar_replics10"}, "sci_panel_0"} },
+		out  = { [0] = {"sci_panel_2"} },
+		idle = { [0] = "sci_panel_1" },
+		rnd  = nil
+	},
+	oso_actor_berserk = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "oso_actor_berserk_0" },
+		rnd  = nil
+	},
+	oso_actor_fight = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_actor_scene_0"} },
+		out  = nil,
+		idle = { [0] = "oso_actor_scene_0a" },
+		rnd  = nil
+	},
+	oso_gman_fight = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_gman_scene_0"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_final_pre = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = {"oso_boss_scene_part_0"} },
+		out  = { [0] = {"oso_boss_scene_part_0b"} },
+		idle = { [0] = "oso_boss_scene_part_0a" },
+		rnd  = nil
+	}, --[[
+	oso_boss_final_pre = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"oso_boss_scene_part_0"} },
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	}, --]]
+	oso_boss_final_fire = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = { [0] = {"oso_boss_scene_part_1"} },
+		out  = nil,
+		idle = { [0] = "oso_boss_scene_part_3" },
+		rnd  = nil
+	},
+	oso_boss_final_out = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_boss_scene_part_2"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_final_loose = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_boss_scene_part_1"} },
+		out  = nil,
+		idle = { [0] = "oso_boss_scene_2" },
+		rnd  = nil
+	},
+	oso_gman_victory = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_gman_battle_end_0"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_gman_walk = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_gman_battle_walk_0" },
+		out  = { [0] = {"oso_gman_battle_walk_2"} },
+		idle = { [0] = "oso_gman_battle_walk_1" },
+		rnd  = nil
+	},
+	oso_gman_fail = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_gman_fail_0" },
+		out  = { [0] = {"oso_gman_fail_2"} },
+		idle = { [0] = "oso_gman_fail_1" },
+		rnd  = nil
+	},
+	oso_gman_fireball_pose = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_gman_fireball_0" },
+		out  = { [0] = {"oso_gman_fireball_1a"} },
+		idle = { [0] = "oso_gman_fireball_1" },
+		rnd  = nil
+	},
+	oso_gman_fireball_attack = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_gman_fireball_2" },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_gman_shield = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_gman_shield_0"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_actor_attempt_pre = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_actor_scene_part_0"} },
+		out  = nil,
+		idle = { [0] = "oso_actor_scene_part_0a" },
+		rnd  = nil
+	},
+	oso_actor_attempt_fire = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_actor_scene_part_1"} },
+		out  = { [0] = {"oso_actor_scene_part_2"} },
+		idle = { [0] = "oso_actor_scene_part_3" },
+		rnd  = nil
+	},
+	oso_boss_seq_clear = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"oso_pompes_wait_0"} },
+		out  = nil,
+		idle = { [0] = "oso_pompes_wait_1" },
+		rnd  = nil
+	},
+	oso_boss_pre_seq1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_talk_modified_0"} },
+		out  = { [0] = {"oso_talk_modified_1a"} },
+		idle = { [0] = "oso_talk_modified_1" },
+		rnd  = nil
+	},
+	oso_boss_pre_seq2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_talk_modified_1a", {s="oso_final11h_main"}, "oso_talk_modified_2"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_seq_start = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_pompes_to_actor_0"} },
+		out  = { [0] = {"oso_pompes_to_actor_1a"} },
+		idle = { [0] = "oso_pompes_to_actor_1" },
+		rnd  = nil
+	},
+	oso_boss_seq_1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_pompes_to_actor_2a"} },
+		out  = { [0] = {"oso_pompes_to_actor_3a"} },
+		idle = { [0] = "oso_pompes_to_actor_2" },
+		rnd  = nil
+	},
+	oso_boss_seq_2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_pompes_to_actor_3a", {s="oso_final15_main"}, "oso_pompes_to_actor_3"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_seq_3 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_pompes_to_actor_w_0" },
+		out  = { [0] = {"oso_pompes_to_actor_w_2"} },
+		idle = { [0] = "oso_pompes_to_actor_w_1" },
+		rnd  = nil
+	},
+	oso_boss_seq_4 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_pompes_wait_0" },
+		out  = { [0] = {"oso_pompes_wait_1a"} },
+		idle = { [0] = "oso_pompes_wait_1" },
+		rnd  = nil
+	},
+	oso_boss_seq_5 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"oso_pompes_wait_1a", {s="oso_final20_main"}, "oso_pompes_wait_2"} },
+		out  = { [0] = {"oso_pompes_wait_1a"} },
+		idle = { [0] = "oso_pompes_wait_1" },
+		rnd  = nil
+	},
+	oso_boss_seq_6 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"oso_pompes_to_actor_3a", {s="oso_final21_main"}, "oso_pompes_wait_3"} },
+		out  =  nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_seq_7 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="oso_final22_main"}, "oso_pompes_to_actor_3"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_special = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="oso_final18_main"}, "oso_pompes_boss"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_dna = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="oso_final18_main"}, "oso_boss_dna"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_no = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_pompes_wait_1a", {s="oso_final16_main"}, "oso_pompes_no_0"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	oso_boss_show = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_show_to_actor_0" },
+		out  = { [0] = {"oso_show_to_actor_2"} },
+		idle = { [0] = "oso_show_to_actor_1" },
+		rnd  = nil
+	},
+	oso_boss_sit_left_idle = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"oso_sit_left_main_0a"} },
+		idle = { [0] = "oso_sit_left_main_0" },
+		rnd  = nil
+	},
+	oso_boss_sit_left_seq1 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"oso_sit_left_main_0a", {s="oso_final1"}, "oso_sit_left_main_1" }},
+		out  = { [0] = {"oso_sit_left_main_0a"} },
+		idle = { [0] = "oso_sit_left_main_0" },
+		rnd  = nil
+	},
+	oso_boss_sit_left_seq2 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"oso_sit_left_main_0a", {s="oso_final2"}, "oso_sit_left_main_2" }},
+		out  = { [0] = {"oso_sit_left_main_0a"} },
+		idle = { [0] = "oso_sit_left_main_0" },
+		rnd  = nil
+	},
+	oso_boss_sit_left_hands = {
+		prop = { maxidle = 2, sumidle = 5, rnd = 100 },
+		into = { [0] = {"oso_sit_left_main_0a", {s="oso_final4"}, "oso_sit_left_main_3" }},
+		out  = { [0] = "oso_sit_left_main_5_out" },
+		idle = { [0] = "oso_sit_left_main_4" },
+		rnd  = nil
+	},
+	oso_walk_tank_boss = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "oso_walk_tank_boss_0" },
+		out  = { [0] = "oso_walk_tank_boss_2" },
+		idle = { [0] = "oso_walk_tank_boss_1" },
+		rnd  = nil
+	},
+	oso_control = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = nil,
+		out  =  nil,
+		idle = { [0] = "oso_control_0" },
+		rnd  = nil
+	},
+	oso_shock = {
+		prop = { maxidle = 2, sumidle = 1, rnd = 100 },
+		into = { [0] = "norm_2_shell-shock_1" },
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	oso_dmg = {
+		prop = { maxidle = 2, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "dmg_norm_torso_6_idle_1" },
+		rnd  = nil
+	},	
+	npc_torso_pick_item = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = "norm_torso_6_drop_0" },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	guards_check_on_wpn = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="bar_replics0"}, "bar_check_weapon_0", "bar_check_weapon_1"}},
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	self_chocke_1 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"bar_chocking_0"}},
+		out  = nil,
+		idle = { [0] = "bar_chocking_2" },
+		rnd  = nil
+	},
+	self_chocke_2 = {
+		prop = { maxidle = 1, sumidle = 3, rnd = 100 },
+		into = { [0] = {"bar_chocking_1"}},
+		out  = nil,
+		idle = { [0] = "bar_chocking_2" },
+		rnd  = nil
+	},
+	gman_telekinesis = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"bar_telekinesis_0"}},
+		out  = nil,
+		idle = nil, --{ [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	wounded_barman = {
+		prop = { maxidle = 8, sumidle = 2, rnd = 70 },
+		into = { [0] = {"idle_to_wounded_0"}},
+		out  = { [0] = {"wounded_to_idle_0"}},
+		idle = { [0] = "wounded_idle_0" },
+		rnd  = { [0] = { "wounded_opasno_0" }}
+	},
+	war_use_pc_keyboard = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"war_actor_use_pc_0"}},
+		out  = { [0] = {"war_actor_use_pc_2"}},
+		idle = { [0] = "war_actor_use_pc_1" },
+		rnd  = nil
+	},
+	war_oso_colbes_0 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "war_colbes_oso_0" },
+		rnd  = nil
+	},
+	war_oso_colbes_1 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "war_colbes_oso_1" },
+		rnd  = nil
+	},
+	war_oso_colbes_2 = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"war_colbes_oso_2"}},
+		out  = nil,
+		idle = { [0] = "war_colbes_oso_0" },
+		rnd  = nil
+	},
+	oso_thing_death = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_charge_death_0"}},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+	stand_smoke = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "stoya_kurit_2_ 0" }, --it's proper, stop touching it!!!!!!
+		rnd  = nil
+	},
+	ordinary_talk = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "ordinary_talk_0" }}
+	},
+	ordinary_talk2 = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "ordinary_talk_1" }}
+	},
+	ordinary_talk3 = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		 out = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "ordinary_talk_2" }}
+	},
+	ordinary_talk4 = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = {	"ordinary_talk_4" }}
+	},
+	ordinary_talk5 = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "ordinary_talk_3" }}
+	},
+	ordinary_talk6 = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "ordinary_talk_5" }}
+	},
+	ordinary_talk7 = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = {	"ordinary_talk_6" }}
+	},
+	stand_wall = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "war_stand_new_0" },
+		out  = { [0] = "war_stand_new_1a" },
+		idle = { [0] = "war_stand_new_1" },
+		rnd  = nil
+	},
+	stand_wall_syn = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "war_stand_new_1a" },
+		out  = { [0] = "war_stand_new_1a" },
+		idle = { [0] = "war_stand_new_1" },
+		rnd  = nil
+	},
+	stand_wall_talk = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 60 },
+		into = { [0] = "war_stand_new_1a" },
+		out  = { [0] = "war_stand_new_1a" },
+		idle = { [0] = "war_stand_new_1" },
+		rnd  = { [0] = { "war_stand_new_2" }}
+	},
+	stand_wall_out = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "war_stand_new_1a" },
+		out  = { [0] = "war_stand_new_3" },
+		idle = { [0] = "war_stand_new_1" },
+		rnd  = nil
+	},
+	war_earphone = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "war_earphone_orders_0" },
+		out  = { [0] = "war_earphone_orders_3" },
+		idle = { [0] = "war_earphone_orders_1" },
+		rnd  = nil
+	},
+	war_knocking = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = "war_knocking_0" },
+		out  = { [0] = "war_knocking_2" },
+		idle = { [0] = "war_knocking_1" },
+		rnd  = nil
+	},
+	war_repair = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"war_repair_0"}},
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+	smeh_simple = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "smeh_simple_0" }}
+	},
+	war_ok_deal = {
+		prop = { maxidle = 3, sumidle = 15, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd = { [0] = { "war_technician_back_no_0" }}
+	},
+	npc_refuse = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = { [0] = { "net_0_0" }}
+	},
+	ordinary_talk7_specific = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = {	[0]	= {"def_actor_pose", {s="war_replics18"}, "ordinary_talk_6"}},
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	sci_fear_new = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_scared_new_0"} },
+		out  = { [0] = {"sci_scared_new_2"} },
+		idle = { [0] = "sci_scared_new_1" },
+		rnd  = nil
+	},
+	sci_rumors = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_public_rumors_0"} },
+		out  = { [0] = {"sci_public_rumors_2"} },
+		idle = { [0] = "sci_public_rumors_1" },
+		rnd  = nil
+	},
+	sci_calling = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"sci_calling_0"} },
+		out  = { [0] = {"sci_calling_2"} },
+		idle = { [0] = "sci_calling_1" },
+		rnd  = nil
+	},
+	war_cough = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"war_cough_0"} },
+		out  = { [0] = {"war_cough_2"} },
+		idle = { [0] = "war_cough_1" },
+		rnd  = nil
+	},
+	war_incident = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"war_circuit_0"} },
+		out  = { [0] = {"war_circuit_2"} },
+		idle = { [0] = "war_circuit_1" },
+		rnd  = nil
+	},
+	walk_relaxed = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "walck" },
+		rnd  = nil
+	},
+	wait_long = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "wait_idle" },
+		rnd  = nil
+	},
+	swa_doc_meet = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="swa_replics1"}, "doc_meet_0"}},
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	swa_actor_hear = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="swa_replics4"}, "actor_hear_0"}},
+		out  = { [0] = {"actor_hear_2"} },
+		idle = { [0] = "actor_hear_1" },
+		rnd  = nil
+	},
+	swa_doc_hear = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="swa_replics5"}, "doc_hear_0"}},
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	hold_pos = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {s="sta_replics3"}, "sta_hold"}},
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	oso_obsorb = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"oso_obsorbe_0"} },
+		out  = { [0] = {"oso_obsorbe_2"} },
+		idle = { [0] = "oso_obsorbe_1" },
+		rnd  = nil
+	},
+	gen_actor_bunker_zero = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = nil,
+		out  = { [0] = {"gen_actor_bunker_new_def_0"} },
+		idle = { [0] = "gen_actor_bunker_new_def_idle_0", },
+		rnd  = nil
+	},
+	gen_actor_bunker_start = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"gen_actor_bunker_new_1"} },
+		out  = nil,
+		idle = { [0] = "gen_actor_bunker_new_2", },
+		rnd  = nil
+	},
+	gen_actor_final_start_old = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"gen_actor_ending_start_1"} },
+		out  = nil,
+		idle = { [0] = "gen_ending_actor_start_2" },
+		rnd  = nil
+	},
+	gen_actor_final_start = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"gen_actor_ending_start_3_new"} },
+		out  = nil,
+		idle = {
+			[0] = "idle_0_idle_1",
+			[1] = "idle_1_idle_1",
+			[2] = "idle_2_idle_1",
+			[3] = "idle_3_idle_1",
+			[4] = "idle_4_idle_1",
+			[8] = "idle_8_idle_1",
+			[9] = "idle_2_idle_1",
+			[10]= "idle_10_idle_1" },
+		rnd  = nil
+	},
+	gen_ghost_final_action = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"gen_ending_ghost_21"} },
+		out  = nil,
+		idle = { [0] = "gen_ending_ghost_22", },
+		rnd  = nil
+	},
+	gen_actor_final_action = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"gen_actor_ending_11"} },
+		out  = nil,
+		idle = { [0] = "gen_actor_ending_12" },
+		rnd  = nil
+	},
+	megafon_intro = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"def_actor_pose", {a="hand_megafon"}, "megafon_intro_0"}},
+		out  = { [0] = {"megafon_intro_2"} },
+		idle = { [0] = "megafon_intro_1" },
+		rnd  = nil
+	},
+	megafon_arena = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"megafon_arena_0"} },
+		out  = { [0] = {"megafon_arena_2", {d="hand_megafon"}, "def_actor_pose"} },
+		idle = { [0] = "megafon_arena_1" },
+		rnd  = nil
+	},
+	arena_expressions = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = { [0] = "azart_0_0", [1] = "azart_1_0", [2] = "azart_2_0" },
+		out  = { [0] = "azart_0_2", [1] = "azart_1_2", [2] = "azart_2_2" },
+		idle = { [0] = "azart_0_1", [1] = "azart_1_1", [2] = "azart_2_1" },
+		rnd  = nil
+	},
+	actor_ready = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"actor_wake_up_2"} },
+		out  = nil,
+		idle = { [0] = "actor_wake_up_1" },
+		rnd  = nil
+	},
+	actor_start = {
+		prop = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into = { [0] = {"actor_wake_up_0_0", {f=tasks_escape.intro_blink_timer}, "actor_wake_up_0_1"} },
+		out  = nil,
+		idle = { [0] = "idle_0_idle_1" },
+		rnd  = nil
+	},
+--/#+# Skyloader ---------------------------------
+	wounded_run = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "dmg_norm_torso_0_run_0",
+			[1] = "dmg_norm_torso_1_run_0",
+			[2] = "dmg_norm_torso_2_run_0",
+			[3] = "dmg_norm_torso_3_run_0",
+			[4] = "dmg_norm_torso_4_run_0",
+			[6] = "dmg_norm_torso_6_run_0",
+			[8] = "dmg_norm_torso_8_run_0",
+			[9] = "dmg_norm_torso_9_run_0",
+			[10]= "dmg_norm_torso_10_run_0"},
+		rnd = nil
+	},
+	wounded_walk = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "dmg_norm_torso_0_walk_1",
+			[1] = "dmg_norm_torso_1_walk_1",
+			[2] = "dmg_norm_torso_2_walk_1",
+			[3] = "dmg_norm_torso_3_walk_1",
+			[4] = "dmg_norm_torso_4_walk_1",
+			[6] = "dmg_norm_torso_6_walk_1",
+			[8] = "dmg_norm_torso_8_walk_1",
+			[9] = "dmg_norm_torso_9_walk_1",
+			[10]= "dmg_norm_torso_10_walk_1"},
+		rnd = nil
+	},
+--/#+# -------------------------------------------
+	preblow = {
+		prop  = { maxidle = 1, sumidle = 1, rnd = 100 },
+		into  = {
+			[0] = { "chasovoy_1" },
+			[2] = { "chasovoy_2" } },
+		out   = nil,
+		idle  = nil,
+		rnd   = nil
+	},
+	trading = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 100 },
+		into = { [0] = "norm_hello_0" },
+		out  = nil,
+		idle = { [0] = "stend" },
+		rnd  = { [0] = { "net_0_0", "idle_0_idle_3", "idle_0_idle_2"} }
+	},
+	punch_corpse = {
+		prop = { maxidle = 5, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = { [0] = "myach_1", [1] = "myach_2" },
+		rnd  = nil
+	},
+	search_corpse= {
+		prop = { maxidle = 5, sumidle = 5, rnd = 100 },
+		into = nil,
+		out  = nil,
+		idle = {
+			[0] = "cr_torso_0_check_corps_0",
+			[1] = "cr_torso_1_check_corps_0",
+			[2] = "cr_torso_2_check_corps_0",
+			[3] = "cr_torso_3_check_corps_0",
+			[4] = "cr_torso_4_check_corps_0",
+			[6] = "cr_torso_6_check_corps_0",
+			[8] = "cr_torso_8_check_corps_0",
+			[9] = "cr_torso_9_check_corps_0",
+			[10]= "cr_torso_10_check_corps_0"},
+		rnd  = nil
+	},
+	smoking = { --/ сидя курит и тушит окурок
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = { [0] = {"item_3_draw_0", {a="smoke"}, "item_3_draw_1"} }, --/ достает
+		out  = { [0] = {"item_3_drop_0", {d="smoke"}, "item_3_drop_1"} }, --/ тушит окурок
+		idle = { [0] = "item_3_aim_0" },
+		rnd  = { [0] = { "item_3_prepare_0", "item_3_attack_0" } } --/ прикуривает и курит
+	},
+	eat_medkit = {
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = { [0] = {"item_5_draw_0", {a="medkit_a"}, "item_5_draw_1"} },
+		out  = { [0] = {"item_5_holster_0", {d="medkit_a",f=xr_wounded.healing}, "item_5_holster_1"} },
+		idle = { [0] = "item_5_aim_0" },
+		rnd  = { [0] = { "item_5_prepare_0", "item_5_attack_0" } }
+	},
+	bandaging = { --/ бинтование
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = { [0] = {"norm_torso_12_draw_0", {a="bandage"}} }, --/ достает
+		out  = { [0] = {"norm_torso_12_holster_0", {d="bandage",f=xr_wounded.healing}} }, --/ убирает
+		idle = { [0] = "norm_torso_12_aim_0" },
+		rnd  = { [0] = { "norm_torso_12_attack_0" } } --/ бинтуется --/(, "norm_torso_12_reload_0")
+	},
+	dmg_bandaging = { --/ бинтование
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = { [0] = {"dmg_norm_torso_12_draw_0", {a="bandage"}} }, --/ достает
+		out  = { [0] = {"dmg_norm_torso_12_holster_0", {d="bandage",f=xr_wounded.healing}} }, --/ убирает
+		idle = { [0] = "dmg_norm_torso_12_aim_0" },
+		rnd  = { [0] = { "dmg_norm_torso_12_attack_0" } } --/ бинтуется
+	},
+	use_pkm = { --/ использование турели
+		prop = { maxidle = 3, sumidle = 3, rnd = 100 },
+		into = { [0] = {"pkm_idle_0" }},
+		out  = nil,
+		idle = nil,
+		rnd  = nil
+	},
+
+}
+--/ ------------------------------------------------------------------------------------------------

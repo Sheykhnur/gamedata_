@@ -1,0 +1,32 @@
+[combat_ignore@derzkiy]
+
+[danger@derzkiy]
+ignore_distance          = 10
+ignore_distance_grenade  = 10
+ignore_distance_corpse   = 10
+ignore_distance_hit      = 50
+ignore_distance_sound    = 10
+danger_inertion_time_grenade = 5
+danger_inertion_time_corpse  = 5
+danger_inertion_time_hit     = 5
+danger_inertion_time_sound   = 5
+
+[threshold@derzkiy]
+max_ignore_distance = 10
+ignore_monster = 0
+
+[logic]
+active = walker@0
+combat_ignore = combat_ignore@derzkiy
+threshold = threshold@derzkiy
+
+[walker@0]
+path_walk = derzkiy_stalk_walk1
+path_look = derzkiy_stalk_look1
+meet = meet@0
+on_info = {+stalker_derzkiy_first_talk1}
+
+[meet@0]
+abuse = false
+use = self
+use_wpn = self

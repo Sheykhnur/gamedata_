@@ -1,0 +1,223 @@
+;***********************state 0*********************************
+
+[logic@pri_military_skirmish1_attack_off1]
+active = walker@pri_military_skirmish1_attack_off1
+
+[walker@pri_military_skirmish1_attack_off1]
+path_walk = idle1
+path_look = idle1_look
+
+[logic@pri_military_skirmish1_attack_off2]
+active = walker@pri_military_skirmish1_attack_off2
+
+[walker@pri_military_skirmish1_attack_off2]
+path_walk = idle2
+path_look = idle2_look
+
+[logic@pri_military_skirmish1_attack_off3]
+active = walker@pri_military_skirmish1_attack_off3
+
+[walker@pri_military_skirmish1_attack_off3]
+path_walk = idle3
+path_look = idle3_look
+
+[logic@pri_military_skirmish1_attack_off4]
+active = walker@pri_military_skirmish1_attack_off4
+
+[walker@pri_military_skirmish1_attack_off4]
+path_walk = idle4
+path_look = idle4_look
+
+[logic@pri_military_skirmish1_attack_off5]
+active = walker@pri_military_skirmish1_attack_off5
+
+[walker@pri_military_skirmish1_attack_off5]
+path_walk = idle5
+path_look = idle5_look
+
+;*****************************state 1*******************************
+
+[death@pri_military_skirmish1]
+on_info = %+pri_military_skirmish1_dead1%
+
+[death@pri_military_skirmish2]
+on_info = %+pri_military_skirmish1_dead2%
+
+[death@pri_military_skirmish3]
+on_info = %+pri_military_skirmish1_dead3%
+
+[death@pri_military_skirmish4]
+on_info = %+pri_military_skirmish1_dead4%
+
+[death@pri_military_skirmish5]
+on_info = %+pri_military_skirmish1_dead5%
+
+[combat_ignore@pri_military_skirmish1]
+
+[danger@pri_military_skirmish1]
+;ignore_types  = grenade, corpse, sound, hit
+;ignore_distance  = 0
+
+[hit@pri_military_skirmish1]
+on_info = {=hit_by_actor} %+pri_military_skirmish1_hit%
+
+[logic@pri_military_skirmish1_attack1]
+active = walker@pri_military_skirmish1_attack1
+on_death = death@pri_military_skirmish1
+combat_ignore = combat_ignore@pri_military_skirmish1
+on_hit = hit@pri_military_skirmish1
+
+[walker@pri_military_skirmish1_attack1]
+path_walk = attack1
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_skirmish1_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {+pri_skirmish1_monolith_dead} walker@pri_military_skirmish1_formation1
+meet = no_meet
+
+[walker@pri_military_skirmish1_formation1]
+path_walk = wait1
+path_look = look1
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+danger = danger@pri_military_skirmish1
+;on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_skirmish1_assault1
+
+[walker@pri_military_skirmish1_assault1]
+path_walk = assault1
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_skirmish1_formation1
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_skirmish1_attack2]
+active = walker@pri_military_skirmish1_attack2
+on_death = death@pri_military_skirmish2
+combat_ignore = combat_ignore@pri_military_skirmish1
+on_hit = hit@pri_military_skirmish1
+
+[walker@pri_military_skirmish1_attack2]
+path_walk = attack2
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_skirmish1_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {+pri_skirmish1_monolith_dead} walker@pri_military_skirmish1_formation2
+meet = no_meet
+
+[walker@pri_military_skirmish1_formation2]
+path_walk = wait2
+path_look = look2
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+danger = danger@pri_military_skirmish1
+;on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_skirmish1_assault2
+
+[walker@pri_military_skirmish1_assault2]
+path_walk = assault2
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_skirmish1_formation2
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_skirmish1_attack3]
+active = walker@pri_military_skirmish1_attack3
+on_death = death@pri_military_skirmish3
+combat_ignore = combat_ignore@pri_military_skirmish1
+on_hit = hit@pri_military_skirmish1
+
+[walker@pri_military_skirmish1_attack3]
+path_walk = attack3
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_skirmish1_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {+pri_skirmish1_monolith_dead} walker@pri_military_skirmish1_formation3
+meet = no_meet
+
+[walker@pri_military_skirmish1_formation3]
+path_walk = wait3
+path_look = look3
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+danger = danger@pri_military_skirmish1
+;on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_skirmish1_assault3
+
+[walker@pri_military_skirmish1_assault3]
+path_walk = assault3
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_skirmish1_formation3
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_skirmish1_attack4]
+active = walker@pri_military_skirmish1_attack4
+on_death = death@pri_military_skirmish4
+combat_ignore = combat_ignore@pri_military_skirmish1
+on_hit = hit@pri_military_skirmish1
+
+[walker@pri_military_skirmish1_attack4]
+path_walk = attack4
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_skirmish1_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {+pri_skirmish1_monolith_dead} walker@pri_military_skirmish1_formation4
+meet = no_meet
+
+[walker@pri_military_skirmish1_formation4]
+path_walk = wait4
+path_look = look4
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+danger = danger@pri_military_skirmish1
+;on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_skirmish1_assault4
+
+[walker@pri_military_skirmish1_assault4]
+path_walk = assault4
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_skirmish1_formation4
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[logic@pri_military_skirmish1_attack5]
+active = walker@pri_military_skirmish1_attack5
+on_death = death@pri_military_skirmish5
+combat_ignore = combat_ignore@pri_military_skirmish1
+on_hit = hit@pri_military_skirmish1
+
+[walker@pri_military_skirmish1_attack5]
+path_walk = attack5
+;combat_ignore_cond = {=ignore_actor_until_info(pri_military_skirmish1_hit)}
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {+pri_skirmish1_monolith_dead} walker@pri_military_skirmish1_formation5
+meet = no_meet
+
+[walker@pri_military_skirmish1_formation5]
+path_walk = wait5
+path_look = look5
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+danger = danger@pri_military_skirmish1
+;on_signal = reached| %+pri_skirmish1_end%
+on_info = {=gulag_population_ge(pri_monolith_hq:10)} walker@pri_military_skirmish1_assault5
+
+[walker@pri_military_skirmish1_assault5]
+path_walk = assault5
+combat_ignore_cond = {=fighting_actor -pri_military_skirmish1_hit}
+on_info = {=gulag_population_le(pri_monolith_hq:2)} walker@pri_military_skirmish1_formation5
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+

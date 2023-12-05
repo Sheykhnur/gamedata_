@@ -1,0 +1,12 @@
+;CODE PANEL OF THE DARK VALLEY TO DARKLAB DOOR
+[logic]
+active = ph_idle@wait
+
+[ph_idle@wait]
+nonscript_usable = false
+tips = tip_box_unknown
+on_info = {+dol_get_doc_about_x18_done} ph_code@lock
+
+[ph_code@lock]
+code    = 5271
+on_code = %=play_snd(device\door_servomotor) +dol_dar_door_unlocked%

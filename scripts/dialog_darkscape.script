@@ -1,0 +1,39 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : dialog_darkscape.script
+ Description: Dialogs darkscape
+ Copyright  : 2012 © LA-team
+ Author     : vintar
+ Editors    : lox(28.04.2013)
+ Last edit  : 29.04.2017 [Skyloader and lox fix]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local out_object,in_object
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------
+function give_secret_docs(first, second)
+	dialogs.relocate_item_section(second, "secret_documents", "out")
+end
+
+function ds_sin_has_another_artefact(oSpeaker1, oSpeaker2)
+	return has_info("ds_prisoner_task_start") and oSpeaker1:object("af_electra_moonlight") ~= nil
+end
+
+function ds_check_sin_lead_death(oSpeaker1, oSpeaker2)
+	dialogs.break_dialog(oSpeaker1, oSpeaker2)
+	if has_info("ds_sin_death") then
+		give_info("ds_actor_killed_sin")
+	end
+end
+
+function give_borov_docs(first, second)
+	dialogs.relocate_item_section(second, "borov_docs", "out")
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,607 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_blowout_mgr.script
+ Description: Manager blowout
+ Copyright  : 2008 © LA-team
+ Author     : barin (23.07.2008)
+ Editors    : gr1ph00n, ghost
+ Last edit  : 21.06.18 (tomilovsenya) – PDA messages fix
+--]] ----------------------------------------------------------------------------------------------
+
+--[[ -------------------------
+ 0. "idle" phase
+
+outdoor phases:
+ 1. "preblow"
+ 2. "surge"
+ 3. "after_surge"
+ 4. "posteffects"
+ 5. end
+
+underground phases:
+ 1. "preblow"
+ 2. "surge"
+ 3. end
+--]] -------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local blowout_mgr = nil
+local selter_mgr  = nil
+
+local blowout_ltx = "lost_alpha\\blowout\\config.ltx"
+local sp_data_ltx = "lost_alpha\\blowout\\spawn_data.ltx"
+local mutants_ltx = "lost_alpha\\blowout\\mutants.ltx"
+local blowout_sounds = {
+	start      = "anomaly\\blowout_begin",
+	preblow    = "anomaly\\vibros",
+	surge      = "anomaly\\dezodor",
+	earthquake = "ambient\\earthquake",
+	underblow  = "anomaly\\underblow",
+	rat_panic  = "ambient\\rats_panic_2",
+	rock_slide = "ambient\\rnd_outdoor\\rnd_rock3",
+	strong_hit = "ambient\\x18\\h_tal5"
+}
+local tPhases = { --/#?# in development!
+	[ 0] = {ph="idle",   hud=nil  , cap="",              tm=5*60*60},
+	[ 1] = {ph="before", hud=true , cap="pre_blowout",   tm=90},
+	[ 2] = {ph="surge",  hud=false, cap="blowout",       tm=35},
+	[ 3] = {ph="after",  hud=false, cap="after_blowout", tm=60},
+	[ 4] = {ph="post",   hud=nil  , cap="post_blowout",  tm=50},
+	[10] = {ph="idle",   hud=nil  , cap="",              tm= 1*60*60}, --/ pause
+	[11] = {ph="before", hud=nil  , cap="",              tm=20}, --/ preblow indoor
+	[12] = {ph="surge",  hud=nil  , cap="",              tm=20}, --/ surge indoor
+}
+local iTimeIdle  = 5 *60*60 --/ 5 game-hours
+local iTimePause = 1 *60*60 --/ 1 game-hour
+local iTimePre0  = 90 --/ 1.5 real-minute (outdoor)
+local iTimePre1  = 20 --/ real-seconds (indoor)
+local iTimeSurge = 35 --/ real-seconds
+local iTimeAfter = 60 --/ 1 real-minute
+local iTimePost  = 50 --/ game-seconds
+
+local ALIFE_TIME_FACTOR = 10
+local sMapNow,idMapNow --/ current level (name/index)
+--/ --------------------------
+local bInit = false --/ flag of initialization of the module
+local sModule = script_name() --/ string name of the file module
+--/ --------------------------
+local sTimerName = "•TM_BLOWOUT•" --/ blowout timer name of the actor
+local sTimerFunc = sModule..".OnTimer" --/ handler function
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ --------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	ALIFE_TIME_FACTOR = system_ini():r_float("alife","time_factor")
+	sMapNow,idMapNow = db.sMapNow,db.idMapNow
+	this.get_blowout_mgr()
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "Blowout"
+--/ -----------------------------------------------------------------------------------------------
+function Blowout:__init()
+	self.phase     = "idle"
+	self.active    = false
+	self.dead_zone = false
+	self.is_underground = IsUnderground(sMapNow)
+	if is_underground then
+		self.blowout_type = "indoor"
+	else
+		self.blowout_type = "outdoor"
+	end
+	self:LoadConfig()
+	
+	self.timer = get_timer(sTimerName)
+	if self.timer then
+		self.phase = self.enabled and self.timer.ph or "idle"
+		if self.phase ~= "idle" then --/ blowout active?
+			self.active = true --/#?# not too early?
+			event("update_1st"):register(RestorePhase) --/ we can activate phases only after spawn actor in game!
+			log("load: phase=[%s], rest_time=[%s] ~> restore", self.phase, self.timer:get_time_rest(), "") --/#~#
+		end
+	else --/ start new game-timer (if it is not launched!)
+		self.timer = start_game_timer(iTimeIdle,sTimerFunc,{ph="idle"},sTimerName)
+	end
+end
+
+function Blowout:__finalize()
+	blowout_mgr = nil
+	selter_mgr  = nil
+end
+
+function Blowout:LoadConfig()
+	local ltx = get_ltx(blowout_ltx)
+	if not ltx then
+		abort("LoadConfig: file '%s' not found!", blowout_ltx, "")
+		return false
+	elseif not ltx:section_exist("blowout") then
+		abort("LoadConfig: section 'blowout' not found!")
+		return false
+	end
+	
+	self.enabled = Get_Cfg_Bool(ltx, "blowout", "enabled", false)
+	if not self.enabled then
+		return false --/>
+	end
+	
+	iTimeIdle       = Get_Cfg_Num32 (ltx, "blowout", "interval", 5) *60*60 --/ hours => game-seconds
+	self.timer_type = Get_Cfg_String(ltx, "blowout", "timer_type", "timer_hud")
+	if self.timer_type ~= "timer_hud" and self.timer_type ~= "hud_timer_text" then
+		log("LoadConfig: wrong 'timer_type' value=[%s] :<%s>", self.timer_type, "Warning!")
+		self.timer_type = "timer_hud"
+	end
+	
+	self.show_timer      = Get_Cfg_Bool(ltx, "blowout", "show_blowout_timer",   false) --/#?# rudiment
+	self.show_warning    = Get_Cfg_Bool(ltx, "blowout", "show_blowout_warning", false)
+	self.show_hideplaces = Get_Cfg_Bool(ltx, "blowout", "show_hideplaces",      false)
+	self.spawn_artefacts = Get_Cfg_Bool(ltx, "blowout", "spawn_artefacts",      false)
+	self.spawn_mutants   = Get_Cfg_Bool(ltx, "blowout", "spawn_mutants",        false)
+	self.spawn_phantoms  = Get_Cfg_Bool(ltx, "blowout", "spawn_phantoms",       false)
+	self.kill_birds      = Get_Cfg_Bool(ltx, "blowout", "kill_birds",           false)
+	
+	if ltx_contains_section(ltx, sMapNow) then
+		self.level_radiation_strength = Get_Cfg_Number(ltx, sMapNow, "radiation_strength", 5.0)
+		self.level_spawn_artefacts    = Get_Cfg_Bool  (ltx, sMapNow, "spawn_artefacts", false)
+		self.level_spawn_mutants      = Get_Cfg_Bool  (ltx, sMapNow, "spawn_mutants",   false)
+		self.level_spawn_phantoms     = Get_Cfg_Bool  (ltx, sMapNow, "spawn_phantoms",  false)
+		self.level_kill_birds         = Get_Cfg_Bool  (ltx, sMapNow, "kill_birds",      false)
+		if self.level_kill_birds and IsUnderground(sMapNow) then
+			self.level_kill_birds = false
+		end
+		self.level_condition = xr_logic.cfg_get_condlist(ltx, sMapNow, "condition", db.actor)
+		if false and self.level_condition then --/#~#
+			log("LoadConfig: prob=[%s]", xr_logic.pick_section_from_condlist(db.actor, db.actor, self.level_condition.condlist), "")
+			table.print(self.level_condition)
+		end
+	else
+		log("LoadConfig: could not find section '%s' in '%s'", sMapNow, blowout_ltx) --/ for ai_test
+		self.level_radiation_strength = 5.0
+		self.level_spawn_artefacts = false
+		self.level_spawn_mutants   = false
+		self.level_spawn_phantoms  = false
+		self.level_kill_birds      = false
+		self.level_condition = { name = "condition", condlist = xr_logic.parse_condlist(db.actor, "", "condition", "never") }
+	end
+	
+	--/ TODO: ----------------------------------------------------------------------------
+	--/ ENGLISH: RESPAWN AFTER BLOWOUT. Lox said that that is bad idea - random monsters can kill story objects.
+	--/ Need to remove that shit and create new one, which will be searching not full smarts and respawning AI there.
+	--[[
+	if not ltx_contains_section(sp_data_ltx, sMapNow) then
+		self.level_spawn_mutants = false
+		self.spawn_mutants = false
+		abort("LoadConfig: could not find section '%s' in '%s'", sMapNow, sp_data_ltx)
+	else
+		self.spawn_data = parser.read_section(get_ltx(sp_data_ltx), sMapNow, "parse_spawn_data_wp")
+		if la_utils.is_empty(self.spawn_data) then
+			self.level_spawn_mutants = false
+			self.spawn_mutants = false
+			abort("LoadConfig: 'spawn_data' not specified for level '%s' in '%s'", sMapNow, sp_data_ltx)
+		end
+	end
+	
+	if not ltx_contains_section(mutants_ltx, sMapNow) then
+		self.level_spawn_mutants = false
+		self.spawn_mutants = false
+		abort("LoadConfig: could not find section '%s' in '%s'", sMapNow, mutants_ltx)
+	else
+		self.mutants = parser.read_section(get_ltx(mutants_ltx), sMapNow, "parse_num")
+		if la_utils.is_empty(self.mutants) then
+			self.level_spawn_mutants = false
+			self.spawn_mutants = false
+			abort("LoadConfig: 'mutants' not specified for level '%s' in '%s'", sMapNow, mutants_ltx)
+		end
+	end
+	--]]
+end
+
+function Blowout:OnTimer(t)
+	if not self.enabled then  log("OnTimer: disabled => [%s]", iTimeIdle, "") --/#~#
+		t:restart(iTimeIdle,sTimerFunc,{ph="idle"}) --/ full restart
+		return --/>
+	elseif not t.ph then  log("OnTimer: reset => [%s] :<%s>", iTimePause, "Info!") --/#~#
+		t:restart(iTimePause,sTimerFunc,{ph="idle"}) --/ delaying: restart (~1 game-hour)
+		return --/> ensurance
+	end
+	self.phase_last = t.ph
+	log("OnTimer: %s phase=[%s]", tostring(t), tostring(t.ph)) --/#~#
+	if t.ph == "idle" then
+		self.active = false --/ ensurance
+		if not self.enabled then  log("OnTimer: blowout disabled => pause => [%s]", 3*iTimePause, "") --/#~# blowout forbidden?
+			t:restart(3*iTimePause,sTimerFunc,{ph=t.ph}) --/ delaying: restart (~3 game-hour)
+			return --/>
+		elseif (la_actor_sleep) then --/#?# strange... mb we need to wake up actor and not depend from his fatigue!
+			if la_actor_sleep.is_sleep_active() then  log("OnTimer: actor_sleep => pause => [%s]", iTimePause, "") --/#~#
+				t:restart(iTimePause,sTimerFunc,{ph=t.ph}) --/ delaying: restart (~1 game-hour)
+				return --/>
+			elseif la_actor_sleep.is_tired() then  log("OnTimer: actor_tired => pause => [%s]", iTimePause, "") --/#~# wana sleep?
+				t:restart(iTimePause,sTimerFunc,{ph=t.ph}) --/ delaying: restart (~1 game-hour)
+				return --/>
+			end
+		end
+		local iProb = tonumber(xr_logic.pick_section_from_condlist(db.actor, db.actor, self.level_condition.condlist)) or 0
+		if iProb < math.random(100) then
+			t:restart(iTimePause,sTimerFunc,{ph=t.ph}) --/ pause: restart (~1 game-hour)
+			log("OnTimer: prob=[%s] => pause => [%s]", iProb, iTimePause, "") --/#~#
+		else
+			self.phase = "preblow" --/ On!
+			if self.is_underground then --/ in undeground?
+				start_real_timer(iTimePre1,sTimerFunc,{ph=self.phase},sTimerName) --/ ~20 real-seconds
+			else --/ ordinary (outside) blowout
+				start_hud_timer(iTimePre0,sTimerFunc,{ph=self.phase}, "Blowout") --/ ~90 real-seconds
+				--t:hud_caption("before_blowout") --/ reserve (in developing!)
+			end
+		end
+	elseif t.ph == "preblow" then
+		self.phase = "surge"
+		if self.is_underground then --/ in undeground?
+			start_real_timer(20,sTimerFunc,{ph=self.phase},sTimerName) --/ ~20 real-seconds
+		else --/ ordinary (outside) blowout
+			start_real_timer(iTimeSurge,sTimerFunc,{ph=self.phase},sTimerName) --/ ~35 real-seconds
+		end
+	elseif t.ph == "surge" then
+		if self.is_underground then --/ in undeground?
+			self.phase = "idle" --/ Off!
+			start_game_timer(iTimeIdle,sTimerFunc,{ph=self.phase},sTimerName) --/ full restart
+		else --/ ordinary (outside) blowout
+			self.phase = "after_surge"
+			start_real_timer(iTimeAfter,sTimerFunc,{ph=self.phase},sTimerName) --/ ~60 real-seconds
+		end
+	elseif t.ph == "after_surge" then
+		self.phase = "posteffects"
+		start_game_timer(iTimePost,sTimerFunc,{ph=self.phase},sTimerName) --/ ~50 game-seconds (5 real-sec)
+	elseif t.ph == "posteffects" then
+		self.phase = "idle"
+		start_game_timer(iTimeIdle,sTimerFunc,{ph=self.phase},sTimerName) --/ full restart
+	end
+	
+	log("OnTimer: %s phase=[%s]=>[%s]", tostring(t), tostring(t.ph), tostring( t:get_property("ph") )) --/#~#
+	self:ActivatePhase()
+end
+
+function Blowout:ActivatePhase()
+	self.active = (self.phase ~= "idle")
+	if self.active then
+		log("ActivatePhase: phase=[%s], rest_time=[%s]", self.phase, self.timer:get_time_rest(), "") --/#~#
+		if not selter_mgr then get_selter_mgr() end
+		if self.phase == "preblow" then
+			self:PreblowPhase()
+		elseif self.phase == "surge" then
+			self:SurgePhase()
+		elseif self.phase == "after_surge" then
+			self:AfterSurgePhase()
+		elseif self.phase == "posteffects" then
+			self:PostblowPhase()
+			event("update_1sec"):register(OnUpdate_1s) --/ ~1 sec (for RadiationWave)
+		end
+	elseif self.phase_last and self.phase_last ~= "idle" then
+		if not selter_mgr then get_selter_mgr() end
+		self:EndPhase()
+		if event("update_1sec"):registered(OnUpdate_1s) then
+			event("update_1sec"):unregister(OnUpdate_1s)
+		end
+		log("ActivatePhase: blowout ~ done") --/#~#
+	end
+end
+
+function Blowout:PreblowPhase()
+	self:Effector("pp_eff", "vibros_p", 2121, false)
+	
+	if self.is_underground then --/ 'undeground' blowout
+		self:Sound("underblow", true)
+	else --/ ordinary (outside) blowout
+		self:Sound("start", true)
+		self:Sound("preblow", true)
+		self:Weather("preblow_we")
+		self:Effector("cam_eff", "shell_shock", 0, false)
+		if self.show_hideplaces then
+			event("update_1sec"):register(bind_shelter.Update)
+		end
+		if self.show_warning and not selter_mgr:isActorInside() then
+			news_manager.send_tip_hud(game.translate_string("blowout_start_header"), game.translate_string("blowout_start_msg"), "actor", 20)
+		end
+	end
+end
+
+function Blowout:SurgePhase()
+	self:Sound("earthquake", true) --/#?#
+	self:Effector("pp_eff", "vibros", 2122, false)
+	self:Effector("cam_eff", "earthquake", 1974, false)
+	if self.is_underground then --/ 'undeground' blowout
+		local rnd = math.random(1234, 147683) % 3
+		if rnd == 0 then
+			sound = "rat_panic"
+		elseif rnd == 1 then
+			sound = "rock_slide"
+		else
+			sound = "strong_hit"
+		end
+		self:Sound(sound, true)
+		for i=1, 10 do
+			self:SpawnPhantoms()
+		end
+	else --/ ordinary (outside) blowout
+		self:Weather("surge_we")
+		self:Sound("surge", true)
+	end
+end
+
+function Blowout:AfterSurgePhase()
+	self:Weather("aftersurge_we")
+	self.dead_zone = not selter_mgr:isActorInside()
+	if self.dead_zone then
+		self:Effector("pp_eff", "dead_zone", 2123, true)
+	end
+end
+
+function Blowout:PostblowPhase()
+	if self.dead_zone then
+		self.dead_zone = false
+		level.remove_pp_effector(2123)
+	end
+	self:Effector("pp_eff", "agr_u_fade", 2124, false)
+	self:PostblowEffects()
+end
+
+function Blowout:EndPhase()
+	if self.dead_zone then
+		self.dead_zone = false
+		level.remove_pp_effector(2123)
+	end
+	selter_mgr:UnregisterAll()
+	
+	if not self.is_underground then
+		self:Weather()
+		xr_sound.set_actor_sound("")
+		if self.show_warning and selter_mgr:isActorInside() then
+			news_manager.send_tip_hud(game.translate_string("hmm"), game.translate_string("blowout_end"), "actor", 15)
+		end
+	end
+end
+
+function Blowout:PostblowEffects()
+	--/ spawn artefacts
+	if self.spawn_artefacts and self.level_spawn_artefacts then
+		se_anom_zone.blowout_awake()
+	end
+	--/ spawn mutants
+	if self.spawn_mutants and self.level_spawn_mutants then
+		for mob_name, count in pairs(self.mutants) do
+			for i=1, count do
+				local spawn_data = la_utils.get_subarray_name(self.spawn_data)
+				if spawn_data then
+					spawn_data = self.spawn_data[spawn_data]
+					alife():create(mob_name, spawn_data.position, spawn_data.level_vertex, spawn_data.game_vertex)
+				else
+					abort("spawn_mutants: cannot find subarray name")
+				end
+			end
+		end
+	end
+end
+
+function Blowout:RadiationWave(e)
+	if selter_mgr:isActorInside() then
+		if self.dead_zone then
+			self.dead_zone = false
+			level.remove_pp_effector(2123)
+		end
+	else
+		if not self.dead_zone then
+			self.dead_zone = true
+			self:Effector("pp_eff", "dead_zone", 2123, true)
+		end
+		xr_sound.set_actor_sound("level_border_detector")
+		xr_sound.set_actor_sound_factor(0.0001)
+		
+		local cond = nil
+		local outfit = db.actor:get_current_outfit()
+		if outfit then
+			cond = outfit:condition()
+		end
+		
+		local h = hit()
+		h.draftsman = db.actor
+		h.direction = vector():set(0, 0, 0)
+		h.type    = hit.radiation
+		h.power   = self.level_radiation_strength
+		h.impulse = 0
+		db.actor:hit(h)
+		
+		if cond then
+			outfit:set_condition(cond)
+		end
+		
+		if math.random() > 0.5 then
+			self:SpawnPhantoms()
+		end
+	end
+end
+
+function Blowout:SpawnPhantoms()
+	if self.spawn_phantoms and self.level_spawn_phantoms then
+		if phantom_manager:phantom_count() <= 5 then
+			local radius = 30.0 * (math.random() / 2.0 + 0.5)
+			local angle = 45 * math.random() - 22.5
+			local direction = vector_rotate_y(db.actor:direction(), angle)
+			phantom_manager.spawn_phantom(db.actor:position():add(direction:mul(radius)))
+		end
+	end
+end
+
+function Blowout:Weather(weather)
+	if not self.is_underground then
+		if weather then
+			level.set_weather_fx(weather)
+		else
+			level.set_weather("default",false) --/#?#
+		end
+	end
+end
+
+function Blowout:Sound(snd_type, play)
+	local snd_obj = xr_sound.get_safe_sound_object(blowout_sounds[snd_type])
+	if snd_obj then
+		if snd_obj:playing() then snd_obj:stop() end
+		if play then
+			snd_obj:play(db.actor, 0, sound_object.s2d)
+		end
+	end
+end
+
+function Blowout:Effector(type_effector, name, id, loop)
+	if type(id) ~= 'number' then id = 0 end
+	if type(loop) ~= 'boolean' then loop = false end
+	
+	if type_effector == "pp_eff" then
+		if id == 0 then id = 2000 + math.random(100) end
+		level.add_pp_effector(name .. ".ppe", id, loop)
+	elseif type_effector == "cam_eff" then
+		if id == 0 then id = 1000 + math.random(100) end
+		level.add_cam_effector("camera_effects\\" .. name .. ".anm", id, loop, "")
+	end
+end
+
+--/ -----------------------------------------------------------------
+--/ foe External-calls
+--/ -----------------------------------------------------------------
+function Blowout:isBlowoutOn()
+	return self.active --/> blowout active (boolean)
+end
+
+function Blowout:isBlowoutVisible()
+	return self.active and not self.is_underground --/> (boolean)
+end
+
+function Blowout:isIndoorBlowout()
+	return self.active and self.is_underground --/> (boolean)
+end
+
+function Blowout:GetBlowoutType()
+	if self.active then
+		return self.blowout_type --/> (string: "outdoor"|"indoor")
+	end
+	return false --/>
+end
+
+function Blowout:GetPhase()
+	return self.phase --/> (string: "idle"|"preblow"|...)
+end
+
+local tIdByPhase = {
+	["preblow"]     = 1,
+	["surge"]       = 2,
+	["after_surge"] = 3,
+	["posteffects"] = 4
+}
+function Blowout:GetPhaseId()
+	if self:isBlowoutVisible() then
+		return tIdByPhase[self.phase] or 0 --/> (number: 0...4)
+	end
+	return 0 --/>
+end
+
+function Blowout:GetTimeRests()
+	return self.timer and self.timer:get_time_rest() or 0 --/> (number: game-seconds)
+end
+--/ ------------------------------------------------------------------
+--/ HELPERs
+--/ ------------------------------------------------------------------
+function get_blowout_mgr()
+	if not blowout_mgr then
+		blowout_mgr = Blowout()
+	end
+	return blowout_mgr --/>
+end
+
+function get_selter_mgr()
+	if not selter_mgr then
+		selter_mgr = bind_shelter.get_selter_mgr()
+	end
+	return selter_mgr --/>
+end
+
+function RestorePhase(e)
+	blowout_mgr:ActivatePhase()
+end
+
+function OnTimer(t)
+	blowout_mgr:OnTimer(t)
+end
+
+function OnUpdate_1s(e)
+	blowout_mgr:RadiationWave(e)
+end
+
+--/ --------------------------
+function is_blowout_on()
+	return get_blowout_mgr():isBlowoutOn() --/> (boolean)
+end
+
+function get_phase()
+	return get_blowout_mgr():GetPhase() --/> (string: "idle"|"preblow"|...)
+end
+
+function get_type()
+	return get_blowout_mgr():GetBlowoutType() --/> (string: "outdoor"|"indoor")
+end
+
+function isBlowoutVisible()
+	return get_blowout_mgr():isBlowoutVisible() --/> (boolean)
+end
+
+function isKillBirds()
+	if get_blowout_mgr():isBlowoutVisible() and blowout_mgr.kill_birds then
+		return blowout_mgr.level_kill_birds == true --/> (boolean)
+	end
+	return false
+end
+
+--/ --------------------------
+local tLtxFiles = {}
+
+function get_ltx(path)
+	if not tLtxFiles[path] then
+		tLtxFiles[path] = ini_file(path)
+	end
+	return tLtxFiles[path] --/>
+end
+
+function ltx_contains_section(ltx, section)
+	if ltx then
+		if type(ltx) == 'string' then
+			return get_ltx(ltx):section_exist(section) --/>
+		end
+		return ltx:section_exist(section) --/>
+	end
+	abort("%s:ltx_contains_section: path=[%s] not found!", sModule, type(ltx), "")
+	return false --/>
+end
+
+--/ --------------------------
+function dbg_start_blowout()
+	if not get_blowout_mgr().active then
+		blowout_mgr.timer:remove()
+		start_game_timer(8*10,sTimerFunc,{ph="idle"},sTimerName)
+	end
+end
+
+function dbg_stop_blowout()
+	if get_blowout_mgr().active then
+		--blowout_mgr.timer:mode(true):start(iTimeIdle,sTimerFunc,{ph="idle"})
+		blowout_mgr.timer:remove()
+		start_game_timer(iTimeIdle,sTimerFunc,{ph="idle"},sTimerName)
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,85 @@
+[combat_ignore@heli_outpost]
+
+[logic]
+active = heli_move@rad_idle
+combat_ignore = combat_ignore@heli_outpost
+
+[heli_move@rad_idle]
+path_move = rad_heli_idle
+invulnerable = true
+immortal = true
+combat_ignore = true
+engine_sound = false
+on_info = {+heli_help_start} heli_move@prepearing %=play_snd(characters_voice\scenario\pri\heli_phrase1)%
+combat_safe_altitude = -10
+on_heli_death = %+rad_heli_dead%
+
+[heli_move@prepearing]
+path_move = rad_heli_attack
+default_velocity = 10
+on_signal = outpost | heli_move@attacking1
+combat_ignore = true
+invulnerable = false
+immortal = false
+enemy = actor
+engine_sound = true
+combat_ignore = true
+combat_use_rocket = false
+combat_use_mgun = true
+combat_velocity = 25
+combat_safe_altitude = -40
+;on_info = {=heli_health_le(0.05)} %=check_heli_alife%
+on_timer = 3500 | {-rad_heli_started_work} %+rad_heli_started_work%
+on_heli_death = %+rad_heli_dead%
+
+
+[heli_move@attacking1]
+path_move = rad_heli_patrol1
+combat_ignore = never
+invulnerable = false
+immortal = false
+engine_sound = true
+enemy = actor
+default_velocity = 10
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = actor
+combat_velocity = 23
+combat_safe_altitude = -55
+;on_info = {=heli_health_le(0.05)} %=check_heli_alife%
+on_timer = 8000 | heli_move@attacking2
+on_heli_death = %+rad_heli_dead%
+
+[heli_move@attacking2]
+path_move = rad_heli_patrol2
+combat_ignore = never
+invulnerable = false
+immortal = false
+engine_sound = true
+enemy = actor
+default_velocity = 10
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = actor
+combat_velocity = 21
+combat_safe_altitude = -46
+;on_info = {=heli_health_le(0.05)} %=check_heli_alife%
+on_timer = 8000 | heli_move@attacking3
+on_heli_death = %+rad_heli_dead%
+
+[heli_move@attacking3]
+path_move = rad_heli_patrol3
+combat_ignore = never
+invulnerable = false
+immortal = false
+engine_sound = true
+enemy = actor
+default_velocity = 10
+combat_use_rocket = false
+combat_use_mgun = true
+combat_enemy = actor
+combat_velocity = 22
+combat_safe_altitude = -43
+;on_info = {=heli_health_le(0.05)} %=check_heli_alife%
+on_timer = 8000 | heli_move@attacking1
+on_heli_death = %+rad_heli_dead%

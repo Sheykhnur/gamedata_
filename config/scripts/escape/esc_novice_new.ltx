@@ -1,0 +1,15 @@
+[logic]
+active = walker@novice
+combat_ignore = combat_ignore
+on_death = death
+
+[walker@novice]
+path_walk = novice_new_walk
+path_look = novice_new_look
+on_timer = 15000|{-esc_novice_dead} %=kill_npc +esc_novice_dead%
+combat_ignore_cond = always
+
+[combat_ignore]
+
+[death]
+on_info = {-esc_novice_dead} %+esc_novice_dead +esc_crouch_tip%

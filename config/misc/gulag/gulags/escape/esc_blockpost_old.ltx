@@ -1,0 +1,116 @@
+[combat_ignore@cordon_military]
+
+[hit@cordon_military]
+on_info = {=hit_by_actor} %+cordon_military_hostile%
+
+
+[logic@esc_blockpost_commander]
+active = walker@esc_blockpost_commander
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[walker@esc_blockpost_commander]
+path_walk = commander_way
+path_look = commander_look 
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_guardhouse]
+active = walker@esc_blockpost_guardhouse
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[walker@esc_blockpost_guardhouse]
+path_walk = guardhouse_way
+path_look = guardhouse_look
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier_tower1]
+active = walker@esc_blockpost_soldier_tower1
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[walker@esc_blockpost_soldier_tower1]
+path_walk = tower_1_way
+path_look = tower_1_look
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier_tower2]
+active = walker@esc_blockpost_soldier_tower2
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[walker@esc_blockpost_soldier_tower2]
+path_walk = tower_2_way
+path_look = tower_2_look
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier1]
+active = patrol@esc_blockpost_soldier1
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[patrol@esc_blockpost_soldier1]
+path_walk = outside_road_patrol_1_way
+commander = true
+formation = line
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier2]
+active = patrol@esc_blockpost_soldier2
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[patrol@esc_blockpost_soldier2]
+path_walk = outside_road_patrol_2_way
+commander = false
+formation = line
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier3]
+active = walker@esc_blockpost_soldier3
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[walker@esc_blockpost_soldier3]
+path_walk = yard_patrol1_way
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier4]
+active = walker@esc_blockpost_soldier4
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[walker@esc_blockpost_soldier4]
+path_walk = yard_patrol_3_way
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier5]
+active = walker@esc_blockpost_soldier5
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[walker@esc_blockpost_soldier5]
+path_walk = sold_yard_2_way
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier6]
+active = sleeper@esc_blockpost_soldier6
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[sleeper@esc_blockpost_soldier6]
+path_main = sleeper1
+wakeable = true
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+
+[logic@esc_blockpost_soldier_mgunner]
+active = mgunner@esc_blockpost_soldier_mgunner
+combat_ignore = combat_ignore@cordon_military
+on_hit = hit@cordon_military
+
+[mgunner@esc_blockpost_soldier_mgunner]
+path_walk = mgunner_walk
+path_look = mgunner_look
+turret_name = esc_blockpost_turret
+combat_ignore_cond = {-cordon_military_hostile =fighting_actor}
+

@@ -1,0 +1,140 @@
+
+[combat_ignore@gar_bandit_hangar]
+
+[death@gar_bandit_hangar1]
+on_info = %+gar_bandit1_dead%
+
+[death@gar_bandit_hangar2]
+on_info = %+gar_bandit2_dead%
+
+[death@gar_bandit_hangar3]
+on_info = %+gar_bandit3_dead%
+
+[death@gar_bandit_hangar4]
+on_info = %+gar_bandit4_dead%
+
+[death@gar_bandit_hangar5]
+on_info = %+gar_bandit5_dead%
+
+[death@gar_bandit_hangar6]
+on_info = %+gar_bandit6_dead%
+
+[death@gar_bandit_hangar7]
+on_info = %+gar_bandit7_dead%
+
+[death@gar_bandit_hangar8]
+on_info = %+gar_bandit8_dead%
+
+[hit@gar_bandit_hangar]
+on_info = {=hitted_by_gulag(gar_seriy_group) -bandits_start_fight} %+bandits_start_fight%
+on_info2 = {=hit_by_actor -bandits_start_fight} %=actor_started_bandit_fight%
+on_info3 = {=hitted_by(6111) -bandits_start_fight} %+bandits_start_fight%
+
+[logic@gar_bandit_hangar_bandit1]
+active = walker@gar_bandit_hangar_bandit1
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar1
+on_hit = hit@gar_bandit_hangar
+
+[walker@gar_bandit_hangar_bandit1]
+path_walk = walk1
+path_look = look1
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[logic@gar_bandit_hangar_bandit2]
+active = walker@gar_bandit_hangar_bandit2a
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar2
+on_hit = hit@gar_bandit_hangar
+
+[walker@gar_bandit_hangar_bandit2a]
+path_walk = walk2a
+on_signal = done | walker@gar_bandit_hangar_bandit2b
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[walker@gar_bandit_hangar_bandit2b]
+path_walk = walk2b
+on_signal = done | walker@gar_bandit_hangar_bandit2a
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[logic@gar_bandit_hangar_bandit3]
+active = walker@gar_bandit_hangar_bandit3b
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar3
+on_hit = hit@gar_bandit_hangar
+
+[walker@gar_bandit_hangar_bandit3a]
+path_walk = walk2a
+on_signal = done | walker@gar_bandit_hangar_bandit3b
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[walker@gar_bandit_hangar_bandit3b]
+path_walk = walk2b
+on_signal = done | walker@gar_bandit_hangar_bandit3a
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[logic@gar_bandit_hangar_bandit4]
+active = walker@gar_bandit_hangar_bandit4
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar4
+on_hit = hit@gar_bandit_hangar
+
+[walker@gar_bandit_hangar_bandit4]
+path_walk = walk4
+path_look = look4
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[logic@gar_bandit_hangar_bandit5]
+active = kamp@gar_bandit_hangar_bandit5
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar5
+on_hit = hit@gar_bandit_hangar
+
+[kamp@gar_bandit_hangar_bandit5]
+center_point = kamp_point
+radius = 2
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[logic@gar_bandit_hangar_bandit6]
+active = kamp@gar_bandit_hangar_bandit6
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar6
+on_hit = hit@gar_bandit_hangar
+
+[kamp@gar_bandit_hangar_bandit6]
+center_point = kamp_point
+radius = 2
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[logic@gar_bandit_hangar_leader]
+active = walker@gar_bandit_hangar_leader
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar7
+on_hit = hit@gar_bandit_hangar
+
+[walker@gar_bandit_hangar_leader]
+path_walk = leader_walk
+path_look = leader_look
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+[logic@gar_bandit_hangar_upstairs]
+active = walker@gar_bandit_hangar_upstairs
+combat_ignore = combat_ignore@gar_bandit_hangar
+on_death = death@gar_bandit_hangar8
+on_hit = hit@gar_bandit_hangar
+
+[walker@gar_bandit_hangar_upstairs]
+path_walk = walk3
+;combat_ignore_cond = {-bandits_start_fight}
+combat_ignore_cond = {-gar_seriy_go -gar_seriy_failed}
+
+

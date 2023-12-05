@@ -1,0 +1,298 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_garbage.script
+ Description: Tasks garbage
+ Copyright  : 2010 © LA-team
+ Author     : griph00n
+ Editors    : lox, vintar(09.02.2013)
+ Last edit  : 21.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	gar_dolg_disc = "gar_sin_veronin_message",
+}
+
+local hangar_bandits_tbl = {
+	"gar_bandit1_dead",
+	"gar_bandit2_dead",
+	"gar_bandit3_dead",
+	"gar_bandit4_dead",
+	"gar_bandit5_dead",
+	"gar_bandit6_dead",
+	"gar_bandit7_dead",
+	"gar_bandit8_dead",
+}
+--/--------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if hangar_bandits_tbl and has_info_portions(hangar_bandits_tbl) then
+		hangar_bandits_tbl = nil --/ clear
+		give_info("gar_hangar_cleaned")
+	end
+	if hangar_bandits_tbl and has_any_info_portions(hangar_bandits_tbl) then
+		if not has_info("gar_seriy_go") then
+			give_info("gar_seriy_failed")
+		end
+	end
+	for sect, infop in pairs(info_tbl) do
+		if db.actor:object(sect) then
+			if not has_info(infop) then
+				give_info(infop)
+				return --/>
+			end
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^gar') then
+		return false --/>
+	end
+	if info_id == "gar_got_seriy_sos" then
+		give_info("gar_assault_hangar_start")
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\gar\\seriy_hangar_help")
+		snd:play(db.actor, 1, sound_object.s2d)
+		news_manager.send_tip_hud(game.translate_string("gar_seriy_sos_header"), game.translate_string("gar_seriy_sos_message"), "seriy")
+		return true
+	end
+	if info_id == "gar_meet_bes" then
+		news_manager.send_tip_hud(game.translate_string("gar_bes_msg_header"), game.translate_string("gar_bes_call_for_help"), "bes")
+		if not has_info("encyclopedy_tutorial_level_radiation") then
+			game.start_tutorial("part_19_level_radiation")
+			give_info("encyclopedy_tutorial_level_radiation")
+		end
+	end
+	if info_id == "gar_dm_sos" then
+		news_manager.send_tip_hud(game.translate_string("sos_signal_header"), game.translate_string("gar_dm_sos_message"), "novice")
+	end
+	if info_id == "gar_seriy_go" then
+		if has_info("gar_seriy_can_fail") then
+			disable_info("gar_seriy_can_fail")
+		end
+		if not has_info("gar_seriy_failed") then
+			news_manager.send_tip_hud(game.translate_string("gar_seriy_sos_header"), game.translate_string("gar_seriy_assault_message"), "seriy")
+		end
+		return true
+	end
+	if info_id == "gar_sniper_killed" then
+		if has_info("gar_sniper_task_start") then
+			news_manager.send_tip_hud(game.translate_string("gar_bes_msg_header"), game.translate_string("gar_bes_message"), "bes", 7)
+		else
+			give_info("gar_sniper_task_completed")
+		end
+		give_info("gar_wandering_cond1")
+		return true
+	end
+	if info_id == "gar_hangar_cleaned" then
+		give_info("gar_assault_hangar_done")
+		give_info("gar_wandering_cond2")
+		if has_info("gar_cutscene_end") and not dialog_garbage.dram_bandits_dead() then
+			give_info("gar_dm_end")
+			xr_effects.kill("gar_dram_novice")
+			give_info("gar_dm_novice_dead")
+			give_info("sar_newbie_died")
+		end
+		return true
+	end
+	if info_id == "gar_boars_assault" then
+		local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\duty\\duty_request1")
+		snd:play(db.actor, 1, sound_object.s2d)
+		news_manager.send_tip_hud(game.translate_string("gar_kill_boars_header"), game.translate_string("gar_kill_boars_message"), "dolg")
+		return true
+	end
+	if info_id == "gar_kill_boars_done" then
+		if not has_alife_info("gar_dolg_leader_spoke") then
+			local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\gar\\max_to_player")
+			snd:play(db.actor, 1, sound_object.s2d)
+		end
+		return true
+	end
+	if info_id == "gar_seriy_can_fail" then
+		news_manager.send_tip_hud(game.translate_string("gar_seriy_sos_header"), game.translate_string("gar_seriy_could_fail"), "seriy")
+		return true
+	end
+	if info_id == "gar_yarik_talked" then
+		if has_info("gar_seriy_can_fail") and not has_info("bandits_start_fight") then
+			disable_info("gar_seriy_can_fail")
+		end
+		return true
+	end
+	if info_id == "gar_seriy_give_info" then
+		if not has_info("agr_krot_band_start") then
+			give_info("agr_krot_band_start")
+			--news_manager.send_tip_hud(nil, "gar_seriy_strelok_info")
+			start_real_timer(16.5, nil, {info_id = "gar_crane_bandits_task_start"}) --/ ~ 16.5 real-sec
+		end
+		return true --/>
+	end
+	if info_id == "gar_talk_to_seriy" then
+		--news_manager.send_tip_hud(nil, "gar_talk_to_seriy")
+		return true --/>
+	end
+	if info_id == "garb_lazy_marked_one" then
+		news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("gar_trader_message"), "sid", 17)
+		local snd = xr_sound.get_safe_sound_object("script_replics\\trader\\trader_monolog2_thru_pda")
+		snd:play(db.actor, 1, sound_object.s2d)
+		give_info("story_line_main_start")
+		give_info("gar_meet_seriy_start")
+		give_info("esc_rescue_fox_done")
+		return true --/>
+	end
+	if info_id == "gar_sin_veronin_message" then
+		if not has_info("gar_sin_negatiations_failed") then
+			news_manager.send_tip_hud(game.translate_string("veronin_message_header"), game.translate_string("gar_sin_veronin_text"), "veronin", 15)
+		end
+		return true --/>
+	end
+	if info_id == "gar_sin_negatiations_failed" then
+		news_manager.send_tip_hud(game.translate_string("veronin_message_header"), game.translate_string("gar_sin_veronin_text_fail"), "veronin", 15)
+		give_info("gar_sin_veronin_message")
+		return true
+	end
+	if info_id == "fore_traitor_task_done2" then
+		start_game_timer(60*60, nil, {info_id = "gar_looser_spawn"}) --/ ~1 hours
+		return true --/>
+	end
+	return false --/>
+end
+
+function gar_dm_bandit_demand(actor, npc)
+	--printf("_bp: gar_dm_bandit_demand: actor=%s", actor:name())
+
+	if has_info("gar_dm_bandit1_demand") or
+	   has_info("gar_dm_bandit2_demand") or
+	   has_info("gar_dm_bandit3_demand") then
+	   --has_info("gar_dm_bandit4_demand") then
+		return
+	end
+	local r = math.random(4)
+	if r == 1 then
+		give_info("gar_dm_bandit1_demand")
+	elseif r == 2 then
+		give_info("gar_dm_bandit2_demand")
+	else --elseif r == 3 then
+		give_info("gar_dm_bandit3_demand")
+	--else
+		--give_info("gar_dm_bandit4_demand")
+	end
+end
+
+function gar_dm_bandits_fight(actor, npc)
+	local sobj = alife():object("gar_dram_novice")
+	if sobj then
+		local novice = level.object_by_id(sobj.id)
+		if novice and novice:alive() then
+			local ignore_actor = distance_between(actor, novice) > 20
+
+			local sobj1 = alife():object("gar_dram_bandit_1")
+			if sobj1 then
+				local bandit1 = level.object_by_id(sobj1.id)
+				if bandit1 then
+					if ignore_actor then
+						if xr_conditions.actor_dead() then
+							novice:set_relation(game_object.enemy, bandit1)
+							bandit1:set_relation(game_object.enemy, novice)
+							if not has_info("gar_attack_novice") then
+								give_info("gar_attack_novice")
+							end
+						end
+						bandit1:set_relation(game_object.enemy, actor)
+					else
+						novice:set_relation(game_object.enemy, bandit1)
+						bandit1:set_relation(game_object.enemy, novice)
+						give_info("gar_attack_novice")
+					end
+					if not has_info("gar_bandits_attacked") then
+						give_info("gar_bandits_attacked")
+					end
+				end
+			end
+
+			local sobj2 = alife():object("gar_dram_bandit_2")
+			if sobj2 then
+				local bandit2 = level.object_by_id(sobj2.id)
+				if bandit2 then
+					if ignore_actor then
+						if xr_conditions.actor_dead() then
+							novice:set_relation(game_object.enemy, bandit2)
+							bandit2:set_relation(game_object.enemy, novice)
+							if not has_info("gar_attack_novice") then
+								give_info("gar_attack_novice")
+							end
+						end
+						bandit2:set_relation(game_object.enemy, actor)
+					else
+						novice:set_relation(game_object.enemy, bandit2)
+						bandit2:set_relation(game_object.enemy, novice)
+							if not has_info("gar_attack_novice") then
+								give_info("gar_attack_novice")
+							end
+					end
+					if not has_info("gar_bandits_attacked") then
+						give_info("gar_bandits_attacked")
+					end
+				end
+			end
+			
+			local sobj3 = alife():object("gar_dram_bandit_4")
+			if sobj3 then
+				local bandit3 = level.object_by_id(sobj3.id)
+				if bandit3 then
+					if ignore_actor then
+						if xr_conditions.actor_dead() then
+							novice:set_relation(game_object.enemy, bandit3)
+							bandit3:set_relation(game_object.enemy, novice)
+							if not has_info("gar_attack_novice") then
+								give_info("gar_attack_novice")
+							end
+						end
+						bandit3:set_relation(game_object.enemy, actor)
+					else
+						novice:set_relation(game_object.enemy, bandit3)
+						bandit3:set_relation(game_object.enemy, novice)
+							if not has_info("gar_attack_novice") then
+								give_info("gar_attack_novice")
+							end
+					end
+					if not has_info("gar_bandits_attacked") then
+						give_info("gar_bandits_attacked")
+					end
+				end
+			end
+		--[[ --too hard
+			local sobj4 = alife():object("gar_dram_bandit_3")
+			local bandit4 = level.object_by_id(sobj4.id)
+			if bandit4 then
+				novice:set_relation(game_object.enemy, bandit4)
+				if not ignore_actor then
+					bandit4:set_relation(game_object.enemy, actor)
+				end
+				bandit4:set_relation(game_object.enemy, novice)
+			end
+		--]]
+		end
+	end
+end
+
+function start_wander_timer()
+	start_game_timer(2*60*60, sModule..".remove_wander_infos")
+end
+
+function remove_wander_infos()
+	disable_info("gar_wandering_cond1")
+	disable_info("gar_wandering_cond2")
+end
+
+function has_rusty_ak74(actor, npc)
+	return db.actor:object("wpn_ak74_m0") ~= nil
+end
+--/ -----------------------------------------------------------------------------------------------

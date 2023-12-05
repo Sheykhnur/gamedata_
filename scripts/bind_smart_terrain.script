@@ -1,0 +1,69 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : bind_smart_terrain.script
+ Description: Smart terrain binder (Needs for server object smart terrain to get updates)
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Last edit  : 20.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Function for bind
+--/ -----------------------------------------------------------------
+function bind(obj)
+	if not alife() then return end --/> too early...
+	if obj:clsid() == clsid.smart_terrain and obj:spawn_ini() then
+		obj:bind_object( this.smart_terrain_binder(obj) )
+	else
+		abort("bind:Obj=[%s],cid=[%s],ini=(%s) must use SMART TERRAIN!", obj:name(), obj:clsid(), obj:spawn_ini() ~= nil)
+	end
+end
+--/ ---------------------------------------------
+--/ CONSTRUCTION
+--/ -----------------------------------------------------------------------------------------------
+class "smart_terrain_binder" (object_binder)
+--/ -----------------------------------------------------------------------------------------------
+function smart_terrain_binder:__init(obj) super(obj)
+--	log("init:Obj=[%s/%s]", obj:name(), obj:id(), ">") --/#~#
+end
+
+function smart_terrain_binder:net_spawn(server_object)
+	if not object_binder.net_spawn(self, server_object) then
+		return false --/>
+	end
+--	log("net_spawn:smart_terrain=[%s],id=[%s]:[%s]", self.object:name(), self.object:id(), "+") --/#~#
+	--/ get reference to real server object
+	self.se_smart_terrain = server_object.id and alife():object(server_object.id)
+	if not self.se_smart_terrain then
+		printf("net_spawn:se_smart_terrain=NIL:<%s>", "Warning!")
+		return true --/>
+	end
+	db.add_zone(self.object)
+	db.add_smart_terrain(self.se_smart_terrain)
+	return true --/>
+end
+
+function smart_terrain_binder:net_destroy()
+	db.del_zone(self.object)
+	db.del_smart_terrain(self.se_smart_terrain)
+	object_binder.net_destroy(self)
+end
+
+function smart_terrain_binder:net_Relcase(obj)
+--	log("net_Relcase:smrt=[%s],Obj=[%s]:[%s]", self.object:name(), obj:name(), ">") --/#~#
+	if self.se_smart_terrain and self.se_smart_terrain.npc_info[obj:id()] then
+		self.se_smart_terrain.gulag:object_setup_offline(obj:id(), true)
+	end
+end
+
+function smart_terrain_binder:update(delta)
+--	log("bind_smart_terrain:update:[%s]:[%s]", self.object:name(), ">") --/#~#
+	object_binder.update(self, delta)
+	self.se_smart_terrain:update()
+end
+--/ -----------------------------------------------------------------------------------------------

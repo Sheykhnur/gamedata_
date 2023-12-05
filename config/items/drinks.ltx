@@ -1,0 +1,352 @@
+[drink_base]:identity_immunities
+animation_slot                  = 4
+cform                           = skeleton
+hud                             = hud_food_base
+
+class                           = II_BOTTL
+ef_weapon_type                  = 0
+attach_angle_offset             = 0.000000, 0.000000, 0.000000
+attach_position_offset          = 0.087266, -0.078540, 0.052360
+attach_bone_name                = bip01_r_hand
+auto_attach                     = false
+
+eat_health                      = 0
+eat_satiety                     = 0
+eat_thirst                      = 0
+eat_alcohol                     = 0
+eat_psy_health                  = 0
+eat_radiation                   = 0
+eat_power                       = 0
+eat_max_power                   = 0
+wounds_heal_perc                = 0
+
+inv_grid_width     = 1
+inv_grid_height    = 1
+
+use_prolonged_effect            = true
+item_use_time                   = 5
+effector_blocking_group         = 5
+
+break_particles                 = explosions\explosion_bottle
+break_sound                     = material\bottle\collide\bottle_break_1
+
+script_loot_class               = food	;for scripts
+
+[alcohol_base]:drink_base
+item_use_time                   = 4.5
+effector_blocking_group         = 6
+
+;------------------
+
+[vodka]:alcohol_base
+$spawn                          = "items\drink\drink_vodka"
+visual                          = weapons\vodka\vodka
+
+description                     = enc_equipment_food_vodka1
+inv_name                        = Vodka
+inv_name_short                  = Vodka
+
+inv_weight                      = 0.5
+inv_grid_x         = 16
+inv_grid_y         = 20
+
+cost                            = 300
+eat_alcohol                     = 0.25
+item_use_time                   = 5.5
+
+effects_list                    = alkaseltzer, psyhealth_restore, dehidration, satiety_minus, psy_booster
+
+alkaseltzer_affected_stat		= 8
+alkaseltzer_rate				= 0.026
+alkaseltzer_dur					= 25.0
+
+psyhealth_restore_affected_stat	= 4
+psyhealth_restore_rate			= 0.01
+psyhealth_restore_dur			= 33.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.005
+dehidration_dur					= 10.0
+
+satiety_minus_affected_stat		= 5
+satiety_minus_rate				= -0.004
+satiety_minus_dur				= 10
+
+psy_booster_dur                 = 7.0
+psy_booster_is_booster          = true
+psy_booster_hit_absorbation_sect= absorbation_psy_protection_light
+
+bonus_psy						= 20
+
+;------------------
+[cmuphob_vodka]:alcohol_base
+$spawn                          = "items\drink\drink_vodka_smirnow"
+visual                          = weapons\vodka\vodka_cmuphob
+
+inv_name                        = enc_vodka_cmuphob_name
+inv_name_short                  = enc_vodka_cmuphob_name
+description                     = enc_vodka_cmuphob_descr
+
+inv_weight                      = 0.5
+
+inv_grid_x         = 19
+inv_grid_y         = 20
+
+cost                            = 800
+item_use_time                   = 5.5
+
+eat_alcohol                     = 0.18
+
+effects_list                    = alkaseltzer, psyhealth_restore, dehidration, satiety_minus, psy_booster
+
+alkaseltzer_affected_stat		= 8
+alkaseltzer_rate				= 0.02
+alkaseltzer_dur					= 25.0
+
+psyhealth_restore_affected_stat	= 4
+psyhealth_restore_rate			= 0.011
+psyhealth_restore_dur			= 33.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.003
+dehidration_dur					= 10.0
+
+satiety_minus_affected_stat		= 5
+satiety_minus_rate				= -0.002
+satiety_minus_dur				= 10
+
+psy_booster_dur                 = 7.0
+psy_booster_is_booster          = true
+psy_booster_hit_absorbation_sect= absorbation_psy_protection_light
+
+bonus_psy						= 20
+
+
+
+;------------------
+[hemupob_vodka]:alcohol_base
+$spawn                          = "items\drink\drink_vodka_nemirow"
+visual                          = weapons\vodka\vodka_hemupob
+
+inv_name                        = enc_vodka_hemupob_name
+inv_name_short                  = enc_vodka_hemupob_name
+description                     = enc_vodka_hemupob_descr
+
+inv_weight                      = 0.5
+
+inv_grid_x         = 17
+inv_grid_y         = 20
+
+cost                            = 660
+item_use_time                   = 5.5
+
+eat_alcohol                     = 0.25
+
+effects_list                    = alkaseltzer, psyhealth_restore, dehidration, satiety_minus, psy_booster
+
+alkaseltzer_affected_stat		= 8
+alkaseltzer_rate				= 0.028
+alkaseltzer_dur					= 25.0
+
+psyhealth_restore_affected_stat	= 4
+psyhealth_restore_rate			= 0.015
+psyhealth_restore_dur			= 33.0
+
+dehidration_affected_stat		= 6
+dehidration_rate				= -0.005
+dehidration_dur					= 10.0
+
+satiety_minus_affected_stat		= 5
+satiety_minus_rate				= -0.004
+satiety_minus_dur				= 10
+
+psy_booster_dur                 = 10.0
+psy_booster_is_booster          = true
+psy_booster_hit_absorbation_sect= absorbation_psy_protection_light
+
+bonus_psy						= 20
+
+;------------------
+[wine]:alcohol_base
+$spawn                          = "items\drink\drink_wine"
+visual                          = weapons\vodka\wine
+
+inv_name                        = enc_wine_name
+inv_name_short                  = enc_wine_name
+description                     = enc_wine_descr
+
+inv_weight                      = 0.5
+
+inv_grid_x         = 18
+inv_grid_y         = 20
+
+cost                            = 220
+item_use_time                   = 5.5
+
+eat_alcohol                     = 0.14
+
+effects_list                    = alkaseltzer, psyhealth_restore, satiety_minus
+
+alkaseltzer_affected_stat		= 8
+alkaseltzer_rate				= 0.015
+alkaseltzer_dur					= 25.0
+
+psyhealth_restore_affected_stat	= 4
+psyhealth_restore_rate			= 0.015
+psyhealth_restore_dur			= 20.0
+
+satiety_minus_affected_stat		= 5
+satiety_minus_rate				= -0.004
+satiety_minus_dur				= 10
+
+;------------------
+[mineral_water]:drink_base
+$spawn                          = "items\drink\drink_mineral_water"
+visual                          = weapons\vodka\water
+
+inv_name                        = enc_mineral_water_name
+inv_name_short                  = enc_mineral_water_name
+description                     = enc_mineral_water_descr
+
+cost                            = 40
+inv_grid_x         = 20
+inv_grid_y         = 20
+
+inv_weight                      = 0.5
+
+use_prolonged_effect            = true
+effector_blocking_group         = 5
+effects_list                    = thirst_restore
+
+thirst_restore_affected_stat    = 6
+thirst_restore_rate             = 0.21
+thirst_restore_dur              = 4.0
+
+
+;------------------
+[energy_drink]:drink_base
+$spawn                          = "items\drink\drink_energy_drink_stalker"
+visual                          = equipments\drink_stalker.ogf
+
+inv_name                        = energy_drink_name
+inv_name_short                  = energy_drink_name
+description                     = enc_equipment_energydrink
+
+cost                            = 75
+item_use_time                   = 4.6
+
+inv_grid_x         = 16
+inv_grid_y         = 21
+
+inv_weight                      = 0.333
+
+use_prolonged_effect            = true
+effector_blocking_group         = 4
+effects_list                    = energy_restore, thirst_restore
+
+energy_restore_affected_stat    = 7
+energy_restore_rate             = 0.04
+energy_restore_dur              = 45.0
+
+thirst_restore_affected_stat    = 6
+thirst_restore_rate             = 0.11
+thirst_restore_dur              = 4.0
+
+;------------------
+[energy_drink_nonstop]:drink_base
+$spawn                          = "items\drink\drink_energy_drink_nonstop"
+visual                          = equipments\drink_nonstop.ogf
+
+inv_name                        = enc_nonstop_energy_drink_name
+inv_name_short                  = enc_nonstop_energy_drink_name
+description                     = enc_nonstop_energy_drink_descr
+
+cost                            = 90
+item_use_time                   = 4.6
+
+inv_grid_x         = 17
+inv_grid_y         = 21
+inv_weight                      = 0.333
+
+use_prolonged_effect            = true
+effector_blocking_group         = 4
+effects_list                    = energy_restore, thirst_restore
+energy_restore_affected_stat    = 7
+energy_restore_rate             = 0.045
+energy_restore_dur              = 45.0
+
+thirst_restore_affected_stat    = 6
+thirst_restore_rate             = 0.11
+thirst_restore_dur              = 4.0
+
+;------------------
+[chmielnitskoe_beer]:alcohol_base
+$spawn                          = "items\drink\drink_beer_chmielnitskoe"
+visual                          = food\beer_chmielnitskoe.ogf
+
+inv_name                        = beer_chmielnitskoe_name
+inv_name_short                  = beer_chmielnitskoe_name
+description                     = enc_equipment_beer_chmielnitskoe
+
+cost                            = 75
+item_use_time                   = 4.6
+
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 18
+inv_grid_y         = 21
+inv_weight                      = 0.3
+
+eat_alcohol                     = 0.07
+
+effects_list                    = alkaseltzer, psyhealth_restore, thirst_restore
+
+alkaseltzer_affected_stat		= 8
+alkaseltzer_rate				= 0.00385
+alkaseltzer_dur					= 25.0
+
+psyhealth_restore_affected_stat	= 4
+psyhealth_restore_rate			= 0.01
+psyhealth_restore_dur			= 15.0
+
+thirst_restore_affected_stat    = 6
+thirst_restore_rate             = 0.1
+thirst_restore_dur              = 4
+
+;------------------
+[pripiat_beer]:alcohol_base
+$spawn                          = "items\drink\drink_beer_pripiat"
+visual                          = food\beer_pripiat.ogf
+
+inv_name                        = pripiat_beer_name
+inv_name_short                  = pripiat_beer_name
+description                     = enc_equipment_pripiat_beer
+
+cost                            = 75
+item_use_time                   = 5.3
+
+inv_grid_width     = 1
+inv_grid_height    = 1
+inv_grid_x         = 19
+inv_grid_y         = 21
+inv_weight                      = 0.3
+
+eat_power                       = 0.2
+eat_psy_health                  = 0.2
+eat_max_power                   = 0.1
+
+eat_alcohol                     = 0.06
+
+effects_list                    = alkaseltzer, psyhealth_restore, thirst_restore
+
+alkaseltzer_affected_stat		= 8
+alkaseltzer_rate				= 0.005
+alkaseltzer_dur					= 25.0
+
+psyhealth_restore_affected_stat	= 4
+psyhealth_restore_rate			= 0.01
+psyhealth_restore_dur			= 10.0
+
+thirst_restore_affected_stat    = 6
+thirst_restore_rate             = 0.11
+thirst_restore_dur              = 4

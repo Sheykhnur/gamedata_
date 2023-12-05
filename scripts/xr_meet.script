@@ -1,0 +1,895 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_meet.script
+ Description: Meeting scheme of two stalkers
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Editors    : ...
+ Last edit  : 14.02.2017 [SkyLoader]
+--]]-----------------------------------------------------------------------------------------------
+--/ TODO: Problem 1: no_meet doesn't work sometimes, if to get around npc with no_meet condition, he sometimes looks at you with anim and plays random sound. (maybe it has smth to do with humming?)
+--/ TODO: Problem 2: Second condition in meet_state(_wpn) doesn't work: 10|hello|3|wait
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tSpamStop = {} --/#+# forbid table of 'parrots'
+local dev       = device()
+--/ -------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_IsContact = xr_evaluators_id.stohe_meet_base +1
+local iAct_DoContact = xr_actions_id.stohe_meet_base +1
+local tBindEvls = { --/ array of 'external' conditions of activation of the scheme
+	[1] = { xr_evaluators_id.chugai_heli_hunter_base, false}, --/#?# don't see heli's
+	--[2] = { xr_evaluators_id.sidor_wounded_base,      false}, --/ NPC not wounded
+	--[3] = { xr_evaluators_id.abuse_base,              false}, --/ not 'abused' on Actor
+}
+local tBindActs = { --/ array of 'external' actions disconnected in case of the active scheme
+	stalker_ids.action_alife_planner,
+	xr_actions_id.state_mgr +2 --/ "idle_alife"
+}
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end --/>
+	dev = device()
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function PreSets(e)
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		{id = db.xr_blowout     and xr_blowout.get_ai_evl(0),    flg = false}, --/ don't see a blowout
+		--{id = db.xr_blowout     and xr_blowout.get_ai_evl(1),    flg = false}, --/ ...
+		--{id = db.xr_blowout     and xr_blowout.get_ai_evl(2),    flg = false}, --/ ...
+		--{id = db.la_ai_watcher  and la_ai_watcher.get_ai_evl(0), flg = false}  --/ not gathering
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+
+--/ retry forbidden ... (die parrots)
+function Is_Spam(npc, sSound)
+--	log("Is_Spam:NPC=[%s],Sound=[%s]", npc:id(), sSound, "") --/#~#
+	if sSound == nil then
+		return false --/>
+	end
+	local npc_id = npc and npc:id()
+	if npc_id and not (tSpamStop[npc_id] and tSpamStop[npc_id][sSound] and tSpamStop[npc_id][sSound] < time_global()) then
+		if not tSpamStop[npc_id] then
+			tSpamStop[npc_id] = {}
+		end
+		tSpamStop[npc_id][sSound] = time_global() + 300000
+		return false --/>
+	end
+	return true --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_contact" (property_evaluator)
+--/ -----------------------------------------------------------------
+--/ property: 'if we have a contact with other stalker'
+--/ ---------------------------------------------
+function evaluator_contact:__init(name, st) super (nil, name)
+	self.st       = st
+	self.log      = st.log
+	self.meet_mgr = st.meet_manager
+	self.ev_enemy = nil
+end
+
+function evaluator_contact:evaluate()
+	if not (db.actor and db.actor:alive() and self.st.meet_set) then
+		return false --/>
+	elseif not self.ev_enemy then
+		local planner = self.object:motivation_action_manager()
+		if planner and planner:initialized() then
+			self.ev_enemy = planner:evaluator(stalker_ids.property_enemy)
+		end
+	end
+	
+	self.meet_mgr:update()
+	
+	if xr_wounded.is_wounded_by_id(self.object:id()) then
+		self.tm_delay = nil
+		return false --/>
+	elseif self.ev_enemy and self.ev_enemy:evaluate() or self.object:best_enemy() then --/ condition: 'presence of the enemy'
+		self.object:disable_talk()
+		self.tm_delay = nil
+		return false --/>
+	end
+	if (self.meet_mgr.state or "nil") ~= "nil" then
+		--/#+# Red75. So they won't stand and look at us for hours
+		if self.meet_mgr.wpn_meet or self.object:is_talking() then
+			self.tm_delay = time_global()
+		elseif not self.tm_delay then
+			self.tm_delay = time_global()
+		elseif self.tm_delay +10*1000 < time_global() then
+			return false --/> 10 seconds looked on actor and it's enough
+		end
+		if self.log then log("ev_contact:NPC=[%s]=>[%s]", self.object:name(), "TRUE") end --/#~#
+		return true --/>
+	elseif self.tm_delay then
+		self.tm_delay = nil
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_meet_wait" (action_base)
+--/ -----------------------------------------------------------------
+--/ action: 'Inviting to dialog'
+--/ ---------------------------------------------
+function action_meet_wait:__init (action_name, st, char_ini) super (nil, action_name)
+	self.st       = st
+	self.meet_mgr = st.meet_manager
+	self.log      = st.log
+	self.char_ini = char_ini
+end
+
+function action_meet_wait:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_meet_wait:ini:NPC=[%s]:(%s)", self.object:name(), ">") end --/#~#
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	--/ cache data
+	self.sound = "nil"
+	--/ sound of welcome/invite
+	if self.st.init_meet ~= "" and not this.Is_Spam(self.meet_mgr.npc, self.st.init_meet) then --/#~#
+		xr_sound.set_sound_play(self.object, self.st.init_meet)
+	end
+end
+
+function action_meet_wait:execute()
+	action_base.execute(self)
+	if self.log then log("ac_meet_wait:NPC=[%s]:(%s)", self.object:name(), ">") end --/#~#
+	local oActor = db.actor
+	local sVictim, oVictim = self.meet_mgr.victim, nil
+	if sVictim then
+		if sVictim == "actor" then
+			oVictim = oActor
+		elseif type(sVictim) == 'number' then
+			oVictim = level_object_by_sid(sVictim) --/#fix?#
+		end
+	end
+	local synsound = nil
+	if self.meet_mgr.state == "true" and (oVictim or oActor) then
+		local h = hit()
+		h.draftsman = oVictim or oActor
+		h.direction = self.object:direction()
+		h.bone      = "bip01_spine"
+		h.power     = 0
+		h.impulse   = 0
+		h.type      = hit.wound
+		self.object:hit(h)
+		self.object:set_relation(game_object.enemy, oVictim or oActor)
+		log("ac_meet_wait:NPC=[%s]<~bar_freedom_angry_actor:[%s]", self.object:name(), "") --/#~#
+	else
+		--/ current sound synthed for current state?
+		for _,v in pairs(self.st.syndata) do
+			if v.state == self.meet_mgr.state and v.sound == self.meet_mgr.sound then
+				synsound = self.meet_mgr.sound
+			end
+		end
+		--/ this part seems not effected on spam-talks, but better leave
+		if synsound and Is_Spam(self.meet_mgr.npc,synsound) then
+			synsound = nil
+		end
+		if self.meet_mgr.state ~= "nil" then
+			if self.meet_mgr.emerg_state == true then
+				state_mgr.set_state(self.object, self.meet_mgr.state, nil, nil, {look_object = oVictim}, {animation = true}, synsound)
+			else
+				state_mgr.set_state(self.object, self.meet_mgr.state, nil, nil, {look_object = oVictim}, nil, synsound)
+			end
+		end
+	end
+	
+	if synsound == nil then
+		--/ need to play background sound
+		if self.sound ~= self.meet_mgr.sound then
+			self.sound = self.meet_mgr.sound
+			if self.sound == "nil" then
+				xr_sound.set_sound(self.object, nil)
+			else
+				local idle_timeout = 0
+				if self.meet_mgr.sound == "wait" then
+					idle_timeout = 10000
+				end
+				if Is_Spam(self.meet_mgr.npc,self.meet_mgr.sound) then
+					xr_sound.set_sound(self.object, nil)
+				else
+					xr_sound.set_sound(self.object, self.meet_mgr.sound, nil, idle_timeout)
+				end
+			end
+		end
+	elseif self.sound ~= nil then --/ need to kill background snd
+		self.sound = "nil"
+		xr_sound.set_sound(self.object, nil)
+	end
+	
+	if self.meet_mgr.disable_talk_weapon == true then
+		xr_effects.give_tutorial_actor_hide_weapon() --/ tutorial - hide weapon
+	end
+	
+	local stor = db.storage[self.object:id()]
+	if stor and stor.active_scheme and oActor then
+		xr_logic.try_switch_to_another_section(self.object, stor[stor.active_scheme], oActor)
+	end
+	if self.log then log("ac_meet_wait:NPC=[%s],sound=[%s]:(%s)", self.object:name(), self.sound, "<") end --/#~#
+end
+
+function action_meet_wait:finalize()
+	action_base.finalize(self)
+	if self.log then log("ac_meet_wait:fin:NPC=[%s]:[%s]", self.object:name(), "x") end --/#~#
+	xr_sound.set_sound(self.object, nil)
+end
+
+--/ ---------------------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "Cmeet_manager"
+--/ -----------------------------------------------------------------------------------------------
+function Cmeet_manager:__init(npc, st)
+	self.npc    = npc
+	self.npc_id = npc:id()
+	self.st  = st
+	self.log = st.log
+	self.emerg_state = false
+	self.startdialog = nil
+	self.use         = nil
+	self.allow_break = true
+	self.trade_enable = true
+end
+
+function Cmeet_manager:update()
+	-- Можно или нет оборвать диалог
+	if self.st.allow_break then
+		local allow_break = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.allow_break)
+		if self.allow_break ~= (allow_break == "true") then
+			self.allow_break = (allow_break == "true")
+		end
+	end
+	--/ start dialog
+	if self.st.meet_dialog then --/ and (type(self.st.meet_dialog) == 'table' and next(self.st.meet_dialog))
+		local sStartDialog = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.meet_dialog)
+		if self.startdialog ~= sStartDialog then
+			self.startdialog = sStartDialog
+			if self.log then log("mm:update:NPC=[%s],StartDialog=[%s]", self.npc:name(), sStartDialog, "") end --/#~#
+			if sStartDialog and sStartDialog ~= "nil" then --/ setting new one
+				self.npc:set_start_dialog(sStartDialog)
+			else --/ restoring initial one
+				self.npc:restore_default_start_dialog()
+			end
+		end
+	else
+		self.npc:restore_default_start_dialog()
+	end
+
+	-- доступность торговли
+	if xr_wounded.is_wounded(self.npc)
+	or self.npc:relation(db.actor) == game_object.enemy
+	or relation_registry.community_goodwill(self.npc:character_community(), db.actor) < 0
+    or self.npc:character_community() == "monolith"
+    or self.npc:character_community() == "dark_stalker"
+    or self.npc:character_community() == "military"
+    or self.npc:character_community() == "zombied" then
+		if self.npc:character_community() ~= "trader" then
+			self.npc:disable_trade()
+		end
+	else
+		if self.st.trade_enable then
+			local trade_enable = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.trade_enable)
+			--if self.log then log("npc [%s] self %s *** %s", self.npc:name(), tostring(self.trade_enable), tostring(trade_enable), "") end --/#~#
+			if self.trade_enable ~= trade_enable then
+				if trade_enable == "true" then
+					self.npc:enable_trade()
+				else
+					self.npc:disable_trade()
+				end
+				self.trade_enable = trade_enable
+			end
+		end
+	end
+
+	self.npc:allow_break_talk_dialog(self.allow_break)
+	self:process_use()
+
+	if self.st.precond == "usability" and not self.npc:is_talking() then
+		self.state = "nil"
+		self.sound = "nil"
+		return --/>
+	end
+	if self.st.precond == "visibility" and not self.npc:see(db.actor) and not self.npc:is_talking() then
+		self.state = "nil"
+		self.sound = "nil"
+		return --/>
+	end
+	
+	if self.npc:is_talking() then
+		self.dist = 0
+	else
+		self.dist = self.npc:position():distance_to(db.actor:position())
+	end
+	
+	self.victim = self:process_victim()
+	
+	self.state_zone,self.sound_zone = self:process_zone()
+	if self.state_zone ~= "nil" then
+		if self.victim == "nil" then
+			self.victim = "actor"
+		end
+		self.state,self.sound = self.state_zone,self.sound_zone
+	else
+		self.state,self.sound = self:process_meet()
+	end
+	--/ If actor speaks, and speaks not with us, then we don't need to say a word.
+	if db.actor:is_talking() and not self.npc:is_talking() then
+		self.sound = "nil"
+	end
+	if self.log then log("mm:update:NPC=[%s],state=[%s],sound=[%s]%s", self.npc:name(), self.state, self.sound, "") end --/#~#
+end
+
+function Cmeet_manager:process_zone()
+	local key = self.st.zone and self:get_key_from_zone(self.st.zone)
+	if key then
+		local r1,r2
+		if self.st.zone[key].state then
+			self.emerg_state = true
+			r1 = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.zone[key].state)
+		end
+		if self.st.zone[key].sound then
+			r2 = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.zone[key].sound)
+		end
+		return tostring(r1), tostring(r2) --/>
+	end
+	return "nil","nil" --/>
+end
+
+function Cmeet_manager:process_meet()
+	local oItem = db.actor:active_item()
+	if oItem and isWeapon(oItem) and oItem:section() ~= "wpn_fists" and self.npc:relation(db.actor) ~= game_object.friend
+			and self:actor_aim_npc() --/#+# reaction on targeted actor gun
+		then
+		local key = self:get_key_from_distance(self.st.meet_state_wpn)
+		if key then
+			self.wpn_meet = true
+			local r1,r2
+			if self.st.meet_state_wpn[key].state then
+				self.emerg_state = true
+				r1 = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.meet_state_wpn[key].state)
+			end
+			if self.st.meet_state_wpn[key].sound and not self.npc:is_talking() then
+				r2 = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.meet_state_wpn[key].sound)
+			end
+			return tostring(r1), tostring(r2) --/>
+		end
+	else
+		self.wpn_meet = false
+		local key = self:get_key_from_distance(self.st.meet_state)
+		if key then
+			local r1,r2
+			if self.st.meet_state[key].state then
+				self.emerg_state = false
+				r1 = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.meet_state[key].state)
+			end
+			if self.st.meet_state[key].sound and not self.npc:is_talking() then
+				r2 = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.meet_state[key].sound)
+			end
+			return tostring(r1), tostring(r2) --/>
+		end
+	end
+	return "nil","nil" --/>
+end
+
+function Cmeet_manager:process_victim()
+	if isWeapon( db.actor:active_item() ) then
+		local key = self:get_key_from_distance(self.st.victim_wpn)
+		if key then
+			return tostring(xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.victim_wpn[key].state)) --/>
+		end
+	else
+		local key = self:get_key_from_distance(self.st.victim)
+		if key then
+			return tostring(xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.victim[key].state)) --/>
+		end
+	end
+	return "nil" --/>
+end
+--/#+# actor targeting to NPC
+function Cmeet_manager:actor_aim_npc()
+	if db.actor:see(self.npc) then
+		local vPos = self.npc:position() --/ NPC position
+		local vVec = vector():sub(vPos,dev.cam_pos) --/ vector from actor till NPC position
+		local iDanger = 1 / vPos:distance_to( db.actor:position() ) --/ coefficient of distance to NPC
+		--/ option-1: error when targeting 'under feet and higher then head'
+		--/ Returns angle between projections of vectors v1 and v2 on horizontal plane
+		--/ positive angle - additional turn of v1 to v2 clockwise.
+		local Get_Horz_Angle = function (v1,v2)
+			local x = v1.x * v2.x   + v1.z * v2.z
+			local y = v1.x *(-v2.z) + v1.z * v2.x --/ turned coordinates system
+			return math.atan2(y,x) --/> angle of additional turn from -pi to pi
+		end
+		--
+		local iAngle = Get_Horz_Angle(dev.cam_dir, vVec) --/ angle between vector of Actor look and vector from Actor till NPC position
+		if iAngle > -iDanger and iAngle < iDanger then --/ NPC in sector of targeting
+--			log("actor_aim_npc:[%s]<?>[%s]", string.short(iDanger), string.short(iAngle)) --/#~#
+		--[[ --/ option-2: not considered 'higher actor's chest'
+		local iCos = vVec:dotproduct(dev.cam_dir)*iDanger
+		if iCos > 1.005 then --/ NPC in conus of targeting
+--			log("actor_aim_npc:d[%s]~>[%s]", string.short(iDanger), string.short(iCos) ) --/#~#
+		--]]
+			if not self.time_aim then
+				self.time_aim = time_global() + 1000 --/ timeout ~1s
+			elseif self.time_aim < time_global() then
+				if iDanger < 0.25 then --/ if Actor closer then 5 metres:
+					xr_abuse.add_abuse(self.npc,0.05) --/ adding abuse, provoking on hit(blow to head) ...
+				end
+				return true --/> Actor targeting to NPC
+			end
+			return false --/>
+		end
+	end
+	if self.time_aim then
+		self.time_aim = nil
+	end
+	return false --/>
+end
+
+function Cmeet_manager:get_key_from_distance(tbl)
+	local key
+	for k,v in pairs(tbl) do
+		if v.dist >= self.dist then
+			key = k
+		else
+			return key --/>
+		end
+	end
+	return key --/>
+end
+
+function Cmeet_manager:get_key_from_zone(tbl)
+	for k,v in pairs(tbl) do
+		if utils.npc_in_zone(db.actor, db.zone_by_name[v.zone]) then
+			return k --/>
+		end
+	end
+	return nil --/>
+end
+
+function Cmeet_manager:process_use()
+	local bTalking = self.npc:is_talking()
+--	log("mm:process_use:NPC=[%s],talking=(%s)", self.npc:name(), bTalking, "") --/#~#
+	--/ prohibiting to use sleepers
+	if xr_sleeper.is_npc_asleep(self.npc) then
+		local sActiveScheme = db.storage[self.npc_id].active_scheme
+		if sActiveScheme ~= "ai_sleep" then
+--			log("mm:process_use:NPC=[%s]<~disable_talk,ActiveScheme=[%s]", self.npc:name(), sActiveScheme, "") --/#~#
+			self.npc:disable_talk()
+			self.disable_talk_weapon = false
+			if bTalking then
+				self.npc:stop_talk()
+			end
+			return --/>
+		else
+			self.npc:enable_talk()
+			if self.log then log("mm:process_use:NPC=[%s]<~enable_talk,ActiveScheme=[%s]", self.npc:name(), sActiveScheme, "") end --/#~#
+		end
+	end
+	
+	local use_section = ""
+	local item = db.actor:active_item()
+	if item and isWeapon(item) then
+		use_section = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.use_wpn) or ""
+		if use_section == "false" then
+			self.disable_talk_weapon = true
+		end
+	else
+		use_section = xr_logic.pick_section_from_condlist(db.actor, self.npc, self.st.use) or ""
+		self.disable_talk_weapon = false
+		--if use_section == "false" then log("process_use: [%s] disable!", self.npc:name(), "") end --/#~#
+	end
+	--/ check by distance (fat then 3m)
+	if bTalking and (use_section ~= "self" or self.npc:name() ~= "mon_stalker") and self.npc:position():distance_to_sqr(db.actor:position()) > 9 then
+		self.npc:stop_talk()
+	end
+	
+	if use_section == "true" then
+		self.npc:enable_talk()
+	elseif use_section == "false" then --/ prohibition or reaction on actor's weapon
+		self.npc:disable_talk()
+		if bTalking and not ( self.npc:critically_wounded() or xr_wounded.is_enabled_talk(self.npc) ) then --/ xr_wounded.is_wounded(self.npc)
+			self.npc:stop_talk() --log("process_use: [%s] stop_talk", self.npc:name(), "") --/#~#
+		end
+	elseif use_section == "self" and not bTalking and device().precache_frame < 1 then
+		if self.npc:name() == "mon_stalker" or self.npc:position():distance_to_sqr(db.actor:position()) < 6 then
+			self.npc:allow_break_talk_dialog(self.allow_break)
+			db.actor:run_talk_dialog(self.npc)
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.meet_manager = Cmeet_manager(npc, st)
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluator -----------------------------------------------------
+	oPlanner:add_evaluator(iEvl_IsContact, this.evaluator_contact("ev_meet_contact", st))
+	--/ NewAction -----------------------------------------------------
+	local oNewAction = this.action_meet_wait("ac_process_meet", st, ini)
+	xr_motivator.addMainPrecondition(oNewAction)
+	for _,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition( world_property(iEvl_IsContact,                      true )) --/ contact with Actor
+	oNewAction:add_precondition( world_property(xr_evaluators_id.sidor_wounded_base, false)) --/ not wounded
+	oNewAction:add_precondition( world_property(xr_evaluators_id.abuse_base,         false)) --/ not abused
+	oNewAction:add_effect( world_property(iEvl_IsContact, false))
+	oPlanner:add_action( iAct_DoContact, oNewAction)
+	--/ Actions (additional preconditions for some standard operators)
+	local oAction
+	for _,v in ipairs(tBindActs) do
+		oAction = oPlanner:action(v)
+		oAction:add_precondition( world_property( iEvl_IsContact, false) )
+	end
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+--/ Called only at the beggining of logic reading, creates actions, evaluators and makes first set.
+function set_scheme(npc, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	--/ for debug
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME - switching scheme
+--/------------------------------------------------------------------
+--/ Called when switching to new section. Do substraction of settings in current section.
+function reset_scheme(npc, scheme, stor, section)
+	if stor.log then log("reset_scheme:NPC=[%s],scheme=[%s],section=[%s],section_logic=[%s]", npc:name(), scheme, section, stor.section_logic, "") end --/#~#
+	local scheme_section = nil
+	if scheme and scheme ~= "nil" then
+		scheme_section = Get_Cfg_String(stor.ini, section, "meet")
+	else
+		scheme_section = Get_Cfg_String(stor.ini, stor.section_logic, "meet")
+	end
+	if scheme_section and scheme_section == "default_meet" then
+		if scheme and (scheme:match('^kamp') or scheme == "ai_humming") then --/#!# "kamp" or "kamper"
+			this.init_meet(npc, stor.ini, nil, stor["meet"], scheme)
+		else
+			this.init_meet(npc, stor.ini, nil, stor["meet"], nil)
+		end
+	else
+		this.init_meet(npc, stor.ini, scheme_section, stor["meet"], scheme)
+	end
+end
+--/ -----------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/ -----------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = npc and db.storage[npc:id()]
+	if stor then
+		stor.actor_dialogs = nil
+		stor.actor_disable = nil
+	end
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs (for compatibility, later delete)
+--/------------------------------------------------------------------
+function set_meet(...)
+	set_scheme(...)
+end
+function reset_meet(...)
+	reset_scheme(...)
+end
+--/------------------------------------------------------------------
+--/ Function of reading settings. Section transfered to it, from where it should be read.
+function init_meet(npc, ini, section, st, scheme)
+	if st.log then log("init_meet:NPC=[%s],section=[%s],scheme=[%s]:(%s)", npc:name(), section, scheme, ">") end --#~#
+	local sSection,sScheme = tostring(section), tostring(scheme)
+	if st.meet_section and st.meet_section == sSection then
+		return --/> section already initialized
+	end
+	
+	st.meet_section = sSection --/ remembering
+	local tBadCommunity = {
+		["killer"]   = true,
+		["bandit"]   = true,
+		["military"] = true,
+		["monolith"] = true,
+		["zombied"]  = true
+	}
+	--/ Setting defaults
+	local def = {}
+	if sScheme ~= "remark" and sScheme == "nil" then
+		def.meet_state     = "5|wait@wait"
+		def.meet_state_wpn = "5|backoff@threat_weap"
+		def.init_meet      = "talk_hello"
+		def.victim         = "5|actor"
+		def.victim_wpn     = "5|actor"
+		def.use            = "true"
+		def.use_wpn        = "false"
+		def.syndata        = "backoff@threat_weap"
+		def.precond        = "visibility"
+		def.abuse          = "true"
+		def.trade_enable   = "true"
+		def.allow_break    = "true"
+	elseif sScheme:match('^kamp') or sScheme == "ai_humming" or sScheme == "remark" then --/#!# "kamp" or "kamper"
+		def.meet_state     = "2|wait"
+		def.meet_state_wpn = ""
+		def.init_meet      = ""
+		def.victim         = "2|actor"
+		def.victim_wpn     = ""
+		def.use            = "{=_kamp_talk}true,false"
+		def.use_wpn        = "false"
+		def.syndata        = ""
+		def.precond        = "usability"
+		def.abuse          = "false"
+		def.trade_enable   = "true"
+		def.allow_break    = "true"
+	elseif tBadCommunity[npc:character_community()] then
+		def.meet_state      = "5|wait@wait"
+		def.meet_state_wpn  = "5|backoff@threat_weap"
+		def.init_meet       = "talk_hello"
+		def.victim          = "5|actor"
+		def.victim_wpn      = "5|actor"
+		def.use             = "true"
+		def.use_wpn         = "false"
+		def.syndata         = "backoff@threat_weap"
+		def.precond         = "visibility"
+		def.abuse           = "false" --/ not abused on enemyes, but fighting with them...
+		def.trade_enable    = "true"
+		def.allow_break     = "true"
+	else --/ дефолты
+		def.meet_state     = "2|wait" --/ below 2m pose 'wait'
+		def.meet_state_wpn = "" --/ demand to hide weapon
+		def.init_meet      = "" --/ greeting snd
+		def.victim         = "2|actor"
+		def.victim_wpn     = "" --/ demand to hide weapon
+		def.use            = "true" --/ weapon doesn't prevent talk
+		def.use_wpn        = "false" --/ demand to hide weapon
+		def.syndata        = ""
+		def.precond        = "visibility"
+		def.abuse          = "true"
+		def.trade_enable   = "true"
+		def.allow_break    = "true"
+	end
+	--/ common
+	local sMeetDialog = Get_Cfg_String(ini, sSection, "meet_dialog", nil)
+	st.meet_dialog    = sMeetDialog and xr_logic.parse_condlist(npc, sSection, "meet_dialog", sMeetDialog) or nil --/#?# {}
+	
+	if sSection == "nil" then
+		--/ Loading defaults!
+		st.init_meet      = def.init_meet
+		st.meet_state     = parse_data(npc, def.meet_state)
+		st.meet_state_wpn = parse_data(npc, def.meet_state_wpn)
+		st.victim         = parse_data(npc, def.victim)
+		st.victim_wpn     = parse_data(npc, def.victim_wpn)
+		st.use            = xr_logic.parse_condlist(npc, sSection, "use",     def.use)
+		st.use_wpn        = xr_logic.parse_condlist(npc, sSection, "use_wpn", def.use_wpn)
+		st.zone           = {}
+		st.syndata        = parse_syn_data(npc, def.syndata)
+		st.precond        = def.precond
+		st.abuse          = def.abuse
+		st.trade_enable   = xr_logic.parse_condlist(npc, sSection, "trade_enable", def.trade_enable)
+		st.allow_break    = xr_logic.parse_condlist(npc, sSection, "allow_break", def.allow_break)
+	elseif sSection == "no_meet" then
+		st.init_meet      = ""
+		st.meet_state     = parse_data(npc, "")
+		st.meet_state_wpn = parse_data(npc, "")
+		st.victim         = parse_data(npc, "")
+		st.victim_wpn     = parse_data(npc, "")
+		st.use            = xr_logic.parse_condlist(npc, sSection, "use",     "false")
+		st.use_wpn        = xr_logic.parse_condlist(npc, sSection, "use_wpn", "false")
+		st.meet_dialog	  = xr_logic.parse_condlist(npc, section, "meet_dialog", "")
+		st.zone           = parse_zone_data(npc, "")
+		st.syndata        = parse_syn_data(npc, "")
+		st.precond        = "usability"
+		st.abuse          = "false"
+		st.trade_enable   = xr_logic.parse_condlist(npc, sSection, "trade_enable", "true")
+		st.allow_break    = xr_logic.parse_condlist(npc, sSection, "allow_break", "true")
+	else
+		st.init_meet      =                 Get_Cfg_String(ini, sSection, "init_meet",      def.init_meet)
+		st.meet_state     = parse_data(npc, Get_Cfg_String(ini, sSection, "meet_state",     def.meet_state))
+		st.meet_state_wpn = parse_data(npc, Get_Cfg_String(ini, sSection, "meet_state_wpn", def.meet_state_wpn))
+		st.victim         = parse_data(npc, Get_Cfg_String(ini, sSection, "victim",         def.victim))
+		st.victim_wpn     = parse_data(npc, Get_Cfg_String(ini, sSection, "victim_wpn",     def.victim_wpn))
+		st.use            = xr_logic.parse_condlist(npc, sSection, "use",     Get_Cfg_String(ini, sSection, "use",     def.use))
+		st.use_wpn        = xr_logic.parse_condlist(npc, sSection, "use_wpn", Get_Cfg_String(ini, sSection, "use_wpn", def.use_wpn))
+		st.zone           = parse_zone_data(npc, Get_Cfg_String(ini, sSection, "zone"))
+		st.syndata        = parse_syn_data(npc,  Get_Cfg_String(ini, sSection, "synpairs", def.syndata))
+		st.precond        =                 Get_Cfg_String(ini, sSection, "precond", def.precond)
+		st.abuse          =                 Get_Cfg_String(ini, sSection, "abuse",   def.abuse)
+		st.trade_enable   =  xr_logic.parse_condlist(npc, sSection, "trade_enable", Get_Cfg_String(ini, sSection, "trade_enable",     def.trade_enable))
+		st.allow_break    = xr_logic.parse_condlist(npc, sSection, "allow_break", Get_Cfg_String(ini, sSection, "allow_break",     def.allow_break))
+	end
+	--table.print(st)
+	--/ Checking, should we enable abuse on use
+	if st.abuse == "true" then
+		xr_abuse.enable_abuse(npc)
+	else
+		xr_abuse.disable_abuse(npc)
+	end
+	--/ flag so function will be called at least once
+	st.meet_set = true
+	if st.log then --/ for debug
+		log("init_meet:NPC=[%s],scheme=[%s],section=[%s],abuse=[%s]:(%s)", npc:name(), sScheme, sSection, st.abuse, "<") --#~#
+		if st.meet_dialog and next(st.meet_dialog) then table.print(st.meet_dialog,"meet_dialog") end --/ start dialog
+	end
+end
+
+function parse_data(npc,sStr)
+	local tRet = {}
+	if sStr and sStr ~= '' then
+		local sField,sDist,sState,sSound,tDat
+		for sField in sStr:gmatch("(%|*%d+%|[^%|]+)%p*") do
+			sDist,sState,sSound = sField:match('^%s*([^| ]+)%|*([^|@ ]*)@*(%S*)')
+			if not (tonumber(sDist) and sState) or sState == '' then
+				log("parse_data:NPC=[%s],dist=[%s]=[%s][%s]:f[%s]:<%s>", npc and npc:name(), sDist, sState, sSound, sField, "Info") --/#~#
+			end
+			tDat = {dist = tonumber(sDist)}
+			if sState then
+				if sState ~= '' then
+					tDat.state = xr_logic.parse_condlist(npc, sDist, sState, sState)
+				else
+					tDat.state = {}
+				end
+			end
+			if sSound and sSound ~= '' then
+				tDat.sound = xr_logic.parse_condlist(npc, sDist, sSound, sSound)
+			end
+			table.insert(tRet, tDat)
+		end
+	end
+--	log("parse_data:NPC=[%s],Str=[%s]%s", npc and npc:name(), sStr, '') --/#~#
+	--table.print(tRet,"parse_data|"..(npc and npc:name()) or '') --/#~#
+	return tRet --/>
+end
+
+function parse_zone_data(npc,sStr)
+	local tRet = {}
+	if sStr and sStr ~= '' then
+		local sField,sZone,sState,sSound,tDat
+		for sField in sStr:gmatch("(%|*[^%|]+%|[^%|]+)%p*") do
+			sZone,sState,sSound = sField:match('^%s*([^| ]+)%|*([^|@ ]*)@*(%S*)')
+			if not (sZone and sState) or sState == '' then
+				log("parse_zone_data:NPC=[%s]<~zone=[%s]=[%s][%s]:f[%s]:<%s>", npc and npc:name(), sZone, sState, sSound, sField, "Info") --/#~#
+			end
+			tDat = {zone = sZone}
+			if sState then
+				if sState ~= '' then
+					tDat.state = xr_logic.parse_condlist(npc, sDist, sState, sState)
+				else
+					tDat.state = {}
+				end
+			end
+			if sSound and sSound ~= '' then
+				tDat.sound = xr_logic.parse_condlist(npc, sZone, sSound, sSound)
+			end
+			table.insert(tRet, tDat)
+		end
+	end
+--	log("parse_zone_data:NPC=[%s],Str=[%s]%s", npc and npc:name(), sStr, '') --/#~#
+	--table.print(tRet,"parse_zone_data|"..(npc and npc:name()) or '') --/#~#
+	return tRet --/>
+end
+
+function parse_syn_data(npc,sStr)
+	local tRet = {}
+	if sStr and sStr ~= '' then
+		local sField,sState,sSound,tDat
+		for sField in sStr:gmatch("(%|*[^%|]+%|*)%p*") do
+			sState,sSound = sField:match('^%s*([^@| ]+)@*([^@| ]*).*')
+			if not sState or sState == '' then
+				log("parse_data:NPC=[%s],st[%s],snd[%s]:f[%s]:<%s>", npc and npc:name(), sState, sSound, sField, "Info") --/#~#
+			end
+			if sState and sState == '' then sState = nil end
+			if sSound and sSound == '' then sSound = nil end
+			table.insert( tRet, {state = sState, sound = sSound} )
+		end
+	end
+--	log("parse_syn_data:NPC=[%s],Str=[%s]%s", npc and npc:name(), sStr, '') --/#~#
+	--table.print(tRet,"parse_syn_data|"..(npc and npc:name()) or '') --/#~#
+	return tRet --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ 
+--/ -----------------------------------------------------------------------------------------------
+--/ DON'T TOUCH DIALOGS FOR NOW!!!
+--/ Reading avaliable dialogs of actor.
+function set_actor_dialogs(npc, ini, name, sDialogSection)
+--	log("set_actor_dialogs:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), name, sDialogSection, "") --/#~#
+	if sDialogSection then
+		local sActorDialogs = Get_Cfg_String(ini, sDialogSection, "id")
+		if sActorDialogs then
+			--/ Creating record in array where will be stored read dialogs.
+			db.storage[npc:id()].actor_dialogs = parse_names(sActorDialogs)
+		end
+		local sActorDisable = Get_Cfg_String(ini, sDialogSection, "disable")
+		if sActorDisable then
+			--/ Creating record in array where will be stored read dialogs.
+			db.storage[npc:id()].actor_disable = parse_names(sActorDisable)
+		end
+	end
+end
+
+--/ ATTENTION: this function called earlier and for stalkers, and for monsters.
+--/ now this function called only for traders
+function dialog_manager_reset(npc, stype)
+	--if stype == modules.stype_mobile then
+	if stype == modules.stype_trader then
+		local overrides = xr_logic.generic_scheme_overrides(npc)
+--		log("dialog_manager_reset:NPC=[%s],meet_dialog=[%s]", npc:name(), overrides and overrides.meet_dialog, "") --/#~#
+		if overrides and overrides.meet_dialog then --/ changing of start dialog
+			npc:set_start_dialog(tbl.meet_dialog)
+		else
+			npc:restore_default_start_dialog()
+		end
+	end
+end
+
+--/ If dude in meet state at current moment
+function is_meet(npc)
+	local oPlanner = npc and npc:motivation_action_manager()
+	if oPlanner and oPlanner:initialized() then
+		return oPlanner:current_action_id() == iAct_DoContact --/>
+	end
+	return false --/>
+end
+
+--/ Function checks if weapon doesn't prevent character to talk with us
+function cannot_talk_by_weapon(npc)
+	local oActItem = db.actor and db.actor:active_item()
+	if oActItem and isWeapon(oActItem) and npc then
+		local meet = db.storage[npc:id()] and db.storage[npc:id()].meet
+		if meet then
+			if meet.use then
+				local use_section = xr_logic.pick_section_from_condlist(db.actor, npc, meet.use)
+				if use_section and use_section == "false" then
+					return false --/> no talks at all
+				end
+			end
+			if meet.use_wpn then
+				local use_wpn_section = xr_logic.pick_section_from_condlist(db.actor, npc, meet.use_wpn)
+				if use_wpn_section and use_wpn_section == "false" then
+					if meet.log then log("cannot_talk_by_weapon:NPC=[%s]%s", npc:name(), "") end --#~#
+					return true --/> with weapon no talk
+				end
+			end
+		end
+	end
+	return false --/>
+end
+
+function is_no_meet_enabled(npc)
+	local meet = db.storage[npc:id()] and db.storage[npc:id()].meet
+	if meet then
+		if meet.init_meet == "" then
+			return true --/>
+		end
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------------------------------------

@@ -1,0 +1,38 @@
+[logic]
+active = sr_idle@0
+
+[sr_idle@0]
+on_info = {+country_major_job_art8} sr_idle@1
+
+[sr_idle@1]
+on_actor_inside = {-country_major_job_art8_1} sr_idle@2 %+country_major_job_art8_1 =run_postprocess(psi4:5000:false) =play_snd(ambient\random\rnd_the_horror2) =play_snd(affects\hit_fist) =run_cam_effector(fusker)%
+
+[sr_idle@2]
+on_actor_inside = sr_teleport
+on_timer = 25000|{!actor_has_item(wave_registrator_detector) -country_major_job_art8_x} %+country_major_job_art8_2%, {=actor_has_item(wave_registrator_detector)} %+country_major_job_art8_x%
+on_info = {+country_major_job_art8_6} sr_idle@3
+on_info2 = {=actor_has_item_count(af_blue_parasite,5) =actor_has_item_count(af_green_parasite,5)} %=country_major_job_art7_done%
+
+[sr_teleport]
+point1 = supernova_point_1
+look1 = supernova_look
+prob1 = 30
+point2 = supernova_point_2
+look2 = supernova_look
+prob2 = 35
+point3 = supernova_point_3
+look3 = supernova_look
+prob3 = 35
+timeout = 500
+on_actor_outside = sr_idle@2
+
+[sr_idle@3]
+on_info = {=actor_has_item(af_supernova)} sr_particle
+on_info2 = {=actor_has_item_count(af_blue_parasite:5) =actor_has_item_count(af_green_parasite:5)} %+country_major_job_art7_done%
+
+[sr_particle]
+name = anomaly2\gravity_blast_03      
+path = supernova_look                  
+mode = 2 				
+looped = false               
+on_signal = particle_end | nil %=release%

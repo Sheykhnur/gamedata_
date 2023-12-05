@@ -1,0 +1,195 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : gulag_oldroad.script
+ Description: Gulags Oldroad
+ Copyright  : 2018 © LA-team
+ Authors    : RastaMichael (mega_cherv)
+ Editors    : RastaMichael (mega_cherv)
+ Last edit  : 28.05.18
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+local sModule = script_name() --/ string name of the file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+--/ General VARIABLEs
+--/ -----------------------------------------------------------------------------------------------
+local gulags = {
+	--/ for stalkers ------------------------------
+	old_farm_bandit_terrain				= {comm = {"bandit"}},
+	old_atp_freedom_terrain				= {comm = {"freedom"}},
+	old_bath_monolith_terrain			= {comm = {"monolith"}},
+	--/ for monsters ------------------------------
+	old_village_zombie_terrain			= {comm = {"zombied"}},
+	old_village_bloodsucker_terrain		= {comm = {"bloodsucker"}},
+	old_workshop_controller_terrain		= {comm = {"controller"}},
+	old_workshop_zombie_terrain			= {comm = {"zombie"}},
+	old_forest_boar_flesh_terrain		= {comm = {"flesh", "boar"}},
+	old_swamp_swampbeast_terrain		= {comm = {"swampbeast"}}
+}
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function getGulag(gtype)
+	return gulags[gtype] --/>
+end
+--/ ----------------------------------------------
+local is_online = "{=xr_gulag.actor_on_gulag_level()}"
+--/ ----------------------------------------------
+local on_level_pred = function(info,gulag) return xr_gulag.is_on_gulag_level(info.se_obj,gulag) end
+--/------------------------------------------------------------------------------------------------
+--/ Gulags
+--/------------------------------------------------------------------------------------------------
+--/ bath monolith terrain
+--/ ---------------------------------------------
+
+gulags.old_bath_monolith_terrain.sniper_pred    = function(info) return info.profile_name == "sim_monolith_t3_sniper" end
+
+gulags.old_bath_monolith_terrain.jobs = function(sj, gname, type, squad, groups)
+
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("sniper_0" .. i, 0, 8, {0}, squad, groups[3], "", "", nil, type, gulags.old_bath_monolith_terrain.sniper_pred))
+	end
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("camper_0" .. i, 0, 8, {0}, squad, groups[3], "", "", nil, type))
+	end
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("patrol_0" .. i, 0, 6, {0}, squad, groups[3], "", "", nil, type))
+	end
+end
+
+--/ ---------------------------------------------
+--/ atp freedom terrain
+--/ ---------------------------------------------
+
+gulags.old_atp_freedom_terrain.jobs = function(sj, gname, type, squad, groups)
+
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("guard_0" .. i, 0, 8, {0}, squad, groups[3], "", "", nil, type))
+	end
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("patrol_0" .. i, 0, 7, {0}, squad, groups[3], "", "", nil, type))
+	end
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("kamper_0" .. i, 0, 6, {0}, squad, groups[3], "", "", nil, type))
+	end
+	for i = 1, 4 do
+		table.insert(sj, gulag_tasks.getJob("walker_0" .. i, 0, 5, {0}, squad, groups[3], "", "", nil, type))
+	end
+end
+
+--/ ---------------------------------------------
+--/ farm bandit terrain
+--/ ---------------------------------------------
+
+gulags.old_farm_bandit_terrain.jobs = function(sj, gname, type, squad, groups)
+	
+	table.insert(sj, gulag_tasks.getJob("guard", 0, 7, {0,1}, squad, groups[3], "", "", nil, type, on_level_pred))
+	table.insert(sj, gulag_tasks.getJob("sleeper_day", 0, 3, {0}, squad, groups[3], "", "", nil, type, on_level_pred))
+	
+	for i = 1, 2 do
+		table.insert(sj, gulag_tasks.getJob("patrol_0" .. i, 0, 8, {0,1}, squad, groups[3], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 5 do
+		table.insert(sj, gulag_tasks.getJob("kamper_0" .. i, 0, 6, {0}, squad, groups[3], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 3 do
+		table.insert(sj, gulag_tasks.getJob("walker_0" .. i, 0, 5, {0}, squad, groups[3], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("sleeper_0" .. i, 0, 6, {1}, squad, groups[3], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.old_farm_bandit_terrain.state = function(gulag)
+	if not xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+
+
+--/ ---------------------------------------------
+--/ village zombie terrain
+--/ ---------------------------------------------
+
+gulags.old_village_zombie_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("home_" .. i, 0, 10, {0}, squad, groups[3], "", "", nil, type, on_level_pred))
+	end
+end
+--/ ---------------------------------------------
+--/ village bloodsucker terrain
+--/ ---------------------------------------------
+
+gulags.old_village_bloodsucker_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("day_" .. i, 0, 10, {0}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+	for i = 1, 6 do
+		table.insert(sj, gulag_tasks.getJob("night_" .. i, 0, 10, {1}, squad, groups[1], "", "", nil, type, on_level_pred))
+	end
+end
+
+gulags.old_village_bloodsucker_terrain.state = function(gulag)
+	if not xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+--/ ---------------------------------------------
+--/ workshop controller terrain
+--/ ---------------------------------------------
+
+gulags.old_workshop_controller_terrain.jobs = function(sj, gname, type, squad, groups)
+	table.insert(sj, gulag_tasks.getJob("home", 0, 10, {0}, squad, groups[2], "", "", nil, type, nil))
+end
+--/ ---------------------------------------------
+--/ workshop zombie terrain
+--/ ---------------------------------------------
+
+gulags.old_workshop_zombie_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 12 do
+		table.insert(sj, gulag_tasks.getJob("home_" .. i, 0, 10, {0}, squad, groups[2], "", "", nil, type, nil))
+	end
+end
+--/ ---------------------------------------------
+--/ forest boar and flesh terrain
+--/ ---------------------------------------------
+
+gulags.old_forest_boar_flesh_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("day_" .. i, 0, 10, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+	for i = 1, 9 do
+		table.insert(sj, gulag_tasks.getJob("night_" .. i, 0, 10, {1}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+gulags.old_forest_boar_flesh_terrain.state = function(gulag)
+	if not xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end
+--/ ---------------------------------------------
+--/ swamp swampbeast terrain
+--/ ---------------------------------------------
+
+gulags.old_swamp_swampbeast_terrain.jobs = function(sj, gname, type, squad, groups)
+	for i = 1, 10 do
+		table.insert(sj, gulag_tasks.getJob("day_" .. i, 0, 10, {0}, squad, groups[1], "", "", nil, type, nil))
+	end
+	for i = 1, 10 do
+		table.insert(sj, gulag_tasks.getJob("night_" .. i, 0, 10, {1}, squad, groups[1], "", "", nil, type, nil))
+	end
+end
+
+gulags.old_swamp_swampbeast_terrain.state = function(gulag)
+	if not xr_conditions.is_day() then
+		return 1
+	end
+	return 0
+end

@@ -1,0 +1,247 @@
+#include "traders_common.ltx"
+
+[trader]:trader_base
+buy_condition = barman_generic_buy
+sell_condition = {+dar_barman_has_all_x18_docs}barman_after_darkvalley_sell, barman_start_sell
+buy_supplies = {+has_freeplay_info}supplies_freeplay, {+bas_switcher_off +deactivate_radar_done}supplies_before_prip, {+x16_main_power_disabled}supplies_after_brain, {+yan_good_helmet_start}supplies_after_helmet, {+dar_barman_has_all_x18_docs}supplies_after_darkvalley, {+agr_gunslinger_flash_have}supplies_after_agroprom, supplies_start
+
+buy_item_condition_factor = 0.85
+
+[barman_generic_buy]:buy_misc_normal,buy_artefacts_cheap,buy_ammo_normal,buy_food_normal,buy_devices_cheap
+
+
+[supplies_start]:basic_supplies,fancy_food_supplies,booster_supplies
+
+helm_respirator                      = 1, 1.0
+
+ammo_11.43x23_fmj                    = 10, 0.6
+ammo_12x70_cart                      = 10, 0.8
+ammo_12x70_buck                      = 8, 0.6
+ammo_12x76_zhekan                    = 8, 0.6
+ammo_12x76_dart                      = 5, 0.6
+ammo_5.45x39_fmj                     = 10, 0.6
+ammo_5.45x39_ap                      = 5, 0.7
+ammo_7.62x39_s                       = 8, 0.6
+ammo_7.62x54_7h1                     = 8, 0.7
+ammo_9x18_pbp                        = 6, 0.7
+ammo_9x18_pmm                        = 6, 0.6
+ammo_9x19_pbp                        = 8, 0.5
+grenade_gd-05                        = 3, 0.6
+grenade_rgd5                         = 1, 0.6
+
+wpn_ak74u                            = 2, 0.9
+wpn_colt1911                         = 2, 0.7
+wpn_mp5                              = 2, 0.8
+wpn_walther                          = 2, 0.9
+wpn_m1891                            = 3, 0.4
+
+detector_radiation                   = 1, 1.0
+detector_simple                      = 1, 1.0
+night_vision_bad					 = 1, 0.8
+detector_af_simple					 = 1, 1.0
+
+[supplies_after_agroprom]:supplies_start
+stalker_light_outfit                 = 3, 0.7
+killer_light_outfit                  = 2, 0.8
+cs_light_outfit		                 = 1, 0.1
+
+helm_hardhat	                     = 2, 0.85
+
+ammo_5.56x45_ss190                   = 10, 0.6
+ammo_5.7x28_ap                       = 10, 0.6
+ammo_5.7x28_jhp                      = 10, 0.6
+grenade_f1                           = 2, 0.6
+grenade_gd-05                        = 5, 0.6
+grenade_rgd5                         = 3, 0.3
+
+wpn_colt1911                         = 2, 0.8
+
+hemupob_vodka                        = 3, 0.6
+pripiat_beer                         = 10, 0.8
+
+device_torch_eco					 = 1, 0.9
+
+night_vision_bad					 = 1, 0.9
+wpn_binoc_m1                         = 2, 0.7
+
+
+[supplies_after_darkvalley]:supplies_after_agroprom
+svoboda_light_outfit				 = 2, 0.65
+svoboda_medium_outfit				 = 2, 0.55
+bandit_heavy_outfit                  = 2, 0.65
+stalker_protoexo_outfit		         = 1, 0.9
+scientific_outfit                    = 2, 0.8
+
+helm_protective	                     = 2, 0.85
+
+ammo_.44_reg                         = 8, 0.7
+ammo_.44_frag                        = 2, 0.5
+ammo_5.56x45_ap                      = 10, 0.6
+ammo_7.62x39_s                       = 10, 0.9
+ammo_7.62x39_ap		             	 = 4, 0.7
+ammo_7.62x54_7h14                    = 10, 0.7
+ammo_9x39_pab9                       = 6, 0.7
+ammo_11.43x23_hydro                  = 4, 0.6
+ammo_23x75_buck                      = 6, 0.4
+
+wpn_p90                              = 3, 0.85
+wpn_fn57                             = 2, 0.7
+wpn_beretta                          = 2, 0.8
+wpn_wincheaster1300					 = 2, 0.9
+wpn_44_magnum                        = 2, 0.7
+wpn_hpsa                             = 3, 0.8
+
+wpn_addon_silencer_918				 = 1, 0.8
+wpn_addon_silencer_57                = 1, 0.8
+wpn_addon_silencer_45				 = 1, 0.8
+wpn_addon_scope_pu                   = 1, 0.8
+wpn_addon_scope_x2.7             	 = 1, 0.7
+wpn_addon_scope_susat_x1.6       	 = 1, 0.7
+
+wpn_electron_binoc                   = 1, 1.0
+detector_advances                    = 1, 0.8
+device_torch_eco					 = 2, 0.7
+device_torch_adv					 = 1, 0.9
+night_vision_good					 = 2, 0.9
+
+;stop selling junk
+novice_outfit                        =
+helm_respirator                      =
+bandit_outfit                        =
+bandit_cloak_outfit					 =
+stalker_light_outfit                 =
+killer_light_outfit                  =
+helm_respirator                      =
+helm_gasmask                         =
+wpn_ak74u                            =
+wpn_bm16                             =
+wpn_bm16_long                        =
+wpn_toz34                            =
+wpn_mp5                              =
+wpn_pm                               =
+wpn_pb                               =
+wpn_colt1911                         =
+wpn_walther                          =
+wpn_bizon                            =
+wpn_sks                              =
+wpn_l85                              =
+detector_radiation                   =
+detector_simple                      =
+detector_af_simple                   =
+night_vision_bad					 =
+
+
+[supplies_after_helmet]:supplies_after_darkvalley
+killer_outfit		                 = 2, 0.3
+exo_outfit                           = 1, 0.8
+military_heavy_outfit	           	 = 2, 0.45
+
+helm_battle_stalker					 = 1, 0.65
+helm_battle_military				 = 1, 0.25
+
+ammo_.44_frag                        = 7, 0.8
+ammo_5.7x28_ap                       = 10, 0.8
+ammo_5.7x28_jhp                      = 10, 0.8
+ammo_11.43x23_hydro                  = 8, 0.6
+ammo_7.62x51_fmj                     = 10, 0.6
+ammo_7.62x51_ap                      = 8, 0.6
+ammo_7.62x54_7h1                     = 8, 0.6
+ammo_7.62x54_7h14                    = 3, 0.6
+ammo_7.62x54_ap                      = 3, 0.6
+ammo_9x39_ap                         = 6, 0.6
+ammo_9x39_sp5                        = 6, 0.6
+ammo_23x75_buck                      = 8, 0.7
+ammo_23x75_buck_ap                   = 4, 0.3
+
+cmuphob_vodka                        = 1, 0.7
+
+wpn_desert_eagle                     = 2, 0.7
+wpn_sig550                           = 2, 0.7
+wpn_ks23							 = 2, 0.95
+wpn_spas12                           = 2, 0.7
+
+;addons
+
+wpn_knife_m9                         = 1, 0.9
+
+wpn_addon_grenade_launcher           = 1, 0.7
+wpn_addon_scope                      = 1, 0.9
+wpn_addon_scope_4x34                 = 1, 0.9
+wpn_addon_silencer_556           	 = 1, 0.8
+wpn_addon_grenade_launcher_m203      = 2, 0.8
+wpn_addon_scope_susat            	 = 2, 0.8
+wpn_addon_silencer_76239             = 1, 1
+wpn_addon_silencer_57                = 2, 0.8
+
+detector_advances                    = 2, 0.8
+detector_af_advanced				 = 1, 1.0
+device_torch_adv					 = 1, 1
+night_vision_best					 = 2, 0.9
+
+;stop selling junk
+wpn_wincheaster1300	                 =
+bandit_heavy_outfit			         =
+stalker_protoexo_outfit		         =
+cs_light_outfit		                 =
+stalker_outfit                       =
+svoboda_light_outfit                 =
+wpn_ak74                             =
+wpn_beretta                          =
+wpn_lr300                            =
+wpn_m1891                            =
+
+
+[supplies_after_brain]:supplies_after_helmet
+exo_outfit                           = 2, 0.8
+military_heavy_outfit	           	 = 2, 0.6
+cs_heavy_outfit	                     = 1, 0.5
+
+helm_battle_stalker					 = 2, 0.65
+helm_battle_military				 = 2, 0.25
+
+ammo_7.62x54_7h14                    = 8, 0.6
+ammo_7.62x54_ap                      = 8, 0.6
+ammo_7.62x51_fmj					 = 12, 0.8
+ammo_7.62x51_ap                      = 10, 0.6
+ammo_23x75_buck_ap                   = 8, 0.8
+
+;stop selling junk
+helm_hardhat	                     =
+wpn_hpsa                             =
+wpn_sig220                           =
+svoboda_medium_outfit				 =
+military_medium_outfit            	 =
+scientific_outfit                    =
+protection_outfit                    =
+cs_medium_outfit	                 =
+
+[supplies_before_prip]:supplies_after_brain
+military_heavy_outfit	          	 = 2, 0.95
+military_ultraheavy_outfit       	 = 2, 0.75
+cs_ultraheavy_outfit                 = 1, 0.1
+
+helm_battle_stalker					 = 2, 0.85
+helm_battle_military				 = 2, 0.65
+
+detector_af_elite				 	 = 2, 0.85
+
+ammo_23x75_barr                      = 8, 0.8
+ammo_8.6x70_ap                       = 4, 0.7
+wpn_rg-6                             = 2, 0.9
+
+wpn_addon_scope_galil                = 1, 0.8
+wpn_addon_scope_susat_custom     	 = 1, 0.5 
+wpn_addon_scope_susat_dusk       	 = 1, 0.6 
+wpn_addon_scope_susat_night      	 = 1, 0.6
+
+[supplies_freeplay]:supplies_before_prip
+exo_outfit                           = 1, 1
+military_ultraheavy_outfit         	 = 1, 1
+cs_ultraheavy_outfit                 = 1, 1
+
+helm_battle_stalker					 = 1, 1
+helm_battle_military				 = 1, 1
+
+[barman_start_sell]:sell_all_high,sell_misc_normal
+
+[barman_after_darkvalley_sell]:sell_all_normal,sell_device_cheap

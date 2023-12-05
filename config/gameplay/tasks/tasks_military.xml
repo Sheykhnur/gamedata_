@@ -1,0 +1,141 @@
+	<game_task id="mil_meet_ghost" prio="1">
+		<title>mil_meet_ghost_title</title>
+		<objective>
+			<text>mil_meet_ghost_title</text>
+			<icon>ui_iconsTask_meet_ghost_military</icon>
+			<article>mil_meet_ghost</article>
+			<infoportion_complete>mil_actor_talked_ghost</infoportion_complete>
+		</objective>
+		<objective>
+			<text>mil_meet_ghost_1</text>
+			<map_location_type hint="mil_talk_to_ghost">green_location</map_location_type>
+			<object_story_id>mil_ghost</object_story_id>
+			<infoportion_complete>mil_actor_talked_ghost</infoportion_complete>
+		</objective>
+	</game_task>
+
+	<game_task id="mil_wipe_mercs" prio="1">
+		<title>mil_wipe_mercs_title</title>
+		<objective>
+			<text>mil_wipe_mercs_title</text>
+			<icon>ui_iconsTask_wipe_mercs</icon>
+			<article>mil_wipe_mercs</article>
+			<infoportion_complete>mil_mercs_killed</infoportion_complete>
+		</objective>
+		<objective>
+			<text>mil_wipe_mercs_1</text>
+			<map_location_type hint="mil_mercs_mapspot">green_location</map_location_type>
+			<object_story_id>mil_killer_sergey</object_story_id>
+			<infoportion_complete>mil_mercs_killed</infoportion_complete>
+		</objective>
+	</game_task>
+
+	<game_task id="mil_meet_contact" prio="1">
+		<title>mil_meet_contact_title</title>
+		<objective>
+			<text>mil_meet_contact_title</text>
+			<icon>ui_iconsTask_meet_contact</icon>
+			<article>mil_meet_contact</article>
+			<infoportion_complete>mil_actor_talked_contact</infoportion_complete>
+		</objective>
+		<objective>
+			<text>mil_meet_contact_1</text>
+			<map_location_type hint="mil_contact_mapspot">green_location</map_location_type>
+			<object_story_id>mil_restr_contact</object_story_id>
+			<infoportion_complete>mil_actor_talked_contact</infoportion_complete>
+		</objective>
+	</game_task>
+	
+	<game_task id="mil_artifact_quest" prio="1">
+		<title>mil_artifact_quest_title</title>
+		<objective>
+			<text>mil_artifact_quest_title</text>
+			<icon>ui_iconsTask_find_crystal</icon>
+			<article>mil_artifact_quest</article>
+			<infoportion_complete>mil_actor_brought_art</infoportion_complete>
+		</objective>
+		<objective>
+			<text>mil_artifact_quest_1</text>
+			<object_story_id>mil_killer_shelter</object_story_id>
+			<map_location_type hint="mil_base">crlc_big</map_location_type> <!--mil_base-->
+			<infoportion_complete>mil_killer_base_reached</infoportion_complete>
+		</objective>
+		<objective>
+			<text>mil_artifact_quest_2</text>
+			<object_story_id>mil_killer_leader</object_story_id>
+			<map_location_type hint="mil_merc_leader">blue_location</map_location_type>
+			<map_location_hidden>1</map_location_hidden>
+			<function_complete>dialog_military.got_crystal_artifact</function_complete>
+		</objective>
+		<objective>
+			<text>mil_artifact_quest_3</text>
+			<object_story_id>mil_ghost</object_story_id>
+			<map_location_type hint="mil_artifact_to_ghost">blue_location</map_location_type>
+			<map_location_hidden>1</map_location_hidden>
+			<infoportion_complete>mil_actor_brought_art</infoportion_complete>
+		</objective>
+	</game_task>
+
+	<game_task id="mil_meet_fang" prio="1">
+		<title>mil_meet_fang_title</title>
+		<objective>
+			<text>mil_meet_fang_title</text>
+			<icon>ui_iconsTask_meet_fang</icon>
+			<article>mil_meet_fang</article>
+			<infoportion_complete>mil_talked_to_fang</infoportion_complete>
+		</objective>
+		<objective>
+			<text>mil_meet_fang_1</text>
+			<map_location_type hint="mil_fang">green_location</map_location_type>
+			<object_story_id>mil_fang</object_story_id>
+			<infoportion_complete>mil_talked_to_fang</infoportion_complete>
+		</objective>
+	</game_task>
+	
+	<game_task id="mil_meet_ghost_pripyat" prio="1">
+		<title>mil_meet_ghost_pripyat_title</title>
+		<objective>
+			<text>mil_meet_ghost_pripyat_title</text>
+			<icon>ui_iconsTask_meet_ghost_pripyat</icon>
+			<article>mil_meet_ghost_pripyat</article>
+			<infoportion_skipped>dam_pripyat_under_attack</infoportion_skipped>
+		</objective>
+		<objective>
+			<text>mil_meet_ghost_pripyat_1</text>
+			<map_location_type hint="mil_to_radar">green_location</map_location_type>
+			<object_story_id>mil_exit_to_rad</object_story_id>
+			<infoportion_complete>dam_meet_ghost_pointer_change</infoportion_complete>
+		</objective>
+		<objective>
+			<text>mil_meet_ghost_pripyat_2</text>
+			<map_location_type hint="mil_to_radar">green_location</map_location_type>
+			<object_story_id>rad_exit_to_out</object_story_id>
+			<infoportion_skipped>dam_pripyat_under_attack</infoportion_skipped>
+		</objective>
+	</game_task>
+	
+	<game_task id="mil_crazy_task" prio="6">
+		<title>mil_crazy_task_title</title>
+		<objective>
+			<text>mil_crazy_task_title</text>
+			<icon>ui_iconsTask_find_crazy_rifle</icon>
+			<infoportion_complete>mil_crazy_task_done</infoportion_complete>
+			<infoportion_skipped>mil_extra_task</infoportion_skipped>
+			<article>mil_crazy_task</article>
+		</objective>
+		<objective>
+			<text>mil_crazy_task_1</text>
+			<map_location_type hint="mil_rifle">crlc_big</map_location_type>
+			<object_story_id>mil_tower_cache</object_story_id>
+			<function_complete>tasks_military.has_lr300_m2</function_complete>
+			<infoportion_set_complete>mil_crazy_lr_found</infoportion_set_complete>
+			<infoportion_skipped>mil_extra_task</infoportion_skipped>
+		</objective>
+		<objective>
+			<text>mil_crazy_task_2</text>
+			<map_location_type hint="mil_crazy_stalker">green_location</map_location_type>
+			<object_story_id>mil_crazy_stalker</object_story_id>
+			<infoportion_complete>mil_crazy_task_done</infoportion_complete>
+			<infoportion_skipped>mil_extra_task</infoportion_skipped>
+		</objective>
+	</game_task>

@@ -1,0 +1,507 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_mgunner.script
+ Description: scheme: "Gunner from a 'MountedTurret'" ("Gunner")
+ Copyright  : 2009 © LA-team
+ Author     : Gr1ph00n (07.02.2009)
+ Editors    : Gr1ph00n (01.12.2011), SkyLoader(22.12.2012)
+ Last edit  : 14.12.2013 [SkyLoader]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local sSchemeName = "mgunner" --/ string name of the scheme
+local iEvl_MGunner = xr_evaluators_id.la_mgunner_base --/ property_base
+local iAct_MGunner = xr_actions_id.la_mgunner_base --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+local tBindActs = {} --/ array of 'external' actions disconnected in case of the active scheme
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+end
+--/ --------------------------
+function PreSets(e)
+	tBindActs = {
+		[1] = stalker_ids.action_alife_planner,
+		[2] = stalker_ids.action_combat_planner,
+		[3] = stalker_ids.action_danger_planner,
+		[4] = xr_actions_id.chugai_heli_hunter_base, --/#?#
+		[5] = xr_actions_id.stohe_meet_base +1,
+		[6] = stalker_ids.action_gather_items, --/ gathering (of items)
+	}
+	tBindEvls = {
+		[1] = { stalker_ids.property_alive,          true  }, --/ NPC alive
+		[2] = { stalker_ids.property_anomaly,        false }, --/ no anomalies
+		[3] = { xr_evaluators_id.sidor_wounded_base, false }  --/ not wounded
+	}
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = { --/ AddEvaluators
+		[1] = {id = db.xr_blowout and xr_blowout.get_ai_evl(0), flg = false}  --/ don't see a blowout
+	}
+	--/ AddProperty to tBindEvls
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+--/ --------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+--/ Evaluators
+--/ -----------------------------------------------------------------------------------------------
+class "evaluator_mgunner_active" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/ condition: current section of scheme logic active (true/false)
+function evaluator_mgunner_active:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_mgunner_active:evaluate()
+	return xr_logic.is_active(self.object, self.st)
+end
+--/ ------------------------------------------------------------------
+class "evaluator_turret_reach" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/ NPC not on position (not near turret)?
+function evaluator_turret_reach:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_turret_reach:evaluate()
+	--return (self.object:level_vertex_id() == self.st.lvid_pos) --/>
+	return not self.st.on_position
+end
+--/ ------------------------------------------------------------------
+class "evaluator_turret_found" (property_evaluator)
+--/ ------------------------------------------------------------------
+--/ object-turret on location?
+function evaluator_turret_found:__init(name, st) super(nil, name)
+	self.st = st
+end
+function evaluator_turret_found:evaluate()
+	return self.st.turret ~= nil
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Actions
+--/ -----------------------------------------------------------------------------------------------
+class "action_turret_reach" (action_base)
+--/ ------------------------------------------------------------------
+function action_turret_reach:__init (action_name, st) super(nil, action_name)
+	self.st = st
+	self.log = st.log
+	self.move_mgr = st.move_mgr
+end
+
+function action_turret_reach:initialize()
+	action_base.initialize(self)
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	--self.object:disable_talk()
+	self.st.signals = {}
+	if not self.st.path_walk_info then
+		ASSERT(validate_patrol_path(self.st.path_walk, self.object, true), "ac_turret_reach:ini: section=[%s] path_walk=[%s] wrong!", self.st.path_walk, "")
+		self.path_walk = get_patrol(self.st.path_walk)
+		self.st.path_walk_info = utils.path_parse_waypoints(self.st.path_walk)
+		if self.path_walk:count() == 1 and self.st.path_look and level.patrol_path_exists(self.st.path_look) then
+			self.st.path_look_info = utils.path_parse_waypoints(self.st.path_look)
+		end
+		self:set_terminal()
+	end
+	self.move_mgr:reset(self.st.path_walk, self.st.path_walk_info, self.st.path_look, self.st.path_look_info, nil, self.st.suggested_state)
+	xr_sound.set_sound(self.object, self.st.sound_idle)
+	if self.log then log("ac_turret_reach:ini:NPC=[%s],path_walk=[%s]", self.object:name(), self.st.path_walk, "") end --/#~#
+end
+
+function action_turret_reach:execute()
+	action_base.execute(self)
+	
+	self.move_mgr:update()
+	
+	if not xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		if self.has_terminal then
+			self.st.on_position = self.move_mgr:standing_on_terminal_waypoint() --/ standing on last point?
+		elseif self.wp_sig then
+			self.st.on_position = self.st.signals["ready"] == true
+			if not self.st.on_position then
+				self.st.on_position = utils.stalker_at_waypoint(self.object, self.path_walk, self.wp_sig)
+			end
+		elseif self.wp_terminal then
+			self.st.on_position = utils.stalker_at_waypoint(self.object, self.path_walk, self.wp_terminal)
+		else
+			self.st.on_position = true --/ stub
+		end
+		if self.log then log("ac_turret_reach:exe:NPC=[%s] on_position=(%s)", self.object:name(), self.st.on_position, "") end --/#~#
+	end
+end
+
+function action_turret_reach:finalize()
+	self.move_mgr:finalize()
+	action_base.finalize(self)
+end
+
+function action_turret_reach:set_terminal()
+	--/ checking presence of terminal point or signal 'where to get up'
+	--table.print(self.st.path_walk_info, sModule..":path_info|"..self.st.path_walk) --/#~#
+	local wp_count = self.path_walk:count()
+	for i=0, wp_count -1 do
+		if self.path_walk:terminal(i) then
+			self.has_terminal = i
+			break
+		elseif self.st.path_walk_info[i].sig and self.st.path_walk_info[i].sig == "ready" then
+			self.wp_sig = i
+			break
+		end
+	end
+	if not (self.has_terminal or self.wp_sig) then
+		local obj = level.object_by_id(self.st.turret_id)
+		if obj then
+			self.wp_terminal = utils.get_nearest_waypoint(obj, self.st.path_walk, self.path_walk, wp_count)
+		end
+		if not self.wp_terminal then
+			log("ac_turret_reach:set_terminal:NPC=[%s],path_walk=[%s] NOT terminal :<%s>", self.object:name(), self.st.path_walk, "Warning!") --/#~#
+		end
+	end
+end
+
+function action_turret_reach:activate_scheme()
+	if self.log then log("ac_turret_reach:activate_scheme:NPC=[%s],turret=[%s]/[%s]", self.object:name(), self.st.turret_str, self.st.turret_id, "") end --/#~#
+	self.st.turret = nil
+	self.st.on_position = false
+end
+
+function action_turret_reach:death_callback(victim, who) --/#?#
+	if self.log then log("ac_turret_reach:death_callback:NPC=[%s],who=[%s]", self.object:name(), who and who:name(), "") end --/#~#
+	disable_scheme(self.object, sSchemeName)
+end
+
+--/ ------------------------------------------------------------------
+class "action_turret_find" (action_base)
+--/ ------------------------------------------------------------------
+function action_turret_find:__init (action_name, st) super(nil, action_name)
+	self.st = st
+	self.log = st.log
+end
+
+function action_turret_find:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_turret_find:ini:NPC=[%s]turret=[%s]/[%s]", self.object:name(), self.st.turret_str, self.st.turret_id, "") end --/#~#
+end
+
+function action_turret_find:execute()
+	action_base.execute(self)
+	
+	if not self.st.turret then
+		local sobj = alife():object(self.st.turret_id)
+		if sobj then
+			local obj = level.object_by_id(sobj.id)
+			if obj then
+				self.st.turret = obj:get_turret()
+				if self.log then log("ac_turret_find:exe: turret=[%s]/[%s] found", obj:name(), sobj.id, "") end --/#~#
+			elseif self.log then log("ac_turret_find:exe: turret=[%s]/[%s] wait", sobj:name(), sobj.id, "") --/#~# waiting appearance in online
+			end
+		else
+			log("ac_turret_find:exe: turret=[%s]/[%s] does not exist:<%s>", self.st.turret_str, self.st.turret_id, "Error!")
+			disable_scheme(self.object, sSchemeName)
+		end
+	end
+end
+
+function action_turret_find:finalize()
+	action_base.finalize(self)
+	if self.log then log("ac_turret_find:fin: NPC=[%s] turret=[%s]/[%s]:(%s)", self.object:name(), self.st.turret_str, self.st.turret_id, "x") end --/#~#
+end
+
+--/ ------------------------------------------------------------------
+class "action_mgunner_active" (action_base)
+--/ ------------------------------------------------------------------
+function action_mgunner_active:__init (action_name, st) super(nil, action_name)
+	self.st = st
+	self.log = st.log
+end
+
+function action_mgunner_active:initialize()
+	action_base.initialize(self)
+	
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	self.object:disable_talk() --/#?#
+	
+	local pp = get_patrol(self.st.path_look)
+	self.look_pos = pp:point(0)
+	self.object:set_sight(look.direction, vector():set(self.look_pos):sub(self.object:position()), 0)
+	
+	if self.st.turret and level.object_by_id(self.st.turret_id) then
+		if not self.st.turret:engaged() then
+			self.st.turret:SetNpcOwner(self.object)
+			self.st.turret:Action(CMountedTurret.eActivate, 1)
+		end
+		self.object:movement_enabled(false)
+		state_mgr.set_state(self.object, "use_pkm", nil, nil, {look_position = self.look_pos}, {animation=true}, nil)
+		if self.log then log("ac_mgunner_active:ini:NPC=[%s]", self.object:name(), "") end --/#~#
+	end
+end
+
+function action_mgunner_active:execute()
+	action_base.execute(self)
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	if not self.object:alive() or not self.st.turret or not level.object_by_id(self.st.turret_id) then
+		return
+	end
+	--if self.log then log("ac_mgunner_active:exe: NPC=[%s] turret=(%s)", self.object:name(), self.st.turret ~= nil, "") end --/#~#
+	local state = state_mgr.get_state(self.object)
+	local oEnemy = self.object:best_enemy() --get_enemy(self.object)
+	if oEnemy and self:can_engage_enemy(oEnemy) then
+		self.st.turret:SetEnemy(oEnemy)
+		self.st.turret:Action(CMountedTurret.eFireStart, 1)
+		if state ~= "use_pkm" or not self.target_id or self.target_id ~= oEnemy:id() then
+			if self.log then log("ac_mgunner_active:exe: enemy=[%s] state=[%s] :(%s)", oEnemy:name(), state, "+") end --/#~#
+			self.target_id = oEnemy:id()
+			state_mgr.set_state(self.object, "use_pkm", nil, nil, {look_object = oEnemy}, {animation=true}, nil)
+		end
+	else
+		self.st.turret:Action(CMountedTurret.eFireStop, 1)
+		if state ~= "use_pkm" or self.target_id then
+			if self.log then log("ac_mgunner_active:exe: enemy=[%s] state=[%s] :(%s)", oEnemy and oEnemy:name(), state, "x") end --/#~#
+			self.target_id = nil
+			state_mgr.set_state(self.object, "use_pkm", nil, nil, {look_position = self.look_pos}, {animation=true}, nil)
+		end
+	end
+end
+
+function action_mgunner_active:can_engage_enemy(oEnemy)
+	if oEnemy and self.object:see(oEnemy) and xr_combat_ignore.is_enemy(self.object, oEnemy, nil) and level.object_by_id(self.st.turret_id) then
+		return not this.friend_on_fire_line(self.object, oEnemy:position(), self.st.turret:GetFirePoint(), self.st.turret:GetFireDir()) --/>
+	end
+	return false --/>
+end
+
+function action_mgunner_active:finalize()
+	if self.log then log("ac_mgunner_active:fin:NPC=[%s],turret=(%s):(%s)", self.object:name(), self.st.turret ~= nil, "x") end --/#~#
+	if self.st.turret and level.object_by_id(self.st.turret_id) then
+		self.st.turret:Action(CMountedTurret.eFireStop, 1)
+		self.st.turret:Action(CMountedTurret.eDeactivate, 1)
+	end
+	state_mgr.set_state(self.object, "idle", nil, nil, {look_position = self.look_pos}, {animation=true}, nil)
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder: NPC=[%s], scheme=[%s], section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.move_mgr = db.storage[npc:id()].move_mgr --/#!#
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	oPlanner:add_evaluator(iEvl_MGunner +0, this.evaluator_mgunner_active("ev_mgunner_active", st)) --/ scheme active
+	oPlanner:add_evaluator(iEvl_MGunner +1, this.evaluator_turret_reach("ev_turret_reach", st)) --/ go to position
+	oPlanner:add_evaluator(iEvl_MGunner +2, this.evaluator_turret_found("ev_turret_found", st) ) --/ turret found
+	
+	--/ New Action(0): NPC goes on position to turret
+	local oNewAction = this.action_turret_reach("ac_turret_reach", st)
+	for idx,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition(world_property( iEvl_MGunner +0, true)) --/ scheme active
+	oNewAction:add_precondition(world_property( iEvl_MGunner +1, true)) --/ go to position
+	oNewAction:add_effect( world_property(iEvl_MGunner +1, false))
+	oPlanner:add_action(iAct_MGunner +0, oNewAction)
+	st.action = oNewAction --/#!# for subscribe for events
+	
+	--/ New Action(1): seach of turret on location
+	local oNewAction = this.action_turret_find("ac_turret_find", st)
+	oNewAction:add_precondition( world_property(iEvl_MGunner +2, false) ) --/ turret still not found
+	oNewAction:add_effect( world_property(iEvl_MGunner +2, true) )
+	oPlanner:add_action(iAct_MGunner +1, oNewAction)
+	
+	--/ New Action(2): NPC choosing target and shooting from turret
+	oNewAction = this.action_mgunner_active("ac_mgunner_active", st)
+	for idx,v in ipairs(tBindEvls) do
+		oNewAction:add_precondition( world_property(v[1],v[2]) ) --/ conditions
+	end
+	oNewAction:add_precondition(world_property( iEvl_MGunner +0,  true)) --/ scheme active
+	oNewAction:add_precondition( world_property(iEvl_MGunner +1, false)) --/ already on position
+	oNewAction:add_precondition( world_property(iEvl_MGunner +2,  true)) --/ turret found
+	oNewAction:add_effect( world_property(iEvl_MGunner +0, false))
+	oPlanner:add_action(iAct_MGunner +2, oNewAction)
+	
+	--/ Actions -----------------------------------------------------
+	local oAction
+	for _,v in ipairs(tBindActs) do
+		oAction = oPlanner:action(v)
+		oAction:add_precondition (world_property(iEvl_MGunner +0, false))
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+--	log("set_scheme: NPC=[%s], scheme=[%s], section=[%s], gulag=[%s]:(%s)", npc:name(), scheme, section, gulag_name, ">")
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	
+	st.path_walk = Get_Cfg_String(ini, section, "path_walk", nil, true, gulag_name)
+	st.path_look = Get_Cfg_String(ini, section, "path_look", nil, true, gulag_name)
+	ASSERT(validate_patrol_path(st.path_walk, npc, true), "set_scheme: section=[%s] path_walk=[%s] wrong!", section, st.path_walk, "")
+	ASSERT(validate_patrol_path(st.path_look, npc, true), "set_scheme: section=[%s] path_look=[%s] wrong!", section, st.path_look, "")
+	st.turret_str = Get_Cfg_String(ini, section, "turret", "")
+	if st.turret_str == "" then st.turret_str = Get_Cfg_String(ini, section, "turret_sid", "") end --/#x# rudiment
+	st.turret_id = 65535
+	if tonumber(st.turret_str) then --/ sid given
+		st.turret_id = id_by_sid( tonumber(st.turret_str) )
+	else --/ name given
+		local sobj = alife():object(st.turret_str)
+		st.turret_id = sobj and sobj.id
+	end
+	st.enabled = st.turret_id ~= 65535
+	ASSERT(st.enabled, "set_scheme: section=[%s] turret=[%s] wrong!", section, st.turret_str, "")
+	
+	st.sound_idle = Get_Cfg_String(ini, section, "sound_idle")
+	st.suggested_state = {
+		moving1  = Get_Cfg_String(ini, section, "def_state_moving1", "run"),
+		moving2  = Get_Cfg_String(ini, section, "def_state_moving2", "run"),
+		moving3  = Get_Cfg_String(ini, section, "def_state_moving3", "run"),
+		standing = Get_Cfg_String(ini, section, "def_state_standing", "pkm_idle")
+	}
+	--/ for debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]", npc:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = npc and db.storage[ npc:id() ]
+	local st = stor and stor[scheme]
+	if st then
+		xr_logic.unsubscribe_action_from_events(npc, st, st.action)
+		st.enabled = false
+	end
+end
+--/------------------------------------------------------------------
+--/ HELPERs (rudiment)
+--/------------------------------------------------------------------
+function get_enemy(npc)
+	local pos_npc = npc:position()
+	local dist, min_dist = 0, 10^6
+	local obj, best_enemy = nil, nil
+	for id,v in pairs(db.storage) do
+		obj = level.object_by_id(id)
+		if IsMonster(obj) or (IsStalker(obj) and npc:relation(obj) == game_object.enemy) then
+			if obj:alive() and npc:see(obj) then
+				dist = obj:position():distance_to(pos_npc)
+				if id == idActor then
+					dist = dist *0.7
+				end
+				if dist < min_dist then
+					min_dist = dist
+					best_enemy = obj
+				end
+			end
+		end
+	end
+	return best_enemy --/>
+end
+
+function friend_on_fire_line(npc, target_pos, fire_point, fire_dir)
+	local dist0 = target_pos:distance_to(fire_point) +0.5
+	local dir0 = fire_dir and vector():set(fire_dir) or vector():sub(target_pos, fire_point)
+	dir0.y = 0
+	local obj, dist, dir, x, y, angle
+	for id,v in pairs(db.tStorNPC) do
+		obj = v and level.object_by_id(id)
+		if obj and IsStalker(obj) and obj:alive() and npc:relation(obj) == game_object.friend then
+			dist = obj:position():distance_to(fire_point)
+			if dist < dist0 then
+				dir = vector():sub(obj:position(), fire_point)
+				dir.y = 0
+				x = dir0:dotproduct(dir)
+				y = - (dir0.z * dir.x + dir0.x * dir.z)
+				angle = math.atan2(y,x)
+				if angle >= - (1.5 / dist) and angle <= (1.5 / dist) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+--/ ----------------------------------------------
+function is_npc_mgunner(npc)
+	--[[
+	local stor = npc and db.storage[ npc:id() ]
+	local st = stor and stor[sSchemeName]
+	return st ~= nil and st.enabled --/>
+	--]]
+	local state = npc and state_mgr.get_state(npc)
+	return not state or state == "use_pkm" --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+
+--[[
+C++ class CMountedTurret : CGameObject,holder {
+	const eActivate        = 1
+	const eDeactivate      = 2
+	const eDesiredDir      = 3
+	const eDesiredEnemyDir = 4
+	const eDesiredEnemyPos = 5
+	const eFireStart       = 6
+	const eFireStop        = 7
+	
+	CMountedTurret()
+	
+	function _construct()
+	function Visual() const
+	function getEnabled() const
+	function getVisible() const
+	function net_Import(net_packet&)
+	function net_Spawn(cse_abstract*)
+	function net_Export(net_packet&)
+	function use(CGameObject*)
+	function engaged()
+	function Action(number, number)
+	function SetParam(number, vector)
+	function SetParam(number, struct _vector2<number>)
+	function SetNpcOwner(game_object*)
+	function SetEnemy(game_object*)
+	function GetFirePoint() const
+	function GetFireDir() const
+}
+--]]
+--[[
+NOTE: the scheme requires finishing!
+1. Scheme moved under control of standard schemes logic mean sections in logic configs;
+2. Parameter of specifing target turret now can be setted by two ways: sid or name;
+
+TODO:
+1. Do disabling of scheme when "broken" and/or if turret missing/dissapeared from game.
+2. Do check possibility for third-party schemes.
+
+EXAMPLE:
+
+[logic]
+active = mgunner@
+
+[mgunner@]
+path_walk = mgunner_walk ;--/ path should have terminal and/or signal ('sig=ready')
+path_look = mgunner_look
+turret = turret_name ;--/ name or story_id
+;def_state_standing = pkm_idle
+;def_state_moving1 = run
+;def_state_moving2 = run
+;def_state_moving3 = run
+;sound_idle = ...
+
+--]]

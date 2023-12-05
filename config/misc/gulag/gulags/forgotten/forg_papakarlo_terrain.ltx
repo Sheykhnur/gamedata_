@@ -1,0 +1,58 @@
+;****************************************************state 0****************************************************
+[hit@forg_papakarlo_terrain]
+on_info = %+forg_actor_in_karlito_zone%
+
+[logic@forg_papakarlo_terrain_off1]
+active = mob_home@forg_papakarlo_terrain_off1
+
+[mob_home@forg_papakarlo_terrain_off1]
+path_home = home1
+
+[logic@forg_papakarlo_terrain_off2]
+active = mob_home@forg_papakarlo_terrain_off2
+
+[mob_home@forg_papakarlo_terrain_off2]
+path_home = home1
+
+;****************************************************state 1****************************************************
+
+[logic@forg_papakarlo_terrain_home1]
+active = mob_remark@forg_papakarlo_terrain_home1
+on_hit = hit@forg_papakarlo_terrain
+
+
+[mob_remark@forg_papakarlo_terrain_home1]
+anim = stand_idle
+target = forg_papakarlo_terrain_home1_look, 0
+panic = 0
+friendly = true
+;actor_friendly = false
+npc_friendly = true
+on_info = {+forg_actor_in_karlito_zone} mob_home@forg_papakarlo_terrain_home1
+path_walk = home1
+
+[mob_home@forg_papakarlo_terrain_home1]
+path_home = home1
+friendly = true
+npc_friendly = true
+;actor_friendly = false
+
+[logic@forg_papakarlo_terrain_home2]
+active = mob_remark@forg_papakarlo_terrain_home2
+on_hit = hit@forg_papakarlo_terrain
+
+[mob_remark@forg_papakarlo_terrain_home2]
+anim = stand_idle
+target = forg_papakarlo_terrain_home1_look, 0
+panic = 0
+friendly = true
+;actor_friendly = false
+npc_friendly = true
+on_info = {+forg_actor_in_karlito_zone} mob_home@forg_papakarlo_terrain_home2
+path_walk = home1
+
+[mob_home@forg_papakarlo_terrain_home2]
+path_home = home1
+friendly = true
+npc_friendly = true
+;actor_friendly = false

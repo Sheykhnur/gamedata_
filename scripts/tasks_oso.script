@@ -1,0 +1,138 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_oso.script
+ Description: Tasks la_14u_oso
+ Copyright  : 2010 © LA-team
+ Author     : ...
+ Editors    : lox(20.07.2012)
+ Last edit  : 05.03.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+local log = function(fmt, ...) _G.log(script_name()..":"..tostring(fmt), ...) end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	--/ stub
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^oso_') then
+		return false --/>
+	end
+	if info_id == "oso_give_wpn" then
+		fireball_wpn_start()
+		return true --/>
+	end
+	if info_id == "oso_cin" then
+		fireball_show_weapon()
+		return true --/>
+	end
+	if info_id == "oso_fx3" then
+		start_quick_timer(2, this.oso_explode, {idx = 1}) --/ 2000: ~20 game-sec -> ~2 real-sec
+		return true --/>
+	end
+	return false --/>
+end
+
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+--[[ function oso_give_wpn()
+	level.show_indicators()
+	level.enable_input()
+	db.actor:restore_weapon()
+end --]]
+
+function fireball_wpn_start()
+	local bolt = db.actor:item_in_slot(5)
+	if bolt then
+		db.actor:deactivate_slot()
+		db.actor:remove_from_inventory( bolt:id() )
+	end
+	Spawn_ItemInInv("hands_fireball_weapon")
+	start_quick_timer(1.5, this.fireball_create_wpn) --/ 1500: ~15 game-sec -> ~1.5 real-sec
+end
+
+function fireball_create_wpn()
+	local hands = db.actor:object("hands_fireball_weapon")
+	if hands then
+		db.actor:restore_weapon()
+		db.actor:move_to_slot(hands, true)
+	end
+end
+
+function fireball_show_weapon()
+	local bolt = db.actor:item_in_slot(5)
+	if bolt then
+		db.actor:deactivate_slot()
+		db.actor:remove_from_inventory( bolt:id() )
+	end
+	Spawn_ItemInInv("hands_anim_fireball")
+	start_quick_timer(1.5, this.fireball_create_hands) --/ 1500: ~15 game-sec -> ~1.5 real-sec
+end
+
+function fireball_create_hands()
+	local hands = db.actor:object("hands_anim_fireball")
+	if hands then
+		db.actor:restore_weapon()
+		db.actor:move_to_slot(hands, true)
+		db.actor:activate_slot(5)
+	end
+	start_quick_timer(0.6, this.play_cin_anim) --/ 600: ~6 game-sec -> ~0.6 real-sec
+end
+
+function play_cin_anim()
+	db.actor:deactivate_slot()
+	Spawn_ItemInInv("bolt")
+	start_quick_timer(10, this.oso_restore_hud) --/ 10000: ~100 game-sec -> ~10 real-sec
+end
+
+function oso_restore_hud()
+	log("oso_restore_hud:", ">") --/#~#
+	local hands = db.actor:item_in_slot(5)
+	if hands then
+		db.actor:move_to_ruck(hands)
+		db.actor:remove_from_inventory( hands:id() )
+	end
+	local bolt = db.actor:object("bolt")
+	if bolt then
+		db.actor:move_to_slot(bolt, true)
+	end
+end
+
+local tPhases = {
+	["oso_explosion1"] = { part = "explosions\\explosion_01" , snd = "weapons\\grenade1"   },
+	["oso_explosion2"] = { part = "explosions\\expl_wall"    , snd = "weapons\\f1_explode" },
+	["oso_explosion3"] = { part = "explosions\\explosion_01c", snd = "weapons\\grenade1"   },
+	["oso_explosion4"] = { part = "explosions\\explosion_02" , snd = "weapons\\grenade1"   },
+	["oso_explosion5"] = { part = "explosions\\explosion_04" , snd = "weapons\\f1_explode2"},
+	["oso_explosion6"] = { part = "explosions\\explosion_01c", snd = "weapons\\grenade1"   }
+}
+
+function oso_explode(t)
+	log("oso_explode: idx=[%s]%s", t and t.idx, "") --/#~#
+	local sPath = "oso_explosion"..t.idx
+	local tParams = tPhases[sPath]
+	if tParams then
+		local vPos = get_patrol(sPath):point(0)
+		if vPos then
+			local oParticle = particles_object(tParams.part)
+			oParticle:play_at_pos(vPos)
+			xr_effects.play_snd(db.actor, nil, {tParams.snd})
+		end
+		sPath = "oso_explosion"..(t.idx+1)
+		if tPhases[sPath] then
+			start_quick_timer(math.random(15,25)*0.1, this.oso_explode, {idx = t.idx+1} ) --/ 2000: ~1.5...2.5 real-sec
+		else
+			start_quick_timer(1, this.oso_finish) --/ 1000: ~1 real-sec
+		end
+	else
+		log("oso_explode: Wrong idx=[%s] :<%s>", t.idx, "Error!")
+	end
+end
+
+function oso_finish()
+	level.add_pp_effector("oso_final.ppe", 6953, false)
+end
+--/ -----------------------------------------------------------------------------------------------

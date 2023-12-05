@@ -1,0 +1,21 @@
+[logic]
+active = mob_remark@control
+
+[mob_remark@control]
+anim = stand_control_0
+;braindead = true
+actor_friendly = true
+npc_friendly = true
+on_info = {+sar_scene2_end} mob_remark@control_pause
+
+[mob_remark@control_pause]
+anim = stand_control_0
+;braindead = true
+actor_friendly = true
+npc_friendly = true
+on_timer = 1300|mob_walker@control
+
+[mob_walker@control]
+path_walk = sar_controller_way
+actor_friendly = false
+npc_friendly = false

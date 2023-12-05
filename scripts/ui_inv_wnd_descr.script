@@ -1,0 +1,214 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_inv_wnd_descr.script
+ Description: 
+ Copyright  : 2009 © LA-team
+ Author     : barin(29.08.2009)
+ Editors    : barin(07.07.2010)
+ Last edit  : 13.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local WPN_ADDON_NONE     = 0
+local WPN_ADDON_SILENCER = 1
+local WPN_ADDON_LAUNCHER = 2
+local WPN_ADDON_SCOPE    = 4
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Priocess
+--/ -----------------------------------------------------------------
+function getInventoryName(s)
+	return game.translate_string( system_ini():r_string(s, "inv_name") )
+end
+
+function getMagAmmoStr(item)
+	local inv_str = "ammo_class"
+	if item.gl_mode == 1 then
+		inv_str = "grenade_class"
+	end
+	local ammo_class = parser.r_string_list(system_ini(), item.item_section, inv_str, nil)
+	if ammo_class ~= nil then
+		ammo_class = getInventoryName(ammo_class[item.ammo_type + 1])
+		local s = string.format("\n\n%s: %d x %s", game.translate_string("ui_st_trunk_mag_ammo"), item.ammo_elapsed, ammo_class)
+		return s
+	end
+	return ""
+end
+
+function getAddonsList(item)
+	if item.addon_flags == WPN_ADDON_NONE then
+		return ""
+	end
+	
+	local str = ""
+	local b = nil
+	
+	if bit_and(item.addon_flags, WPN_ADDON_SILENCER) == WPN_ADDON_SILENCER then
+		b = system_ini():r_string(item.item_section, "silencer_name")
+		str = string.format("%s\n\t- %s", str, getInventoryName(b))
+	end
+	if bit_and(item.addon_flags, WPN_ADDON_LAUNCHER) == WPN_ADDON_LAUNCHER then
+		b = system_ini():r_string(item.item_section, "grenade_launcher_name")
+		str = string.format("%s\n\t- %s", str, getInventoryName(b))
+	end
+	if bit_and(item.addon_flags, WPN_ADDON_SCOPE) == WPN_ADDON_SCOPE then
+		b = system_ini():r_string(item.item_section, "scope_name")
+		str = string.format("%s\n\t- %s", str, getInventoryName(b))
+	end
+	
+	if b ~= nil then
+		str = string.format("\n%s:%s", game.translate_string("ui_st_trunk_attached_addons"), str)
+	end
+	
+	return str
+end
+
+--/ ------------------------------------------------------------------------------------------------
+class "uiItemInfo" (CUIScriptWnd)
+--/ ------------------------------------------------------------------------------------------------
+function uiItemInfo:__init(parent, x, y, w, h) super()
+	self.parent = parent
+	
+	--/ previously displayed item
+	self.prev_item = nil
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self.wnd_width = w
+	self.wnd_height = h
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiItemInfo:__finalize()
+end
+
+function uiItemInfo:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiItemInfo:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	
+	self.caption   = self.parent.xml:InitStatic("items_info:caption", self)
+	self.item_cond = self.parent.xml:InitProgressBar("items_info:item_cond", self)
+	self.descr     = self.parent.xml:InitList("items_info:item_description", self)
+	
+	self.item_name = self.parent.xml:InitStatic("items_info:item_name", self)
+	self.item_name:Show(false)
+	
+	self.item_weight = self.parent.xml:InitStatic("items_info:item_weight", self)
+	self.item_weight:Show(false)
+	
+	self.item_cost = self.parent.xml:InitStatic("items_info:item_cost", self)
+	self.item_cost:Show(false)
+end
+
+function uiItemInfo:InitCallBacks()
+end
+
+function uiItemInfo:GetItemDescription(item)
+	if item.item_type == ui_inv_wnd_items.ITEM_WEAPON then
+		local addons = getAddonsList(item)
+		local ammo = getMagAmmoStr(item)
+		local str = item.inv_desc
+		if not la_utils.is_empty(ammo) then
+			str = str .. ammo
+		end
+		if not la_utils.is_empty(addons) then
+			str = str .. addons
+		end
+		return str
+	else
+		return item.inv_desc
+	end
+end
+
+function uiItemInfo:CanDisplay(item)
+	if self.prev_item == nil then
+		self.prev_item = item:Clone()
+		return true
+	else
+		if self.prev_item.item_section ~= item.item_section then
+			self.prev_item = item:Clone()
+			return true
+		end
+		if self.prev_item.item_condition ~= item.item_condition then
+			self.prev_item = item:Clone()
+			return true
+		end
+		if self.prev_item.item_type == ui_inv_wnd_items.ITEM_WEAPON then
+			if self.prev_item.ammo_elapsed ~= item.ammo_elapsed then
+				self.prev_item = item:Clone()
+				return true
+			end
+			if self.prev_item.ammo_type ~= item.ammo_type then
+				self.prev_item = item:Clone()
+				return true
+			end
+			if self.prev_item.addon_flags ~= item.addon_flags then
+				self.prev_item = item:Clone()
+				return true
+			end
+			if self.prev_item.gl_mode ~= item.gl_mode then
+				self.prev_item = item:Clone()
+				return true
+			end
+		end
+	end
+	
+	return false
+end
+
+function uiItemInfo:DisplayItemInfo(item)
+	if not self:CanDisplay(item) then
+		return
+	end
+	
+	self.item_name:SetText(item.inv_name)
+	self.item_name:Show(true)
+	
+	self.item_weight:SetText(string.format("%.2f KG", item.item_weight))
+	self.item_weight:Show(true)
+	
+	local i, f = math.modf(item.item_condition / 0.01)
+	self.item_cond:SetProgressPos(i)
+	
+	self.item_cost:SetText(string.format("%d RU", item.item_cost))
+	self.item_cost:Show(true)
+	
+	self.descr:RemoveAll()
+	--pcTextViewer.AddText(self.descr, 45, item.inv_desc, false, "letterica16", "full_white")
+	pcTextViewer.AddText(self.descr, 40, self:GetItemDescription(item), false, "letterica16", "full_white")
+	
+	self:AddItemIcon(item.icon)
+end
+
+function uiItemInfo:AddItemIcon(item)
+	if self.item_icon then
+		self:DetachChild(self.item_icon)
+		self.item_icon = nil
+	end
+	
+	self.item_icon = CUIStatic()
+	self.item_icon:SetAutoDelete(true)
+	self.item_icon:InitTexture("ui\\ui_icon_equipment")
+	
+	local x = math.ceil(math.abs(147 - item.inv_grid_width / 2)) + 10
+	local y = math.ceil(math.abs(86 - item.inv_grid_height / 2)) + 71
+	
+	local rect = Frect():set(x, y, item.inv_grid_width, item.inv_grid_height) --/skyloader: fix for new ui, we arent using ClipperOn() method now, just SetOriginalRect()
+	self.item_icon:SetWndRect(rect)
+	self.item_icon:SetStretchTexture(false)
+	self.item_icon:SetOriginalRect(item.inv_grid_x, item.inv_grid_y, item.inv_grid_x + item.inv_grid_width, item.inv_grid_y + item.inv_grid_height)
+
+	self:AttachChild(self.item_icon)
+end
+--/ ------------------------------------------------------------------------------------------------

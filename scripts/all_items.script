@@ -1,0 +1,103 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : all_items.script
+ Description: ...
+ Copyright  : 2009 © LA
+ Author     : barin
+ Editors    : gr1ph00n, vintar, lox, dez
+ Last edit  : 11.05.2017 (by lox)
+--]] ----------------------------------------------------------------------------------------------
+--/ new game is necessary if you were using trunk/safe before you added/deleted new section
+--/ add new items at the end of 'all_sections' array and update other arrays below
+--/ add only items usable by actor, quest items add only to quest_items array
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+
+-- DEPRECATED - list of all item sections used by some scripts, should be removed later
+
+quest_items = {}
+unique_items = {}
+
+wpn_gl_classes = {
+	["WP_AK74"] = true,
+	["WP_GROZA"] = true,
+}
+
+grenade_classes = {
+	["G_RGD5"] = true,
+	["G_F1"] = true,
+	["G_F1_S"] = true,
+}
+
+cached_loot_classes = {}
+cached_classes = {}
+	
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+local sini = system_ini()
+
+function get_loot_class(section)
+	if cached_loot_classes[section] == nil then
+		cached_loot_classes[section] = sini:line_exist(section, "script_loot_class") and sini:r_string(section, "script_loot_class")
+	end
+	return cached_loot_classes[section]
+end
+
+function get_class(section)
+	if cached_classes[section] == nil then
+		cached_classes[section] = sini:line_exist(section, "class") and sini:r_string(section, "class")
+	end
+	return cached_classes[section]
+end
+
+function check_class(section, tblClass)
+	local sClass = get_class(section)
+	return sClass and tblClass[sClass] or false
+end
+
+function is_grenade(section)
+	return check_class(section, grenade_classes)
+end
+
+function is_quest_item(section)
+	if quest_items[section] == nil then
+		quest_items[section] = sini:line_exist(section, "quest_item") and sini:r_bool(section, "quest_item")
+	end
+	return (quest_items[section] == true)
+end
+
+function is_unique_item(section)
+	if unique_items[section] == nil then
+		unique_items[section] = sini:line_exist(section, "unique_item") and sini:r_bool(section, "unique_item")
+	end
+	return (unique_items[section] == true)
+end
+
+function is_mutant_body_part(section)
+	return get_loot_class(section) == "mutant"
+end
+
+function is_money(section)
+	return get_loot_class(section) == "money"
+end
+
+function is_outfit(section)
+	return get_loot_class(section) == "outfit"
+end
+
+function is_ammo(section)
+	return get_loot_class(section) == "ammo"
+end
+
+function is_weapon(section)
+	return get_loot_class(section) == "weapon"
+end
+
+function is_weapon_gl(section)
+	return check_class(section, wpn_gl_classes)
+end
+
+function is_artifact(section)
+	return get_loot_class(section) == "artefact"
+end

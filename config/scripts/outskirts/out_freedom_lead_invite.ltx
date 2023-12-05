@@ -1,0 +1,9 @@
+[logic]
+active = sr_idle@check
+
+[sr_idle@check]
+on_info = {+bas_switcher_off} nil %=release%
+on_actor_inside = {-bas_switcher_off =actor_has_item(good_psy_helmet)} sr_idle@in %=set_community_neutral_if_enemy(freedom)%
+
+[sr_idle@in]
+on_info = {-out_freedom_lead_invite} nil %+out_freedom_lead_invite =send_tip_hud(freedom:lukash_message_header:out_lukash_invite_msg_text:25) =release%

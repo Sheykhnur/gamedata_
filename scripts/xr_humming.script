@@ -1,0 +1,253 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : xr_humming.script
+ Description: scheme: "Humming" ("NPC singing")
+ Copyright  : 2011 © LA-team
+ Author     : gr1ph00n(07.04.2011)
+ Editors    : gr1ph00n
+ Last edit  : 16.12.2013 [vintar]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iDistanceMax = 15 --/ (m)
+local iTimeExpire  = 8 --/ (s)
+local iAnimCount   = 5
+local sAnimPrefix  = "chasovoy"
+local tDataSounds  = {
+	[1] = {path = "monsters\\stalker\\humming", prefix = "em1_humming"},
+	[2] = {path = "monsters\\stalker\\humming", prefix = "em1_whistle"},
+	[3] = {path = "characters_voice\\human_01\\talk\\friendly_greeting\\stalker", prefix = "greeting_"}
+}
+local tExcludedSchemes   = {}
+local tExcludedCommunity = {}
+local tExcludedNPCs      = {}
+--/ --------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local bEnabled    = false --/ flag of permission of activity of the scheme
+local sSchemeName = "ai_humming" --/ string name of the scheme
+local iEvl_AI_Humming = 0 --/ property_base
+local iAct_AI_Humming = 0 --/ operator_base
+local tBindEvls = {} --/ array of 'external' conditions of activation of the scheme
+
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	if bInit then return end
+	iEvl_AI_Humming, iAct_AI_Humming = register_ai_module(sModule, sSchemeName)
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ --------------------------
+function get_ai_evl(idx)
+	return iEvl_AI_Humming + (idx or 0) --/>
+end
+function get_ai_act(idx)
+	return iAct_AI_Humming + (idx or 0) --/>
+end
+--/ --------------------------
+function PreSets(e)
+	local ltx = ini_file("lost_alpha\\ai_schemes\\"..sModule..".ltx")
+	bEnabled     = Get_Cfg_Bool (ltx, "options", "enabled", bEnabled)
+	iDistanceMax = Get_Cfg_Num32(ltx, "options", "humming_distance_cond", iDistanceMax)
+	iTimeExpire  = Get_Cfg_Num32(ltx, "options", "humming_expire_time", iTimeExpire)
+	tExcludedSchemes   = Get_IniSection(ltx, "excluded_schemes",   "true")
+	tExcludedCommunity = Get_IniSection(ltx, "excluded_community", "true")
+	tExcludedNPCs      = Get_IniSection(ltx, "excluded_npcs",      "true")
+	--/ extra conditions from optional schemes in tBindEvls world_property(v.id,v.flg)
+	local tAddEvls = {
+		[1] = {id = db.xr_blowout and xr_blowout.get_ai_evl(0),       flg = false}, --/ don't see a blowout
+		[2] = {id = db.la_ai_watcher and la_ai_watcher.get_ai_evl(0), flg = false}, --/ no gathering
+	}
+	for _,v in ipairs(tAddEvls) do
+		if v.id then
+			table.insert( tBindEvls, {v.id, v.flg} )
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Evaluator
+--/ -----------------------------------------------------------------------------------------------
+class "evaluator_humming" (property_evaluator)
+--/ -----------------------------------------------------------------------------------------------
+function evaluator_humming:__init(name, st) super(nil, name)
+	self.st = st
+	self.enable = false
+	self.timeout = time_global() + 15*1000
+end
+
+function evaluator_humming:evaluate()
+	if self:basic_precond() and not self.st.snd_obj then
+		if self.object:see(db.actor) and self.object:position():distance_to(db.actor:position()) < iDistanceMax and xr_meet.is_no_meet_enabled(self.object) ~= true then
+			if self.enable then
+				return true --/>
+			elseif math.random(1000) % 11 > 3 then
+				self.timeout = time_global() + math.random(3,60)*1000
+				self.enable = true --log("ev: started for [%s]", self.object:name(), "") --/#~#
+				return true --/>
+			end
+			return false --/>
+		end
+	end
+	return (self.st.snd_obj ~= nil)
+end
+
+function evaluator_humming:basic_precond()
+	if self.object:is_body_turning() then
+		return false
+	end
+	-- --/#?# уже есть в  tAddEvls
+	if self.object:best_enemy() or self.object:is_talking() then
+		return false --/> having an enemy or already talk with actor
+	end
+	if level_weathers.is_blowout_active() then
+		return false --/> 'ground' blowout active
+	end
+	if self.object:relation(db.actor) == game_object.enemy then
+		return false --/> too early or actor-enemy
+	end
+	--
+	if self.timeout and time_global() > self.timeout then
+		self.timeout = nil
+		self.enable = false
+		return false --/> timeout
+	end
+	if not self.stor then self.stor = db.storage[self.object:id()] end
+	if self.stor.active_scheme and tExcludedSchemes[self.stor.active_scheme] or xr_sleeper.is_npc_asleep(self.object) then
+		return false --/> active forbidding AI-scheme or sleeping...
+	elseif self.st.snd_obj and not self.st.snd_obj:playing() then
+		self.st.snd_obj = nil
+		self.enable = false
+		self.timeout = time_global() + math.random(8,120)*1000
+		return false --/>
+	end
+	return true --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Action
+--/ -----------------------------------------------------------------------------------------------
+class "action_humming" (action_base)
+--/ -----------------------------------------------------------------------------------------------
+function action_humming:__init(action_name, st) super(nil, action_name)
+	self.st = st
+	self.log = st.log
+end
+
+function action_humming:initialize()
+	action_base.initialize(self)
+	self.object:set_desired_position()
+	self.object:set_desired_direction()
+	if self.object:is_talk_enabled() then
+		self.is_talk_enabled = true
+		self.object:disable_talk()
+	end
+	stop_play_sound(self.object)
+	self.snd_type = (math.random(1000) % 3) + 1
+	local snd_idx = 1
+	if self.snd_type == 1 then --/ (1) humming
+		snd_idx = (math.random(100) % 5) + 1
+	elseif self.snd_type == 2 then --/ (2) whistle
+		snd_idx = (math.random(100) % 5) + 1
+	else --/ (3) greeting
+		snd_idx = (math.random(100) % 4) + 1
+	end
+	self.snd_name = tDataSounds[self.snd_type].path .. "\\" .. tDataSounds[self.snd_type].prefix .. snd_idx
+	if self.log then log("ac:ini: NPC=[%s] snd=[%s]", self.object:name(), self.snd_name, "") end --/#~#
+end
+
+function action_humming:execute()
+	action_base.execute(self)
+	
+	if self.snd_name then
+		--if true or self.log then log("ac:exe: NPC=[%s] snd=[%s] :%s", self.object:name(), self.snd_name, game.get_game_time():timeToString(3), "") end --/#~#
+		if getFS():exist("$game_sounds$", self.snd_name..".ogg") then
+			self.st.snd_obj = xr_sound.get_safe_sound_object(self.snd_name)
+			self.st.snd_obj:play_at_pos(self.object, self.object:position(), 0, sound_object.s3d)
+			if self.snd_type == 3 and self.object:animation_count() == 0 then --/ (3) greeting
+				self.object:clear_animations()
+				state_mgr.set_state(self.object, sAnimPrefix.."_"..((math.random(100) % iAnimCount) +1), nil, nil, {look_object = (xr_meet.is_meet(self.object) and db.actor) or nil}, {animation = true})
+			end
+		else
+			abort("%s:ac:exe:initialize:Can't load [%s.ogg], file not found!", sModule, self.snd_name, "")
+		end
+		self.snd_name = nil
+	end
+end
+
+function action_humming:finalize()
+	--if true or self.log then log("ac:fin: NPC=[%s] :%s", self.object:name(), game.get_game_time():timeToString(3), "") end --/#~#
+	self.snd_name = nil
+	if self.st.snd_obj then
+		self.st.snd_obj:stop()
+		self.st.snd_obj = nil
+	end
+	--self.object:clear_animations()
+	if self.is_talk_enabled then
+		self.object:enable_talk()
+	end
+	action_base.finalize(self)
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	if st.log then log("add_to_binder: NPC=[%s], scheme=[%s], section=[%s]:(%s)", npc:name(), scheme, section, ">") end
+	st.enabled = bEnabled and not ( tExcludedCommunity[npc:character_community()] or tExcludedNPCs[npc:name()] )
+	--/ Planner -------------------------------------------------------
+	local oPlanner = npc:motivation_action_manager()
+	--/ Evaluators ----------------------------------------------------
+	if not st.enabled then
+		oPlanner:add_evaluator(iEvl_AI_Humming, property_evaluator_const(false)) --/ stub
+	else
+		oPlanner:add_evaluator(iEvl_AI_Humming, this.evaluator_humming("ev_humming", st))
+		
+		--/ New Actions -------------------------------------------------
+		local oNewAction = this.action_humming("ac_humming", st)
+		xr_motivator.addGeneralPrecondition(oNewAction)
+		for _,v in ipairs(tBindEvls) do
+			oNewAction:add_precondition( world_property(v[1],v[2]) )
+		end
+		oNewAction:add_precondition(world_property(iEvl_AI_Humming, true )) --/ allowed to give speech
+		oNewAction:add_effect(world_property(iEvl_AI_Humming, false))
+		oPlanner:add_action(iAct_AI_Humming, oNewAction)
+		
+		--/ Actions (additional preconditions for some standard operators)
+		local oAction = oPlanner:action(stalker_ids.action_alife_planner)
+		oAction:add_precondition(world_property(iEvl_AI_Humming, false))
+	end
+end
+--/ -----------------------------------------------------------------
+--/ SET SCHEME - enabling scheme
+--/ -----------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	--/ for debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, st.enable, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME - disabling scheme
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	local stor = db.storage[npc:id()]
+	local st = stor and stor[scheme]
+	if st then
+		st.enable = false
+	end
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs (for compatibility, later delete)
+--/------------------------------------------------------------------
+function enable_scheme(...)
+	set_scheme(...)
+end
+--/ -----------------------------------------------------------------------------------------------

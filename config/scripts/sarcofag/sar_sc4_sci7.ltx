@@ -1,0 +1,33 @@
+[combat_ignore@sci7]
+
+[danger@sar_sci7_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sci_7
+combat_ignore = combat_ignore@sci7
+danger = danger@sar_sci7_sc4
+
+[remark@sci_7]
+anim = sci_laboratory_3
+target = sar_scene_4_sci7_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_9} remark@sci_7_2
+
+[remark@sci_7_2]
+anim = sci_laboratory
+snd = sar_replics9
+target = sar_scene_4_sci7_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_10%
+on_info = {+sar_scene4_info_28} remark@sci_7_finale
+
+[remark@sci_7_finale]
+anim = sci_fear
+target = sar_random7, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_30} %=release%

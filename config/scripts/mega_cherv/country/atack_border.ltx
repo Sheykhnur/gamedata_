@@ -1,0 +1,26 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+country_major_third_mutant_quest_inside} sr_idle@1
+
+[sr_idle@1]
+on_actor_outside = {-third_wave_contr_dead} nil %+country_major_third_mutant_quest_outside%
+on_info2 = {=actor_out_zone(ladc_bcr__space_restrictor_0000)} sr_tip
+on_info = {+third_wave_contr_dead} nil
+
+[sr_tip]
+header = major_message_header
+name = country_major_job_back
+sender = grib
+type = tips
+single = true
+showtime = 12000
+on_signal = tip_sended | sr_idle@0
+on_info = {+third_wave_contr_dead} nil
+on_actor_outside = {-third_wave_contr_dead} nil %+country_major_third_mutant_quest_outside%
+
+[sr_idle@0]
+on_timer = 15000 | sr_idle@1
+on_info = {+third_wave_contr_dead} nil
+on_actor_outside = {-third_wave_contr_dead} nil %+country_major_third_mutant_quest_outside%

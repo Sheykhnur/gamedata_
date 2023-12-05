@@ -1,0 +1,11 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {+rad_move_on +rad_outpost_mutants_help_quest_done -rad_scene_end -rad_actor_attacks_monolith -deactivate_radar_done} sr_cutscene %=disable_anims +rad_scene_start +rad_starting_replics%
+
+[sr_cutscene]
+point = rad_cam_point
+look = rad_look_point
+cam_effector = rad_base_scene
+on_signal = cameff_end | nil %+rad_scene_end =release%

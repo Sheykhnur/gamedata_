@@ -1,0 +1,71 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ph_hit.script
+ Description: Схема: "Apply directional hit to the object"
+ Copyright  : 2004 © GSC Game World
+ Author     : Oleg Hryptul (Haron) haronk@ukr.net
+ Last edit  : 15.06.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ ---------------------------------------------
+--/ SCHEME CONSTRUCTION
+--/ -----------------------------------------------------------------------------------------------
+class "action_hit"
+--/ -----------------------------------------------------------------------------------------------
+function action_hit:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_hit:reset_scheme()
+	if self.log then log("reset_scheme:Obj=[%s]", self.object:name(), "") end --/#~#
+	local p1 = get_patrol(self.st.dir_path):point(0)
+	local p2 = self.object:position()
+	local h = hit()
+	h.draftsman = self.object
+	h.direction = vector():sub(p1,p2):normalize()
+	h:bone(self.st.bone)
+	h.type      = hit.strike
+	h.power     = self.st.power
+	h.impulse   = self.st.impulse
+	self.object:hit(h)
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function action_hit:update(delta)
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+--/ ------------------------------------------------------------------------------------------------
+--/ BINDER
+--/ ------------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+	st.action = this.action_hit(obj, st)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, sulag_name)
+--	log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	st.power    = Get_Cfg_Num32 (ini, section, "power",    0)
+	st.impulse  = Get_Cfg_Num32 (ini, section, "impulse",  1000)
+	st.bone     = Get_Cfg_String(ini, section, "bone",     "", true)
+	st.dir_path = Get_Cfg_String(ini, section, "dir_path", "", true)
+	--/ регистрация action, для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+	--/ fot debug:
+	if st.log then log("set_scheme:Obj=[%s/%s],scheme=[%s],section=[%s]", obj:name(), obj:id(), scheme, section, "") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

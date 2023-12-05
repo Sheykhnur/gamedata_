@@ -1,0 +1,66 @@
+;=====================================================================
+;--/ for scheme: "NPC: use a butt" ("НПС: используют приклад")
+;--/ Last edit: 09.06.2013 [...]
+;=====================================================================
+
+[options]
+enabled      = false
+check_period = 1500 ;--/ время между проверками (мс)
+
+[scheme_params] ;--/ массив параметров для регистрации схемы
+logic   = false ;--/ используется ли 'штатная' логика схемы
+enable  = true  ;--/ признак/флаг разрешения штатно включать схему (менеджером)
+disable = true  ;--/ признак/флаг разрешения штатно выключать схему (менеджером)
+common  = true  ;--/ признак/флаг регистрации в "addCommonProperty"
+ev_ids  = 0,1   ;--/ id-массив эвалюаторов для "addCommonProperty"
+
+[excluded_community] ;--/ исключенные группировки
+zombied     = true
+trader      = true
+arena_enemy = true
+
+[excluded_npcs] ;--/ исключенные неписи
+bar_barman = true
+
+[excluded_weapons] ;--/ запрещенное к использованию оружие
+;zero = true ;--/ заглушка-заготовка
+
+[list_ranks] ;--/ имена рангов
+novice
+experienced
+veteran
+master
+
+[novice_params]
+power     = 30 ;--/ сила удара
+min_delay = 3500 ;--/ пауза(ms) между ударами
+;--/ коэффициенты
+k_mutant  = 1.4 ;--/ бьем монстра
+k_friend  = 0.1 ;--/ бьем друга(нейтрала)
+k_stalker = 0.4 ;--/ бьем нпс
+k_actor   = 1   ;--/ бьем гг
+
+[experienced_params]
+power     = 40
+min_delay = 1700
+k_mutant  = 1.4
+k_friend  = 0.1
+k_stalker = 0.6
+k_actor   = 1
+
+[veteran_params]
+power     = 50
+min_delay = 1500
+k_mutant  = 1.5
+k_friend  = 0.1
+k_stalker = 0.7
+k_actor   = 1
+
+[master_params]
+power     = 80
+min_delay = 1200
+k_mutant  = 1.5
+k_friend  = 0.05
+k_stalker = 0.7
+k_actor   = 1
+;=====================================================================

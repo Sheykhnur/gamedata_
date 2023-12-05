@@ -1,0 +1,245 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_cutscene.script
+ Description: Cutscene trigger
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : gr1ph00n, kolmogor, SkyLoader(18.09.2013), lox
+ Version	: release
+ Last edit  : 18.11.2017 [lox]
+--]]-----------------------------------------------------------------------------------------------
+--- added new flashlights
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local state_nowhere = 0 --/ scheme just enabled
+local state_inside  = 1 --/ actor inside
+local state_outside = 2 --/ actor outside
+
+local cutscene_mgr    = nil
+local is_first_person = true
+local is_active_torch = false
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+class "action_cutscene"
+--/ -----------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ ---------------------------------------------
+function action_cutscene:__init( obj, st )
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+	self.first 	= true
+	self.active = false
+	self.motion_id = 1
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_cutscene:reset_scheme()
+	--if self.log then log("ac:reset_scheme:Obj=[%s],section=[%s]:(%s)", self.object:name(), self.st.section, table.size(self.st.logic), "") end --/#~#
+	self.st.signals = {} --/ nulling(0) signals
+	self.state = state_nowhere --/  not clear, if character in range of spatial limiter or not
+	if self.first then
+		self.first = false
+		self:switch_state()
+	end
+	self.cam_effector = la_helper.validate_cam_effector(self.st.cam_effectors[self.motion_id])
+end
+--/------------------------------------------------------------------
+--/ UPDATE (callback)
+--/------------------------------------------------------------------
+function action_cutscene:update(delta)
+	--/  check, if game finally loaded
+	--if device().precache_frame > 0 then return end
+	--if self.log then log("ac:update:Obj=[%s],section=[%s]", self.object:name(), self.st.section, "") end --/#~#
+	if not self.first then
+		self:switch_state() --/ actually function, which do call from scene start
+	end
+	xr_logic.try_switch_to_another_section( self.object, self.st, db.actor )
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function action_cutscene:switch_state()
+	if self.state ~= state_inside then
+		self.state = state_inside
+		self:start()
+	end
+end
+
+function action_cutscene:start()
+	self.active = true
+	self.motion_id = 1
+	if not self.st.hide_weapon then
+		xr_effects.hide_weapon_helper()
+	end
+	level.disable_input()
+	level.hide_indicators()
+	if self.st.pp_effector ~= "nil.ppe" then
+		level.add_pp_effector(self.st.pp_effector, 234, false)
+		--if true or self.log then log("ac:start_ppe_effector:obj=[%s],ppe_effector=[%s]", self.object:name(), self.st.pp_effector, "") end --/#~#
+	end
+	if self.motion_id <= #self.st.cam_effectors then
+		if not self.first then
+			self.first = true
+		end
+		self:select_next_motion()
+	end
+	level.save_allowed(false)
+	level.ai_ignore_actor(true)
+	local oActor = db.actor
+	oActor:set_actor_legs_visible(false)
+	is_first_person = oActor:is_first_eye()
+	if not is_first_person then
+		oActor:set_actor_camera(1)
+	elseif oActor:is_talking() then --/#+#
+		oActor:stop_talk()
+	end
+	if level.main_input_receiver() then
+		level.start_stop_menu(level.main_input_receiver(), false) --/skyloader: seems fixed bug, but which bug?
+	end
+	local item = db.actor:item_in_slot(9)
+	if item then
+		if item:section() == "device_torch" or item:section() == "device_torch_eco" or item:section() == "device_torch_adv" then
+		is_active_torch = oActor:get_torch_state()
+			if is_active_torch then --/skyloader: fixed static "change batteries"
+				db.actor:set_torch_state(false)
+			end
+		end
+	end
+	
+	xr_effects.teleport_actor(oActor, nil, {self.st.point, self.st.look})
+
+	give_info("cutscene_started")
+end
+
+function action_cutscene:select_next_motion()
+	self.cam_effector = la_helper.validate_cam_effector(self.st.cam_effectors[self.motion_id])
+	if not cutscene_mgr then cutscene_mgr = self end --/ store
+	self.motion_id = self.motion_id + 1
+	level.add_cam_effector2(self.cam_effector, 123, false, sModule..".effector_callback")
+	--if true or self.log then log("ac:select_next_motion:obj=[%s],cam_effector(%s)=[%s]", self.object:name(), self.motion_id-1, self.cam_effector, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ CALLBACK
+--/------------------------------------------------------------------
+function action_cutscene:deactivate()
+	level.remove_pp_effector(234)
+	level.remove_cam_effector(123)
+	self.motion_id = 1
+	--if self.log then log("ac:deactivate:Obj=[%s],time=[%d]", self.object:name(), time_global()) end --/#~#
+	if self.st.restore_ui and self.active then --/#+# will be any problems with new game with this one script, report
+		self.active = false
+		self:on_stop_cutscene()
+		give_info("cutscene_completed")
+		cutscene_mgr = nil
+	end
+end
+
+function action_cutscene:on_stop_cutscene()
+--	if self.log then log("ac:on_stop_cutscene:Obj=[%s],time=[%d]", self.object:name(), time_global()) end --/#~#
+	level.show_indicators()
+	level.enable_input()
+	if not self.st.hide_weapon then
+		xr_effects.restore_weapon_helper()
+	end
+
+	level.ai_ignore_actor(false)
+	if not is_first_person then
+		db.actor:set_actor_camera(2)
+	end
+	if db.is_legs_visible then
+		db.actor:set_actor_legs_visible(true)
+	end
+	local item = db.actor:item_in_slot(9)
+	if item then
+		if item:section() == "device_torch" or item:section() == "device_torch_eco" or item:section() == "device_torch_adv" then
+			if is_active_torch then --/skyloader: fixed static "change batteries"
+				db.actor:set_torch_state(true)
+			end
+		end
+	end
+end
+
+function action_cutscene:cutscene_callback()
+	if self.motion_id <= #self.st.cam_effectors then
+		self:select_next_motion()
+	elseif self.active then
+		self.active = false
+		if not has_info("esc_actor_scene") then
+			level.enable_input()
+			if not db.actor:is_talking() then
+				level.show_indicators()
+			end
+			if not self.st.hide_weapon then
+				xr_effects.restore_weapon_helper()
+			end
+		elseif not has_info("esc_actor_cam_end") then
+			xr_effects.release_obj_by_id_or_name("esc_actor")
+		end
+		level.ai_ignore_actor(false)
+		if not is_first_person then
+			db.actor:set_actor_camera(2)
+		end
+		local item = db.actor:item_in_slot(9)
+		if item then
+			if item:section() == "device_torch" or item:section() == "device_torch_eco" or item:section() == "device_torch_adv" then
+				if is_active_torch then --/skyloader: fixed static "change batteries"
+					db.actor:set_torch_state(true)
+				end
+			end
+		end
+		self.st.signals["cameff_end"] = true
+		if db.is_legs_visible then
+			db.actor:set_actor_legs_visible(true)
+		end
+		give_info("cutscene_completed")
+		cutscene_mgr = nil
+	end
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, ">") --/#~#
+	st.action = this.action_cutscene(obj, st)
+	--/ registration of 'action' to call methods ' reset_scheme' when changing settings of scheme and 'update':
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.point         = Get_Cfg_String(ini, section, "point", "none")
+	st.look          = Get_Cfg_String(ini, section, "look",  "none")
+	st.pp_effector   = Get_Cfg_String(ini, section, "pp_effector", "blink") .. ".ppe"
+	st.cam_effectors = parse_names(Get_Cfg_String(ini, section, "cam_effector"))
+	st.restore_ui = Get_Cfg_Bool  (ini, section, "restore_ui", false)
+	st.hide_weapon 	 = Get_Cfg_Bool  (ini, section, "no_hide_weapon", false)
+	if not (st.point and validate_patrol_path(st.point, obj, false)) then
+		log("set_scheme:Obj=[%s],section=[%s],point=[%s]<~not_validate:<%s>", obj:name(), section, st.point, "Warning!")
+	end
+	if not (st.look and validate_patrol_path(st.look, obj, false)) then
+		log("set_scheme:Obj=[%s],section=[%s],look=[%s]<~not_validate:<%s>", obj:name(), section, st.look, "Warning!")
+	end
+	--/ for debug!
+	--if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s],point=[%s],look=[%s]", obj:name(), scheme, section, st.point, st.look, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ HELPERs
+--/------------------------------------------------------------------
+function effector_callback()
+	if cutscene_mgr then
+		cutscene_mgr:cutscene_callback()
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------

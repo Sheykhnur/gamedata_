@@ -1,0 +1,167 @@
+
+-- file: ui_spin.script
+-- author: barin
+-- date: 2009-08-29
+-- edited by: barin
+-- last edited: 2009-09-18
+
+class "uiSpinButton" (CUIScriptWnd)
+
+function uiSpinButton:__init(x, y, frame_width, min_value, max_value, step) super()
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self.frame_width = frame_width
+	self.frame_height = 25
+	
+	if min_value > max_value then
+		self.min_value = max_value
+		self.max_value = min_value
+	else
+		self.min_value = min_value
+		self.max_value = max_value
+	end
+	
+	if not step then
+		self.step = 1
+	else
+		self.step = step
+	end
+	
+	self.curr_value = 0
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiSpinButton:__finalize()
+end
+
+function uiSpinButton:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiSpinButton:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(self.wnd_x, self.wnd_y, self.frame_width + 10, self.frame_height + 10)
+	
+	self.frame = CUIFrameLineWnd()
+	self.frame:SetAutoDelete(true)
+	self.frame:SetWindowName("wnd_frame")
+	self.frame:Init("ui_spiner", 0, 0, self.frame_width, self.frame_height, true)
+	self:AttachChild(self.frame)
+	
+	self.value_up = CUI3tButton()
+	self.value_up:SetAutoDelete(true)
+	self.value_up:SetWindowName("value_up")
+	self.value_up:Init("ui_spiner_button_t", self.frame_width - 12, 0, 11, 11)
+	self:AttachChild(self.value_up)
+	
+	self.value_dn = CUI3tButton()
+	self.value_dn:SetAutoDelete(true)
+	self.value_dn:SetWindowName("value_dn")
+	self.value_dn:Init("ui_spiner_button_b", self.frame_width - 12, self.frame_height - 14, 11, 11)
+	self.value_dn:Enable(false)
+	self:AttachChild(self.value_dn)
+	
+	self.value = CUIStatic()
+	self.value:SetAutoDelete(true)
+	self.value:SetWndRect(5, 2, self.frame_width - 20, self.frame_height - 2)
+	self.value:SetText(self.curr_value)
+	self.value:SetFont(GetFontLetterica18Russian())
+	self.value:SetTextAlign(CGameFont.alRight)
+	self.value:SetTextColor(255, 238, 155, 23)
+	self:AttachChild(self.value)
+end
+
+function uiSpinButton:InitCallBacks()
+	self:AddCallback("value_up", ui_events.BUTTON_CLICKED, self.OnValueUp, self)
+	self:AddCallback("value_dn", ui_events.BUTTON_CLICKED, self.OnValueDn, self)
+end
+
+function uiSpinButton:OnValueUp()
+	self:SetValue(1)
+end
+
+function uiSpinButton:OnValueDn()
+	self:SetValue(-1)
+end
+
+function uiSpinButton:SetValue(v)
+	self.curr_value = self.curr_value + (self.step * v)
+	
+	if self.curr_value > self.max_value then
+		self.curr_value = self.max_value
+	elseif self.curr_value < self.min_value then
+		self.curr_value = self.min_value
+	end
+	
+	self.value:SetText(self.curr_value)
+	
+	if self.curr_value == self.max_value then
+		self.value_up:Enable(false)
+		self.value_dn:Enable(true)
+	elseif self.curr_value == self.min_value then
+		self.value_up:Enable(true)
+		self.value_dn:Enable(false)
+	else
+		self.value_up:Enable(true)
+		self.value_dn:Enable(true)
+	end
+end
+
+function uiSpinButton:GetCurrValue()
+	return self.curr_value
+end
+
+-- ******************************************************************************** --
+
+class "uiSpinButtonTestWnd" (CUIScriptWnd)
+
+function uiSpinButtonTestWnd:__init() super()
+	self.wnd_x, self.wnd_y = la_utils.get_hud_center(400, 300)
+	
+	self.wnd_width = 400
+	self.wnd_height = 300
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiSpinButtonTestWnd:__finalize()
+end
+
+function uiSpinButtonTestWnd:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiSpinButtonTestWnd:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	self:SetWndRect(self.wnd_x, self.wnd_y, self.wnd_width + 50, self.wnd_height + 100)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_wnd\\ui_combo_box.xml")
+	
+	self:Register(xml:InitFrame("frame", self), "wnd_frame")
+	self:Register(xml:Init3tButton("btn_quit", self), "btn_quit")
+	
+	self.spin_btn = uiSpinButton(30, 30, 50, 0, 100, 30)
+	self.spin_btn:SetAutoDelete(true)
+	self:AttachChild(self.spin_btn)
+	self.spin_btn:Show(true)
+end
+
+function uiSpinButtonTestWnd:InitCallBacks()
+	self:AddCallback("btn_quit", ui_events.BUTTON_CLICKED, self.OnQuit, self)
+end
+
+function uiSpinButtonTestWnd:OnQuit()
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+-- ******************************************************************************** --
+
+function test()
+	local wnd = uiSpinButtonTestWnd()
+	level.start_stop_menu(wnd, true)
+end

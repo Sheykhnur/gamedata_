@@ -1,0 +1,17 @@
+[logic]
+active = sr_idle@sar_particle
+
+[sr_idle@sar_particle]
+on_info = {+sar_got_battery} sr_idle@room
+
+[sr_idle@room]
+on_info = {+sar_scene4_start} sr_idle@sar_soundw
+
+[sr_idle@sar_soundw]
+on_info = {+sar_sc4_reactor} sr_sound_act
+
+[sr_sound_act]
+theme = dar_alarm
+delay = 3000
+delay_max = 3000
+on_info = {+sar_scene4_zombies} nil

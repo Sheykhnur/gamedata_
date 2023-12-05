@@ -1,0 +1,120 @@
+
+--[[ ----------------------------------------------------------------------------------------------
+ File       : sr_generator_waves.script
+ Description: generators waves
+ Copyright  : 2012 © LA-team
+ Author     : gr1ph00n
+ Editors    : 
+ Last edit  : 20.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local TORRID_PARTICLE = "anomaly2\\generator\\anomaly_gen_dust"
+local TORRID_SOUND = "anomaly\\gen_electra_ball_idle"
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_wave"
+--/ -----------------------------------------------------------------------------------------------
+function action_wave:__init(obj, st)
+	self.object   = obj
+	self.st       = st
+	self.particle = nil
+	self.snd_obj  = nil
+	self.started  = false
+	self.trigger  = 0
+	self.log      = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_wave:reset_scheme()
+	self.particle = particles_object(TORRID_PARTICLE)
+	if not self.particle then
+		abort("reset_scheme: particle '%s' is nil", TORRID_PARTICLE)
+	end
+	self.snd_obj = xr_sound.get_safe_sound_object(TORRID_SOUND)
+	if not self.snd_obj then
+		abort("reset_scheme: snd '%s.ogg' is nil", TORRID_SOUND)
+	end
+	self.started = false
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_wave:update(delta)
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	if self.trigger < time_global() then
+		self.trigger = time_global() + 600
+		if self.object:inside(db.actor:position()) then
+			if not self.started then
+				self.particle:load_path(self.st.path)
+				self.particle:start_path(true)
+				self.particle:play()
+				self.started = true
+			end
+			if not self.particle:playing() then
+				self.particle:play()
+			end
+			if not self.snd_obj:playing() then
+				self.snd_obj:play_no_feedback(self.object, sound_object.s3d, 0, self.object:position(), 1.0)
+			end
+		else
+			if self.started then
+				self.started = false
+				if self.particle:playing() then
+					self.particle:stop()
+				end
+				if self.snd_obj:playing() then
+					self.snd_obj:stop()
+				end
+			end
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE
+--/------------------------------------------------------------------
+function action_wave:deactivate()
+	if self.particle:playing() then
+		self.particle:stop()
+	end
+	if self.snd_obj:playing() then
+		self.snd_obj:stop()
+	end
+	self.particle = nil
+	self.snd_obj = nil
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder (obj, ini, scheme, section, st)
+	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") --/#~#
+	local oNewAction = this.action_wave(obj, st)
+	--/ регистрация 'action', для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events (obj, st, oNewAction)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind (obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.path = utils.cfg_get_string(ini, section, "path", obj, true, "", nil)
+	if not st.path or st.path == "" then
+		abort("invalid path name for %s", obj:name())
+	elseif not st.path:match("^gen_") then
+		st.path = "gen_" .. st.path
+	end
+	st.path = st.path .. ".anm"
+end
+--/ -----------------------------------------------------------------------------------------------

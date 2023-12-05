@@ -1,0 +1,65 @@
+;********************************************state 0***********************************************
+
+[logic@forg_stalker_terrain_sleeper1]
+active = sleeper@forg_stalker_terrain_sleeper1
+combat_ignore = combat_ignore
+
+[sleeper@forg_stalker_terrain_sleeper1]
+path_main = kamp1_walk1
+wakeable = false
+combat_ignore_cond = {=fighting_dist_ge(10)}
+
+[logic@forg_stalker_terrain_sleeper2]
+active = sleeper@forg_stalker_terrain_sleeper2
+combat_ignore = combat_ignore
+
+[sleeper@forg_stalker_terrain_sleeper2]
+path_main = kamp1_walk2
+wakeable = false
+combat_ignore_cond = {=fighting_dist_ge(10)}
+
+
+;********************************************state 1*************************************************
+
+[logic@forg_stalker_terrain_kamper1]
+active = kamper@forg_stalker_terrain_kamper1
+combat_ignore = combat_ignore
+
+[kamper@forg_stalker_terrain_kamper1]
+path_walk = kamp1_walk1
+path_look = kamp1_look1
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_dist_ge(10)}
+
+[logic@forg_stalker_terrain_kamper2]
+active = kamper@forg_stalker_terrain_kamper2
+combat_ignore = combat_ignore
+
+[kamper@forg_stalker_terrain_kamper2]
+path_walk = kamp1_walk2
+path_look = kamp1_look2
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_dist_ge(10)}
+
+
+;*********************************************state 0,1*********************************************
+
+[logic@forg_stalker_terrain_guard1]
+active = walker@forg_stalker_terrain_guard1
+combat_ignore = combat_ignore
+
+[walker@forg_stalker_terrain_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+def_state_standing = ward
+combat_ignore_cond = {=fighting_dist_ge(10)}
+
+[logic@forg_stalker_terrain_guard2]
+active = walker@forg_stalker_terrain_guard2
+combat_ignore = combat_ignore
+
+[walker@forg_stalker_terrain_guard2]
+path_walk = guard2_walk
+path_look = guard2_look
+def_state_standing = ward
+combat_ignore_cond = {=fighting_dist_ge(10)}

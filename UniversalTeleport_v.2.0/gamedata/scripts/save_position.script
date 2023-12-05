@@ -1,0 +1,339 @@
+local levels = {
+	l01_escape				= "Кордон",
+	l02_garbage				= "Свалка",
+	l03_agroprom			= "НИИ \"Агропром\"",
+	l03u_agr_underground	= "Подвалы \"Агропрома\"",
+	l04_darkvalley			= "Тёмная Долина",
+	l04u_labx18				= "Лаборатория Х-18",
+	l05_bar					= "Территория \"Долга\"",
+	l06_rostok				= "Дикая Территория",
+	l07_military			= "Армейские Склады",
+	l08_yantar				= "Янтарь",
+	l08u_brainlab			= "Лаборатория Х-16",
+	l10_radar				= "Радар",
+	l10u_bunker				= "Бункер \"Выжигателя\"",
+	l11_pripyat				= "Припять",
+	l12_stancia				= "ЧАЭС",
+	l12_stancia_2			= "ЧАЭС-2",
+	l12u_control_monolith	= "Бункер управления Монолитом",
+	l12u_sarcofag			= "Саркофаг"
+	}
+
+class "save_coord" (CUIScriptWnd)
+
+function save_coord:__init(owner) super()
+	self:InitControls()
+	self:InitCallBacks()
+	self:FillList()
+end
+
+function save_coord:__finalize()
+end
+
+function save_coord:FillList()
+	local coord = naxac.table_loading("coordinates")
+	if #coord > 0 then
+		for i=1,#coord do
+			local posname = coord[i].name
+			local lname = coord[i].lvl
+			if posname and lname then
+				self:AddItemToList(posname,lname)
+			end
+		end
+	end
+end
+
+function save_coord:ReWriteList(val)
+	local list = self:GetListWnd("list_window")
+	local index = list:GetSize()
+	if index > 0 then
+		for i=1,index do
+			local itm = list:GetItem(i)
+			list:RemoveItem(itm)
+		end
+	end
+	if val then self:FillList() end
+end
+
+function save_coord:InitControls()
+	self:Init(0,0,1024,768)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_savecoord.xml")
+	
+	xml:InitStatic("background",	self)
+	xml:InitStatic("teleport_frame",self)
+	xml:InitStatic("frame",	self)
+	xml:InitStatic("caption",		self)
+
+	local ctrl
+	xml:InitStatic("savename",		self)
+	
+	ctrl = xml:InitEditBox("edit_name",	self)
+	self:Register(ctrl, "edit_coordname")
+	
+	ctrl = xml:Init3tButton("btn_savepoint",self)	
+	self:Register(ctrl, "button_savepoint")
+	
+	ctrl = xml:Init3tButton("btn_delpoint",	self)
+	self:Register(ctrl, "button_delpoint")
+	
+	ctrl = xml:Init3tButton("btn_delall",	self)
+	self:Register(ctrl, "button_delall")
+	
+	ctrl = xml:Init3tButton("btn_gotopoint",	self)	
+	self:Register(ctrl, "button_gotopoint")
+	
+	xml:InitFrame("list_frame",		self)
+	ctrl = xml:InitList("list", 	self)
+	ctrl:ShowSelectedItem(true)
+	self:Register(ctrl, "list_window")
+	
+	ctrl = xml:Init3tButton("btn_quit", self)
+	self:Register(ctrl, "button_quit")
+	
+	ctrl = xml:Init3tButton("btn_back", self)
+	self:Register(ctrl, "button_back")
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box,"message_box")
+	self.mbox_mode	= 0
+end
+
+function save_coord:InitCallBacks()
+	self:AddCallback("button_savepoint",ui_events.BUTTON_CLICKED, self.OnButton_save_clicked,	self)
+	self:AddCallback("button_delpoint",	ui_events.BUTTON_CLICKED, self.OnButton_delete_clicked,	self)
+	self:AddCallback("button_delall",	ui_events.BUTTON_CLICKED, self.OnButton_DelAll_clicked,	self)
+	self:AddCallback("button_gotopoint",ui_events.BUTTON_CLICKED, self.OnButton_teleport_clicked, self)
+	self:AddCallback("button_quit",		ui_events.BUTTON_CLICKED, self.OnButton_cancel_clicked,	self)
+	self:AddCallback("button_back",		ui_events.BUTTON_CLICKED, self.OnButton_back_clicked,	self)
+	self:AddCallback("list_window", 	ui_events.LIST_ITEM_CLICKED, self.OnListItemClicked,	self)
+	self:AddCallback("message_box",		ui_events.MESSAGE_BOX_YES_CLICKED,	self.OnMsgYes,		self)
+end
+
+function save_coord:OnListItemClicked()
+	local list_box = self:GetListWnd("list_window")
+	if list_box:GetSize() == 0 then return end
+
+	local edit_box = self:GetEditBox("edit_coordname")
+	local item_id = list_box:GetFocusedItem()
+	local item = list_box:GetItem(item_id)
+	
+	if item == nil then return end
+	
+	local item_text = item.fn:GetText()
+	edit_box:SetText(item_text)
+end
+
+function save_coord:OnButton_back_clicked()
+	self:OnButton_cancel_clicked()
+	local hud = tele_to_coord.tele_coord(get_hud())
+	level.start_stop_menu(hud, true)
+end
+
+function save_coord:OnMsgYes()
+	if self.mbox_mode == 1 then
+		self:SaveCoordinate(self.coord_name)
+		
+	elseif self.mbox_mode == 2 then
+		self:delete_coordinate()
+		
+	elseif self.mbox_mode == 3 then
+		self:DeleteAll()
+	end	
+end
+
+function save_coord:OnButton_cancel_clicked()
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function save_coord:OnButton_save_clicked()
+	local message_box	= self.message_box
+	local main_frame	= self:GetFrameWindow("main_frame")	
+	
+	local edit_box	= self:GetEditBox("edit_coordname")
+	self.coord_name	= edit_box:GetText()
+	
+	if string.len(self.coord_name) == 0 then
+		self.mbox_mode = 0
+		self.message_box:Init("message_box_empty_coord_name")
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		return
+	end
+	if string.len(self.coord_name) > 15 then
+		self.coord_name = string.sub(self.coord_name,1,15)
+	end
+	local coord = naxac.table_loading("coordinates")
+	if #coord > 0 then
+		for i=1,#coord do
+			if coord[i].name == self.coord_name then
+				self.mbox_mode = 1
+				self.message_box:Init("message_box_savename_already_exist")
+				self:GetHolder():start_stop_menu(self.message_box, true)	
+				return
+			end
+		end
+	end
+	
+	self.mbox_mode = 0
+	self.message_box:Init("message_box_save_is_aptly")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+	self:SaveCoordinate(self.coord_name)
+end
+
+function save_coord:SaveCoordinate(posname)
+	this.write_to_table(posname,true)
+	self:ReWriteList(true)
+end
+
+function save_coord:OnButton_DelAll_clicked()
+	local list = self:GetListWnd("list_window")	
+	if list:GetSize() == 0 then return end
+	
+	self.mbox_mode = 3
+	self.message_box:Init("message_box_delete_all")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function save_coord:DeleteAll()
+	self:ReWriteList(false)
+	naxac.del_variable("coordinates")
+end
+
+function save_coord:OnButton_delete_clicked()
+	local list = self:GetListWnd("list_window")	
+	if list:GetSize() == 0 then return end
+
+	local index = list:GetSelectedItem()
+	
+	if index == -1 then return end
+	
+	local item = list:GetItem(index)
+	if item == nil then return end
+	
+	self.mbox_mode = 2
+	self.message_box:Init("message_box_delete_coordinate")		
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function save_coord:delete_coordinate()
+	local list = self:GetListWnd("list_window")
+	if list:GetSize() == 0 then return end
+	local index = list:GetSelectedItem ()
+	
+	if index == -1 then return end
+
+	local item = list:GetItem(index)
+	local posname = item.fn:GetText()
+	this.write_to_table(posname)
+	
+	list:RemoveItem(index)
+	self:OnListItemClicked()
+end
+
+function save_coord:OnButton_teleport_clicked()
+	local message_box	= self.message_box
+	local main_frame	= self:GetFrameWindow("main_frame")	
+	
+	local edit_box	= self:GetEditBox("edit_coordname")
+	self.coord_name	= edit_box:GetText()
+	
+	if string.len(self.coord_name) == 0 then
+		self.mbox_mode = 0
+		self.message_box:Init("message_box_point_is_not_chose")
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		return
+	end
+	
+	local coord = naxac.table_loading("coordinates")
+	if #coord >0 then
+		for i=1,#coord do
+			if coord[i].name == self.coord_name then
+				self:GoToSavedPosition(self.coord_name)
+				self:OnButton_cancel_clicked()
+				return
+			end
+		end
+	end
+	
+	self.mbox_mode = 0
+	self.message_box:Init("message_box_coorinate_is_absent")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+	return
+end
+
+function save_coord:GoToSavedPosition(posname)
+	if posname then
+		local coord = naxac.table_loading("coordinates")
+		if #coord > 0 then
+			for i=1,#coord do
+				local t = coord[i]
+				if t.name == posname then
+					spawn_level_changer.go_to(t)
+					break
+				end
+			end
+		end
+	end
+end
+
+function save_coord:AddItemToList(posname,lname)
+	local lvl = (levels[lname]~=nil and levels[lname]) or "Unknown level"
+	local _itm = give_text()
+	_itm.fn:SetText	(posname)
+	_itm.fage:SetText("["..lvl.."]")
+	local list_box = self:GetListWnd("list_window")
+	list_box:AddItem(_itm)	
+end
+
+function write_to_table(posname,val)
+	if posname then
+		local coord = naxac.table_loading("coordinates")
+		if #coord>0 then
+			for i=1,#coord do
+				if coord[i].name == posname then
+					table.remove(coord, i)
+					break
+				end
+			end
+		end
+		if val then
+			local tbl = {}
+			tbl.name = posname
+			tbl.posx = db.actor:position().x
+			tbl.posy = db.actor:position().y
+			tbl.posz = db.actor:position().z
+			tbl.diry = tele_to_coord.reception_angle()
+			tbl.lv = db.actor:level_vertex_id()
+			tbl.gv = db.actor:game_vertex_id()
+			tbl.lvl = level.name()
+			table.insert(coord, tbl)
+		end
+		naxac.table_saving("coordinates",coord)
+	end
+end
+
+class "give_text" (CUIListItemEx)
+
+function give_text:__init() super()
+	self:SetWndRect		(0,0,550,280)
+	
+	local ca = 255
+	local cr = 211
+	local cg = 255
+	local cb = 222
+	
+	self.fn					= CUIStatic	()
+	self.fn:SetAutoDelete	(true)
+	self:AttachChild		(self.fn)
+	self.fn:SetWndRect		(0,0,230,22)
+	self.fn:SetFont			(GetFontLetterica18Russian())
+	self.fn:SetTextColor	(ca,cr,cg,cb)
+	
+	self.fage				= CUIStatic	()
+	self.fage:SetAutoDelete	(true)
+	self:AttachChild		(self.fage)
+	self.fage:SetWndRect	(314,0,110,22)
+	self.fage:SetFont		(GetFontLetterica16Russian())
+	self.fage:SetTextColor	(ca,cr,cg,cb)
+end

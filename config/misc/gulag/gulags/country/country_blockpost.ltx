@@ -1,0 +1,276 @@
+;****************************************** state 0 **************************************************
+[wounded@country_blockpost]
+hp_state= 10|help_me@help|2|wounded_heavy@help_heavy
+hp_state_see = 10|wounded@help_see|2|wounded_heavy@help_heavy
+hp_victim = 10|nil
+hp_cover = 10|true|2|false
+hp_fight = 10|true|2|false
+syndata = wounded@help
+help_dialog = actor_help_wounded
+
+[combat_ignore@country_blockpost]
+
+[logic@country_blockpost_guard1]
+active = walker@country_blockpost_guard1
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[walker@country_blockpost_guard1]
+path_walk = guard1_walk
+path_look = guard1_look
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_guard1
+
+[camper@country_blockpost_guard1]
+path_walk = camp1
+path_look = atack_look
+meet = no_meet
+
+soundgroup = country_blockpost
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_guard1
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard1
+
+[remark@country_blockpost_guard1]
+snd = wounded_psy
+anim = psycho_pain
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard1
+
+[logic@country_blockpost_guard2]
+active = walker@country_blockpost_guard2
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[walker@country_blockpost_guard2]
+path_walk = guard2_walk
+path_look = guard2_look
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_guard2
+
+[camper@country_blockpost_guard2]
+path_walk = camp2
+path_look = atack_look
+meet = no_meet
+
+soundgroup = country_blockpost
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_guard2
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard2
+
+[remark@country_blockpost_guard2]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard2
+
+[logic@country_blockpost_guard3]
+active = walker@country_blockpost_guard3
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[walker@country_blockpost_guard3]
+path_walk = guard3_walk
+path_look = guard3_look
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_guard3
+
+[camper@country_blockpost_guard3]
+path_walk = camp3
+path_look = atack_look
+meet = no_meet
+
+soundgroup = country_blockpost
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_guard3
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard3
+
+[remark@country_blockpost_guard3]
+snd = wounded_psy
+anim = psycho_pain
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard3
+
+[logic@country_blockpost_guard4]
+active = walker@country_blockpost_guard4
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[walker@country_blockpost_guard4]
+path_walk = guard4_walk
+path_look = guard4_look
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_guard4
+
+[camper@country_blockpost_guard4]
+path_walk = camp4
+path_look = atack_look
+meet = no_meet
+
+soundgroup = country_blockpost
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_guard4
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard4
+
+[remark@country_blockpost_guard4]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} walker@country_blockpost_guard4
+
+[logic@country_blockpost_kamper1]
+active =  kamper@country_blockpost_kamper1
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[kamper@country_blockpost_kamper1]
+path_walk = kamp_walk1
+path_look = kamp_look
+soundgroup = country_blockpost
+kamp_name = kamp1
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_kamper1
+
+[camper@country_blockpost_kamper1]
+path_walk = camp5
+path_look = atack_look
+meet = no_meet
+
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_kamper1
+on_info = {+third_wave_contr_dead} kamper@country_blockpost_kamper1
+
+[remark@country_blockpost_kamper1]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} kamper@country_blockpost_kamper1
+
+[logic@country_blockpost_kamper2]
+active = kamper@country_blockpost_kamper2
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[kamper@country_blockpost_kamper2]
+path_walk = kamp_walk2
+path_look = kamp_look
+soundgroup = country_blockpost
+kamp_name = kamp1
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_kamper2
+
+[camper@country_blockpost_kamper2]
+path_walk = camp6
+path_look = atack_look
+meet = no_meet
+
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_kamper2
+on_info = {+third_wave_contr_dead} kamper@country_blockpost_kamper2
+
+[remark@country_blockpost_kamper2]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} kamper@country_blockpost_kamper2
+
+[logic@country_blockpost_kamper3]
+active = kamper@country_blockpost_kamper3
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[kamper@country_blockpost_kamper3]
+path_walk = kamp_walk3
+path_look = kamp_look
+soundgroup = country_blockpost
+kamp_name = kamp1
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_kamper3
+
+[camper@country_blockpost_kamper3]
+path_walk = camp7
+path_look = atack_look
+meet = no_meet
+
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_kamper3
+on_info = {+third_wave_contr_dead} kamper@country_blockpost_kamper3
+
+[remark@country_blockpost_kamper3]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} kamper@country_blockpost_kamper3
+
+;****************************************** state 1 **************************************************
+
+[logic@country_blockpost_sleeper1]
+active = sleeper@country_blockpost_sleeper1
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[sleeper@country_blockpost_sleeper1]
+path_main = sleep1
+wakeable = false
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_sleeper1
+
+[camper@country_blockpost_sleeper1]
+path_walk = camp5
+path_look = atack_look
+meet = no_meet
+soundgroup = country_blockpost
+
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_sleeper1
+on_info = {+third_wave_contr_dead} sleeper@country_blockpost_sleeper1
+
+[remark@country_blockpost_sleeper1]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} sleeper@country_blockpost_sleeper1
+
+[logic@country_blockpost_sleeper2]
+active = sleeper@country_blockpost_sleeper2
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[sleeper@country_blockpost_sleeper2]
+path_main = sleep2
+wakeable = false
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_sleeper2
+
+[camper@country_blockpost_sleeper2]
+path_walk = camp6
+path_look = atack_look
+meet = no_meet
+
+soundgroup = country_blockpost
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_sleeper2
+on_info = {+third_wave_contr_dead} sleeper@country_blockpost_sleeper2
+
+[remark@country_blockpost_sleeper2]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} sleeper@country_blockpost_sleeper2
+
+[logic@country_blockpost_sleeper3]
+active = sleeper@country_blockpost_sleeper3
+on_hit = hit@country_blockpost
+combat_ignore = combat_ignore@country_blockpost
+
+[sleeper@country_blockpost_sleeper3]
+path_main = sleep3
+wakeable = false
+on_info = {+country_major_third_mutant_quest_start00 -third_wave_contr_dead} camper@country_blockpost_sleeper3
+
+[camper@country_blockpost_sleeper3]
+path_walk = camp7
+path_look = atack_look
+meet = no_meet
+soundgroup = country_blockpost
+
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|remark@country_blockpost_sleeper3
+on_info = {+third_wave_contr_dead} sleeper@country_blockpost_sleeper3
+
+[remark@country_blockpost_sleeper3]
+snd = wounded_psy
+anim = psycho_mind
+target =  10007
+combat_ignore_cond = always
+on_info = {+third_wave_contr_dead} sleeper@country_blockpost_sleeper3

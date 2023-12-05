@@ -1,0 +1,939 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<game_dialogs>
+
+    <dialog id="dm_hello_dialog">
+		<init_func>dialog_manager.init_intro_dialog</init_func>
+		<precondition>dialog_manager.precondition_info_global</precondition>
+    </dialog>
+
+    <dialog id="dm_trade_info_dialog" priority="-1">
+		<init_func>dialog_manager.init_trade_info_dialog</init_func>
+		<precondition>dialog_manager.precondition_info_global</precondition>
+    </dialog>
+
+    <dialog id="dm_action_info_dialog" priority="-3">
+		<init_func>dialog_manager.init_action_info_dialog</init_func>
+		<precondition>dialog_manager.precondition_info_global</precondition>
+    </dialog>
+
+    <dialog id="dm_cool_info_dialog" priority="-2">
+		<init_func>dialog_manager.init_cool_info_dialog</init_func>
+		<precondition>dialog_manager.precondition_info_global</precondition>
+    </dialog>
+
+    <dialog id="dm_help_wounded_medkit_dialog" priority="10">
+		<init_func>dialog_manager.init_help_wounded_medkit_dialog</init_func>
+        <precondition>dialogs.allow_wounded_dialog</precondition>
+        <precondition>dialogs.is_opp_wounded</precondition>
+        <precondition>dialogs.actor_have_medkit</precondition>
+    </dialog>
+
+    <dialog id="tm_trader_dialog" priority="-1">
+		<init_func>task_manager.init_trader_task_dialog</init_func>
+		<has_info>esc_serious_talk</has_info>
+    </dialog>
+    <dialog id="tm_trader_reward" priority="0">
+		<init_func>task_manager.init_trader_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+		<has_info>esc_serious_talk</has_info>
+    </dialog>
+	<dialog id="tm_shustriy_dialog" priority="-1">
+		<init_func>task_manager.init_shustriy_task_dialog</init_func>
+		<has_info>esc_nimble_work_start</has_info>
+		<dont_has_info>esc_nimble_work_otkaz</dont_has_info>
+	</dialog>
+	<dialog id="tm_shustriy_reward" priority="0">
+		<init_func>task_manager.init_shustriy_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+		<has_info>esc_nimble_work_start</has_info>
+	</dialog>
+	<dialog id="tm_esc_wolf_dialog" priority="-1">
+		<init_func>task_manager.init_esc_wolf_task_dialog</init_func>
+		<has_info>esc_wolf_spoke_all</has_info>
+	</dialog>
+	<dialog id="tm_esc_wolf_reward" priority="0">
+		<init_func>task_manager.init_esc_wolf_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_gar_hellcar_dialog" priority="-1">
+		<init_func>task_manager.init_gar_hellcar_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_gar_hellcar_reward" priority="0">
+		<init_func>task_manager.init_gar_hellcar_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_gar_seriy_dialog" priority="-1">
+		<init_func>task_manager.init_gar_seriy_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_gar_seriy_reward" priority="0">
+		<init_func>task_manager.init_gar_seriy_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_mole_dialog" priority="-1">
+		<init_func>task_manager.init_mole_task_dialog</init_func>
+		<has_info>agr_krot_secret_info</has_info>
+	</dialog>
+	<dialog id="tm_mole_reward" priority="0">
+		<init_func>task_manager.init_mole_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+		<has_info>agr_krot_secret_info</has_info>
+	</dialog>
+	<dialog id="tm_agr_ratcatcher_dialog" priority="-1">
+		<init_func>task_manager.init_agr_ratcatcher_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_agr_ratcatcher_reward" priority="0">
+		<init_func>task_manager.init_agr_ratcatcher_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_rosf_duty_leader_dialog" priority="-1">
+		<init_func>task_manager.init_rosf_duty_leader_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_rosf_duty_leader_reward" priority="0">
+		<init_func>task_manager.init_rosf_duty_leader_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_forg_alex_dialog" priority="-1">
+		<init_func>task_manager.init_forg_alex_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_forg_alex_reward" priority="0">
+		<init_func>task_manager.init_forg_alex_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_barman_dialog" priority="-1">
+		<init_func>task_manager.init_barman_task_dialog</init_func>
+		<has_info>agroprom_military_case_done</has_info>
+    </dialog>
+    <dialog id="tm_barman_reward" priority="0">
+		<init_func>task_manager.init_barman_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+		<has_info>agroprom_military_case_done</has_info>
+    </dialog>
+	<dialog id="tm_bar_informer_dialog" priority="-1">
+		<init_func>task_manager.init_bar_informer_task_dialog</init_func>
+    </dialog>
+    <dialog id="tm_bar_informer_reward" priority="0">
+		<init_func>task_manager.init_bar_informer_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+    </dialog>
+    <dialog id="tm_bar_hunter_dialog" priority="-1">
+		<init_func>task_manager.init_bar_hunter_task_dialog</init_func>
+		<has_info>bar_hunter_task_finished</has_info>
+    </dialog>
+    <dialog id="tm_bar_hunter_reward" priority="0">
+		<init_func>task_manager.init_bar_hunter_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+    </dialog>
+	<dialog id="tm_bar_petrenko_dialog" priority="-1">
+		<init_func>task_manager.init_bar_petrenko_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_bar_petrenko_reward" priority="0">
+		<init_func>task_manager.init_bar_petrenko_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_dolina_gusarov_dialog" priority="-1">
+		<init_func>task_manager.init_dolina_gusarov_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_dolina_gusarov_reward" priority="0">
+		<init_func>task_manager.init_dolina_gusarov_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_shulga_dialog" priority="-1">
+		<init_func>task_manager.init_shulga_task_dialog</init_func>
+	</dialog>
+	<dialog id="tm_shulga_reward" priority="0">
+		<init_func>task_manager.init_shulga_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_ds_veles_dialog" priority="-1">
+		<init_func>task_manager.init_ds_veles_task_dialog</init_func>
+	</dialog>
+	<dialog id="tm_ds_veles_reward" priority="0">
+		<init_func>task_manager.init_ds_veles_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_yan_professor_dialog" priority="-1">
+		<init_func>task_manager.init_yan_professor_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_yan_professor_reward" priority="0">
+		<init_func>task_manager.init_yan_professor_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_swa_doctor_dialog" priority="-1">
+		<init_func>task_manager.init_swa_doctor_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_swa_doctor_reward" priority="0">
+		<init_func>task_manager.init_swa_doctor_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_mil_supplier_dialog" priority="-1">
+		<init_func>task_manager.init_mil_supplier_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_mil_supplier_reward" priority="0">
+		<init_func>task_manager.init_mil_supplier_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_out_bar_barman_dialog" priority="-1">
+		<init_func>task_manager.init_out_bar_barman_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_out_bar_barman_reward" priority="0">
+		<init_func>task_manager.init_out_bar_barman_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_lukash_dialog" priority="-1">
+		<init_func>task_manager.init_lukash_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_lukash_reward" priority="0">
+		<init_func>task_manager.init_lukash_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_hermit_dialog" priority="-1">
+		<init_func>task_manager.init_hermit_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_hermit_reward" priority="0">
+		<init_func>task_manager.init_hermit_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_hills_major_dialog" priority="-1">
+		<init_func>task_manager.init_hills_major_task_dialog</init_func>
+		<has_info>country_major_first_quest_done_af</has_info>
+	</dialog>
+    <dialog id="tm_hills_major_reward" priority="0">
+		<init_func>task_manager.init_hills_major_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+	<dialog id="tm_deedee_dialog" priority="-1">
+		<init_func>task_manager.init_deedee_task_dialog</init_func>
+	</dialog>
+    <dialog id="tm_deedee_reward" priority="0">
+		<init_func>task_manager.init_deedee_reward_dialog</init_func>
+		<precondition>task_manager.has_active_vendor_task</precondition>
+	</dialog>
+
+
+    <dialog id="dm_perform_fix">
+		<phrase_list>
+			<phrase id="0">
+				<text>dm_perform_fix_0</text>
+                <next>1</next>
+            </phrase>
+			<phrase id="1">
+				<text>dm_perform_fix_1</text>
+				<next>2</next>
+				<next>3</next>
+			</phrase>
+			<phrase id="2">
+				<text>dm_perform_fix_2</text>
+			<action>xr_effects.call_upgrade_wnd</action>
+			</phrase>
+			<phrase id="3">
+				<text>dm_perform_fix_3</text>
+			</phrase>
+		</phrase_list>
+    </dialog>
+    
+    <dialog id="dm_perform_fix_ivancov">
+		<phrase_list>
+			<phrase id="0">
+				<text>dm_perform_fix_ivancov_0</text>
+                <next>1</next>
+            </phrase>
+			<phrase id="1">
+				<text>dm_perform_fix_ivancov_1</text>
+				<next>2</next>
+				<next>3</next>
+			</phrase>
+			<phrase id="2">
+				<text>dm_perform_fix_ivancov_2</text>
+				<action>xr_effects.call_upgrade_wnd</action>
+			</phrase>
+			<phrase id="3">
+				<text>dm_perform_fix_3</text>
+			</phrase>
+		</phrase_list>
+    </dialog>
+
+    <!-- Hello-Bye dialogs -->
+	
+    <dialog id="hello_dialog">
+        <phrase_list>
+            <phrase id="1">
+                <next>2w</next>
+                <next>2</next>
+                <!-- <next>3</next> -->
+                <next>4w</next>
+                <next>4</next>
+                <next>5w</next>
+                <next>5</next>
+            </phrase>
+			<!-- <phrase id="3">
+                <text>hello_dialog_wounded</text>
+                <precondition>dialogs.is_wounded</precondition>
+            </phrase> -->
+            <phrase id="2w">
+                <text>hello_dialog_wounded_friend</text>
+                <precondition>dialogs.is_wounded</precondition>
+                <precondition>dialogs.is_friend</precondition>
+            </phrase>
+            <phrase id="2">
+                <text>hello_dialog_friend</text>
+                <precondition>dialogs.is_not_wounded</precondition>
+                <precondition>dialogs.is_friend</precondition>
+            </phrase>
+            <phrase id="4w">
+                <text>hello_dialog_wounded_neutral</text>
+                <precondition>dialogs.is_wounded</precondition>
+                <precondition>dialogs.is_neutral</precondition>
+            </phrase>
+            <phrase id="4">
+                <text>hello_dialog_neutral</text>
+                <precondition>dialogs.is_not_wounded</precondition>
+                <precondition>dialogs.is_neutral</precondition>
+            </phrase>
+            <phrase id="0">
+                <next>1</next>
+            </phrase>
+            <phrase id="5w">
+                <text>hello_dialog_wounded_enemy</text>
+                <precondition>dialogs.is_wounded</precondition>
+                <precondition>dialogs.is_enemy</precondition>
+            </phrase>
+            <phrase id="5">
+                <text>hello_dialog_enemy</text>
+                <precondition>dialogs.is_not_wounded</precondition>
+                <precondition>dialogs.is_enemy</precondition>
+            </phrase>
+        </phrase_list>
+    </dialog>
+	
+    <dialog id="actor_help_wounded" priority="10">
+        <precondition>dialogs.allow_wounded_dialog</precondition>
+        <precondition>dialogs.is_opp_wounded</precondition>
+        <phrase_list>
+            <phrase id="141">
+                <text>actor_help_wounded_141</text>
+            </phrase>
+            <phrase id="111">
+                <text>actor_help_wounded_111</text>
+            </phrase>
+            <phrase id="131">
+                <text>actor_help_wounded_131</text>
+            </phrase>
+            <phrase id="13">
+                <text>actor_help_wounded_13</text>
+                <next>131</next>
+            </phrase>
+            <phrase id="14">
+                <text>actor_help_wounded_14</text>
+                <next>141</next>
+            </phrase>
+            <phrase id="12">
+                <text>actor_help_wounded_12</text>
+                <precondition>dialogs.actor_have_bandage</precondition>
+                <action>dialogs.transfer_bandage</action>
+                <next>111</next>
+            </phrase>
+            <phrase id="11">
+                <text>actor_help_wounded_11</text>
+                <precondition>dialogs.actor_have_medkit</precondition>
+                <action>dialogs.transfer_medkit</action>
+                <next>111</next>
+            </phrase>
+            <phrase id="0">
+                <text>actor_help_wounded_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>actor_help_wounded_1</text>
+                <next>11</next>
+                <next>12</next>
+                <next>13</next>
+                <next>14</next>
+            </phrase>
+        </phrase_list>
+    </dialog>
+	
+    <dialog id="actor_break_dialog" priority="-5">
+		<precondition>dialogs.allow_break_dialog</precondition>
+        <phrase_list>
+            <phrase id="0">
+                <text>actor_break_dialog_0</text>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+	
+	<!--Guides-->
+	
+	<dialog id="guider_dialog">
+		<precondition>dialogs.is_wounded.ReturnReverse</precondition>
+		<phrase_list>
+			<phrase id="0">
+				<text>guider_dialog_0</text>
+				<next>1</next>
+				<next>2a</next>
+				<next>2b</next>
+				<next>2c</next>
+				<next>2x</next>
+			</phrase>
+			<phrase id="1">
+				<precondition>level_weathers.is_preblowout.ReturnReverse</precondition>
+				<precondition>level_weathers.is_afterblowout.ReturnReverse</precondition>
+				<precondition>level_weathers.is_blowout_active.ReturnReverse</precondition>
+				<text>guider_dialog_1</text>
+				<next>1a</next>
+				<next>1b</next>
+				<next>1c</next>
+				<next>32</next>
+			</phrase>
+
+			<phrase id="1a">
+				<text>guider_dialog_zone_south</text>
+				<next>1a2</next>
+			</phrase>
+			<phrase id="1a2">
+				<text>guider_dialog_ask_level</text>
+				<next>01_escape</next> <!-- to Cordon -->
+				<next>02_garbage</next> <!-- to Garbage -->
+				<next>03_agroprom</next> <!-- to Agroprom -->
+				<next>14_rostok_factory</next> <!-- to Metal Factory -->
+				<next>04_darkdolina</next> <!-- to Dark Valley -->
+				<next>15_darkscape</next> <!-- to Dark Hollow -->
+				<next>32</next>
+			</phrase>
+
+			<phrase id="1b">
+				<text>guider_dialog_zone_mid</text>
+				<next>1b2</next>
+			</phrase>
+			<phrase id="1b2">
+				<text>guider_dialog_ask_level</text>
+				<next>05_bar_rostok</next> <!-- to Bar -->
+				<next>06_yantar</next> <!-- to Yantar -->
+				<next>07_military</next> <!-- to Military -->
+				<next>20_forgotten</next> <!-- to Construction site-->
+				<next>08_deadcity</next> <!-- to Deadcity -->
+				<next>22_forest</next> <!-- to Forest -->
+				<next>32</next>
+			</phrase>
+
+			<phrase id="1c">
+				<text>guider_dialog_zone_north</text>
+				<next>1c2</next>
+			</phrase>
+			<phrase id="1c2">
+				<text>guider_dialog_ask_level</text>
+				<next>09_swamp</next> <!-- to Swamps -->
+				<next>17_outskirts</next> <!-- to Outskirts -->
+				<next>16_lost_factory</next> <!-- to Concrete Factory -->
+				<next>23_oldroad</next> <!-- to Oldroad-->
+			<!--	<next>10_radar</next> <!-- to Radar -->
+				<next>19_country</next> <!-- to North Hills -->
+				<next>32</next>
+			</phrase>
+
+			<!------------------------------------------------------>
+			<!-- to Cordon -->
+			<phrase id="01_escape">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_esc</text>
+				<next>121</next>
+			</phrase>
+			<phrase id="121">
+				<text>guider_dialog_yes</text>
+				<next>la01_escape</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la01_escape">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Garbage -->
+			<phrase id="02_garbage">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_gar</text>
+				<next>151</next>
+				<next>1522</next>
+			</phrase>
+			<phrase id="151">
+				<has_info>gar_meet_bes_done</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la02_garbage</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la02_garbage">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="1522">
+				<dont_has_info>gar_meet_bes_done</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Agroprom -->
+			<phrase id="03_agroprom">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_agro</text>
+				<next>161</next>
+				<next>1622</next>
+			</phrase>
+			<phrase id="161">
+				<has_info>agr_gunslinger_flash_have</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la03_agroprom</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la03_agroprom">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="1622">
+				<dont_has_info>agr_gunslinger_flash_have</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Metal Factory -->
+			<phrase id="14_rostok_factory">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_rosf</text>
+				<next>171</next>
+				<next>1722</next>
+			</phrase>
+			<phrase id="171">
+				<has_info>rosf_gaszone_cleared</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la14_rostok_factory</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la14_rostok_factory">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="1722">
+				<dont_has_info>rosf_gaszone_cleared</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Dark Valley -->
+			<phrase id="04_darkdolina">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_darkval</text>
+				<next>181</next>
+				<next>1822</next>
+			</phrase>
+			<phrase id="181">
+				<has_info>dar_docs_start</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la04_darkdolina</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la04_darkdolina">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="1822">
+				<dont_has_info>dar_docs_start</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Dark Hollow -->
+			<phrase id="15_darkscape">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_darkhol</text>
+				<next>191</next>
+				<next>1922</next>
+			</phrase>
+			<phrase id="191">
+				<has_info>dol_reach_dscape_done</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la15_darkscape</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la15_darkscape">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="1922">
+				<dont_has_info>dol_reach_dscape_done</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Rostok (Bar) -->
+			<phrase id="05_bar_rostok">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_bar</text>
+				<next>201</next>
+				<next>2022</next>
+			</phrase>
+			<phrase id="201">
+				<has_info>gar_free_pass</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la05_bar_rostok</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la05_bar_rostok">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="2022">
+				<dont_has_info>gar_free_pass</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Yantar -->
+			<phrase id="06_yantar">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_yan</text>
+				<next>211</next>
+				<next>2122</next>
+			</phrase>
+			<phrase id="211">
+				<has_info>yan_sakharov_talk_done</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la06_yantar</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la06_yantar">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="2122">
+				<dont_has_info>yan_sakharov_talk_done</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Military Warehouses -->
+			<phrase id="07_military">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_mil</text>
+				<next>221</next>
+				<next>2222</next>
+			</phrase>
+			<phrase id="221">
+				<has_info>mil_actor_talked_ghost</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la07_military</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la07_military">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="2222">
+				<dont_has_info>mil_actor_talked_ghost</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Deadcity-->
+			<phrase id="08_deadcity">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_city</text>
+				<next>231</next>
+				<next>2322</next>
+			</phrase>
+			<phrase id="231">
+				<has_info>yan_scientist_package_done</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la08_deadcity</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la08_deadcity">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="2322">
+				<dont_has_info>yan_scientist_package_done</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Construction Site -->
+			<phrase id="20_forgotten">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_forg</text>
+				<next>241</next>
+				<next>2422</next>
+			</phrase>
+			<phrase id="241">
+				<has_info>gar_free_pass</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la20_forgotten</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la20_forgotten">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="2422">
+				<dont_has_info>gar_free_pass</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Forest -->
+			<phrase id="22_forest">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_forest</text>
+				<next>251</next>
+				<next>2522</next>
+			</phrase>
+			<phrase id="251">
+				<has_info>dar_docs_start</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la22_forest</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la22_forest">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="2522">
+				<dont_has_info>dar_docs_start</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+
+			<!-------------------------------------------------->
+			<!-- to Great Swamps -->
+			<phrase id="09_swamp">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_swamp</text>
+				<next>301</next>
+				<next>3022</next>
+			</phrase>
+			<phrase id="301">
+				<has_info>swamp_doc_met</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la09_swamp</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la09_swamp">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="3022">
+				<dont_has_info>swamp_doc_met</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Pripyat Outskirts -->
+			<phrase id="17_outskirts">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_out</text>
+				<next>311</next>
+				<next>3122</next>
+			</phrase>
+			<phrase id="311">
+				<has_info>out_barman_talked</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la17_outskirts</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la17_outskirts">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="3122">
+				<dont_has_info>out_barman_talked</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Concrete Factory -->
+			<phrase id="16_lost_factory">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_lost</text>
+				<next>321</next>
+				<next>3222</next>
+			</phrase>
+			<phrase id="321">
+				<has_info>deactivate_radar_done</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la16_lost_factory</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la16_lost_factory">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="3222">
+				<dont_has_info>deactivate_radar_done</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Oldroad --->
+			<phrase id="23_oldroad">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_old</text>
+				<next>331</next>
+				<next>3322</next>
+			</phrase>
+			<phrase id="331">
+				<has_info>yan_good_helmet_start</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la23_oldroad</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la23_oldroad">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="3322">
+				<dont_has_info>yan_good_helmet_start</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to Radar -->
+			<phrase id="10_radar">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_rad</text>
+				<next>341</next>
+				<next>3422</next>
+			</phrase>
+			<phrase id="341">
+				<has_info>deactivate_radar_done</has_info>
+				<text>guider_dialog_yes</text>
+				<next>la10_radar</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la10_radar">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="3422">
+				<dont_has_info>deactivate_radar_done</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+			<!-- to North Hills -->
+			<phrase id="19_country">
+				<precondition>guiders_main.test_curr_map</precondition>
+				<text>guider_dialog_hills</text>
+				<next>351</next>
+				<next>3522</next>
+				<next>3523</next>
+			</phrase>
+			<phrase id="351">
+				<has_info>deactivate_radar_done</has_info>
+				<dont_has_info>country_major_wave_kontr</dont_has_info>				
+				<text>guider_dialog_yes</text>
+				<next>la19_country</next>
+				<next>32</next>
+			</phrase>
+			<phrase id="la19_country">
+				<precondition>guiders_main.payment</precondition>
+				<text>guider_dialog_ok</text>
+				<action>dialogs.break_dialog</action>
+				<action>guiders_main.take_payment</action>
+				<action>guiders_main.teleport_to_map</action>
+			</phrase>
+			<phrase id="3522">
+				<dont_has_info>deactivate_radar_done</dont_has_info>
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<phrase id="3523">
+				<has_info>country_major_wave_kontr</has_info>	
+				<text>guider_dialog_no</text>
+				<next>41</next>
+			</phrase>
+			<!------------------------------------------------------>
+
+			<phrase id="32">
+				<text>guider_dialog_at</text>
+			</phrase>
+			<phrase id="41">
+				<text>guider_dialog_asyouwish</text>
+			</phrase>
+			<phrase id="51">
+				<text>guider_dialog_youreright</text>
+			</phrase>
+			<!-- Blowout -->
+			<phrase id="2a">
+				<precondition>level_weathers.is_preblowout</precondition>
+				<precondition>level_weathers.is_blowout_active.ReturnReverse</precondition>
+				<text>guider_dialog_no_pre</text>
+				<next>51</next>
+			</phrase>
+			<phrase id="2b">
+				<precondition>level_weathers.is_blowout_active</precondition>
+				<text>guider_dialog_no_blow</text>
+				<next>51</next>
+			</phrase>
+			<phrase id="2c">
+				<precondition>level_weathers.is_afterblowout</precondition>
+				<precondition>level_weathers.is_blowout_active.ReturnReverse</precondition>
+				<text>guider_dialog_no_after</text>
+				<next>51</next>
+			</phrase>
+			<phrase id="2x">
+				<precondition>level_weathers.is_any_blowout_period</precondition>
+				<text>guider_dialog_no_else</text>
+				<next>51</next>
+			</phrase>
+		</phrase_list>
+	</dialog>
+</game_dialogs>

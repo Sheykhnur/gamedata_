@@ -1,0 +1,44 @@
+[spawner]
+cond = {+pri_spawn_ghost}
+
+[smart_terrains]
+none = true
+
+[death@pri_ghost]
+on_info = {+mil_ghost_dead}
+
+[combat_ignore@pri_ghost]
+
+[logic]
+active = walker@pri_ghost_start
+combat_ignore = combat_ignore@pri_ghost
+on_death = death@pri_ghost
+
+[walker@pri_ghost_start]
+path_walk = pri_ghost_walk
+path_look = pri_ghost_look
+combat_ignore_cond = always
+meet = meet@pri_ghost
+on_info = {+pri_spoke_ghost -pri_ghost_teleported} walker@pri_ghost_tele
+
+[walker@pri_ghost_tele]
+path_walk = pri_ghost_walk
+path_look = pri_ghost_look
+combat_ignore_cond = always
+meet = meet@pri_ghost
+on_actor_dist_ge_nvis = 60| %=teleport_npc_not_seen(pri_ghost_tele_walk:pri_ghost_teleported)%
+on_info = {+pri_ghost_teleported} %=release%
+
+[meet@pri_ghost]
+meet_state		= nil
+meet_state_wpn	= nil
+victim		= 25|actor
+victim_wpn	= 25|actor
+use			= true
+use_wpn		= true
+combat_ignore_cond = always
+
+
+
+
+

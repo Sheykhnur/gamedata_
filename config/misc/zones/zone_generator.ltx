@@ -1,0 +1,281 @@
+;-------*********-------- Не используется
+[generator_torrid]
+$spawn						= "zones\generator\generator_torrid"
+;$prefetch 					= 8
+class						= Z_TORRID
+hit_impulse_scale			= 0
+effective_radius			= 2.75 									;размер радиуса в процентах от оригинального, где действует зона
+postprocess					= postprocess_flame
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+artefacts					= 
+
+hit_power				= 0.99
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= false
+
+idle_particles				= anomaly2\generator\anomaly_gen_dust
+blowout_particles			= anomaly2\generator\anomaly_gen_dust
+
+hit_small_particles	    	= anomaly2\generator\anomaly_gen_dust
+hit_big_particles			= anomaly2\generator\anomaly_gen_dust
+idle_small_particles		= anomaly2\generator\anomaly_gen_dust
+idle_big_particles			= anomaly2\generator\anomaly_gen_dust
+
+idle_particles_dont_stop	= true
+
+idle_sound					= anomaly\gen_electra_ball_idle ;anomaly\fireball_idle	;постоянный звук
+blowout_sound				= ambient\silence ;anomaly\fireball_blow	;во время выброса(удара) в центре аномалии	
+hit_sound					= ambient\silence ;ambient\fire2		;на персонаже, когда тот получает хит
+entrance_sound				= ambient\silence ;ambient\fire2		;при попадании объекта в аномалию
+
+hit_type					= burn
+
+disable_time				= 0										;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 0										;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 50000									;время отключения idle партиклов
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+blowout_light				= on
+light_color		    		= 0.8,0.9,1
+light_range		  			= 30.0
+light_time 		   			= 1
+light_height				= 0.0									;подъем источника света на высоту
+
+
+idle_light					= on
+idle_light_range			= 30.0
+idle_light_range_delta 		= 0.2
+idle_light_anim				= levels\generator\ball_lightning_light
+idle_light_height			= 0.0									;подъем источника света на высоту
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 100
+
+visible_by_detector 		= off
+
+blowout_wind				= off
+
+spawn_blowout_artefacts 	= off
+
+
+;-------*********--------
+[generator_dust]
+$spawn						= "zones\generator\generator_dust"
+;$prefetch 					= 8
+class						= Z_TORRID
+hit_impulse_scale			=   0
+effective_radius			= 2.75									;размер радиуса в процентах от оригинального, где действует зона
+postprocess					= postprocess_flame
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+artefacts					= 
+
+hit_power				= 0.99
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= false
+
+idle_particles				= anomaly2\generator\anomaly_gen_smoke
+blowout_particles			= anomaly2\generator\anomaly_gen_smoke
+
+hit_small_particles	    	= anomaly2\generator\anomaly_gen_smoke
+hit_big_particles			= anomaly2\generator\anomaly_gen_smoke
+idle_small_particles		= anomaly2\generator\anomaly_gen_smoke
+idle_big_particles			= anomaly2\generator\anomaly_gen_smoke
+
+idle_particles_dont_stop	= true
+
+idle_sound					= ambient\silence ;anomaly\fireball_idle	;постоянный звук
+blowout_sound				= ambient\silence ;anomaly\fireball_blow	;во время выброса(удара) в центре аномалии	
+hit_sound					= ambient\silence ;ambient\fire2			;на персонаже, когда тот получает хит
+entrance_sound				= ambient\silence ;ambient\fire2			;при попадании объекта в аномалию
+
+hit_type					= burn
+
+disable_time				= 0										;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 0										;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 50000									;время отключения idle партиклов
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+blowout_light				= on
+light_color		    		= 1.8,1.7,1.4
+light_range		   			= 15.0
+light_time 		    		= 2
+light_height				= 0.75									;подъем источника света на высоту
+
+
+idle_light					= off
+idle_light_range			= 15.0
+idle_light_range_delta 		= 0.2
+idle_light_anim				= koster_01
+idle_light_height			= 0.75									;подъем источника света на высоту
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 100
+
+visible_by_detector 		= off
+
+blowout_wind				= off
+
+spawn_blowout_artefacts 	= off
+
+
+;-------*********--------
+[generator_electra]
+$spawn 						= "zones\generator\generator_electra"
+$prefetch 					= 16
+class						= ZS_MBALD
+hit_impulse_scale			= .03
+effective_radius			= 0.75 									;размер радиуса в процентах от оригинального, где действует зона
+sound						= zone_mosquito_bald
+postprocess					= postprocess_electra
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+artefacts					= 
+
+hit_power				= 0.99
+
+hit_koef_car				= 1.5
+car_kill_engine				= true
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= false
+
+idle_particles				= anomaly2\generator\generator_accum_thunderbolt
+blowout_particles			= anomaly2\generator\generator_accum_thunderbolt
+
+hit_small_particles			= anomaly2\generator\generator_accum_thunderbolt
+hit_big_particles			= anomaly2\generator\generator_accum_thunderbolt
+idle_small_particles		= anomaly2\generator\generator_accum_thunderbolt
+idle_big_particles			= anomaly2\generator\generator_accum_thunderbolt
+entrance_small_particles	= anomaly2\generator\generator_accum_thunderbolt
+entrance_big_particles		= anomaly2\generator\generator_accum_thunderbolt
+
+idle_sound					= characters_voice\scenario\gen\generator
+blowout_sound				= anomaly\emi_blowout
+hit_sound					= anomaly\emi_idle
+entrance_sound				= anomaly\emi_idle
+
+blowout_light				= on
+light_color		    		= 0.8,0.9,1
+light_range		    		= 30.0
+light_time 		    		= 1;0.35
+light_height				= 0.0									;подъем источника света на высоту
+
+idle_light					= off
+
+hit_type					= shock
+
+disable_time				= 50									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 100									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 100									;время отключения idle партиклов
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 100
+
+ignore_nonalive				= false
+ignore_small				= false
+ignore_artefacts			= true
+
+visible_by_detector 		= on
+
+blowout_wind				= off
+
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 150
+blowout_wind_time_end		= 299
+blowout_wind_power			= 0.2									;сила поднимаего ветра (от 0 до 1), в момент blowout_wind_time_peak 
+
+spawn_blowout_artefacts 	= off
+
+
+;-------*********--------
+[generator_dust_static]
+
+$spawn 						= "zones\generator\generator_dust_static"
+$prefetch 					= 16
+class						= ZS_MBALD
+hit_impulse_scale			= .03
+effective_radius			= 0.75 									;размер радиуса в процентах от оригинального, где действует зона
+sound						= zone_mosquito_bald
+postprocess					= postprocess_electra
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+artefacts					= 
+
+hit_power				= 0.99
+
+hit_koef_car				= 1.5
+car_kill_engine				= true
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= false
+
+idle_particles				= anomaly2\generator\tornado
+blowout_particles			= anomaly2\generator\tornado
+
+hit_small_particles			= anomaly2\generator\tornado
+hit_big_particles			= anomaly2\generator\tornado
+idle_small_particles		= anomaly2\generator\tornado
+idle_big_particles			= anomaly2\generator\tornado
+entrance_small_particles	= anomaly2\generator\tornado
+entrance_big_particles		= anomaly2\generator\tornado
+
+idle_sound					= anomaly\fireball_idle					;anomaly_gravy_idle
+blowout_sound				= anomaly\fireball_blow
+hit_sound					= anomaly\fire2
+entrance_sound				= anomaly\fire2
+
+blowout_light				= on
+light_color		    		= 0.8,0.9,1
+light_range		   		 	= 30.0
+light_time 		   		 	= 1;0.35
+light_height				= 1.5									;подъем источника света на высоту
+
+idle_light					= off
+
+hit_type					= shock
+
+disable_time				= 50									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 100									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 100									;время отключения idle партиклов
+
+awaking_time				= 100
+blowout_time				= 100	
+accamulate_time				= 100
+
+ignore_nonalive				= false
+ignore_small				= false
+ignore_artefacts			= true
+
+visible_by_detector 		= on
+
+blowout_wind				= off
+
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 150
+blowout_wind_time_end		= 299
+blowout_wind_power			= 0.2									;сила поднимаего ветра (от 0 до 1), в момент blowout_wind_time_peak 
+
+spawn_blowout_artefacts 	= off

@@ -1,0 +1,99 @@
+[combat_ignore@gen_dolg_lager]
+
+[death@gen_dolg_lager]
+
+[danger@gen_dolg_lager]
+ignore_distance  = 30
+
+[logic@gen_dolg_lager_guard1]
+active = walker@gen_dolg_lager_cover1
+on_death = death@gen_dolg_lager
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[walker@gen_dolg_lager_cover1]path_walk = guard1path_look = guard1_look
+combat_ignore_cond = {=fighting_dist_ge(60)}
+danger = danger@gen_dolg_lager
+
+[logic@gen_dolg_lager_guard2]
+active = walker@gen_dolg_lager_cover2
+on_death = death@gen_dolg_lager
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[walker@gen_dolg_lager_cover2]path_walk = guard2path_look = guard2_look
+combat_ignore_cond = {=fighting_dist_ge(60)}
+danger = danger@gen_dolg_lager
+
+[logic@gen_dolg_lager_guard3]
+active = walker@gen_dolg_lager_cover3
+on_death = death@gen_dolg_lager
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[walker@gen_dolg_lager_cover3]path_walk = guard3path_look = guard3_look
+combat_ignore_cond = {=fighting_dist_ge(60)}
+danger = danger@gen_dolg_lager
+
+[logic@gen_dolg_lager_guard4]
+active = walker@gen_dolg_lager_cover4
+on_death = death@gen_dolg_lager
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[walker@gen_dolg_lager_cover4]path_walk = guard4path_look = guard4_look
+combat_ignore_cond = {=fighting_dist_ge(60)}
+danger = danger@gen_dolg_lager
+
+[logic@gen_dolg_lager_kamp1]
+active = kamper@gen_mil_bunker_rest1
+on_death = death@gen_dolg_lager
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[kamper@gen_mil_bunker_rest1]
+path_walk = kamp
+path_look = kamp_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_dist_ge(60)}
+danger = danger@gen_dolg_lager
+
+[logic@gen_dolg_lager_kamp2]
+active = kamper@gen_mil_bunker_rest2
+on_death = death@gen_dolg_lager
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[kamper@gen_mil_bunker_rest2]
+path_walk = kamp2
+path_look = kamp2_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_dist_ge(60)}
+danger = danger@gen_dolg_lager
+
+[logic@gen_dolg_lager_specialist]
+active = walker@gen_dolg_lager_specialist
+on_death = death@gen_dolg_lager
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[walker@gen_dolg_lager_specialist]
+path_walk = sci
+path_look = sci_look
+danger = danger@gen_dolg_lager
+meet = meet@gen_dolg_lager_specialist
+combat_ignore_cond = {!fighting_actor}
+
+[meet@gen_dolg_lager_specialist]
+use = true
+use_wpn = false
+abuse = false
+precond = visibility
+meet_state = ward
+meet_talk_enabled = true
+victim = 10|actor
+victim_wpn = 10|actor
+meet_dialog	= gen_dolg_quest
+
+[logic@gen_dolg_lager_sleep]
+active = sleeper@gen_dolg_lager_rest
+combat_ignore = combat_ignore@gen_dolg_lager
+
+[sleeper@gen_dolg_lager_rest]
+path_main = sleep
+wakeable = true
+danger = danger@gen_dolg_lager
+combat_ignore_cond = {=fighting_dist_ge(60)}

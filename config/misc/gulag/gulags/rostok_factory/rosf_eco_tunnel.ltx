@@ -1,0 +1,45 @@
+;**********state 0*********************
+
+[logic@rosf_eco_tunnel_walker1]
+active = walker@rosf_eco_tunnel_eco1
+
+[walker@rosf_eco_tunnel_eco1]
+path_walk = walk1
+path_look = look1
+meet = meet@tunnel_eco1
+on_info = {+rosf_eco_cleared_talk} walker@rosf_eco_tunnel_eco1_talked
+
+[walker@rosf_eco_tunnel_eco1_talked]
+path_walk = walk1
+path_look = look1
+
+[meet@tunnel_eco1]
+meet_state		= 4| hello| 2| nil
+meet_state_wpn	= 4| hello| 2| nil
+victim		= 10| actor
+victim_wpn		= 10| actor
+use			= true
+use_wpn		= true
+meet_dialog	= rosf_tunnel_eco_mask
+
+[logic@rosf_eco_tunnel_walker2]
+active = walker@rosf_eco_tunnel_eco2
+
+[walker@rosf_eco_tunnel_eco2]
+path_walk = walk2
+path_look = look2
+meet = meet@tunnel_eco2
+on_info = {+rosf_eco_cleared_talk} walker@rosf_eco_tunnel_eco2_talked
+
+[walker@rosf_eco_tunnel_eco2_talked]
+path_walk = walk1
+path_look = look1
+
+[meet@tunnel_eco2]
+meet_state		= 4| hello| 2| nil
+meet_state_wpn	= 4| hello| 2| nil
+victim		= 10| actor
+victim_wpn		= 10| actor
+use			= true
+use_wpn		= true
+meet_dialog	= rosf_tunnel_eco_mask

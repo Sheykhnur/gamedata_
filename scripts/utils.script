@@ -1,0 +1,651 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : utils.script
+ Description: Utils
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : barin (2010-08-12), gr1ph00n(29.07.2012)
+ Last edit  : 21.06.2018 [07]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local bInit = false
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+--/ Transfering variable of any type(including nil) to string. Used for debug output of info.
+function to_str(what)
+	local sType = type(what)
+	if sType == "string" then
+		return what
+	elseif sType == "number" then
+		return tostring(what)
+	elseif sType == "boolean" then
+		if what then
+			return "<true>"
+		else
+			return "<false>"
+		end
+	elseif sType == "table" then
+		return "<table>"
+	elseif sType == "userdata" then
+		return "<userdata>"
+	elseif sType == "function" then
+		return "<function>"
+	elseif sType == "nil" then
+		return "<nil>"
+	else
+		return "<"..sType..">"
+	end
+end
+
+function get_scheme_by_section(section)
+	local scheme = string.gsub(section, "%d", "")
+	local at, to = string.find(scheme, "@", 1, true)
+	if at and to then
+		scheme = string.sub(scheme, 1, at - 1)
+	end
+	return scheme
+end
+
+function is_day()
+	return level.get_time_hours() >= 5 and level.get_time_hours() < 22
+end
+
+function electro_art_enabled ()
+	return level.get_time_hours() >= 0 and level.get_time_hours() < 5
+end
+
+function npc_in_zone(npc, zone)
+	return npc ~= nil and zone ~= nil and zone:inside(npc:position())
+end
+
+function level_changing()
+	if not alife() then
+		return false
+	end
+	local actor_gv = game_graph():vertex(alife():actor().m_game_vertex_id)
+	return actor_gv:level_id() ~= alife():level_id()
+end
+
+function set_actor_rank(rank)
+	if rank == "novice" then
+		db.actor:set_character_rank(0)
+	elseif rank == "stalker" then
+		db.actor:set_character_rank(300)
+	elseif rank == "veteran" then
+		db.actor:set_character_rank(600)
+	elseif rank == "master" then
+		db.actor:set_character_rank(900)
+	end
+end
+
+-- ********************************************************************************************* --
+
+function vector_cmp(a, b)
+	return a.x == b.x and a.y == b.y and a.z == b.z
+end
+
+function vector_cmp_prec(a, b, d)
+	return math.abs(a.x - b.x) <= d and
+		math.abs(a.y - b.y) <= d and
+		math.abs(a.z - b.z) <= d
+end
+
+function vector_copy_by_val(vec)
+	return vector():set(vec)
+end
+
+function no_need_to_rotate(npc, target_pos)
+	local y = yaw(npc:direction(), vector_copy_by_val(target_pos):sub(npc:position()))
+	return y < 0.3
+end
+
+function no_need_to_rotate_xz(npc, target_pos)
+	local dir1 = npc:direction()
+	dir1.y = 0
+	local dir2 = vector_copy_by_val(target_pos):sub(npc:position())
+	dir2.y = 0
+	local y = yaw(dir1, dir2)
+	return y < 0.3
+end
+
+function rad2deg(r)
+	return r * 180.0 / math.pi
+end
+
+function deg2rad(d)
+	return d * math.pi / 180.0
+end
+
+function angle_diff(a1, a2)
+	local b1 = a1:normalize()
+	local b2 = a2:normalize()
+	local dotp = b1:dotproduct(b2)
+	return rad2deg(math.acos(math.abs(dotp)))
+end
+
+function angle_left(dir1, dir2)
+	local dir_res = vector()
+	dir_res:crossproduct(dir1, dir2)
+	return dir_res.y <= 0
+end
+
+function angle_left_xz(dir1, dir2)
+	local dir_res = vector()
+	dir1.y = 0
+	dir2.y = 0
+	dir_res:crossproduct(dir1, dir2)
+	return dir_res.y <= 0
+end
+
+function round(value)
+	local min = math.floor(value)
+	local max = min + 1
+	if value - min > max - value then
+		return max
+	end
+	return min
+end
+
+function distance_between_safe(obj1, obj2)
+	if obj1 and obj2 then
+		return obj1:position():distance_to(obj2:position())
+	end
+	return 100000
+end
+
+--/functional replace for math.random INT
+function RandomI(min, max)
+	if min == nil and max == nil then
+		return Random.I()
+	elseif min then
+		if not max then
+			if min > 1 then
+				local mm = min + 1		
+				return Random.I(1,mm)
+			elseif min == 1 or min == 0 then
+				return min
+			elseif min < 0 then
+				return Random.I(min,0)
+			else
+				abort("Random ERROR3[%s]and[%s]", min, max, "")
+			end
+		elseif max == min then 
+			return min
+		elseif max > min then
+			local nn = max + 1
+			return Random.I(min,nn)
+		else
+			abort("Random ERROR2[%s]and[%s]", min, max, "")
+		end
+	else
+		abort("Random ERROR1[%s]and[%s]", min, max, "")
+	end
+end
+
+--/ Random INT Index from 1 to min or min(>=1) to max
+function RandomIDX(min, max)
+	if min and min >= 1 then
+		if not max then
+			if min == 1 then
+				return 1
+			else
+				local mm = min + 1		
+				return Random.I(1,mm)
+			end
+		elseif max == min then 
+			return min
+		elseif max > min then
+			local nn = max + 1
+			return Random.I(min,nn)
+		else
+			abort("ERR2:max<min")
+		end
+	else
+		abort("ERR1:IDX<=0 or nil")
+	end
+end
+
+
+function random_number(min_value, max_value)
+	math.randomseed(device():time_global())
+	if min_value == nil and max_value == nil then
+		return math.random()
+	end
+	return math.random(min_value, max_value)
+end
+
+function local_hours()
+	return math.floor(math.mod(game.time() / 1000, 86400) / 3600) --/ time in hours
+end
+
+function day_time()
+	local ms_per_day = 24 * 60 * 60 * 1000
+	return math.mod(game.time(), ms_per_day)
+end
+
+function yaw_degree3d(v1, v2)
+	local tmp = math.sqrt(v2.x * v2.x + v2.y * v2.y + v2.z * v2.z)
+	tmp = (math.sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z ) * tmp)
+	return (math.acos((v1.x * v2.x + v1.y * v2.y + v1.z * v2.z) / tmp) * 57.2957)
+end
+
+-- ********************************************************************************************* --
+
+function cfg_get_bool(char_ini, section, field, object, mandatory, default_val)
+	if mandatory == nil then
+		abort("section '%s': wrong arguments order in call to cfg_get_bool", section)
+	end
+	
+	if section and char_ini:section_exist(section) and char_ini:line_exist(section, field) then
+		local ret = char_ini:r_bool(section, field)
+		return ret
+	end
+	if not mandatory then
+		if default_val then
+			if default_val ~= false and default_val ~= true then
+				abort("object '%s': section '%s': field '%s': default value is " .. "not boolean", object:name(), section, field)
+			end
+			return default_val
+		end
+		return false
+	end
+	abort("object '%s': attempt to read a non-existant boolean field '%s' in " .. "section '%s'", object:name(), field, section)
+end
+
+function cfg_get_string(char_ini, section, field, object, mandatory, gulag_name, default_val)
+	if mandatory == nil or gulag_name == nil then
+		abort("section '%s': wrong arguments order in call to cfg_get_string", section)
+	end
+	
+	if section and char_ini:section_exist(section) and char_ini:line_exist(section, field) then
+		if gulag_name and gulag_name ~= "" then
+			return gulag_name .. "_" .. char_ini:r_string(section, field)
+		else
+			return char_ini:r_string(section, field)
+		end
+	end
+	if not mandatory then
+		return default_val
+	end
+	local err = "object name '" .. object:name() .. "': attempt to read a non-existant string field '" ..field .. "' in section '" .. section .. "'";
+	abort("%s", err)
+end
+
+function cfg_get_number(char_ini, section, field, object, mandatory, default_val)
+	if mandatory == nil then
+		abort("section '%s': wrong arguments order in call to cfg_get_number", section)
+	end
+	
+	if section and char_ini:section_exist(section) and char_ini:line_exist(section, field) then
+		return char_ini:r_float(section, field)
+	end
+	if not mandatory then
+		return default_val
+	end
+	-- local err = "object name '" .. object:name() .. "': attempt to read a non-existant numeric field '" ..
+	--	field .. "' in section '" .. section .. "'";
+	-- abort("%s", err)
+end
+
+-- ********************************************************************************************* --
+--/ Checks, if NPC close enough with point path_point of way patrol_path
+function stalker_at_waypoint(npc, patrol_path, path_point)
+	return npc:position():distance_to_sqr(patrol_path:point(path_point)) <= 0.13
+end
+
+--/ send to closest allowed node by direction to setted.
+--/ returns vertex_id, to where npc was sent
+function send_to_nearest_accessible_vertex(npc, v_id)
+--	log("send_to_nearest_accessible_vertex:NPC=[%s],idLv=[%s]:(%s)", npc and npc:name(), v_id, type(npc and npc.accessible), "") --/#~#
+	if not npc:accessible(v_id) then
+		local vtemp = vector()
+		v_id, vtemp = npc:accessible_nearest(level.vertex_position(v_id), vtemp)
+	end
+	if npc:accessible(v_id) then
+		npc:set_dest_level_vertex_id(v_id)
+	end
+		return v_id
+end
+
+function stalker_go_to_waypoint(stalker, patrol_path, path_point)
+	if stalker:animation_count() > 0 then
+		stalker:clear_animations()
+	end
+	if stalker:level_vertex_id() == patrol_path:level_vertex_id(path_point) then
+		return
+	end
+	stalker:set_dest_level_vertex_id(patrol_path:level_vertex_id(path_point))
+	stalker:set_movement_type(move.run)
+	stalker:set_body_state(move.standing)
+	stalker:set_sight(look.path_dir, nil, 0)
+	stalker:set_path_type(game_object.level_path)
+	stalker:set_mental_state(anim.danger)
+	stalker:set_detail_path_type(move.line)
+end
+
+function stalker_stop(stalker)
+	stalker:set_movement_type(move.stand)
+end
+
+function stalker_look_at_waypoint(stalker, patrol_path, path_point)
+	local look_pt = vector_copy_by_val(patrol_path:point(path_point)):sub(stalker:position())
+	stalker:set_sight(look.direction, look_pt, 0)
+end
+
+function stalker_look_at_stalker(stalker, whom)
+	local look_pt = vector_copy_by_val(whom:position()):sub(stalker:position())
+	stalker:set_sight(look.direction, look_pt, 0)
+end
+
+function stalker_look_at_stalker_angle(stalker, whom, angle)
+	local look_pt = vector_copy_by_val(whom:position()):sub(stalker:position())
+	stalker:set_sight(look.direction, vector_rotate_y(look_pt, angle), 0)
+end
+
+function stalker_look_firepoint_angle(stalker, whom, angle)
+	local look_pt = vector_copy_by_val(whom:position()):sub(stalker:position())
+	stalker:set_sight(look.fire_point, vector_rotate_y(look_pt, angle), 0)
+end
+
+function get_nearest_waypoint(obj, path_name, patrol_path, cnt)
+	local pt_chosen, min_dist, dist
+	if not patrol_path then patrol_path = get_patrol(path_name) end
+	if not cnt then cnt = patrol_path:count() end
+	local pos = obj:position()
+	for i = 0, cnt - 1 do
+		dist = patrol_path:point(i):distance_to(pos)
+		if not min_dist or dist < min_dist then
+			min_dist = dist
+			pt_chosen = i
+		end
+	end
+	if pt_chosen then
+		return pt_chosen
+	end
+	abort("object '%s': path '%s': get_nearest_waypoint: unable to choose a nearest waypoint (path has no waypoints?)", obj:name(), path_name, "")
+end
+
+function new_point(center_id, position_id, radius, min_radius)
+	local dir = vector():set(math.random(-1000, 1000) / 1000.0, 0.0001, math.random(-1000, 1000) / 1000.0)
+	local pos = level.vertex_in_direction(center_id, dir, radius)
+	local i = 1
+	
+	while(level.vertex_position(position_id):distance_to(level.vertex_position(pos)) < min_radius and i < 20) do
+		dir = vector():set(math.random(-1000, 1000) / 1000.0, 0.0001, math.random(-1000, 1000) / 1000.0)
+		pos = level.vertex_in_direction(center_id, dir, radius)
+		i = i + 1
+	end
+	
+	return (level.vertex_position(pos))
+end
+
+function point_with_bit(patrol_path, bit, old_point)
+	local points = {}
+	
+	for i = 0, patrol_path:count() - 1 do
+		if(patrol_path:flag(i, bit)) then
+			if(old_point == nil) then
+				table.insert(points, patrol_path:point(i))
+			elseif(old_point ~= i) then
+				table.insert(points, patrol_path:point(i))
+			end
+		end
+	end
+	
+	local number_point = table.getn(points)
+	
+	if(number_point == 0) then
+		return nil
+	elseif(number_point == 1) then
+		return points[1]
+	else
+		return points[math.random(1, number_point)]
+	end
+end
+
+function point_with_bit_id(patrol_path, bit, old_point)
+	local points = {}
+	
+	for i = 0, patrol_path:count() - 1 do
+		if(patrol_path:flag(i, bit)) then
+			if(old_point == nil) then
+				table.insert(points, i)
+			elseif(old_point ~= i) then
+				table.insert(points, i)
+			end
+		end
+	end
+	
+	local number_point = table.getn(points)
+	
+	if(number_point == 0) then
+		return nil
+	elseif(number_point == 1) then
+		return patrol_path:level_vertex_id(points[1])
+	else
+		return patrol_path:level_vertex_id(points[math.random(1, number_point)])
+	end
+end
+
+function near_point_with_bit(point, patrol_path, bit)
+	local new_point = nil
+	local index = nil
+	local dist = 1000.0
+	
+	for i = 0, patrol_path:count() - 1 do
+		if(patrol_path:flag(i, bit)) then
+			if(new_point == nil or patrol_path:point(i):distance_to(point) < dist) then
+				new_point = patrol_path:point(i)
+				index = i
+				dist = new_point:distance_to(point)
+			end
+		end
+	end
+	
+	return index
+end
+
+-- ********************************************************************************************* --
+
+function parse_waypoint_data(pathname, wpflags, wpname)
+	if (la_patrols) then
+		return la_patrols.parse_waypoint_data(pathname, wpflags, wpname) --/#+# (redirect)
+	end
+	local rslt = {}
+	--/#+# if not setted point name (wpname) - reading 0 or by index from 2nd argument
+	if not wpname then
+		local wp_flags = type(wpflags) == 'number' and wpflags or 0
+		local ptr = patrol(pathname)
+		rslt.flags = ptr:flags(wp_flags)
+		wpname = ptr:flags(wp_flags), ptr:name(wp_flags)
+	else
+		rslt.flags = wpflags
+	end
+	--/<
+	local at
+	if string.find(wpname, "|", at, true) == nil then
+		return rslt
+	end
+	
+	local fld_num, fld, val = nil, nil, nil
+	local par_num = 1
+	
+	for param in string.gfind(wpname, "([%w_\\%=%-%,%*]+)|*") do
+		if par_num == 1 then
+			-- continue
+		else
+			if param == "" then
+				abort("path '%s': waypoint '%s': syntax error in waypoint name", pathname, wpname)
+			end
+			fld_num = 1
+			fld = nil
+			val = nil
+			for v in string.gfind(param, "([%w_\\%-%,%*]+)=*") do
+				if fld_num == 1 then
+					fld = v
+				elseif fld_num == 2 then
+					val = v
+				else
+					abort("path '%s': waypoint '%s': syntax error while parsing the param '%s'", pathname, wpname, param)
+				end
+				fld_num = fld_num + 1
+			end
+			if not fld or fld == "" then
+				abort("path '%s': waypoint '%s': syntax error while parsing the param '%s': no field specified", pathname, wpname, param)
+			end
+			if not val or val == "" then
+				val = "true"
+			end
+			rslt[fld] = val
+		end
+		par_num = par_num + 1
+	end
+	return rslt
+end
+
+function path_parse_waypoints(pathname)
+	if (la_patrols) then
+		return la_patrols.path_parse_waypoints(pathname) --/#+# (redirect)
+	end
+	local ptr = patrol(pathname)
+	local cnt = ptr:count()
+	local rslt = {}
+	
+	for pt = 0, cnt - 1 do
+		rslt[pt] = parse_waypoint_data(pathname, ptr:flags(pt), ptr:name(pt))
+		if not rslt[pt] then
+			abort("error while parsing point %d of path '%s'", pt, pathname)
+		end
+	end
+	
+	return rslt
+end
+
+function path_parse_waypoints_from_arglist(pathname, num_points, ...)
+	if (la_patrols) then
+		return la_patrols.path_parse_waypoints_from_arglist(pathname, num_points, ...) --/#+# (redirect)
+	end
+	local arg = {...}
+	
+	local ptr = patrol(pathname)
+	local cnt = ptr:count()
+	
+	if cnt ~= num_points then
+		abort("path '%s' has %d points, but %d points were expected", pathname, cnt, num_points)
+	end
+	
+	local cur_arg, fl = nil, nil
+	local rslt = {}
+	
+	for pt = 0, cnt - 1 do
+		cur_arg = arg[pt + 1]
+		if not cur_arg then
+			abort("script error [1] while processing point %d of path '%s'", pt, pathname)
+		end
+		fl = flags32()
+		fl:assign(cur_arg[1])
+		rslt[pt] = parse_waypoint_data(pathname, fl, cur_arg[2])
+		if not rslt[pt] then
+			abort("script error [2] while processing point %d of path '%s'", pt, pathname)
+		end
+	end
+	
+	return rslt
+end
+
+-- a | b | c  ==>  { 1 = "a", 2 = "b", 3 = "c" }
+function parse_params(params)
+	local rslt = {}
+	local n = 1
+	
+	for fld in string.gfind(params, "%s*([^|]+)%s*") do
+		rslt[n] = fld
+		n = n + 1
+	end
+	
+	return rslt
+end
+
+function parse_data_1v(npc, s)
+	local t = {}
+	
+	if s then
+		for name in string.gfind(s, "(%|*%d+%|[^%|]+)%p*") do
+			local dat = {dist = nil, state = nil}	
+			local t_pos = string.find(name, "|", 1, true)
+			local dist = string.sub(name, 1, t_pos - 1)
+			local state	= string.sub(name, t_pos + 1)
+			
+			dat.dist = tonumber(dist)
+			if state then
+				dat.state = xr_logic.parse_condlist(npc, dist, state, state)
+			end
+			t[tonumber(dist)] = dat
+		end
+	end
+	
+	return t
+end
+
+function wpn_info_get(npc)
+	local rslt = {}
+	
+	local active_item = npc:active_item()
+	local has_weapon = active_item and isWeapon(active_item)
+	
+	if has_weapon then
+		rslt["id"] = active_item:id()
+		rslt["ammo"] = active_item:get_ammo_in_magazine()
+	end
+	
+	return rslt
+end
+
+function wpn_info_equal(wpn_info1, wpn_info2)
+	return wpn_info1["id"] == wpn_info2["id"] and wpn_info1["ammo"] == wpn_info2["ammo"]
+end
+
+--/ ------------------------------------------------------------------------------------------------
+local CTime_0 = nil --/ 'zero reference' of counter (object of class 'CTime')
+
+if not editor() then
+	CTime_0 = game.CTime()
+end
+--/ -----------------------------------------------------------------
+--/ write/load CTime
+--/ -----------------------------------------------------------------
+--/ Writing of CTime to net-packet. If ctime == nil or 'empty', then write one byte-flag (0/-1)
+function w_CTime(pk, ctime)
+	if type(ctime) == 'userdata' and ctime ~= CTime_0 then
+		local Y,M,D, h,m,s, ms = ctime:get(0,0,0, 0,0,0, 0)
+		pk:w_u8(Y - 2000)
+		pk:w_u8(M)
+		pk:w_u8(D)
+		pk:w_u8(h)
+		pk:w_u8(m)
+		pk:w_u8(s)
+		pk:w_u16(ms)
+	else
+		pk:w_u8(0)
+	end
+end
+--/ reading CTime from net-packet
+function r_CTime(pk)
+	local Y = pk:r_u8()
+	if Y ~= 0 then
+		local M, D, h, m, s, ms = pk:r_u8(), pk:r_u8(), pk:r_u8(), pk:r_u8(), pk:r_u8(), pk:r_u16()
+		local ctime = game.CTime()
+		ctime:set(2000 + Y,M,D, h,m,s, ms)
+		return ctime --/> counter of 'restored' game time
+	else
+		return CTime_0 --/> 'zero' counter of game time
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

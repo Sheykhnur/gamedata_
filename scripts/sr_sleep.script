@@ -1,0 +1,78 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : sr_sleep.script
+ Description: Sleep zone
+ Copyright  : 2004 © GSC Game World
+ Author     : Oleg Kreptul (Haron) haronk@ukr.net
+ Editors    : 
+ Last edit  : 25.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+--/ Note: —хема незадействована! (rudiment!)
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+--local state_nowhere = 0 --/ схема только что включилась
+--local state_inside  = 1 --/ актер внутри
+--local state_outside = 2 --/ актер снаружи
+--/ ---------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_sleep"
+--/ -----------------------------------------------------------------------------------------------
+function action_sleep:__init(obj, st)
+	self.object = obj
+	self.st = st
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_sleep:reset_scheme()
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_sleep:update(delta)
+	if not xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		--self:switch_state() --/ отключено!
+	end
+end
+
+--/------------------------------------------------------------------
+function action_sleep:switch_state()
+	if self.object:inside( db.actor:position() ) then
+		if self.cond then
+			local cs = xr_logic.pick_section_from_condlist(db.actor, self.object, self.cond.condlist)
+			dream.can_sleep = (cs == "true" or cs == "")
+		else
+			dream.can_sleep = true
+		end
+	else
+		dream.can_sleep = false
+	end
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE
+--/------------------------------------------------------------------
+function action_sleep:deactivate()
+	--dream.can_sleep = false
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+	local oNewAction = this.action_sleep(obj, st)
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	--[[
+	st.type       = utils.cfg_get_string(ini, section, "type", obj, false, "", "all")
+	st.dream_prob = utils.cfg_get_number(ini, section, "dream_prob", obj, false, nil)
+	st.cond = xr_logic.cfg_get_condlist(ini, section, "cond", obj)
+	--]]
+end
+--/ ------------------------------------------------------------------------------------------------

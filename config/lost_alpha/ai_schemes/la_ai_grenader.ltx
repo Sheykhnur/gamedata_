@@ -1,0 +1,214 @@
+;==================================================================================================
+;--/ для схемы "НПС - гранатометание" (la_ai_grenader.script)
+;==================================================================================================
+
+[options]
+enabled            = false ;--/ (true|false) метание в(от)ключено
+max_dist           = 30   ;--/ макс.дистанция для броска
+check_period       = 180  ;--/ время (сек) между проверками (спавном гранат) для неписей (0 - отключить)
+rank_precisions    = 0.4, 0.3, 0.1, 0.01 ;--/ массив зависимости разброса(неточности броска) от ранга (novice,stalker,veteran,master)
+
+[scheme_params] ;--/ массив параметров для регистрации схемы
+logic   = false ;--/ используется ли 'штатная' логика схемы
+enable  = true  ;--/ признак/флаг разрешения штатно включать схему (менеджером)
+disable = true  ;--/ признак/флаг разрешения штатно выключать схему (менеджером)
+common  = true  ;--/ признак/флаг регистрации в "addCommonPrecondition"
+ev_ids  = 0,1   ;--/ id-массив эвалюаторов для "addCommonPrecondition"
+
+[grenade_types] ;--/ используемые гранаты и вероятность их спавна (%)
+grenade_rgd5  = 54 ;--/ обычная (осколочная)
+grenade_f1    = 45 ;--/ 'лимонка'
+grenade_gd-05 = 1 ;--/ дымовая (10)
+
+[community_percent] ;--/ массив вероятностей спавна гранат (%)
+;--/ comm = ranks(novice,stalker,veteran,master)
+stalker  = 99, 99, 99, 99
+dolg     = 99, 99, 99, 99
+freedom  = 99, 99, 99, 99
+military = 99, 99, 99, 99
+killer   = 99, 99, 99, 99
+bandit   = 99, 99, 99, 99
+monolith = 99, 99, 99, 99
+clear_sky= 99, 99, 99, 99
+milstalker= 99, 99, 99, 99
+
+[community_percent_Off] ;--/ массив вероятностей спавна гранат (%)
+;--/ comm = ranks(novice,stalker,veteran,master)
+stalker  = 20, 40, 60, 80
+dolg     = 30, 50, 70, 90
+freedom  = 30, 50, 70, 90
+military = 50, 70, 80, 90
+killer   = 10, 20, 50, 70
+bandit   = 10, 20, 50, 70
+monolith = 20, 40, 70, 90
+clear_sky= 20, 40, 60, 80
+milstalker = 50, 70, 80, 90
+
+[excluded_community] ;--/ исключенные группировки
+zombied     = true
+trader      = true
+arena_enemy = true
+ecolog	  = true
+monolith    = true
+
+[excluded_npcs] ;--/ исключенные неписи
+escape_trader = true
+cordon_stalker_0005            = true
+cordon_stalker_0007            = true
+cordon_stalker_0026		       = true
+cordon_stalker_0027            = true
+cordon_sidorovich              = true
+cordon_fox                     = true
+gar_hellcar                    = true
+gar_dram_novice				   = true
+dump_stalker_0001              = true
+dump_stalker_0021              = true
+dump_yarik                     = true
+gar_gman                       = true
+barman                         = true
+bunker_ghost_1                 = true
+bunker_ghost_2                 = true
+bunker_ghost_3                 = true
+bunker_ghost_4                 = true
+bunker_ghost_5                 = true
+bunker_ghost_6                 = true
+bunker_ghost_7                 = true
+bunker_ghost_8                 = true
+bunker_ghost_9                 = true
+bunker_stalker_monolith        = true
+bunker_stalker_monolith_0000   = true
+bunker_stalker_monolith_0001   = true
+bunker_stalker_monolith_0002   = true
+bunker_stalker_monolith_0003   = true
+bunker_stalker_monolith_0004   = true
+bunker_stalker_monolith_0005   = true
+bunker_stalker_monolith_0006   = true
+swamp_doctor                   = true
+darklab_stalker_0001           = true
+darklab_stalker                = true
+darklab_stalker_0000           = true
+darklab_stalker_0002           = true
+darklab_stalker_0003           = true
+darklab_stalker_sakharov       = true
+darklab_dark_stalker_novice    = true
+darklab_stalker_0004           = true
+dar_sci5_1                     = true
+dar_sci5_2                     = true
+dar_sci5_4                     = true
+dar_sci5_3                     = true
+dar_sci4_2                     = true
+dar_sci4_1                     = true
+dar_sci4_3                     = true
+dar_sci6                       = true
+bas_hologram                   = true
+bas_sci1                       = true
+bas_sci2                       = true
+bas_admin                      = true
+bas_labrat                     = true
+bas_holo_test                  = true
+bas_soldier_scene              = true
+bas_ghost                      = true
+bas_sc4_sci2                   = true
+bas_sc4_sci1                   = true
+bas_stalker                    = true
+bas_stalker_0010               = true
+bas_stalker_0009               = true
+bas_stalker_0011               = true
+bas_stalker_0012               = true
+bas_stalker_0008               = true
+bas_stalker_0007               = true
+x16_sci_lead                   = true
+x16_sci_consultant             = true
+x16_worker1                    = true
+x16_worker2                    = true
+x16_worker3                    = true
+x16_worker4                    = true
+x16_worker5                    = true
+x16_washer                     = true
+x16_monsters_guy               = true
+x16_doc                        = true
+x16_stalker                    = true
+x16_sci_room1                  = true
+x16_sci_room2                  = true
+x16_stalker_0013               = true
+x16_stalker_0010               = true
+x16_stalker_0003               = true
+x16_stalker_0004               = true
+x16_stalker_0009               = true
+x16_stalker_0011               = true
+x16_stalker_0012               = true
+sar_preactor_finale            = true
+sar_actor_finale               = true
+sar_gman_finale                = true
+sar_stalker_0016               = true
+sar_stalker_0008               = true
+sar_stalker_0017               = true
+sar_stalker_0018               = true
+sar_stalker_0019               = true
+sar_stalker_0020               = true
+sar_stalker_0021               = true
+sar_stalker_0022               = true
+sar_stalker_0023               = true
+sar_stalker_0024               = true
+sar_stalker_0025               = true
+sar_stalker_0026               = true
+sar_stalker_0027               = true
+sar_stalker_0028               = true
+sar_stalker_0029               = true
+sar_stalker_0030               = true
+sar_stalker_0031               = true
+sar_stalker_0032               = true
+oso_stalker_0000               = true
+oso_stalker                    = true
+oso_stalker_0001               = true
+oso_stalker_0002               = true
+oso_stalker_0003               = true
+oso_stalker_0004               = true
+oso_stalker_0005               = true
+oso_stalker_0006               = true
+oso_stalker_0007               = true
+oso_stalker_0008               = true
+oso_stalker_0009               = true
+oso_stalker_0010               = true
+bar_gman                       = true
+warlab_m_osoznanie             = true
+warlab_m_osoznanie_0000        = true
+warlab_stalker                 = true
+warlab_stalker_0000            = true
+warlab_stalker_0001            = true
+warlab_stalker_0002            = true
+warlab_stalker_0003            = true
+warlab_stalker_0004            = true
+warlab_stalker_0005            = true
+warlab_stalker_0006            = true
+warlab_stalker_0007            = true
+warlab_stalker_0008            = true
+warlab_stalker_0009            = true
+warlab_stalker_0010            = true
+warlab_stalker_0011            = true
+warlab_stalker_0012            = true
+warlab_stalker_0013            = true
+warlab_stalker_0014            = true
+warlab_tehnic1                 = true
+warlab_tehnic2                 = true
+warlab_unlucky_ghost           = true
+warlab_rebell                  = true
+war_sci_portal                 = true
+warlab_laborant                = true
+bas_gman                       = true
+bas_gman2                      = true
+gen2_stalker                   = true
+gen2_stalker_0000              = true
+
+[community_replic]
+stalker  = 8
+dolg     = 7
+freedom  = 3
+military = 3
+killer   = 10
+bandit   = 2
+monolith = 3
+clear_sky= 5
+milstalker= 3
+
+;==================================================================================================

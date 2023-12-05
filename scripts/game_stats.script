@@ -1,0 +1,201 @@
+--prgma deprecated
+
+--[[ ----------------------------------------------------------------------------------------------
+ File       : game_stats.script
+ Description: Game Statistics
+ Copyright  : 2004 © GSC Game World
+ Author     : Game World
+ Editors    : 
+ Last edit  : 18.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tStats            = {} --/ information table
+--/ constants
+local actor_position    = 0
+local actor_item_drop   = 1
+local actor_item_take   = 2
+local actor_item_use    = 3
+local actor_update_task = 4
+local actor_money_trade = 5
+local actor_money_quest = 6
+local actor_money_total = 7
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+	event("presets"):register(PreSets)
+	event("options"):register(ReInit_Options)
+	bInit = true
+end
+function PreSets(e)
+	ReInit_Options()
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process (functions)
+--/ -----------------------------------------------------------------------------------------------
+function ReInit_Options(e)
+	tStats = {}
+	if db.is_dbg3 and bInit then
+		event("update_1sec"):register(OnUpdate_1s)
+		event("actor_task"):register(OnTask)
+		event("item_take"):register(OnTake)
+		event("item_drop"):register(OnDrop)
+		event("actor_trade"):register(OnTrade)
+		event("actor_destroy"):register(shutdown)
+	else
+		event("update_1sec"):unregister(OnUpdate_1s)
+		event("actor_task"):unregister(OnTask)
+		event("item_take"):unregister(OnTake)
+		event("item_drop"):unregister(OnDrop)
+		event("actor_trade"):unregister(OnTrade)
+		event("actor_destroy"):unregister(shutdown)
+	end
+end
+function OnTask(e)
+	update_task(e.task_id, e.objective_id, e.state_idx)
+end
+function OnTrade(e)
+	money_trade_update(e.item, e.sell, e.money)
+end
+function OnTake(e)
+	update_take_item(e.item)
+end
+function OnDrop(e)
+	update_drop_item(e.item, e.item_id, e.section)
+end
+
+--/-------------------------------------------------------------------
+function Get_Time()
+	return game.get_game_time():timeToString(2) --/> current game time in seconds (23:59:59)
+end
+
+function shutdown(e)
+	local sLevelName = level.name()
+	log("shutdown:level=[%s],time=[%s]:[%s]", sLevelName, Get_Time(), ">")
+	for a=1, #tStats do
+		if     tStats[a].id == actor_position then
+			log("(%s):pos:=[%s],time[%s],h=%s,r=%s,s=%s]%s", a, string.short(tStats[a].position), tStats[a].time, tStats[a].health, tStats[a].radiation, tStats[a].satiety, "")
+		elseif tStats[a].id == actor_item_take then
+			log("(%s):take:item=[%s],time[%s],pos[%s]%s", a, tStats[a].item_name, tStats[a].time, string.short(tStats[a].position), "")
+		elseif tStats[a].id == actor_item_drop then
+			log("(%s):drop:item=[%s],time[%s],pos[%s]%s", a, tStats[a].item_name, tStats[a].time, string.short(tStats[a].position), "")
+		elseif tStats[a].id == actor_money_trade or tStats[a].id == actor_money_quest or tStats[a].id == actor_money_total then
+			log("(%s):money:=[%s],time=[%s],pos[%s]%s", a, tStats[a].money, tStats[a].time, string.short(tStats[a].position), "")
+		end
+	end
+	tStats = {}
+end
+--/-------------------------------------------------------------------
+function OnUpdate_1s() --/ ~1 sec
+	local oActor = db.actor
+	if not oActor then return end --/>
+	local tT = {}
+	tT.time      = Get_Time()
+	tT.id        = actor_position
+	tT.position  = oActor:position()
+	tT.health    = oActor.health --or 1
+	tT.radiation = oActor.radiation --or 0
+	tT.satiety   = oActor.satiety --or 0
+	table.insert(tStats, tT)
+end
+--/-------------------------------------------------------------------
+function update_task(task_id, objective_id, state_idx)
+	local oActor = db.actor
+	if not oActor then return end --/>
+	local tT = {}
+	tT.time     = Get_Time()
+	tT.id       = actor_update_task
+	tT.position = oActor:position()
+	tT.task     = string.format("%s, %s, %s", task_id, objective_id, tostring(state_idx))
+	table.insert (tStats, tT)
+end
+--/-------------------------------------------------------------------
+function update_take_item(item)
+	local oActor = db.actor
+	if not (oActor and item) then return end --/>
+	local tT = {}
+	tT.time      = Get_Time()
+	tT.id        = actor_item_take
+	tT.position  = oActor:position()
+	tT.item_name = item:name()
+	table.insert(tStats, tT)
+end
+--/-------------------------------------------------------------------
+function update_drop_item(item, oid, section)
+	local oActor = db.actor
+	if not (oActor and item) then return end --/>
+	local tT = {}
+	tT.time      = Get_Time()
+	tT.id        = actor_item_drop
+	tT.position  = oActor:position()
+	tT.item_name = item:name()
+	table.insert(tStats, tT)
+end
+--/-------------------------------------------------------------------
+function money_trade_update(item, bSellBye, iAmont)
+	local oActor = db.actor
+	if not (oActor and db.is_dbg3) then return end --/>
+	local vPos = oActor:position()
+	local iMoney = iAmont
+	if bSellBye ~= true then
+		iMoney = -iMoney
+	end
+	local iTime = Get_Time()
+	local tT = {}
+	tT.time     = iTime
+	tT.id       = actor_money_trade
+	tT.position = vPos
+	tT.money    = iMoney
+	table.insert (tStats, tT)
+	tT = {}
+	tT.time     = iTime
+	tT.id       = actor_money_total
+	tT.position = vPos
+	tT.money    = oActor:money()
+	table.insert(tStats, tT)
+end
+--/-------------------------------------------------------------------
+function money_quest_update(iAmont, sAction)
+	local oActor = db.actor
+	if not (oActor and db.is_dbg3) then return end --/>
+	local vPos = oActor:position()
+	local iMoney = iAmont
+	if sAction == "out" then
+		iMoney = -iMoney
+	end
+	local iTime = Get_Time()
+	local tT = {}
+	tT.time     = iTime
+	tT.id       = actor_money_quest
+	tT.position = vPos
+	tT.money    = iMoney
+	table.insert(tStats, tT)
+	tT = {}
+	tT.time     = iTime
+	tT.id       = actor_money_total
+	tT.position = vPos
+	tT.money    = oActor:money()
+	table.insert(tStats, tT)
+end
+--/-------------------------------------------------------------------
+function money_update(iAmont, sAction)
+	local oActor = db.actor
+	if not (oActor and db.is_dbg3) then return end --/>
+	local iMoney = Amont
+	if sAction == "out" then
+		iMoney = -iMoney
+	end
+	local tT = {}
+	tT.time     = Get_Time()
+	tT.id       = actor_money_total
+	tT.position = oActor:position()
+	tT.money    = oActor:money()
+	table.insert(tStats, tT)
+end
+--/-------------------------------------------------------------------------------------------------

@@ -1,0 +1,215 @@
+
+-- file: pcPasswdBox.script
+-- author: barin
+-- date: 2008-12-16
+-- edited by: barin
+-- last edited: 2009-09-09
+
+class "uiPasswordEditBox" (CUIScriptWnd)
+
+function uiPasswordEditBox:__init(parent, passwd, passwd_info, x, y) super()
+	self:SetWindowName("uiPasswordEditBox")
+	self.owner = parent
+	
+	self.wnd_x = x
+	self.wnd_y = y
+	self.wnd_width = 290
+	self.wnd_height = 140
+	
+	self.blink_timer = nil
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self:reset(passwd, passwd_info)
+	
+	self.owner:AttachChild(self)
+end
+
+function uiPasswordEditBox:__finalize()
+end
+
+function uiPasswordEditBox:Update()
+	CUIScriptWnd.Update(self)
+	
+	if self:GetStatic("stc_wrong_passwd"):IsShown() and self.blink_timer ~= nil then
+		if time_global() >= self.blink_timer then
+			self:GetStatic("stc_wrong_passwd"):Show(false)
+			self.blink_timer = nil
+		end
+	end
+end
+
+function uiPasswordEditBox:reset(passwd, passwd_info)
+	if passwd == nil or passwd == "" then
+		self.password = ""
+	else
+		self.password = string.lower(passwd)
+	end
+	self.password_info = passwd_info
+	
+	if self:GetStatic("stc_wrong_passwd"):IsShown() then
+		self:GetStatic("stc_wrong_passwd"):Show(false)
+	end
+	
+	self:GetEditBox("edit_box_letters"):SetText("")
+	self:GetEditBox("edit_box_passwd"):SetText("")
+	
+	self:GetCheckButton("ckbtn_show_letters"):SetCheck(false)
+	self:OnShowLettersClicked()
+end
+
+function uiPasswordEditBox:OnChildDialogExit(child_name)
+end
+
+function uiPasswordEditBox:OnExit()
+	self:OnCancelBtnClicked()
+end
+
+function uiPasswordEditBox:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	if self.owner:WindowName() == "pcLoader" then
+		self.owner.xml:InitStatic("desktop:wallpaper_pc_locked", self)
+	end
+	
+	self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	self.wnd_frame:SetAutoDelete(true)
+	self:AttachChild(self.wnd_frame)
+	self.wnd_frame:SetCaption(game.translate_string("ui_pc_static_enter_password"))
+	self.wnd_frame:Show(true)
+	
+	local dlg = self.owner.xml:InitEditBox("passwd_editbox:edit_box_passwd", self)
+	dlg:SetWndPos(self.wnd_x + 20, self.wnd_y + 40)
+	self:Register(dlg, "edit_box_passwd")
+	
+	dlg = self.owner.xml:InitEditBox("passwd_editbox:edit_box_letters", self)
+	dlg:SetWndPos(self.wnd_x + 20, self.wnd_y + 40)
+	dlg:Show(false)
+	self:Register(dlg, "edit_box_letters")
+	
+	dlg = CUICheckButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("ckbtn_show_letters")
+	dlg:SetFont(GetFontLetterica16Russian())
+	dlg:SetTextColor(pcTextViewer.get_colour("yellow"))
+	dlg:SetTextAlign(CGameFont.alLeft)
+	dlg:EnableTextHighlighting(true)
+	dlg:SetTextY(-5)
+	dlg:Init(self.wnd_x + 17, self.wnd_y + 45 + self:GetEditBox("edit_box_passwd"):GetHeight(), 100, 30)
+	dlg:SetText(game.translate_string("ui_pc_static_show_letters"))
+	self:AttachChild(dlg)
+	
+	dlg = self.owner.xml:InitStatic("passwd_editbox:stc_wrong_passwd", self)
+	dlg:SetWndPos(self.wnd_x + 20, self.wnd_y + 45)
+	dlg:Show(false)
+	self:Register(dlg, "stc_wrong_passwd")
+	
+	dlg = self.owner.xml:Init3tButton("button_ordinary", self)
+	dlg:SetText(game.translate_string("ui_st_btn_ok"))
+	dlg:SetWndPos(self.wnd_x + 15, self.wnd_y + 70 + self:GetEditBox("edit_box_passwd"):GetHeight())
+	self:Register(dlg, "btn_ok")
+	
+	dlg = self.owner.xml:Init3tButton("button_ordinary", self)
+	dlg:SetText(game.translate_string("ui_st_btn_cancel"))
+	dlg:SetWndPos(self.wnd_x + 23 + self:GetEditBox("edit_box_passwd"):GetWidth() - dlg:GetWidth(),
+		self.wnd_y + 70 + self:GetEditBox("edit_box_passwd"):GetHeight())
+	self:Register(dlg, "btn_cancel")
+end
+
+function uiPasswordEditBox:InitCallBacks()
+	self:AddCallback("btn_ok", ui_events.BUTTON_CLICKED, self.OnOkBtnClicked, self)
+	self:AddCallback("btn_cancel", ui_events.BUTTON_CLICKED, self.OnCancelBtnClicked, self)
+	self:AddCallback("edit_box_passwd", ui_events.EDIT_TEXT_COMMIT, self.OnEditBoxTextCommit, self)
+	self:AddCallback("edit_box_passwd", ui_events.EDIT_TEXT_CHANGED, self.OnEditBoxTextChanged, self)
+	self:AddCallback("edit_box_letters", ui_events.EDIT_TEXT_COMMIT, self.OnEditBoxTextCommit, self)
+	self:AddCallback("edit_box_letters", ui_events.EDIT_TEXT_CHANGED, self.OnEditBoxTextChanged, self)
+	self:AddCallback("ckbtn_show_letters", ui_events.BUTTON_CLICKED, self.OnShowLettersClicked, self)
+	--self:AddCallback("ckbtn_show_letters", ui_events.CHECK_BUTTON_RESET, self.OnShowLettersReset, self)
+	--self:AddCallback("ckbtn_show_letters", ui_events.CHECK_BUTTON_SET, self.OnShowLettersSet, self)
+end
+
+function uiPasswordEditBox:OnShowLettersClicked()
+	local text = nil
+	if self:GetCheckButton("ckbtn_show_letters"):GetCheck() then
+		text = self:GetEditBox("edit_box_passwd"):GetText()
+		self:GetEditBox("edit_box_passwd"):SetText("")
+		self:GetEditBox("edit_box_passwd"):Show(false)
+		self:GetEditBox("edit_box_letters"):Show(true)
+		self:GetEditBox("edit_box_letters"):SetText(text)
+	else
+		text = self:GetEditBox("edit_box_letters"):GetText()
+		self:GetEditBox("edit_box_letters"):SetText("")
+		self:GetEditBox("edit_box_letters"):Show(false)
+		self:GetEditBox("edit_box_passwd"):Show(true)
+		self:GetEditBox("edit_box_passwd"):SetText(text)
+	end
+end
+
+function uiPasswordEditBox:OnShowLettersSet()
+	--parser.dbg_print("checkbox set")
+end
+
+function uiPasswordEditBox:OnShowLettersReset()
+	--parser.dbg_print("checkbox reset")
+end
+
+function uiPasswordEditBox:OnOkBtnClicked()
+	self:OnEditBoxTextCommit()
+end
+
+function uiPasswordEditBox:OnCancelBtnClicked()
+	self:PasswordCheckDone(false)
+end
+
+function uiPasswordEditBox:getActiveEditBoxName()
+	if self:GetCheckButton("ckbtn_show_letters"):GetCheck() then
+		return "edit_box_letters"
+	else
+		return "edit_box_passwd"
+	end
+end
+
+function uiPasswordEditBox:OnEditBoxTextCommit()
+	local edit_box = self:getActiveEditBoxName()
+	if string.lower(self:GetEditBox(edit_box):GetText()) == self.password then
+		self:PasswordCheckDone(true)
+	else
+		self.blink_timer = time_global() + 3000
+		self:GetEditBox(edit_box):SetText("")
+		self:GetStatic("stc_wrong_passwd"):Show(true)
+	end
+end
+
+function uiPasswordEditBox:PasswordCheckDone(value)	
+	if value then
+		if self.password_info then
+			if not has_alife_info(self.password_info) then
+				db.actor:give_info_portion(self.password_info)
+			end
+		end
+		self.owner:OnChildDialogExit(self:WindowName())
+	end
+	
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiPasswordEditBox:OnEditBoxTextChanged()
+	if self:GetStatic("stc_wrong_passwd"):IsShown() then
+		self.blink_timer = nil
+		self:GetStatic("stc_wrong_passwd"):Show(false)
+	end
+end
+
+function uiPasswordEditBox:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:PasswordCheckDone(false)
+			end
+		end
+	end
+	
+	return true
+end

@@ -1,0 +1,31 @@
+[logic]
+active = camper@sniper
+combat_ignore = combat_ignore@sniper
+on_death = death@sniper
+on_hit = hit@sniper
+danger = danger@sniper
+
+[death@sniper]
+on_info = {!is_npc_alive} %+gar_sniper_killed%
+
+[combat_ignore@sniper]
+
+[camper@sniper]
+path_walk = gar_sniper_point
+path_look = gar_sniper_look
+def_state_moving = raid
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+sniper = true
+combat_ignore_cond = {=ignore_not_seen}
+on_actor_dist_le_nvis = 100| %=hit_lazy_sniper%
+
+[danger@sniper]
+ignore_distance = 0
+
+[hit@sniper]
+;on_info = walker@sniper
+
+[walker@sniper]
+path_walk = gar_sniper_point
+path_look = gar_sniper_look

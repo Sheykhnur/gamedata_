@@ -1,0 +1,31 @@
+[smart_terrains]
+none = true
+
+[combat_ignore@ivancov]
+
+[danger@ros_duty_ivancov]
+ignore_distance = 0
+
+[logic]
+active = walker@ros_duty_base_ivancov
+inv_max_weight = 10000
+combat_ignore = combat_ignore@ivancov
+
+[walker@ros_duty_base_ivancov]
+path_walk = ros_duty_base_ivancov_walk
+path_look = ros_duty_base_ivancov_look
+danger = danger@ros_duty_ivancov
+soundgroup = bar_dolg_base_guard1
+meet = meet@ros_duty_base_ivancov
+combat_ignore_cond = always
+on_info = {+yan_bar_help_start} %=release%
+
+[meet@ros_duty_base_ivancov]
+abuse = false
+use = true
+use_wpn = true
+victim 			=  10 | actor
+victim_wpn 		= 10 | actor
+meet_state = 10|guard
+meet_state_wpn = 10|guard
+precond			= visibility

@@ -1,0 +1,26 @@
+[logic]
+active = sr_idle@check
+
+[sr_idle@check]
+on_actor_inside = sr_idle@in
+on_actor_outside = sr_idle@out
+
+[sr_idle@out]
+on_actor_inside = sr_idle@out_timer
+
+[sr_idle@out_timer]
+on_timer = 1000|sr_idle@out_saver
+on_actor_outside = {=is_not_jumping} sr_idle@in_saver
+
+[sr_idle@out_saver]
+on_actor_outside = {=is_not_jumping} sr_idle@in_saver
+on_info = {=out_of_safe_zone} sr_idle@in %=enable_save =safe_zone_autosave(in)%, {!out_of_safe_zone} sr_idle@in
+
+[sr_idle@in]
+on_actor_outside = {=is_not_jumping} sr_idle@in_timer
+
+[sr_idle@in_timer]
+on_timer = 1000|sr_idle@in_saver
+
+[sr_idle@in_saver]
+on_info = {!out_of_safe_zone} sr_idle@out %=safe_zone_autosave(out) =enable_save%, {=out_of_safe_zone} sr_idle@out %=enable_save%

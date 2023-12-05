@@ -1,0 +1,15 @@
+[logic]
+active = sr_idle@sar_flame
+
+[sr_idle@sar_flame]
+on_timer = 3500 | {!sar_cutscene_playing} sr_particle@sar_flame %+sar_flame1%, {=sar_cutscene_playing} sr_idle@wait
+
+[sr_idle@wait]
+on_timer = 7000 | sr_idle@sar_flame %-sar_flame1%
+
+[sr_particle@sar_flame]
+name = monsters\group\sar_flame
+path = sar_firetube1
+mode = 2
+looped = true
+on_timer = 7000 | sr_idle@sar_flame %-sar_flame1%

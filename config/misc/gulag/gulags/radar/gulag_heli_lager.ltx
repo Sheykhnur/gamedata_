@@ -1,0 +1,244 @@
+[combat_ignore@rad_lager2]
+
+[danger@rad_lager2]
+ignore_distance = 0
+
+[hit@rad_lager2]
+on_info = {=hit_by_actor} %+rad_actor_attacks_monolith%
+
+[death@rad_lager2]
+on_info = {=killed_by_actor} %+rad_actor_attacks_monolith%
+
+[heli]
+dist = 60
+
+[threshold@radar_monolith_lager2]
+max_ignore_distance = 8
+
+[logic@radar_monolith_lager2_walk1]
+active = walker@radar_monolith_lager2_walker1
+combat_ignore = combat_ignore@rad_lager2
+on_death = death@rad_lager2
+on_hit = hit@rad_lager2
+
+[walker@radar_monolith_lager2_walker1]
+path_walk = patrol1
+path_look = patrol1_look
+combat_ignore_cond = {=fighting_actor}
+on_info = {+rad_heli_started_work} camper@radar_monolith_lager2_walker1
+threshold = threshold@radar_monolith_lager2
+
+[camper@radar_monolith_lager2_walker1]
+path_walk = patrol1
+path_look = patrol1_look
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+threshold = threshold@radar_monolith_lager2
+meet = no_meet
+
+[logic@radar_monolith_lager2_walk2]
+active = walker@radar_monolith_lager2_walker2
+combat_ignore = combat_ignore@rad_lager2
+on_death = death@rad_lager2
+on_hit = hit@rad_lager2
+;heli_hunter = heli
+
+[walker@radar_monolith_lager2_walker2]
+path_walk = walk2
+path_look = look2
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+on_info = {+rad_heli_started_work} camper@radar_monolith_lager2_walker2
+threshold = threshold@radar_monolith_lager2
+
+[camper@radar_monolith_lager2_walker2]
+path_walk = walk2
+path_look = look2
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+threshold = threshold@radar_monolith_lager2
+
+[logic@radar_monolith_lager2_patrol1]
+active = walker@radar_monolith_lager2_normal
+combat_ignore = combat_ignore@rad_lager2
+on_death = death@rad_lager2
+on_hit = hit@rad_lager2
+heli_hunter = heli
+
+[walker@radar_monolith_lager2_normal]
+path_walk = rpg
+path_look = rpg_look
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+meet = no_meet
+on_info = {+radar_monolith_base_quest_start} walker@radar_monolith_lager2_rpg
+threshold = threshold@radar_monolith_lager2
+
+[walker@radar_monolith_lager2_rpg]
+path_walk = rpg
+path_look = rpg_look
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+meet = meet@radar_monolith_lager2_rpg_pre
+on_info = {+rad_heli_scene_trigger =dist_to_actor_le(4)} remark@radar_monolith_lager2_rpg_talk
+on_info2 = {+rad_heli_started_work} walker@radar_monolith_lager2_rpg_reserve
+threshold = threshold@radar_monolith_lager2
+danger = danger@rad_lager2
+
+[remark@radar_monolith_lager2_rpg_talk]
+snd = rad_replics3
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@rad_lager2
+target = actor
+on_signal = sound_end | walker@radar_monolith_lager2_to_place
+threshold = threshold@radar_monolith_lager2
+
+[walker@radar_monolith_lager2_to_place]
+path_walk = walk4
+path_look = walk4_look2
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+meet = meet@radar_monolith_lager2_rpg
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 3000 | walker@radar_monolith_lager2_timer
+threshold = threshold@radar_monolith_lager2
+
+[walker@radar_monolith_lager2_rpg_reserve]
+path_walk = walk4
+path_look = walk4_look2
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+;on_timer = 3000 | walker@radar_monolith_lager2_rpg_work
+on_info = {+rad_heli_scene_trigger =dist_to_actor_le(4)} remark@radar_monolith_lager2_rpg_talk_reserved
+threshold = threshold@radar_monolith_lager2
+meet = no_meet
+
+[walker@radar_monolith_lager2_rpg_work]
+path_walk = walk4
+path_look = walk4_look2
+combat_ignore_cond = {-rad_actor_attacks_monolith =fighting_actor}
+on_info = {-rad_rpg_given =dist_to_actor_le(3)} %=rpg_to_player%
+on_info2 = {+rad_heli_scene_trigger =dist_to_actor_le(4)} remark@radar_monolith_lager2_rpg_talk_reserved
+threshold = threshold@radar_monolith_lager2
+meet = no_meet
+
+[remark@radar_monolith_lager2_rpg_talk_reserved]
+snd = rad_replics3
+combat_ignore_cond = {-rad_actor_attacks_monolith}
+danger = danger@rad_lager2
+target = actor
+on_signal = sound_end | walker@radar_monolith_lager2_timer
+threshold = threshold@radar_monolith_lager2
+
+[walker@radar_monolith_lager2_timer]
+path_walk = walk4
+path_look = walk4_look2
+combat_ignore_cond = {-rad_actor_attacks_monolith =fighting_actor}
+on_info = {-rad_rpg_given =dist_to_actor_le(3)} %=rpg_to_player%
+on_info2 = {+rad_heli_dead} walker@radar_monolith_lager2_patrol1_1
+threshold = threshold@radar_monolith_lager2
+heli_hunter = true
+;can_fire_heli = true
+meet = no_meet
+
+[meet@radar_monolith_lager2_rpg_pre]
+use = true
+use_wpn = true
+meet_state = 15|hello_wpn|4|wait
+meet_state_wpn = 15|hello_wpn|4|wait
+abuse = false
+meet_talk_enabled = false
+victim = 15|actor
+victim_wpn = 15|actor
+
+[meet@radar_monolith_lager2_rpg_time]
+use = true
+use_wpn = true
+meet_state = 2|wait
+meet_state_wpn = 2|wait
+abuse = false
+victim = 0|actor
+victim_wpn = 0|actor
+
+[meet@radar_monolith_lager2_rpg]
+use = true
+use_wpn = true
+meet_state = 15|hello_wpn|4|wait %=rpg_to_player%
+meet_state_wpn = 15|hello_wpn|4|wait %=rpg_to_player%
+abuse = false
+meet_talk_enabled = false
+victim = 15|actor
+victim_wpn = 15|actor
+
+[walker@radar_monolith_lager2_patrol1_1]
+path_walk = walk1
+path_look = look1
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+threshold = threshold@radar_monolith_lager2
+meet = no_meet
+;heli_hunter = false
+
+[logic@radar_monolith_lager2_patrol2]
+active = patrol@radar_monolith_lager2_patrol2
+combat_ignore = combat_ignore@rad_lager2
+on_death = death@rad_lager2
+on_hit = hit@rad_lager2
+
+[patrol@radar_monolith_lager2_patrol2]
+path_walk = patrol2
+path_look = patrol2_look
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+on_info = {+rad_heli_started_work} walker@radar_monolith_lager2_patrol2
+threshold = threshold@radar_monolith_lager2
+
+[walker@radar_monolith_lager2_patrol2]
+path_walk = patrol2
+path_look = patrol2_look
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+threshold = threshold@radar_monolith_lager2
+
+[logic@radar_monolith_lager2_sit]
+active = kamper@radar_monolith_lager2_sit
+combat_ignore = combat_ignore@rad_lager2
+on_death = death@rad_lager2
+on_hit = hit@rad_lager2
+
+[kamper@radar_monolith_lager2_sit]
+path_walk = sit
+path_look = sit_look
+kamp_name = kamp1
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+threshold = threshold@radar_monolith_lager2
+
+[logic@radar_monolith_lager2_walk3]
+active = walker@radar_monolith_lager2_walker3
+combat_ignore = combat_ignore@rad_lager2
+on_death = death@rad_lager2
+on_hit = hit@rad_lager2
+
+[walker@radar_monolith_lager2_walker3]
+path_walk = walk3
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+meet = meet@radar_monolith_lager2_punk
+on_info = {+rad_monolith_outpost_welcome} walker@radar_monolith_lager2_payed
+threshold = threshold@radar_monolith_lager2
+
+[walker@radar_monolith_lager2_payed]
+path_walk = walk3
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+meet = no_meet
+on_info = {+rad_heli_started_work} walker@radar_monolith_lager2_walker3_agr
+threshold = threshold@radar_monolith_lager2
+
+[walker@radar_monolith_lager2_walker3_agr]
+path_walk = walk3
+combat_ignore_cond = {=fighting_actor -rad_actor_attacks_monolith}
+threshold = threshold@radar_monolith_lager2
+
+[meet@radar_monolith_lager2_punk]
+precond = visibility
+meet_state = 8|claim@rad_replics1|2|wait
+meet_state_wpn = 8|claim@rad_replics1|2|wait
+abuse = false
+victim = 10|actor
+victim_wpn = 10|actor
+use = true
+use_wpn = true

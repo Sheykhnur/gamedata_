@@ -1,0 +1,37 @@
+[combat_ignore@sci11]
+
+[danger@sar_sci11_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sci_11_1
+combat_ignore = combat_ignore@sci11
+danger = danger@sar_sci11_sc4
+
+[remark@sci_11_1]
+anim = sci_panel_full
+target = sar_scene_4_sci6_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_29} walker@sci11
+
+[walker@sci11]
+path_walk = sar_scene4_random2
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_timer = 5000 | walker@sci11_02
+on_info = {+sar_scene4_info_30} %=release%
+
+[walker@sci11_02]
+path_walk = sar_scene4_random21
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = sprint
+def_state_moving2 = sprint
+def_state_moving3 = sprint
+on_timer = 5000 | walker@sci11
+on_info = {+sar_scene4_info_30} %=release%

@@ -1,0 +1,76 @@
+[dont_spawn_character_supplies]
+
+[spawn]
+wpn_bm16
+ammo_12x70_cart = 2
+
+[combat_ignore]
+
+[smart_terrains]
+none = {-agr_krot_secret_info}
+agr2_st_factory = {+agr_krot_secret_info}
+
+[logic]
+active = walker@1
+combat_ignore = combat_ignore
+on_death = death
+
+[death]
+on_info = %+agr_factory_heli_start%
+
+[walker@1]
+path_walk = agr_entrance_walk1
+path_look = agr_entrance_look1
+on_signal = heli_start | remark
+combat_ignore_cond = {!fighting_actor}
+meet = no_meet
+
+[remark]
+anim = help_agr
+snd = agr_stalker_help_2
+on_timer = 8000 | %+agr_factory_heli_start% remark@2
+target = actor
+combat_ignore_cond = {!fighting_actor}
+meet = no_meet
+
+[remark@2]
+anim = guard
+target = actor
+on_timer = 2000 | remark@3
+meet = no_meet
+
+[remark@3]
+anim = threat_heli
+snd = agr_stalker_help_1
+on_timer = 5000 | remark@4
+combat_ignore_cond = {!fighting_actor}
+target = agr_heli2_idle_start,0
+meet = no_meet
+
+[remark@4]
+anim = threat_heli
+snd = agr_stalker_help_4
+on_timer = 2000 | walker
+target = agr_heli2_idle_start,0
+combat_ignore_cond = {!fighting_actor}
+meet = no_meet
+
+[walker]
+path_walk = agr_attacking_stalker
+path_look = agr_attacking_stalker_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_timer = 4000 | %+agr_factory_assault_skirmish%
+meet = no_meet
+on_info = {+agr_help_krot_done} walker@agr_well_walker
+;combat_ignore_cond = {!fighting_actor}
+
+
+[walker@agr_well_walker]
+path_walk = agr_factory_to_well_walk10
+path_look = agr_factory_to_well_look10
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+default_state_standing = guard

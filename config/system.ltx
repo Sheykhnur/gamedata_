@@ -1,0 +1,471 @@
+;====================================================================
+;--/ config-file: "system.ltx"
+;--/ Last edit: 23.07.2017
+;====================================================================
+
+#include "defines.ltx"
+#include "prefetch\prefetch.ltx"
+#include "weathers\environment.ltx"
+#include "weapons\weapons.ltx"
+#include "creatures\creatures.ltx"
+#include "misc\actor_hands.ltx"
+#include "misc\zones.ltx"
+#include "misc\postprocess.ltx"
+#include "misc\effectors.ltx"
+#include "misc\capture_visuals.ltx"
+#include "external.ltx"
+#include "misc\lights.ltx"
+
+#include "items\items.ltx" ;--/#+#
+
+#include "evaluation.ltx"
+#include "fonts.ltx"
+
+#include "alife.ltx"
+
+;--/ Smart Terrain
+#include "misc\smart_terrain.ltx"
+
+;--/ Respawns
+#include "misc\respawn.ltx"
+
+;--/ Extra Content
+#include "extracontent.ltx"
+
+#include "localization.ltx"
+;------------------------------------------------
+#include "files_sect.ltx" ;--/#+#
+;------------------------------------------------
+
+;------------------------------------------------
+;--/Lost Alpha engine config
+#include "lost_alpha\lost_alpha_cfg.ltx" ;--/#+# SkyLoader
+;------------------------------------------------
+;--/New (CoP) Upgrades System
+#include "misc\inventory_upgrades.ltx"
+#include "misc\upgrades_properties.ltx"
+;------------------------------------------------
+[inventory]
+;------------------------------------------------
+take_dist       = 1.9
+max_weight      = 350
+max_ruck        = 56
+max_belt        = 18
+slots           = 14
+
+slot_name_1  = Knife
+slot_name_2  = "Light gun"
+slot_name_3  = "Heavy gun"
+slot_name_4  = Grenades
+slot_name_5  = Apparatus
+slot_name_6  = Throw
+slot_name_7  = Outfit
+slot_name_8  = PDA
+slot_name_9  = Detector
+slot_name_10  = Torch
+slot_name_11 = Artefact
+slot_name_12 = Helmet
+slot_name_13 = PNV
+slot_name_14 = Anomaly_detector
+
+slot_persistent_1  = false ;--/ knife
+slot_persistent_2  = false ;--/ pistol
+slot_persistent_3  = false ;--/ automatic
+slot_persistent_4  = true  ;--/ grenades
+slot_persistent_5  = false ;--/ binocular
+slot_persistent_6  = true  ;--/ bolt
+slot_persistent_7  = false ;--/ outfit
+slot_persistent_8  = true  ;--/ pda
+slot_persistent_9  = false  ;--/ detector
+slot_persistent_10 = false  ;--/ torch
+slot_persistent_11 = true  ;--/ artefact
+slot_persistent_12 = false  ;--/ helmet
+slot_persistent_13 = false  ;--/ pnv
+slot_persistent_14 = false  ;--/ Anomaly_detector
+;--------------------------------------------------------
+
+;--------------------------------------------------------------------
+;--/ Objects
+;--------------------------------------------------------------------
+
+[script_object]
+GroupControlSection  = spawn_group
+$spawn               = "script\script object" ;-- option for Level Editor
+$npc                 = on                     ;-- option for Level Editor
+;$prefetch            = 32
+Scheduled            = on                     ;-- option for ALife Simulator
+Human                = off                    ;-- option for ALife Simulator
+cform                = skeleton               ;-- collision class
+class                = SCRPTOBJ               ;-- AI class
+
+[custom_script_object]
+GroupControlSection  = spawn_group
+discovery_dependency =
+$spawn               = "scripts\custom_object"
+cform                = skeleton
+class                = NW_ATTCH
+visual               = equipments\item_fmradio.ogf
+cost                 = 0
+inv_name             = "custom_script_object"
+inv_name_short       = "custom_script_object"
+inv_weight           = .5
+inv_grid_width       = 2
+inv_grid_height      = 1
+inv_grid_x           = 16
+inv_grid_y           = 12
+attach_angle_offset    = 0, 0, 0
+attach_position_offset = 0.08, 0.04, 0.03
+attach_bone_name       = bip01_r_hand
+
+[breakable_object]
+class                = O_BRKBL
+remove_time          = 10           ;--after remove_time seconds object will be removed after it is breaked
+immunity_factor      = 1.3          ;--hit power multiplier
+hit_break_threthhold       = 0.     ;--weapon impact can stand breakable_object
+collision_break_threthhold = 2000.f ;--collision impact can stand breakable_object
+
+[climable_object]
+class                = O_CLMBL
+
+[ph_skeleton_object]
+class                = P_SKELET
+remove_time          = 120
+
+[graph_point]
+class                = AI_GRAPH
+$spawn               = "ai\graph point"
+
+[spawn_group]
+GroupControlSection  = spawn_group
+$spawn               = "ai\spawn group" ;--option for Level Editor
+class                = AI_SPGRP
+
+[spawn_group_zone]
+GroupControlSection  = spawn_group_zone
+$spawn               = "ai\group zone" ;--option for Level Editor
+class                = AI_SPGRP
+
+[script_zone]
+GroupControlSection  =
+$spawn               = "ai\script zone"
+;$prefetch           = 4
+class                = SCRIPTZN
+script_binding       = xr_zones.bind
+
+[space_restrictor]
+GroupControlSection  = spawn_group_restrictor
+$spawn               = "ai\space_restrictor"
+;$prefetch           = 64
+class                = SPC_RS_S
+script_binding       = bind_restrictor.bind
+
+[level_changer]
+GroupControlSection  =
+$spawn               = "ai\level changer"
+;$prefetch           = 4
+class                = LVL_CHNG
+
+[zone_team_base]
+$spawn               = "network\team base"
+class                = Z_TEAMBS
+GroupControlSection  = spawn_group_zone
+
+[spectator]
+$player              = on
+class                = SPECT
+
+[tg_event]
+class                = EVENT
+
+;--------------------------------------------------------------------
+#include "lost_alpha\la_objects.ltx" ;--/#+#
+;--------------------------------------------------------------------
+
+[sound]
+occlusion_scale        = 0.4
+snd_collide_min_volume = 0.1
+snd_collide_max_volume = 100.
+
+[demo_record]
+speed0      = 0.3  ;60
+speed1      = 3.0  ;60
+speed2      = 15.0 ;60
+speed3      = 60.0
+ang_speed0  = 0.1
+ang_speed1  = 0.5
+ang_speed2  = 7.0
+ang_speed3  = 2.0
+
+;------------------------------------------------
+[explosion_marks]
+wallmarks           = wm\wm_grenade
+dist                = 0.5 ;2.4
+size                = 0.6 ;0.4
+max_count           = 5
+
+[bloody_marks]
+wallmarks           = wm\wm_blood_1,wm\wm_blood_2,wm\wm_blood_3
+dist                = 3.5  ;2.4 ;--(м) max расстояние отлета крови
+max_size            = 0.8  ;0.3 ;--(м)радиус пятна при хите силой nominal hit по большому объекту (по маленькому *0.5)
+min_size            = 0.06      ;--(м)минимальный радиус пятна
+nominal_hit         = 0.8       ;--величина номинального хита, при котором разлетается максимум крови (max_size)
+
+;--/ капли крови
+blood_drops         = wm\wm_blood_drop_1,wm\wm_blood_drop_2,wm\wm_blood_drop_3,wm\wm_blood_drop_4
+start_blood_size    = 0.4       ;--размер раны чтоб начала капать кровь
+stop_blood_size     = 0.025     ;--размер раны чтоб кровь остановилась (должно быть меньше start_blood_size)
+
+blood_drop_time     = 0.5       ;--OBSOLETE
+blood_drop_time_min = 0.8
+blood_drop_time_max = 3.0
+blood_drop_size     = 0.25       ;--размер капли (м) крови, которая упала
+
+[pda_spot_highlight]
+color = 255, 36, 0, 255
+
+[inventory_color_ammo]
+color = 128, 128, 255, 255
+
+[entity_fire_particles]
+fire_particles = damage_fx\burn_creatures
+start_burn_size = 0.0003    ;--размер ожега после которого начать играть партиклы огня
+stop_burn_size  = 0.0001    ;--размер ожега после которого остановить партиклы
+min_burn_time   = 6000     ;--минимальное время отыгрыша партиклов (даже если рана уже зажила)
+
+[hud_cursor]
+;--all sizes in percentes from screen length
+cross_length        = 0.008               ;--length "stick" of crosshair
+min_radius          = 0.0               ;--minimal radius
+max_radius          = 0.8               ;--max radius
+radius_lerp_speed   = 0.08                 ;--speed of interpolation placements of crosshair
+cross_color         = 0.7,0.7,0.7,0.5   ;--color of crosshair
+disp_scale          = 0.08               ;--scale of crosshair (relatively radians)
+
+
+[hud_hitmark]
+hit_mark_texture = ui\ui_hud_hit_mark
+;ui\ui_hud_hit_mark
+;ui\ui_hud_hit_mark_01
+;ui\ui_hud_hit_mark_02
+;ui\ui_hud_hit_mark_03
+;ui\ui_hud_hit_mark_04
+;ui\ui_hud_hit_mark_05
+;ui\ui_hud_hit_mark_06
+;ui\ui_hud_hit_mark_07
+;ui\ui_hud_hit_mark_08
+;ui\ui_hud_hit_mark_09
+;ui\ui_hud_hit_mark_10
+;ui\ui_hud_hit_mark_11
+;ui\ui_hud_hit_mark_12
+;ui\ui_hud_hit_mark_13
+;ui\ui_hud_hit_mark_14
+;ui\ui_hud_hit_mark_15
+;ui\ui_hud_hit_mark_16
+;ui\ui_hud_hit_mark_17
+;ui\ui_hud_hit_mark_18
+;--------------------------------------------------------------------
+
+[actor_firsteye_cam]
+apply_inert              = on
+lim_pitch                = -1.57, 1.57
+lim_yaw                  = 0, 0
+rot_speed                = 3.14, 3.14, 0
+
+[actor_ladder_cam]
+lim_pitch                = -1.5, 1.5
+lim_yaw                  = -1.0, 1.0
+rot_speed                = 3.14, 3.14, 0
+
+[actor_free_cam]
+;----------------
+apply_inert              = off
+lim_pitch                = -1.5, 1.5
+lim_yaw                  = 0, 0
+lim_zoom                 = 0.4, 10
+rot_speed                = 3.14, 1.0, 10
+
+[actor_look_cam]
+lim_pitch                = -0.7, 1
+lim_yaw                  = 0, 0
+lim_zoom                 = 1.1, 5
+rot_speed                = 2, 2, 2
+offset                   = 0.4,0.2,-0.2
+
+[mounted_weapon_cam]
+lim_pitch                = -0.5, 0.5
+lim_yaw                  = -2.0, 2.0
+rot_speed                = 3.14, 1.0, 0
+
+[car_firsteye_cam]
+apply_inert              = on
+lim_pitch                = -0.8, 0.6
+lim_yaw                  = -2.6, 2.6
+rot_speed                = 3.14, 1.0, 0
+
+[car_free_cam]
+apply_inert              = on
+lim_pitch                = 0, 1.56
+lim_yaw                  = 0, 0
+lim_zoom                 = 1, 7
+rot_speed                = 3.14, 1.0, 10
+
+[car_look_cam]
+apply_inert              = on
+lim_pitch                = 0, 1.56
+lim_yaw                  = 0    , 0
+lim_zoom                 = 1, 7
+rot_speed                = 25, 1.0, 10
+
+[actor_look_cam_psp]
+lim_pitch                = -0.7, 1
+lim_yaw                  = 0, 0
+lim_zoom                 = 1.1, 5
+rot_speed                = 2, 2, 2
+offset                   = 0.4,0.2,0
+autoaim_speed_y          = 0, 0
+autoaim_speed_x          = 0, 0
+
+[heli_free_cam]
+lim_pitch                = -1.5, 1.5
+lim_yaw                  = 0, 0
+lim_zoom                 = 5, 25
+rot_speed                = 3.14, 1.0, 10
+
+[heli_front_cam]
+;lim_yaw                  = -0.01,0.01
+lim_pitch                = -1.2, 1.2
+lim_yaw                  = -1.5, 1.5
+rot_speed                = 3.14, 1.5, 0
+
+[heli_look_cam]
+lim_pitch                = 0, 1.56
+lim_yaw                  = 0, 0
+lim_zoom                 = 5, 15
+rot_speed                = 3.14, 1.0, 10
+
+[interface]
+font_game                = font_game
+font_small               = font_small
+bloodmark_life_time		 = 180.0
+
+[zone_pick_dof]
+far						 = 10.0
+near 					 = -1500.0
+
+;--параметры показывания входящих сообщений PDA в главном меню
+[maingame_ui]
+pda_msgs_max_show_time  = 20000
+info_msgs_max_show_time = 10000
+snd_new_contact         = detectors\contact_1
+snd_new_contact1        = detectors\contact_8
+
+[multiplayer_skins]
+stalker_killer_head_1   = 0,380
+stalker_killer_antigas  = 128,380
+stalker_killer_head_3   = 256,380
+stalker_killer_mask     = 384,380
+stalker_killer_exoskeleton  = 512,380
+stalker_sci_killer      = 640,380
+stalker_killer_military = 768,380
+
+stalker_sv_balon_10     = 0,705
+stalker_sv_hood_9       = 128,705
+stalker_sv_rukzak_3     = 256,705
+stalker_sv_rukzak_2     = 384,705
+stalker_sv_exoskeleton  = 512,705
+stalker_sci_svoboda     = 640,705
+stalker_sv_military     = 768,705
+
+[main_ingame_indicators_thresholds] ;skyloader: not used, new section is [la_main_ingame_indicators_thresholds]
+radiation               = 0.1,0.25,0.4,0.55,0.7
+wounds                  = 0.01,0.2,0.4,0.6,0.8
+jammed                  = 0.5,0.6,0.7,0.8,0.9
+starvation              = 0.5,0.6,0.7,0.8,0.9
+fatigue                 = 0.3,0.6,0.7,0.8,0.9
+
+[tutorial_conditions_thresholds]
+power                   = 0.7
+bleeding                = 0.25
+satiety                 = 0.8
+thirsty                 = 0.8
+radiation               = 0.1
+psy_health              = 0.7
+weapon_jammed           = 0.9
+
+[squad_manager]
+schedule_min            =   1
+schedule_max            = 999
+
+[agent_manager]
+schedule_min            = 100
+schedule_max            = 1000
+
+[collision_damage]
+bonce_damage_factor_for_objects = 1.
+
+[physics]
+object_damage_factor    = 1.2f
+
+[details]
+swing_normal_amp1   = .1
+swing_normal_amp2   = .05
+swing_normal_rot1   = 30.0
+swing_normal_rot2   = 1.0
+swing_normal_speed  = 2.0
+;--fast
+swing_fast_amp1     = 0.35;0.25
+swing_fast_amp2     = .20;0.15
+swing_fast_rot1     = 5
+swing_fast_rot2     = .5;0.75
+swing_fast_speed    = 0.5;1
+
+[script]
+current_server_entity_version = 7
+
+;-----------------------------------------------------------------
+;--/ Trade
+;-----------------------------------------------------------------
+[trade]
+;--коэффициенты изменения цены при торговле в зависимости от отношения к персонажу
+;--линейно апроксимируются между значения
+;--используются как значения по-умолчанию, в случае если не указаны цены для конкретного предмета
+;--phobos2077: в оригинале ТЧ и ЗП эти коэффициенты hostile/friendly перепутаны в движке, в ЛА параметры исправлены
+buy_price_factor_hostile   = 0.3 ;--коэффициент покупки при goodwill = -100
+buy_price_factor_friendly  = 0.7 ;--коэффициент покупки при goodwill = 100
+sell_price_factor_hostile  = 3.0 ;--коэффициент покупки при goodwill = -100
+sell_price_factor_friendly = 2.2 ;--коэффициент покупки при goodwill = 100
+buy_allowed                = false ; -- разрешена ли по умолчанию покупка, если для секции предмета не настроены цены
+sell_allowed               = true ; -- разрешена ли по умолчанию продажа, если для секции предмета не настроены цены
+
+;------------------------------------------------
+;--/ ГЕНЕРАТОРЫ ИМЕН
+;------------------------------------------------
+[stalker_names_stalker]
+name_cnt        = 102
+last_name_cnt   = 599
+
+[stalker_names_bandit]
+name_cnt        = 36
+last_name_cnt   = 180
+
+[stalker_names_science]
+name_cnt        = 14
+last_name_cnt   = 27
+
+[stalker_names_private]
+name_cnt        = 1
+last_name_cnt   = 200
+
+[stalker_names_sergeant]
+name_cnt        = 1
+last_name_cnt   = 200
+
+[stalker_names_lieutenant]
+name_cnt        = 1
+last_name_cnt   = 200
+
+[stalker_names_captain]
+name_cnt        = 1
+last_name_cnt   = 200
+
+;====================================================================

@@ -1,0 +1,57 @@
+;***********************Sakharov**************************
+
+[smart_terrains]
+none = true
+
+[combat_ignore]
+
+[logic@scientist_start]
+;active = walker@scientist_start
+active = walker@scientist_talk
+;active = remark@talking
+combat_ignore = combat_ignore
+trade = misc\trade\trade_sakharov.ltx
+inv_max_weight = 10000
+
+[walker@scientist_start]
+path_walk = yan_sakharov_start_walk
+path_look = yan_sakharov_start_look
+default_state_standing = yan_professor_wait
+combat_ignore_cond = always
+on_actor_dist_le_nvis = 10| walker@scientist_talk
+
+[walker@scientist_talk]
+path_walk = yan_sakharov_talk_walk
+path_look = yan_sakharov_talk_look
+default_state_standing = yan_professor_wait
+combat_ignore_cond = always
+on_signal = talk| remark@start_talking
+
+[remark@start_talking]
+anim = yan_professor_wait
+target = actor
+meet = meet@start_talking
+combat_ignore_cond = always
+;on_info = {+yan_scientist_pda_done} remark@helmet_talk
+
+[meet@start_talking]
+meet_state 			= 3| yan_professor_wait
+meet_state_wpn 		= 3| yan_professor_wait
+victim         		= 3| actor   
+victim_wpn    		= 3| actor   
+use                 = true
+use_wpn             = false
+
+[remark@helmet_talk]
+anim = yan_professor_wait
+target = actor
+meet = meet@helmet_talking
+combat_ignore_cond = always
+
+[meet@helmet_talking]
+meet_state 			= 3| yan_professor_wait
+meet_state_wpn 		= 3| yan_professor_wait
+victim         		= 3| actor   
+victim_wpn    		= 3| actor   
+use                 = true
+use_wpn             = false

@@ -1,0 +1,28 @@
+[combat_ignore]
+
+[logic]
+active = remark@wall
+combat_ignore = combat_ignore
+
+[remark@wall]
+anim = sci_talk
+combat_ignore_cond = always
+meet = no_meet
+target = x16_to_wall_stand, 0
+on_info = {=dist_to_actor_le(5) -x16_additional2} remark@to_player
+on_info2 = {=dist_to_actor_le(3) +x16_additional2} remark@get_lost_wall
+
+[remark@to_player]
+anim = wait
+snd = x16_replics27
+combat_ignore_cond = always
+meet = no_meet
+target = actor
+on_timer = 25000 | remark@wall %+x16_additional2%
+
+[remark@get_lost_wall]
+anim = sci_talk
+combat_ignore_cond = always
+meet = no_meet
+snd = x16_replics28
+on_signal = sound_end | remark@wall

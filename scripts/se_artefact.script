@@ -1,0 +1,69 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : se_artefact.script
+ Description: 
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : SkyLoader
+ Last edit  : 20.02.2017 [SkyLoader]
+--]] ----------------------------------------------------------------------------------------------
+
+class "se_artefact" (cse_alife_item_artefact)
+
+function se_artefact:__init (section) super (section)
+	self.ini_initialized = false
+	self.spawner = nil
+	self.is_day_night = false
+end
+--------------------
+function se_artefact:can_switch_offline ()
+     return cse_alife_item_artefact.can_switch_offline (self)
+end
+--------------------
+function se_artefact:can_switch_online ()
+	if not self.ini_initialized then
+		self.ini_initialized = true
+		local ini = self:spawn_ini()
+		if ini and ini:section_exist("spawner") then
+			self.spawner = xr_logic.parse_condlist(db.actor, "spawner", "cond", Get_Cfg_String(ini, "spawner", "cond", ""))
+		end
+	end
+
+	if self.spawner then
+		if not (db.actor and db.actor:alive()) then
+			return self.online --/>
+		end
+		
+		if self.online then
+			return xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) ~= nil --/>
+		end
+		return cse_alife_item_artefact.can_switch_online (self) and xr_logic.pick_section_from_condlist(db.actor, self, self.spawner) ~= nil --/>
+	end
+
+	if self.is_day_night == false then
+		return cse_alife_item_artefact.can_switch_online (self)
+	end
+
+	-- обработаем ситуацию, когда актер дал дуба или вообще отсутствует
+	if db.actor == nil or db.actor:alive () == false then
+		return self.online  --просто вернем текущее состояние. 
+	end
+    
+	-- если есть родитель, то ничего не ломаем.
+	if self.parent_id ~= 65535 then
+		return true 
+	end   
+    
+	if self.online == true then --обработаем ситуацию, когда артефакт в онлайне
+		--если ночь (или актера нет или он дал дуба, то мы в онлайне и остаемся 
+		if level.vertex_position (self.m_level_vertex_id):distance_to (db.actor:position ()) < 50 then
+			return true  --если актер слишком близко, то оставляем все как есть
+		end
+		return false -- актер далеко - в оффлайн.
+	else --обработаем ситуацию, когда артефакт в оффлайне   
+		if level.vertex_position (self.m_level_vertex_id):distance_to (db.actor:position ()) < 50 then
+			return false  --если актер слишком близко, то оставляем все как есть
+		end
+		return true -- актер далеко - в онлайн.
+	end
+end
+--------------------

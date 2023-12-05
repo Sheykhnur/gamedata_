@@ -1,0 +1,507 @@
+
+-- file: pcDesktop.script
+-- author: barin
+-- date: 2008-12-17
+-- edited by: barin
+-- last edited: 2010-10-27
+
+local pc = nil
+
+local max_btn_per_row = 11
+local max_btn_per_col = 10
+local max_buttons = max_btn_per_row * max_btn_per_col
+
+local icons_alignment = token_list()
+icons_alignment:add("horizontal", 0)
+icons_alignment:add("vertical", 1)
+icons_alignment:add("mess", 2)
+
+local file_types =
+{
+	info = true, image = true, gallery = true, audio = true,
+	video = true, binary = true, tetris = true,	puzzle = true,
+	solitare = true, source_code = true,	sys = true
+}
+
+local btn_icons =
+{
+	info = "ui_pc_icon_txt", -- "ui_pc_icon_text"
+	audio = "ui_pc_icon_wav", -- "ui_pc_icon_mp3"
+	video = "ui_pc_icon_video2", -- ui_pc_icon_mov "ui_pc_icon_avi", "ui_pc_icon_video1"
+	image = "ui_pc_icon_png", -- "ui_pc_icon_jpg"
+	gallery = "ui_pc_icon_image",
+	dvd = "ui_pc_icon_dvd",
+	net = "ui_pc_icon_net2", -- "ui_pc_icon_net1"
+	system = "ui_pc_icon_pc3", -- "ui_pc_icon_pc1", "ui_pc_icon_pc2"
+	rb_empty = "ui_pc_icon_recyclebin_empty1", -- "ui_pc_icon_recyclebin_empty2"
+	rb_full = "ui_pc_icon_recyclebin_full1", -- "ui_pc_icon_recyclebin_full2"
+	tetris = "ui_pc_icon_tetris",
+	puzzle = "ui_pc_icon_puzzle",
+	solitare = "ui_pc_icon_cards1", -- "ui_pc_icon_cards2", "ui_pc_icon_cards3"
+	binary = "ui_pc_icon_dmg", -- "ui_pc_icon_sys", "ui_pc_icon_dll"
+	sys = "ui_pc_icon_sys",
+	source_code = "ui_pc_icon_cmd",
+	console = "ui_pc_icon_console"
+}
+
+function DispatchClickEvent(wnd, btn_name)
+	wnd:OnButtonClicked(btn_name)
+end
+
+-- ***************************************************************************************** --
+
+class "uiDesktop" (CUIScriptWnd)
+
+function uiDesktop:__init(parent) super()
+	self:NeedCenterCursor(true)
+	la_utils.custom_ui_usage("show", script_name())
+	
+	self:SetWindowName("desktop")
+	
+	self.owner = parent
+	self.xml = parent.xml
+	
+	self.btn_clicked = nil
+	
+	self.buttons = {}
+	self.btn_num = 0
+	
+	self:InitControls()
+	self:AddDialogs()
+	self:AddPcData()
+	self:InitCallBacks()
+end
+
+function uiDesktop:__finalize()
+end
+
+function uiDesktop:Update()
+	CUIScriptWnd.Update(self)
+	self:GetStatic("stc_timer"):SetText(game.get_game_time():timeToString(game.CTime.TimeToMinutes))
+end
+
+function uiDesktop:InitControls()
+	self.wnd_width = device().width
+	self.wnd_height = device().height
+	self.wnd_x, self.wnd_y = 0, 0
+	
+	self:Init(self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+	
+	local wallpaper = nil
+	
+	if self.owner.pc_data.wallpaper ~= nil then
+		wallpaper = self.owner.pc_data.wallpaper
+	else
+		wallpaper = "wallpaper" .. math.random(1, 7)
+	end
+	
+	self.xml:InitStatic("desktop:wallpaper_pc_locked", self)
+	self.xml:InitStatic("desktop:" .. wallpaper, self)
+	self.xml:InitStatic("desktop:monitor_frame", self)
+	
+	if not self.owner.pc_data.cerberus then
+		self.xml:InitStatic("desktop:stc_caption", self)
+		self.xml:InitStatic("desktop:stc_xray_tech", self)
+	else
+		self.xml:InitStatic("desktop:stc_cerberus", self)
+	end
+	
+	self.xml:InitStatic("desktop:monitor_led", self)
+	
+	self:Register(self.xml:InitStatic("desktop:stc_timer", self), "stc_timer")
+	self:Register(self.xml:InitButton("desktop:power_btn", self), "btn_power")
+end
+
+function uiDesktop:AddDialogs()
+	--local x = self.wnd_x + self.wnd_width / 2
+	--local y = self.wnd_y + self.wnd_height / 2
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box, "message_box")
+	
+	--self.dlg_password = pcPasswdBox.uiPasswordEditBox(self, nil, nil, x - 145, y - 70)
+	self.dlg_password = pcPasswdBox.uiPasswordEditBox(self, nil, nil, la_utils.get_hud_center(290, 140))
+	self.dlg_password:SetAutoDelete(true)
+	
+	--self.dlg_text = pcTextViewer.uiTextViewer(self, x - 215, y - 185)
+	self.dlg_text = pcTextViewer.uiTextViewer(self, la_utils.get_hud_center(430, 370))
+	self.dlg_text:SetAutoDelete(true)
+	
+	--self.dlg_media = pcMediaPlayer.uiMediaPlayer(self, x - 160, y - 150)
+	self.dlg_media = pcMediaPlayer.uiMediaPlayer(self, la_utils.get_hud_center(320, 300))
+	self.dlg_media:SetAutoDelete(true)
+	
+	--self.dlg_image = pcImageViewer.uiImageViewer(self, x - 214, y - 185)
+	self.dlg_image = pcImageViewer.uiImageViewer(self, la_utils.get_hud_center(428, 370))
+	self.dlg_image:SetAutoDelete(true)
+	
+	--self.dlg_gallery = pcGalleryViewer.uiGalleryViewer(self, x - 315, y - 210)
+	self.dlg_gallery = pcGalleryViewer.uiGalleryViewer(self, la_utils.get_hud_center(630, 420))
+	self.dlg_gallery:SetAutoDelete(true)
+	
+	--self.dlg_tetris = pcTetris.uiTetris(self, x - 280, y - 265)
+	self.dlg_tetris = pcTetris.uiTetris(self, la_utils.get_hud_center(560, 530))
+	self.dlg_tetris:SetAutoDelete(true)
+	
+	--self.dlg_puzzle = pcPuzzle.uiPuzzles(self, x - 370, y - 260)
+	self.dlg_puzzle = pcPuzzle.uiPuzzles(self, la_utils.get_hud_center(740, 520))
+	self.dlg_puzzle:SetAutoDelete(true)
+	
+	--self.dlg_solitare = pcSolitare.uiSolitare(self, x - 340, y - 255)
+	self.dlg_solitare = pcSolitare.uiSolitare(self, la_utils.get_hud_center(680, 510))
+	self.dlg_solitare:SetAutoDelete(true)
+	
+	--self.dlg_hex = pcHexViewer.uiHexJunk(self, x - 240, y - 185)
+	self.dlg_hex = pcHexViewer.uiHexJunk(self, la_utils.get_hud_center(480, 370))
+	self.dlg_hex:SetAutoDelete(true)
+	
+	--self.dlg_code = pcSourceCode.uiSourceCode(self, x - 290, y - 225)
+	self.dlg_code = pcSourceCode.uiSourceCode(self, la_utils.get_hud_center(580, 450))
+	self.dlg_code:SetAutoDelete(true)
+	
+	--self.console = pcConsole.uiConsole(self, x - 250, y - 200)
+	self.console = pcConsole.uiConsole(self, la_utils.get_hud_center(500, 400))
+	self.console:AddHeader(self.owner.pc_data.user_name)
+	self.console:SetAutoDelete(true)
+end
+
+function uiDesktop:IsFile(b)
+	if b and self.buttons[b] then
+		return file_types[self.buttons[b].type]
+	end
+	
+	return false
+end
+
+function uiDesktop:DisplayDialog(dlg, btn_name, ...)
+	dlg:reset(...)
+	
+	if dlg:WindowName() ~= "uiPasswordEditBox" then
+		if self:IsFile(btn_name) then
+			self.console:Log("file_open")
+		end
+	end
+	
+	level.start_stop_menu(dlg, true)
+	self.btn_clicked = btn_name
+end
+
+function uiDesktop:InitCallBacks()
+	self:AddCallback("btn_power", ui_events.BUTTON_CLICKED, self.OnPowerBtnClicked, self)
+	
+	local btn_name = nil
+	for index = 1, self.btn_num do
+		btn_name = "button_" .. index
+		self:AddCallback(btn_name, ui_events.BUTTON_CLICKED, self.buttons[btn_name].callback, self)
+	end
+end
+
+function uiDesktop:OnChildDialogExit(child_name)
+	if child_name == "uiPasswordEditBox" then
+		if self.btn_clicked then
+			self:OnButtonClicked(self.btn_clicked)
+		end
+	else
+		if self:IsFile(self.btn_clicked) then
+			self.console:Log("file_close")
+		end
+		
+		self.btn_clicked = nil
+	end
+end
+
+function uiDesktop:OnPowerBtnClicked()
+	la_utils.custom_ui_usage("hide", script_name())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiDesktop:OnButtonClicked(btn_name)
+	local btn = self.buttons[btn_name]
+	
+	if btn.data.password then
+		self.btn_clicked = btn_name
+		if btn.data.password_info then
+			if not has_alife_info(btn.data.password_info) then
+				self:DisplayDialog(self.dlg_password, btn_name,
+					btn.data.password, btn.data.password_info)
+				return
+			end
+		else
+			self:DisplayDialog(self.dlg_password, btn_name,
+				btn.data.password, btn.data.password_info)
+			return
+		end
+	end
+	
+	if btn.type == "info" then
+		self:DisplayDialog(self.dlg_text, btn_name, btn.data)
+	elseif btn.type == "image" then
+		self:DisplayDialog(self.dlg_image, btn_name, btn.data)
+	elseif btn.type == "gallery" then
+		self:DisplayDialog(self.dlg_gallery, btn_name, btn.data)
+	elseif btn.type == "audio" then
+		self:DisplayDialog(self.dlg_media, btn_name, "audio", btn.data)
+	elseif btn.type == "video" then
+		self:DisplayDialog(self.dlg_media, btn_name, "video", btn.data)
+	elseif btn.type == "tetris" then
+		self:DisplayDialog(self.dlg_tetris, btn_name)
+	elseif btn.type == "puzzle" then
+		self:DisplayDialog(self.dlg_puzzle, btn_name)
+	elseif btn.type == "solitare" then
+		self:DisplayDialog(self.dlg_solitare, btn_name)
+	elseif btn.type == "binary" then
+		self:DisplayDialog(self.dlg_hex, btn_name)
+	elseif btn.type == "source_code" or btn.type == "sys" then
+		self:DisplayDialog(self.dlg_code, btn_name, btn.data)
+	elseif btn.type == "console" then
+		self:DisplayDialog(self.console, btn_name)
+	else
+		self.message_box:Init("pc_message_box_error")
+		--self.message_box:Init("message_box_error")
+		
+		--local x = self.wnd_x + self.wnd_width / 2
+		--local y = self.wnd_y + self.wnd_height / 2
+		
+		--self.message_box:SetWndPos(x - 208, y - 99)
+		self.message_box:SetWndPos(la_utils.get_hud_center(416, 198))
+		self.message_box:SetText(game.translate_string(btn.data.text))
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		
+		if btn.type == "rb_full" then
+			self:GetButton(btn_name):InitTexture(btn_icons["rb_empty"])
+			btn.type = "rb_empty"
+			btn.data.text = "pc_rb_empty_info"
+		end
+	end
+end
+
+function uiDesktop:GetButtonsAlignment()
+	self.btn_num = 5 -- sys, net, console, dvd, recbin
+	self.btn_num = self.btn_num + self.owner.pc_data.known_hex
+	
+	if self.owner.pc_data.tetris then
+		self.btn_num = self.btn_num + 1
+	end
+	if self.owner.pc_data.puzzle then
+		self.btn_num = self.btn_num + 1
+	end
+	if self.owner.pc_data.solitare then
+		self.btn_num = self.btn_num + 1
+	end
+	
+	if self.owner.pc_data.known_info ~= nil then
+		self.btn_num = self.btn_num + #self.owner.pc_data.known_info
+	end
+	if self.owner.pc_data.known_image ~= nil then
+		self.btn_num = self.btn_num + #self.owner.pc_data.known_image
+	end
+	if self.owner.pc_data.known_galleries ~= nil then
+		self.btn_num = self.btn_num + 1
+	end
+	if self.owner.pc_data.known_audio ~= nil then
+		self.btn_num = self.btn_num + #self.owner.pc_data.known_audio
+	end
+	if self.owner.pc_data.known_video ~= nil then
+		self.btn_num = self.btn_num + #self.owner.pc_data.known_video
+	end
+	if self.owner.pc_data.known_code ~= nil then
+		self.btn_num = self.btn_num + #self.owner.pc_data.known_code
+	end
+	
+	if self.btn_num == 0 then
+		abort("[%s.script] pc_data not specified!", script_name())
+		return {}
+	elseif self.btn_num > max_buttons then
+		abort("[%s.script] max buttons: %d, got: %d, extra [%d] buttons removed",
+			script_name(), max_buttons, self.btn_num, max_buttons - self.btn_num)
+		self.btn_num = max_buttons
+	end
+	
+	local row, col = nil, nil	
+	local btn_positions = {}
+	
+	local alignment = self.owner.pc_data.icons_alignment
+	if type(alignment) == "string" then
+		alignment = icons_alignment:id(alignment)
+	else
+		alignment = math.random(1, 1000) % 3
+	end
+	
+	for row = 1, max_btn_per_col do
+		btn_positions[row] = {}
+		for col = 1, max_btn_per_row do
+			btn_positions[row][col] = {x = col * 80, y = row * 63, reserved = false}
+			--btn_positions[row][col] = {x = col * 80, y = row * 60, reserved = false}
+		end
+	end
+	
+	if alignment == icons_alignment:id("mess") then
+		row, col = math.random(1, max_btn_per_col), math.random(1, max_btn_per_row)	
+		for index = 1, self.btn_num do
+			while btn_positions[row][col].reserved do
+				row, col = math.random(1, max_btn_per_col), math.random(1, max_btn_per_row)
+			end
+			btn_positions[row][col].reserved = true
+		end
+	else
+		local modulo = max_btn_per_col
+		row, col = 1, 1
+		
+		if alignment == icons_alignment:id("horizontal") then
+			modulo = max_btn_per_row
+		end
+		
+		for index = 1, self.btn_num do
+			btn_positions[row][col].reserved = true
+			if index % modulo == 0 then
+				if alignment == icons_alignment:id("vertical") then
+					col = col + 1
+					row = 1
+				else
+					col = 1
+					row = row + 1
+				end
+			else
+				if alignment == icons_alignment:id("vertical") then
+					row = row + 1
+				else
+					col = col + 1
+				end
+			end
+		end
+	end
+	
+	local btn_pos = {}
+	for row = 1, max_btn_per_col do
+		for col = 1, max_btn_per_row do
+			if btn_positions[row][col].reserved then
+				table.insert(btn_pos, btn_positions[row][col])
+			end
+		end
+	end
+	
+	return btn_pos
+end
+
+function uiDesktop:AddButton(index, btn_data, btn_type, x, y)
+	local btn_name = "button_" .. index
+	
+	local btn = CUIButton()
+	btn:SetAutoDelete(true)
+	btn:SetWindowName(btn_name)
+	btn:SetWndPos(x, y)
+	btn:SetWidth(48)
+	btn:SetHeight(48)
+	btn:SetFont(pcTextViewer.get_font("small"))
+	btn:SetTextColor(pcTextViewer.get_colour("yellow"))
+	btn:SetText(game.translate_string(btn_data.name))
+	btn:SetTextY(32)
+	
+	local texture = btn_icons[btn_type]
+	if btn_data.icon then
+		texture = btn_data.icon
+	end
+	if btn_type == "source_code" then
+		if not btn_data.lang then
+			texture = btn_icons["sys"]
+		elseif #btn_data.lang == 0 then
+			texture = btn_icons["sys"]
+		end
+	end
+	
+	btn:InitTexture(texture)
+	self:AttachChild(btn)
+	self.buttons[btn_name] =
+	{
+		type = btn_type,
+		data = btn_data,
+		callback = function() DispatchClickEvent(self, "button_" .. index) end
+	}
+end
+
+function uiDesktop:AddPcData()
+	local btn_pos = self:GetButtonsAlignment()
+	self.buttons = {}
+	
+	if #btn_pos > 0 then
+		local index = 1
+		
+		local is_desktop = self.owner.pc_data.pc_type == "desktop"
+		
+		self:AddButton(index, {icon = if_then_else(is_desktop, "ui_pc_icon_pc1", "ui_pc_icon_pc2"),
+			name = "pc_sys_icon_name", text = "pc_sys_info"}, "system", btn_pos[index].x, btn_pos[index].y)
+		index = index + 1
+		self:AddButton(index, {icon = if_then_else(is_desktop, "ui_pc_icon_net1", "ui_pc_icon_net2"),
+			name = "pc_net_icon_name", text = "pc_net_info"}, "net", btn_pos[index].x, btn_pos[index].y)
+		index = index + 1
+		self:AddButton(index, {name = "ui_pc_static_console"}, "console", btn_pos[index].x, btn_pos[index].y)
+		index = index + 1
+		self:AddButton(index, {name = "pc_dvd_icon_name", text = "pc_dvd_info" .. math.random(1, 2)},
+			"dvd", btn_pos[index].x, btn_pos[index].y)
+		index = index + 1
+		
+		if math.random() > 0.5 then
+			self:AddButton(index, {icon = if_then_else(is_desktop, "ui_pc_icon_recyclebin_empty1", "ui_pc_icon_recyclebin_empty2"),
+				name = "pc_rb_icon_name", text = "pc_rb_empty_info"}, "rb_empty", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		else
+			self:AddButton(index, {icon = if_then_else(is_desktop, "ui_pc_icon_recyclebin_full1", "ui_pc_icon_recyclebin_full2"),
+				name = "pc_rb_icon_name", text = "pc_rb_full_info"}, "rb_full", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		
+		if self.owner.pc_data.tetris then
+			self:AddButton(index, {name = "Tetris"}, "tetris", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		if self.owner.pc_data.puzzle then
+			self:AddButton(index, {name = "Puzzle"}, "puzzle", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		if self.owner.pc_data.solitare then
+			self:AddButton(index, {name = "Solitare"}, "solitare", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		for k, v in pairs(self.owner.pc_data.known_info) do
+			self:AddButton(index, v, "info", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		for k, v in pairs(self.owner.pc_data.known_image) do
+			self:AddButton(index, v, "image", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		if self.owner.pc_data.known_galleries ~= nil then
+			self:AddButton(index, self.owner.pc_data.known_galleries, "gallery", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		for k, v in pairs(self.owner.pc_data.known_audio) do
+			self:AddButton(index, v, "audio", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		for k, v in pairs(self.owner.pc_data.known_video) do
+			self:AddButton(index, v, "video", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		for k, v in pairs(self.owner.pc_data.known_code) do
+			self:AddButton(index, v, "source_code", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+		for k = 1, self.owner.pc_data.known_hex do
+			self:AddButton(index, {name = "unnamed"}, "binary", btn_pos[index].x, btn_pos[index].y)
+			index = index + 1
+		end
+	end
+end
+
+function uiDesktop:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnPowerBtnClicked()
+			end
+		end
+	end
+	
+	return true
+end

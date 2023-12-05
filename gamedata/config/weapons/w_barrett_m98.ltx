@@ -1,0 +1,182 @@
+; Американская снайперская винтовка Barrett M98B
+;-------------------------------------------------------------------------
+; патрон 									.338 Lapua Magnum (8,6x70 мм)
+; длина ствола 								685,8 мм
+; магазин									10
+; вес с пустым магазином					6.12 кг
+; вес с пустым магазином и опт. прицелом	7.04 кг
+; максимальная дальность стрельбы			--
+; эффективная дальность стрельбы			1500 м
+; прицельная дальность						1500 м
+; дульная скорость пули						914 м/с
+; темп стрельбы								30 в/м
+;-------------------------------------------------------------------------
+[wpn_barrett_m98]:weapon_base,weapon_8.6x70
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\m98b"
+animation_slot                          = 2
+class                                   = WP_SVD
+repair_compatibility                    = barett
+scheduled                               = off
+single_handed                           = 0
+weapon_class                            = sniper_rifle
+weapon_rank                             = 4
+
+; Inventory icon
+inv_grid_width                          = 6
+inv_grid_height                         = 2
+inv_grid_x                              = 0
+inv_grid_y                              = 26
+scope_x                                 = 53
+scope_y                                 = 7
+silencer_x                              = 268
+silencer_y                              = 21
+
+; Text
+inv_name                                = st_wpn_m98b
+inv_name_short                          = st_wpn_m98b
+description                             = st_wpn_m98b_descr
+
+; Visual
+hud                                     = wpn_m98b_hud
+position                                = -0.026, -0.077, 0.00
+orientation                             = 0, 0, 0
+scope_texture                           = wpn_crosshair_mark4
+strap_position                          = -0.15, -0.15, 0.45
+strap_orientation                       = -25, -189, 65
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_m98b\wpn_m98b.ogf
+
+; Effects
+fire_point                              = 0.0, 0.129, 0.942
+fire_point2                             = 0.0, 0.129, 0.942
+shell_point                             = 0.0, 0.129, 0.192
+shell_dir                               = 0.0, 0.0, 0.4
+light_disabled                          = false
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 4.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+silencer_light_color                    = 0.6, 0.5, 0.3
+silencer_light_range                    = 0.01
+silencer_light_var_color                = 0.05
+silencer_light_var_range                = 0.5
+silencer_light_time                     = 0.2
+scope_alive_detector					= scope_detector
+
+; Sounds
+snd_close                               = weapons\generic_close
+snd_draw                                = weapons\m98b\m98b_draw
+snd_empty                               = weapons\m98b\m98b_empty, 0.7
+snd_holster                             = weapons\m98b\m98b_holster
+snd_reload                              = weapons\m98b\m98b_reload
+snd_shoot                               = weapons\m98b\m98b_shoot, 2.0, -0.2
+snd_silncer_shot                        = weapons\m98b\m98b_shot_sil
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapons2
+upgr_icon_x                             = 0
+upgr_icon_y                             = 800
+upgr_icon_width                         = 300
+upgr_icon_height                        = 100
+
+; Cost & Weight
+cost                                    = 25000
+inv_weight                              = 7.1
+ph_mass                                 = 7
+
+; Ammo
+ammo_elapsed                            = 10
+ammo_mag_size                           = 10
+
+; Features
+fire_modes                              = 1
+scope_status                            = 1
+scope_dynamic_zoom                      = on
+scope_zoom_factor                       = 12.2
+silencer_status                         = 0
+
+; Impact
+
+; Ballistics
+fire_dispersion_base                    = 0.05
+
+; Performance
+rpm                                     = 40
+rpm_semi                                = 50
+
+; Reliability
+misfire_start_prob                      = 0.0055
+misfire_end_prob                        = 0.055
+condition_shot_dec                      = 0.00125 ; 800 shots
+condition_queue_shot_dec                = 0.00125
+
+; Handling
+control_inertion_factor                 = 1.0f
+PDM_disp_base                           = 1.0
+PDM_disp_vel_factor                     = 0.5
+PDM_disp_accel_factor                   = 0.5
+sprint_allowed                          = true
+
+; Recoil
+cam_relax_speed                         = 6.0
+cam_dispersion                          = 1.5
+cam_step_angle_horz                     = 1.0
+zoom_cam_dispersion                     = 0.5
+zoom_cam_step_angle_horz                = 0.05
+zoom_cam_max_angle                      = 20.0
+
+; Aiming
+zoom_enabled                            = true
+zoom_rotate_time                        = 0.4
+zoom_inertion_factor                    = 1.05
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_5plus3plus3
+upgrades                                = up_gr_firstab_barrett_m98, up_gr_seconab_barrett_m98, up_gr_thirdab_barrett_m98
+installed_upgrades                      =
+
+; AI Params
+ef_main_weapon_type                     = 3
+ef_weapon_type                          = 8 ; Sniper rifle
+min_radius                              = 50
+max_radius                              = 90
+holder_range_modifier                   = 2.00
+holder_fov_modifier                     = 0.75
+
+
+[wpn_m98b_hud]:hud_base
+aim_hud_offset_pos                      = -0.0525,0.0125,-0.123
+aim_hud_offset_pos_16x9                 = -0.0525,0.0125,-0.123
+aim_hud_offset_rot                      = 0,0,0
+aim_hud_offset_rot_16x9                 = 0,0,0
+anim_bore                               = m98b_idle_aim
+anim_hide                               = m98b_holster,,1.8
+anim_idle                               = m98b_idle
+anim_idle_aim                           = m98b_idle_aim
+anim_idle_moving                        = m98b_idle_moving
+anim_idle_sprint                        = m98b_idle_sprint
+anim_reload                             = m98b_reload
+anim_shots                              = m98b_shoot
+anim_show                               = m98b_draw
+attach_place_idx                        = 0
+fire_bone                               = wpn_body
+fire_point                              = 0,0.043,1.002
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 1.9,3.95,0.6
+hands_orientation_16x9                  = 1.9,3.95,0.6
+hands_position                          = -0.0515,-0.2,0.1
+hands_position_16x9                     = -0.0515,-0.2,0.1
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_m98b\wpn_m98b_hud.ogf
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_dir                               = 0,1,0
+shell_point                             = 0.025,0.055,0.221
+zoom_hide_crosshair                     = true

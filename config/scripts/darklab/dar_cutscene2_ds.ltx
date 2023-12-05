@@ -1,0 +1,47 @@
+[combat_ignore@dar_scene2]
+
+[danger@dar_scene2]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_scene2]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = remark@darklab_sci_scene2_ds3
+combat_ignore = combat_ignore@dar_scene2
+
+[walker@darklab_sci_scene2_ds3_on]
+path_walk = darklab_sci_scene2_walk2_on
+combat_ignore_cond = always
+danger = danger@dar_scene2
+on_info = {+dar_cutscene_activate2} remark@darklab_sci_scene2_ds3
+
+[remark@darklab_sci_scene2_ds3]
+anim = bio_wait
+combat_ignore_cond = always
+danger = danger@dar_scene2
+threshold = threshold@dar_scene2
+on_info = {+dar_bumps} remark@darklab_sci_scene2_ds4
+target = darklab_ds_scene2_walk1_look, 0
+
+[remark@darklab_sci_scene2_ds4]
+anim = bio_wait
+snd = dar_replics13
+combat_ignore_cond = always
+danger = danger@dar_scene2
+threshold = threshold@dar_scene2
+on_signal = sound_end | %+dar_sci2_info_1%
+on_info = {+dar_bumps2} remark@darklab_sci_scene2_ds5
+target = darklab_ds_scene2_walk1_look, 0
+
+[remark@darklab_sci_scene2_ds5]
+anim = bio_wait
+snd = dar_replics15
+combat_ignore_cond = always
+danger = danger@dar_scene2
+threshold = threshold@dar_scene2
+target = darklab_ds_scene2_walk1_look, 0
+on_signal = sound_end | %+dar_sci2_info_3%
+on_info = {+dar_cutscene2_end} %=release%

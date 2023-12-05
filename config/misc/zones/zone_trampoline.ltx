@@ -1,0 +1,242 @@
+;-------Основа-------- Трамплин
+[zone_mosquito_bald]
+
+$prefetch 					= 16
+class						= ZS_MBALD
+name						= Bald
+
+hit_impulse_scale			= 0.3
+effective_radius			= 0.85 									;размер радиуса в процентах от оригинального, где действует зона
+actor_blowout_radius_percent= 0.75
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+sound						= zone_mosquito_bald
+
+hit_type					= strike
+
+hit_power					= 0.99
+
+hit_koef_car				= 3.0
+car_kill_engine				= true
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= true
+art_onstart_spawn_prob		= 0.02
+art_onstart_spawn_cicles	= 1
+
+idle_particles				= anomaly2\trampoline_idle_hide
+blowout_particles			= anomaly2\gravity_blast_01
+
+hit_small_particles			= hit_fx\hit_metal_02
+hit_big_particles			= anomaly2\gravity_damage_02_blood2
+idle_small_particles		= anomaly2\gravity_damage_01_smoke
+idle_big_particles			= anomaly2\gravity_damage_02_smoke
+entrance_small_particles	= anomaly2\gravity_entrance_small
+entrance_big_particles		= anomaly2\gravity_entrance_big ;anomaly2\gravity_entrance_big
+
+idle_sound					= anomaly\gravi_rumble1; ambient\fx2	;постоянный звук
+blowout_sound				= anomaly\anomaly_gravy_blast1; anomaly_gravy_blast01	;во время выброса(удара) в центре аномалии	
+hit_sound					= anomaly\anomaly_gravy_hit1			;на персонаже, когда тот получает хит
+entrance_sound				= anomaly\anomaly_gravy_hit1			;при попадании объекта в аномалию
+
+awaking_time				= 50
+blowout_time				= 500	
+accamulate_time				= 3000
+
+blowout_light_time			= 200
+blowout_explosion_time		= 200
+blowout_particles_time		= 200
+blowout_sound_time  		= 100
+
+disable_time				= 5000									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 5000									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 100									;время отключения idle партиклов
+
+blowout_wind				= on
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 300
+blowout_wind_time_end		= 501; 899
+blowout_wind_power			= 0.5
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+blowout_light				= off
+idle_light					= off
+
+visible_by_detector 		= on
+
+artefacts					= af_medusa,6,af_cake,6,af_bouquet,6,af_cristall_flower,1
+
+;----------- рождение артефактов во время срабатывания
+spawn_blowout_artefacts 	= on
+artefact_spawn_probability 	= 0.04									;вероятность, что во время погибания существа в аномалии будет рожден артефакт
+artefact_spawn_particles	= anomaly2\gravi_anomaly_shield_00		;партиклы, которые отыграются на месте рождения артефакта (опционально)
+artefact_born_sound 		= anomaly\anomaly_gravy_hit1			;звук, который отыграются на месте рождения артефакта (опционально)
+throw_out_power 			= 7										;импульс с которым артефакт будет выброшен из зоны в произвольном направлении
+artefact_spawn_height 		= 1										;(м) высота на центром зоны где будет рожден артефакт
+artefact_spawn_cicles		= 1									;Кол-во циклов на проверку шанса спавна арта Поумолчанию = 2
+
+
+;-------*Слабая*--------
+[zone_mosquito_bald_weak]:zone_mosquito_bald
+$spawn 						= "zones\trampoline\zone_trampoline_weak"
+awaking_time				= 80
+blowout_time				= 500	
+
+hit_impulse_scale			= 100.0
+effective_radius			= 0.65 
+actor_blowout_radius_percent= 0.6
+
+artefacts					= af_medusa,8,af_cake,8,af_bouquet,8
+
+hit_power					= 0.59
+
+blowout_wind_power			= 0.2
+
+;-------Не производящая артефактов на спавне
+[zone_mosquito_bald_weak_noart]:zone_mosquito_bald_weak,anomaly_base_noart
+$spawn 						= "zones\trampoline\zone_trampoline_weak_noart"
+
+
+;-------*Средняя*--------
+[zone_mosquito_bald_average]:zone_mosquito_bald
+$spawn 						= "zones\trampoline\zone_trampoline_average"
+awaking_time				= 80
+blowout_time				= 500	
+
+hit_impulse_scale			= 125
+effective_radius			= 0.75 
+actor_blowout_radius_percent= 0.8
+
+artefacts					= af_cristall_flower,8
+
+hit_power					= 1.09
+
+blowout_wind_power			= 0.5
+
+;-------Не производящая артефактов на спавне
+[zone_mosquito_bald_average_noart]:zone_mosquito_bald_average,anomaly_base_noart
+$spawn 						= "zones\trampoline\zone_trampoline_average_noart"
+
+
+;-------*Сильная*--------
+[zone_mosquito_bald_strong]:zone_mosquito_bald
+$spawn 						= "zones\trampoline\zone_trampoline_strong"
+awaking_time				= 50
+blowout_time				= 500
+
+hit_impulse_scale			= 200.0
+effective_radius			= 0.8 
+actor_blowout_radius_percent= 0.85
+
+artefacts					= af_night_star,8
+
+hit_power					= 1.54
+
+blowout_wind_power			= 1
+
+;-------Не производящая артефактов на спавне
+[zone_mosquito_bald_strong_noart]:zone_mosquito_bald_strong,anomaly_base_noart
+$spawn 						= "zones\trampoline\zone_trampoline_strong_noart"
+
+
+;-------*Сильная*--------
+[zone_mosquito_bald_very_strong]:zone_mosquito_bald
+$spawn 						= "zones\trampoline\zone_trampoline_very_strong"
+awaking_time				= 50
+blowout_time				= 500
+
+hit_impulse_scale			= 350.0
+effective_radius			= 1.0
+actor_blowout_radius_percent= 1.0
+
+hit_power					= 1.79
+
+artefacts					= af_night_star,1,af_dummy_spring,2,af_dummy_dummy,2
+
+blowout_wind_power			= 2
+
+;-------Не производящая артефактов на спавне
+[zone_mosquito_bald_very_strong_noart]:zone_mosquito_bald_very_strong,anomaly_base_noart
+$spawn 						= "zones\trampoline\zone_trampoline_very_strong_noart"
+
+
+
+;-------*********--------
+[zone_sarcofag]
+$spawn 						= "zones\sarcofag\zone_sarcofag_death"
+$prefetch 					= 16
+class						= Z_MBALD
+hit_impulse_scale			= 0.3;0.5 ;0.1
+effective_radius			= 0.85 									;размер радиуса в процентах от оригинального, где действует зона
+actor_blowout_radius_percent= 0.75
+
+ef_anomaly_type				= 1
+ef_weapon_type				= 13
+
+sound						= zone_mosquito_bald
+
+postprocess					= mosquito_bald
+
+hit_type					= strike
+
+hit_power					= 1.69
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= false
+
+idle_particles				= anomaly2\bold_idle_sarkofag
+blowout_particles			= anomaly2\bold_sarkofag_blast
+
+hit_small_particles			= hit_fx\hit_metal_02
+hit_big_particles			= anomaly2\gravity_damage_02_blood2
+idle_small_particles		= anomaly2\gravity_damage_01_smoke
+idle_big_particles			= anomaly2\gravity_damage_02_smoke
+entrance_small_particles	= anomaly2\gravity_entrance_small
+entrance_big_particles		= anomaly2\gravity_entrance_big ;anomaly2\gravity_entrance_big
+
+idle_sound					= anomaly\gravi_rumble1; ambient\fx2	;постоянный звук
+blowout_sound				= anomaly\anomaly_gravy_blast1; anomaly_gravy_blast01	;во время выброса(удара) в центре аномалии	
+hit_sound					= anomaly\anomaly_gravy_hit1			;на персонаже, когда тот получает хит
+entrance_sound				= anomaly\anomaly_gravy_hit1			;при попадании объекта в аномалию
+
+awaking_time				= 50;100
+blowout_time				= 500	
+accamulate_time				= 500
+
+blowout_light_time			= 200
+blowout_explosion_time		= 200
+blowout_particles_time		= 200
+blowout_sound_time  		= 100
+
+disable_time				= 5000									;время игнорирования неживого объекта в зоне (-1 если не нужно)
+disable_time_small			= 5000									;время игнорирования маленького неживого объекта в зоне (-1 если не нужно)
+disable_idle_time			= 100									;время отключения idle партиклов
+
+ignore_nonalive				= true
+ignore_small				= true
+ignore_artefacts			= true
+
+blowout_light				= on
+light_color		    		= 0.5,0.4,0.3
+light_range		    		= 30.0
+light_time 		    		= 0.9;0.35
+light_height				= 1.5									;подъем источника света на высоту
+
+idle_light					= off
+
+visible_by_detector 		= on
+
+artefacts					= 
+spawn_blowout_artefacts 	= off
+
+blowout_wind				= off
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 300
+blowout_wind_time_end		= 501; 899
+blowout_wind_power			= 0.5			;сила поднимаего ветра (от 0 до 1), в момент blowout_wind_time_peak 

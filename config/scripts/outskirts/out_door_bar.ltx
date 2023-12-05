@@ -1,0 +1,26 @@
+;BAR ENTRANCE DOOR
+[logic]
+active = {+out_door_unlocked} ph_door@open, {-out_door_unlocked} ph_door@locked
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = metal_small_locked
+on_info = {+out_door_unlocked} ph_door@closed
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+;on_timer = 5000| ph_door@closed
+on_use = ph_door@closed

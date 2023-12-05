@@ -1,0 +1,223 @@
+[logic]
+active = heli_move@start
+
+[heli_move@start]
+path_move = ds_heli_starter
+engine_sound = false
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 60
+on_info = {-ds_sin_blackout +ds_heli_start} heli_move@1
+
+
+[heli_move@1]
+path_move = ds_heli_zone1
+combat_velocity = 20
+combat_safe_altitude = -1
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone9|heli_move@9
+on_actor_in_zone9 = ds_zone10|heli_move@10
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@2]
+path_move = ds_heli_zone2
+combat_velocity = 30
+combat_safe_altitude = -5
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone1|heli_move@1
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone9|heli_move@9
+on_actor_in_zone9 = ds_zone10|heli_move@10
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@3]
+path_move = ds_heli_zone3
+combat_velocity = 30
+combat_safe_altitude = -5
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone1|heli_move@1
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone9|heli_move@9
+on_actor_in_zone9 = ds_zone10|heli_move@10
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@4]
+path_move = ds_heli_zone4
+combat_velocity = 30
+combat_safe_altitude = -10
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone1|heli_move@1
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone9|heli_move@9
+on_actor_in_zone9 = ds_zone10|heli_move@10
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@5]
+path_move = ds_heli_zone5
+combat_velocity = 30
+combat_safe_altitude = -10
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone1|heli_move@1
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone9|heli_move@9
+on_actor_in_zone9 = ds_zone10|heli_move@10
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@6]
+path_move = ds_heli_zone6
+combat_velocity = 30
+combat_safe_altitude = -10
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone1|heli_move@1
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone9|heli_move@9
+on_actor_in_zone9 = ds_zone10|heli_move@10
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@7]
+path_move = ds_heli_zone7
+combat_velocity = 30
+combat_safe_altitude = -10
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone8|heli_move@8
+on_actor_in_zone7 = ds_zone9|heli_move@9
+on_actor_in_zone8 = ds_zone10|heli_move@10
+on_actor_in_zone9 = ds_zone1|heli_move@1
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@8]
+path_move = ds_heli_zone8
+combat_velocity = 30
+combat_safe_altitude = -10
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone9|heli_move@9
+on_actor_in_zone8 = ds_zone10|heli_move@10
+on_actor_in_zone9 = ds_zone1|heli_move@1
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@9]
+path_move = ds_heli_zone9
+combat_velocity = 30
+combat_safe_altitude = -10
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone10|heli_move@10
+on_actor_in_zone9 = ds_zone1|heli_move@1
+on_heli_death = %+ds_heli_dead%
+
+[heli_move@10]
+path_move = ds_heli_zone10
+combat_velocity = 30
+combat_safe_altitude = -10
+combat_enemy = actor
+combat_use_rocket = false
+combat_use_mgun = true
+;invulnerable = true
+on_info = {+ds_heli_stop} heli_move@start
+default_velocity = 40
+on_actor_in_zone = ds_zone2|heli_move@2
+on_actor_in_zone2 = ds_zone3|heli_move@3
+on_actor_in_zone3 = ds_zone4|heli_move@4
+on_actor_in_zone4 = ds_zone5|heli_move@5
+on_actor_in_zone5 = ds_zone6|heli_move@6
+on_actor_in_zone6 = ds_zone7|heli_move@7
+on_actor_in_zone7 = ds_zone8|heli_move@8
+on_actor_in_zone8 = ds_zone9|heli_move@9
+on_actor_in_zone9 = ds_zone1|heli_move@1
+on_heli_death = %+ds_heli_dead%
+

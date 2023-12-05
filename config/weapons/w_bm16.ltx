@@ -1,0 +1,173 @@
+[wpn_bm16]:weapon_base,weapon_12ga
+$npc                                    = on
+$prefetch                               = 8
+$spawn                                  = "weapons\bm16_short"
+animation_slot                          = 3
+class                                   = WP_BM16
+hand_dependence                         = 1
+repair_compatibility                    = doublebarrel
+scheduled                               = off
+weapon_class                            = shotgun
+weapon_rank                             = 1
+
+; Inventory icon
+inv_grid_width                          = 3
+inv_grid_height                         = 1
+inv_grid_x                              = 6
+inv_grid_y                              = 19
+
+; Text
+inv_name                                = wpn-bm16
+inv_name_short                          = wpn-bm16
+description                             = enc_weapons1_wpn-bm16
+
+; Visual
+hud                                     = wpn_bm16_hud
+position                                = -0.026, -0.096, 0.045
+orientation                             = 0, 30, 0
+direction                               = 0, 0, 1
+normal                                  = 0, 1, 0
+strap_position                          = -0.26,-0.11,0.15
+strap_orientation                       = -15,-9,110
+strap_bone0                             = bip01_spine2
+strap_bone1                             = bip01_spine1
+visual                                  = dynamics\weapons\wpn_bm16\wpn_bm16.ogf
+
+; Effects
+fire_point                              = 0.000000, 0.136000, 0.390000
+fire_point2                             = 0.000000, 0.136000, 0.390000
+smoke_particles                         = amik\weapons\smoke_particles\smoke_particles_pump_01
+shell_point                             = 0.0, 0.136, 0.07
+light_color                             = 0.6, 0.5, 0.3
+light_range                             = 6.0
+light_var_color                         = 0.05
+light_var_range                         = 0.5
+light_time                              = 0.2
+
+; Sounds
+snd_draw                                = weapons\bm16\bm16_draw
+snd_empty                               = weapons\bm16\bm16_empty
+snd_holster                             = weapons\shotgun_holster
+snd_reload                              = weapons\bm16\bm16_reload_lr
+snd_reload_1                            = weapons\bm16\bm16_reload_l
+snd_shoot                               = weapons\bm16\bm16_shoot
+snd_shoot_1                             = weapons\bm16\bm16_shoot
+snd_shoot_duplet                        = weapons\bm16\bm16_shoot
+
+; Upgrade icon
+upgr_icon                               = ui_inGame2_upgrade_weapon_Obrez
+upgr_icon_x                             = 599
+upgr_icon_y                             = 559
+upgr_icon_width                         = 272
+upgr_icon_height                        = 54
+
+; Cost & Weight
+cost                                    = 1000
+inv_weight                              = 1.9
+ph_mass                                 = 3
+
+; Ammo
+ammo_mag_size                           = 2
+
+; Features
+fire_modes                              = 2, 1
+scope_status                            = 0
+silencer_status                         = 0
+grenade_launcher_status                 = 0
+
+; Impact
+hit_power                               = 0.9
+
+; Ballistics
+bullet_speed                            = 250
+fire_distance                           = 150
+fire_dispersion_base                    = 1.26
+
+; Performance
+rpm                                     = 1200
+rpm_empty_click                         = 200
+
+; Reliability
+condition_shot_dec                      = 0.00125
+condition_queue_shot_dec                = 0.00125
+
+; Handling
+PDM_disp_base                           = 2.0
+PDM_disp_vel_factor                     = 1.2
+PDM_disp_accel_factor                   = 1.2
+
+; Recoil
+cam_dispersion                          = 9.0
+cam_dispersion_inc                      = 2.0
+cam_dispersion_frac                     = 1.0
+cam_step_angle_horz                     = 8.0
+cam_relax_speed                         = 9.0
+
+; Aiming
+zoom_enabled                            = true
+
+; Upgrades
+upgrade_scheme                          = upgrade_scheme_bm16
+upgrades                                = up_gr_firstab_bm16, up_gr_seconab_bm16, up_gr_thirdab_bm16
+installed_upgrades                      =
+
+; AI Params
+ef_main_weapon_type                     = 1
+ef_weapon_type                          = 7
+min_radius                              = 0
+max_radius                              = 15
+holder_range_modifier                   = 1.0
+holder_fov_modifier                     = 1.0
+
+
+[wpn_bm16_hud]:hud_base
+aim_hud_offset_pos                      = -0.088,0.0893,0
+aim_hud_offset_pos_16x9                 = -0.088,0.0893,0
+aim_hud_offset_rot                      = 0.0228,0.0385,0
+aim_hud_offset_rot_16x9                 = 0.0228,0.0385,0
+anim_bore_0                             = bm16_idle_aim,idle_both
+anim_bore_1                             = bm16_idle_aim,idle_one
+anim_bore_2                             = bm16_idle_aim,idle
+anim_hide_0                             = bm16_holster,idle_both,2.0
+anim_hide_1                             = bm16_holster,idle_one,2.0
+anim_hide_2                             = bm16_holster,idle,2.0
+anim_idle_0                             = bm16_idle,idle_both
+anim_idle_1                             = bm16_idle,idle_one
+anim_idle_2                             = bm16_idle,idle
+anim_idle_aim_0                         = bm16_idle_aim,idle_both
+anim_idle_aim_1                         = bm16_idle_aim,idle_one
+anim_idle_aim_2                         = bm16_idle_aim,idle
+anim_idle_moving_0                      = bm16_idle_moving,idle_both
+anim_idle_moving_1                      = bm16_idle_moving,idle_one
+anim_idle_moving_2                      = bm16_idle_moving,idle
+anim_idle_moving_crouch_0               = bm16_idle_crouch,idle_both
+anim_idle_moving_crouch_1               = bm16_idle_crouch,idle_one
+anim_idle_moving_crouch_2               = bm16_idle_crouch,idle
+anim_idle_sprint_0                      = bm16_idle_sprint,idle_both
+anim_idle_sprint_1                      = bm16_idle_sprint,idle_one
+anim_idle_sprint_2                      = bm16_idle_sprint,idle
+anim_reload_1                           = bm16_reload,reload_one
+anim_reload_2                           = bm16_reload,reload_both
+anim_shot_1                             = bm16_shoot_one,shoot_both
+anim_shot_2                             = bm16_shoot_both,shoot_one
+anim_show_0                             = bm16_draw,idle_both,2.25
+anim_show_1                             = bm16_draw,idle_one,2.25
+anim_show_2                             = bm16_draw,idle,2.25
+attach_place_idx                        = 0
+fire_bone                               = muzzle
+fire_point                              = 0,0,0
+gl_hud_offset_pos                       = 0,0,0
+gl_hud_offset_rot                       = 0,0,0
+hands_orientation                       = 2,2,0
+hands_orientation_16x9                  = 2,2,0
+hands_position                          = 0.01,-0.11,0.05
+hands_position_16x9                     = 0.01,-0.11,0.05
+item_orientation                        = 0,0,0
+item_position                           = 0,0,0
+item_visual                             = dynamics\weapons\wpn_bm16\wpn_bm16_hud
+lean_hud_offset_pos                     = 0,0,0
+lean_hud_offset_rot                     = 0,0,0
+shell_bone                              = wpn_body
+shell_dir                               = 0,1,0
+shell_point                             = 0,0,0
+zoom_hide_crosshair                     = true

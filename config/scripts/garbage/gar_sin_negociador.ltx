@@ -1,0 +1,67 @@
+[combat_ignore@gar_negociador]
+
+[danger@gar_negociador]
+ignore_distance = 0
+
+[threshold@gar_negociador]
+max_ignore_distance = 3
+ignore_monster      = 0
+
+[death@gar_negociador]
+on_info = %+gar_sin_veronin_message%
+
+[hit@gar_negociador]
+on_info = %+gar_sin_negatiations_failed%
+
+[logic]
+active = walker@gar_negociador
+combat_ignore = combat_ignore@gar_negociador
+threshold = threshold@gar_negociador
+danger = danger@gar_negociador
+;on_death = death@gar_negociador
+on_hit = hit@gar_negociador
+
+[walker@gar_negociador]
+path_walk = gar_negociador_walk
+path_look = gar_negociador_look
+combat_ignore_cond = {!hit_by_actor}
+threshold = threshold@gar_negociador
+danger = danger@gar_negociador
+meet = meet@gar_negociador
+on_info = {+gar_sin_negatiations_start} walker@gar_negociador_waiting
+
+[walker@gar_negociador_waiting]
+path_walk = gar_negociador_walk
+path_look = gar_negociador_look
+combat_ignore_cond = {!hit_by_actor}
+danger = danger@gar_negociador
+threshold = threshold@gar_negociador
+meet = meet@gar_negociador_wait
+on_info = {+gar_sin_negatiations_failed} walker@gar_negociador_attack
+on_info2 = {+gar_sin_negatiations_success} walker@gar_negociador_attack
+
+[walker@gar_negociador_attack]
+path_walk = gar_negociador_walk
+path_look = gar_negociador_look
+threshold = threshold@gar_negociador
+danger = danger@gar_negociador
+combat_ignore_cond = never
+meet = no_meet
+
+[meet@gar_negociador]
+meet_state		= 25|wait |5|ward
+meet_state_wpn	= 25|guard |5|ward
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog	= gar_sin_negotiator_task
+
+[meet@gar_negociador_wait]
+meet_state		= 25|wait |5|ward
+meet_state_wpn	= 25|guard |5|ward
+victim		= 25|actor
+victim_wpn		= 25|actor
+use			= true
+use_wpn		= true
+meet_dialog	= gar_sin_negotiator_task_done

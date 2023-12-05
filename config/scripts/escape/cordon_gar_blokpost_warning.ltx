@@ -1,0 +1,70 @@
+[logic]
+active = {+esc_north_post_eliminated} nil %=release%, {-esc_north_post_eliminated} sr_idle@start
+
+[sr_idle@start]
+on_actor_inside = {+esc_north_post_eliminated} nil %=release%, {-cordon_gar_military_hostile -cordon_gar_military_restrictor_been} sr_tip %+cordon_actor_in_gar_military_space% , {=gulag_population_active_le(esc_exit_smart:1)} sr_idle@gulag_empty,{=check_community_goodwill(military:1000)} sr_idle@goodwill, sr_tip@been %+cordon_actor_in_gar_military_space%
+
+[sr_tip]
+header = military_message_header
+name = cordon_gar_military_blokpost_warning
+sender = military
+showtime = 10000
+single = true
+on_signal = tip_sended| sr_idle@wait %+cordon_gar_military_restrictor_been%
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info2 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_tip@been]
+header = military_message_header
+name = cordon_gar_military_blokpost_warning_been
+sender = military
+showtime = 5000
+single = true
+on_signal = tip_sended| sr_idle@wait
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info2 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_idle@wait]
+on_timer = 10000| sr_idle@inside1
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info2 = {=actor_in_zone(cordon_gar_blokpost_road_restrictor)} sr_idle@inside1
+on_info3 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_idle@inside1]
+on_info = {+cordon_gar_military_hostile} sr_idle@reset
+on_info2 = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info3 = {!actor_in_zone(cordon_gar_blokpost_road_restrictor) !gulag_population_active_le(esc_exit_smart:1)} sr_tip@fight
+on_info4 = {+esc_north_post_eliminated} nil %=release%
+on_actor_outside = {-cordon_gar_military_hostile} sr_idle@end
+
+[sr_tip@fight]
+header = military_message_header
+name = rosf_military_blokpost_fight
+sender = military
+showtime = 5000
+single = true
+on_signal = tip_sended| nil %+cordon_gar_military_hostile =release%
+on_info = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info2 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_idle@end]
+on_info = %=play_rosf_mil_end% sr_idle@start
+on_info2 = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info3 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_idle@gulag_empty]
+on_info = {!gulag_population_active_le(esc_exit_smart:1)} sr_idle@start
+on_info2 = {=check_community_goodwill(military:1000)} sr_idle@goodwill
+on_info3 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_idle@goodwill]
+on_info = {!check_community_goodwill(military:1000)} sr_idle@start
+on_info2 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_idle@reset]
+on_info = {=gulag_population_active_le(esc_exit_smart:1)} sr_idle@reset_wait %-cordon_gar_military_hostile%
+on_info2 = {+esc_north_post_eliminated} nil %=release%
+
+[sr_idle@reset_wait]
+on_timer = 5000| sr_idle@start
+on_info = {+esc_north_post_eliminated} nil %=release%

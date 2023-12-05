@@ -1,0 +1,281 @@
+--[[------------------------------------------------------------------------------------------------
+ File       : mob_camp.script
+ Description: Схема: "Лагерь монстров"
+ Copyright  : 2004 © GSC Game World
+ Author     : Jim
+ Editors    : 
+ Last edit  : 11.07.2013 [...]
+--]]------------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iSTATE_CAMP      = 1
+local iSTATE_ALIFE     = 2
+local iSTATE_MOVE_HOME = 3
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/------------------------------------------------------------------------------------------------
+class "mob_camp"
+--/------------------------------------------------------------------------------------------------
+function mob_camp:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function mob_camp:reset_scheme()
+--	log("reset_scheme:Mob=[%s]", self.object:name(), "") --/#~#
+	xr_logic.mob_capture(self.object, true, sModule) --/ берем под управление скриптом
+	mob_state_mgr.set_state(self.object, nil, self.st.state)
+	--/ reset signals
+	self.st.signals = {}
+	--/ initialize look point
+	self.look_path = get_patrol(self.st.look_point)
+	if not self.look_path then
+		abort(sModule..":reset_scheme:Mob=[%s],unable to find look_point=[%s]:<%s>", self.object:name(), self.st.look_point, "Error!")
+	end
+	--/ initialize home point
+	if self.st.home_point then
+		self.home_path = get_patrol(self.st.home_point)
+		if not self.home_path then
+			abort(sModule..":reset_scheme:Mob=[%s],unable to find home_point=[%s]", self.object:name(), self.st.home_point, "Error!")
+		--/ checkings - if there is home path and look path - point count must be equal
+		elseif self.home_path:count() ~= self.look_path:count() then
+			abort(sModule..":reset_scheme:Mob=[%s],you must setup home path points count must be equal to look path points count!:<%s>", self.object:name() "Error!")	
+		end
+	else
+		self.home_path = nil
+	end
+	--/ save position and node of object
+	self.camp_position = vector():set(self.object:position())
+	self.camp_node = self.object:level_vertex_id()
+
+	self.state_current = iSTATE_CAMP
+	self.state_prev = self.state_current
+	
+	--/ select cur point
+	self.cur_point_index = 0
+	self:select_current_home_point(true)
+	
+	self.time_point_changed = time_global()
+	
+	self.sig_enemy = false
+	
+	--/ check enemy transfering
+	if self.st.skip_transfer_enemy then
+		self.object:skip_transfer_enemy(true)
+	end
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function mob_camp:update(delta)
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return --/>
+	end
+	--/ if dead then release
+	if not self.object:alive() then
+		xr_logic.mob_release(self.object)
+		return --/>
+	end
+	--/ update point changer
+	if self.time_point_changed + self.st.time_change_point < time_global() then
+		self.time_point_changed = time_global()
+		self:select_current_home_point(false)
+	end
+	--/ update fsm
+	self:select_state()
+	self:execute_state()
+end
+--/------------------------------------------------------------------
+--/ SERVICE FUNCTIONs
+--/------------------------------------------------------------------
+function mob_camp:select_current_home_point(bFirstCall)
+	if self.home_path then
+		local tFreePoints = {} --/ fill table of free points
+		
+		if not db.camp_storage[self.st.home_point] then
+			db.camp_storage[self.st.home_point] = {}
+		end
+		
+		for idx=1, self.home_path:count() do
+			if not db.camp_storage[self.st.home_point][idx] then
+				table.insert(tFreePoints, idx)
+			end
+		end
+		
+		local iPrevPointIndex = self.cur_point_index
+		if next(tFreePoints) then
+			self.cur_point_index = tFreePoints[math.random(1,#tFreePoints)] - 1
+		elseif bFirstCall then
+			abort(sModule..":select_current_home_point:too many campers for home path")
+		end
+		
+		if not bFirstCall and iPrevPointIndex ~= self.cur_point_index then
+			db.camp_storage[self.st.home_point][iPrevPointIndex +1] = false
+		end
+		db.camp_storage[self.st.home_point][self.cur_point_index +1] = true
+	else
+		self.cur_point_index = math.random(0, self.look_path:count() - 1)
+	end
+end
+--/------------------------------------------------------------------
+function mob_camp:select_state()
+	self.state_prev = self.state_current
+	
+	local vHomePosition = self.camp_position
+	local iHomeNode = self.camp_node
+	
+	if self.home_path then
+		vHomePosition = self.home_path:point(self.cur_point_index)
+		iHomeNode = self.home_path:level_vertex_id(self.cur_point_index)
+	end
+	
+	local oEnemy = self.object:get_enemy()
+	--/ if oEnemy just appeared - signal
+	if oEnemy then
+		if not self.sig_enemy then
+			self.st.signals["enemy"] = true
+		end
+		self.sig_enemy = true
+	else
+		self.sig_enemy = false
+	end
+	
+	if oEnemy then
+		local iDist = oEnemy:position():distance_to(vHomePosition)
+		if iDist > self.st.home_max_radius then
+			if self.state_prev == iSTATE_ALIFE then
+				self.state_current = iSTATE_MOVE_HOME
+			end
+		elseif (self.state_prev ~= iSTATE_MOVE_HOME or self.state_prev ~= iSTATE_CAMP) and iDist <= self.st.home_min_radius then
+			self.state_current = iSTATE_ALIFE
+		end
+	else --/ отпускать в alife монстров, которых обстреляли
+		local tHitInfo = self.object:get_monster_hit_info()
+		if tHitInfo.time ~= 0 and tHitInfo.who and IsNPC(tHitInfo.who) then
+			if self.object:position():distance_to(vHomePosition) > self.st.home_min_radius then
+				self.state_current = iSTATE_ALIFE
+			end
+		end
+	end
+	
+	--/ select MOVE_HOME OR CAMP
+	if not oEnemy or self.state_current ~= iSTATE_ALIFE then
+		--/ check if we go home
+		if self.object:position():distance_to(vHomePosition) > 1 and iHomeNode ~= self.object:level_vertex_id() then
+			self.state_current = iSTATE_MOVE_HOME
+		else --/ we are on place - camp!
+			self.state_current = iSTATE_CAMP
+		end
+	end
+end
+--/------------------------------------------------------------------
+function mob_camp:execute_state()
+	 --/ for debug
+	if self.log and self.state_current ~= self.state_prev then
+		local tStates = {
+			[iSTATE_CAMP]      = "STATE_CAMP",
+			[iSTATE_ALIFE]     = "STATE_ALIFE",
+			[iSTATE_MOVE_HOME] = "STATE_MOVE_HOME"
+		}
+		log("execute_state:From=[%s]~>To=[%s]%s", tStates[self.state_prev], tStates[self.state_current], "")
+	end
+	
+	if self.state_current == iSTATE_ALIFE and self.state_prev == iSTATE_ALIFE then
+		return
+	end
+	
+	if self.state_current == iSTATE_ALIFE and self.state_prev ~= iSTATE_ALIFE then
+		xr_logic.mob_release(self.object) --/ отпускаем в 'alife'
+		return
+	end
+	
+	if self.state_current ~= iSTATE_ALIFE and self.state_prev == iSTATE_ALIFE then
+		xr_logic.mob_capture(self.object, true, sModule) --/ берем под управление скриптом
+	end
+
+	if self.state_current == iSTATE_CAMP then
+		if not self.object:action() then
+			--/ handle look point
+			action( self.object, anim(anim.stand_idle), look(look.point, self.look_path:point(self.cur_point_index)), cond(cond.look_end))
+		end
+		return
+	end
+	
+	if self.state_current == iSTATE_MOVE_HOME then
+		if not self.object:action() then
+			local vHomePosition,iHomeNode = self.camp_position,self.camp_node
+			if self.home_path then
+				vHomePosition = self.home_path:point(self.cur_point_index)
+				iHomeNode = self.home_path:level_vertex_id(self.cur_point_index)
+			end
+			action( self.object, move(move.run_fwd, iHomeNode, vHomePosition), cond(cond.move_end))
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function mob_camp:net_destroy()
+	if self.home_path then
+		db.camp_storage[self.st.home_point][self.cur_point_index+1] = false
+	end
+	self.object:skip_transfer_enemy(false)
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE SCHEME
+--/------------------------------------------------------------------
+function mob_camp:deactivate()
+	if self.home_path then
+		db.camp_storage[self.st.home_point][self.cur_point_index+1] = false
+	end
+	self.object:skip_transfer_enemy(false)
+end
+--/------------------------------------------------------------------
+
+--/------------------------------------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+--	log("add_to_binder:Mob=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, ">") --/#~#
+	st.action = this.mob_camp(npc, st)
+	--/ registration action, for a call of methods 'reset_scheme/callback' in case of change of settings of the scheme
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	--/ fot debug:
+	if st.log then log("add_to_binder:Mob=[%s],scheme=[%s],section=[%s]:(%s)", npc:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+--	log("set_scheme:Mob=[%s],scheme=[%s],section=[%s],gulag=[%s]:(%s)", npc:name(), scheme, section, gulag_name, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	st.state = mob_state_mgr.get_state(ini, section, npc)
+	
+	st.home_point        = Get_Cfg_String(ini, section, "path_home", nil, false, gulag_name)
+	st.look_point        = Get_Cfg_String(ini, section, "path_look", nil,  true, gulag_name)
+	st.time_change_point = Get_Cfg_Number(ini, section, "time_change_point", 10*1000)
+	st.home_min_radius   = Get_Cfg_Number(ini, section, "home_min_radius", 30)
+	st.home_max_radius   = Get_Cfg_Number(ini, section, "home_max_radius", 40)
+	st.skip_transfer_enemy = ini:line_exist(section, "skip_transfer_enemy") --/ load flag transfer enemy (true|false)
+	--/ check if there is look point (must be!)
+	if not (st.look_point and get_patrol(st.look_point)) then
+		abort(sModule..":set_scheme:Mob=[%s],unable to find look_point=[%s] on the map,gulag=[%s]:<%s>", npc:name(), st.look_point, gulag_name, "Error!")
+	end
+	--/ check min and max radius
+	if st.home_min_radius > st.home_max_radius then
+		abort(sModule..":set_scheme:Mob=[%s],section=[%s] minRadius MUST be < maxRadius", npc:name(), section, "")
+	end
+	--/ fot debug:
+	if st.log then log("set_scheme:Mob=[%s],scheme=[%s],section=[%s],home=[%s],look=[%s]", npc:name(), scheme, section, st.home_point, st.look_point, "") end --/#~#
+end
+--/------------------------------------------------------------------------------------------------

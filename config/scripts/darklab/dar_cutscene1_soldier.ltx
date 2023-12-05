@@ -1,0 +1,70 @@
+[combat_ignore@dar_scene]
+
+[danger@dar_scene]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[danger@dar_scene_state2]
+ignore_distance = 30
+
+[threshold@dar_scene]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[threshold@dar_scene_state2]
+max_ignore_distance = 30
+ignore_monster      = 0
+
+[logic]
+active = remark@darklab_sci_scene_guard1
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_guard1_on]
+path_walk = darklab_sci_scene_guard_walk_on
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+on_info = {+dar_cutscene_activate} remark@darklab_sci_scene_guard1
+meet = no_meet
+
+[remark@darklab_sci_scene_guard1]
+anim = sit_static_chair_left_scene
+combat_ignore_cond = always
+threshold = threshold@dar_scene
+danger = danger@dar_scene
+on_info = {+dar_sci_info_7} walker@darklab_sci_scene_guard1
+meet = no_meet
+
+[walker@darklab_sci_scene_guard1]
+path_walk = darklab_sci_scene_guard1
+;path_look = darklab_sci_scene_guard1_look
+combat_ignore_cond = always
+threshold = threshold@dar_scene
+danger = danger@dar_scene
+on_signal = state2 | %+dar_soldier_delay% 
+on_info = {+dar_soldier_delay} remark@darklab_sci_scene_guard11
+meet = no_meet
+
+[remark@darklab_sci_scene_guard11]
+anim = threat_na
+target = darklab_sci_scene_guard1_look, 2
+combat_ignore_cond = always
+threshold = threshold@dar_scene
+danger = danger@dar_scene
+on_info = {+sci_running} remark@darklab_sci_scene_guard12
+meet = no_meet
+
+[remark@darklab_sci_scene_guard12]
+anim = assault
+threshold = threshold@dar_scene_state2
+danger = danger@dar_scene_state2
+meet = no_meet
+;on_info = {+dar_rs1} walker@darklab_sci_scene_guard12
+
+[walker@darklab_sci_scene_guard12]
+path_walk = darklab_sci_scene_guard1_end2
+path_look = darklab_sci_scene_guard1_end2_look
+combat_ignore_cond = {=fighting_actor}
+danger = danger@dar_scene_state2
+meet = no_meet

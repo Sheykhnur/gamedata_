@@ -1,0 +1,17 @@
+:BANDITS' ARMORY CELL DOOR
+[logic]
+active = ph_door@locked
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = cell_locked
+on_info = {+dol_bandit_guard_reached} ph_door@open
+;on_use = ph_door@open
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = trader_door_close_stop

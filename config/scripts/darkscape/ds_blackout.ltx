@@ -1,0 +1,28 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {-ds_sin_blackout -bar_dolg_sin_task_start} sr_sound@hit %+ds_sin_blackout =set_community_goodwill_to_actor(dark_stalker:0)%
+
+[sr_sound@hit]
+snd = actor\bullet_hit_pain_1
+on_timer = 5| sr_idle@hit %=run_cam_effector(dis_consciousness:1984:true) =disable_ui%
+
+[sr_idle@hit]
+on_timer = 3100 | %=run_postprocess(dark_fade)%
+on_timer2 = 4500| sr_idle@blackout %=run_postprocess(dark_wake) =stop_cam_effector(1984)%
+
+[sr_idle@blackout]
+on_timer = 1000|sr_idle@tele %=teleport_actor(ds_actor_wake_point:ds_actor_wake_point_look)%
+
+[sr_idle@tele]
+on_timer = 5| sr_idle@wake %+ds_leader_meet%
+
+[sr_idle@wake]
+on_timer = 4000 | sr_idle@nil %=enable_ui =move_active_to_ruck%
+
+[sr_idle@tele_kill]
+on_timer = 5| sr_idle@nil %=kill_actor%
+
+[sr_idle@nil]
+on_info = nil %=release%

@@ -1,0 +1,54 @@
+
+
+[danger@ros_duty_lager2]
+ignore_distance = 0
+
+[logic@ros_duty_lager2_yard_patroler]
+active = walker@ros_duty_lager2_yard_patroler
+
+[walker@ros_duty_lager2_yard_patroler]
+path_walk = yard_patrol_walk
+danger = danger@ros_duty_lager2
+
+[logic@ros_duty_lager2_dutier1]
+active = walker@ros_duty_lager2_dutier1
+
+[walker@ros_duty_lager2_dutier1]
+path_walk = walk1
+path_look = walk2
+danger = danger@ros_duty_lager2
+on_actor_dist_le = 5 | remark@ros_duty_lager2_dutier1a
+meet = no_meet
+
+[remark@ros_duty_lager2_dutier1a]
+path_walk = walk1
+target = actor
+anim = ward
+snd = bar_dolg_hangar_bridge_hello
+on_timer = 4000 | remark@ros_duty_lager2_dutier1b
+meet = no_meet
+
+[remark@ros_duty_lager2_dutier1b]
+path_walk = walk1
+target = actor
+anim = ward
+on_timer = 10000 | remark@ros_duty_lager2_dutier1a
+on_actor_dist_ge = 10 | walker@ros_duty_lager2_dutier1
+meet = no_meet
+
+[logic@ros_duty_lager2_dutier2]
+active = walker@ros_duty_lager2_dutier2
+
+[walker@ros_duty_lager2_dutier2]
+path_walk = walk1
+path_look = walk2
+danger = danger@ros_duty_lager2
+on_actor_dist_le = 5 | remark@ros_duty_lager2_dutier2
+meet = no_meet
+
+[remark@ros_duty_lager2_dutier2]
+path_walk = walk1
+target = actor
+anim = ward
+on_actor_dist_ge = 10 | walker@ros_duty_lager2_dutier2
+meet = no_meet

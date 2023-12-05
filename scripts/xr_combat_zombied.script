@@ -1,0 +1,284 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_combat_zombied.script
+ Description: Battle scheme of zombied stalkers
+ Copyright  : 2004 © GSC Game World
+ Author     : Chugai Alexander
+ Editors    : gr1ph00n
+ Last edit  : 27.03.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--[[-----------------------------------------------------------------
+TODO: rotation anim
+--]]-----------------------------------------------------------------
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iActShoot  = 1
+local iActDanger = 2
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ SCHEME PARTs
+--/ -----------------------------------------------------------------
+local iEvl_Base = xr_evaluators_id.combat_zombied_base
+local iEvl_Enable = iEvl_Base
+
+local iAct_Base = xr_actions_id.combat_zombied_base
+local iAct_Shoot      = iAct_Base +0
+local iAct_GoToDanger = iAct_Base +1
+--/ -----------------------------------------------------------------------------------------------
+--/ EVALUATOR
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "evaluator_combat_zombied" ( property_evaluator )
+--/ -----------------------------------------------------------------
+function evaluator_combat_zombied:__init( name, st, glob_storage ) super ( nil, name )
+	self.g_st = glob_storage
+	self.log  = st.log
+end
+
+function evaluator_combat_zombied:evaluate()
+	if self.log then log("ev_combat_zombied:NPC=[%s]%s", self.object:name(), "") end --/#~#
+	return self.g_st ~= nil and self.g_st.script_combat_type == "zombied" --/>
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ ACTIONs
+--/ -----------------------------------------------------------------------------------------------
+--/ -----------------------------------------------------------------
+class "action_zombie_shoot" ( action_base )
+--/ -----------------------------------------------------------------
+function action_zombie_shoot:__init( action_name, st )  super( nil, action_name )
+	self.st  = st
+	self.log = st.log
+	self.t   = {}
+	self.was_hit = false
+	self.hit_reaction_end_time = 0
+end
+
+function action_zombie_shoot:initialize()
+	action_base.initialize(self)
+	if self.log then log("ac_zombie_shoot:ini:NPC=[%s]%s", self.object:name(), "") end --/#~#
+	--self.object:set_node_evaluator()
+	--self.object:set_path_evaluator()
+	self.object:set_desired_direction()
+	self.object:set_detail_path_type(move.line)
+	self.last_state = nil
+	local oBestEnemy = self.object:best_enemy()
+	if oBestEnemy then
+		self.enemy_last_seen_pos = oBestEnemy:position()
+		self.enemy_last_seen_vid = oBestEnemy:level_vertex_id()
+	end
+	self.last_vid   = nil
+	self.valid_path = false
+	self.turn_time  = 0
+	self.st.cur_act = iActShoot
+	xr_sound.set_sound_play(self.object, "fight_enemy", 0)
+	xr_sound.set_sound(self.object, "zombied_fight_attack")
+end
+
+function action_zombie_shoot:execute()
+	action_base.execute( self )
+	local oBestEnemy = self.object:best_enemy()
+	local bSee = oBestEnemy ~= nil and self.object:see(oBestEnemy)
+	--/ If see enemy - remember his last position and node
+	if bSee then
+		self.enemy_last_seen_pos = oBestEnemy:position()
+		self.enemy_last_seen_vid = oBestEnemy:level_vertex_id()
+	end
+	if self.last_vid ~= self.enemy_last_seen_vid then
+		self.last_vid = self.enemy_last_seen_vid
+		self.valid_path = false
+		--/ Remember position, where we need to go
+		if self.object:accessible(self.enemy_last_seen_vid) then
+			self.enemy_last_accessible_vid, self.enemy_last_accessible_position  = self.enemy_last_seen_vid, self.enemy_last_seen_pos
+		else
+			self.enemy_last_accessible_vid, self.enemy_last_accessible_position  = self.object:accessible_nearest(level.vertex_position(self.enemy_last_seen_vid), vector())
+		end
+	end
+	self.object:set_path_type(game_object.level_path)
+	--/ If we far then 3 metres from position, moving to it.
+	if self.object:position():distance_to_sqr(self.enemy_last_accessible_position) > 9 then
+		if self.valid_path == false then
+			self.valid_path = true
+			self.object:set_dest_level_vertex_id(self.enemy_last_accessible_vid)
+		end
+		if bSee then
+			self:set_state("raid_fire", oBestEnemy)
+		elseif self.was_hit then
+			self.was_hit = false
+			self.hit_reaction_end_time = time_global() + 5000
+			self:set_state("raid_fire", nil, self.enemy_last_seen_pos)
+		elseif self.hit_reaction_end_time <= time_global() then
+			self:set_state("raid", nil, self.enemy_last_seen_pos)
+		--else --/ continue to go and fire to point from which we were hitted
+		end
+		self.turn_time = 0
+	else --/ Standing on position.
+		if bSee then
+			self:set_state("threat_fire", oBestEnemy)
+			self.turn_time = 0
+		else --/ Time to time rotating to random direction, like looking around.
+			if self.was_hit then
+				self.was_hit = false
+				self.turn_time = time_global() + Random.I( 5000, 7000 )
+				self:set_state("threat_na", nil, self.enemy_last_seen_pos)
+			elseif self.turn_time < time_global() then
+--				printf("[zombied_combat %s] turning", self.object:name())
+				self.turn_time = time_global() + Random.I( 3000, 5000 )
+				self:set_state("threat_na", nil, this.Calc_Random_Direction(self.object))
+			end
+		end
+	end
+end
+
+function action_zombie_shoot:finalize()
+	action_base.finalize(self)
+	self.st.cur_act = nil
+end
+
+function action_zombie_shoot:set_state( sState, oBestEnemy, vPos )
+	self.t.look_object = oBestEnemy
+	if oBestEnemy then
+		self.enemy_last_seen_pos = vPos
+		self.t.look_position = vPos
+	else
+		self.t.look_position = self.enemy_last_seen_pos
+	end
+	if self.last_state ~= sState or (self.tm_state or 0) < time_global() then
+		self.tm_state = time_global() + 1000
+		self.last_state = sState
+		state_mgr.set_state( self.object, sState, nil, nil, self.t )
+	end
+end
+
+--/ calls for action_zombie_shoot as for action_zombie_go_to_danger
+function action_zombie_shoot:hit_callback(oNPC, iAmount, vLocalDirection, oWho, iBboneIndex)
+	if oWho and self.st.cur_act and self.st.cur_act == iActShoot and self.object then
+		local oBestEnemy = self.object:best_enemy()
+		--/ if got hit from current enemy, then we know where is he
+		if oBestEnemy and oBestEnemy:id() == oWho:id() then
+			self.enemy_last_seen_pos = oBestEnemy:position()
+			self.enemy_last_seen_vid = oBestEnemy:level_vertex_id()
+			self.was_hit = true
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------
+class "action_zombie_go_to_danger" ( action_base )
+--/ -----------------------------------------------------------------
+function action_zombie_go_to_danger:__init( action_name, st )  super ( nil, action_name )
+	self.st  = st
+	self.log = st.log
+	self.t   = {}
+	self.was_hit = false
+	self.hit_reaction_end_time = 0
+end
+
+function action_zombie_go_to_danger:initialize()
+	action_base.initialize( self )
+	if self.log then log("ac_zombie_go_to_danger:ini:NPC=[%s]%s", self.object:name(), "") end --/#~#
+	self.object:set_desired_direction()
+	self.object:set_detail_path_type(move.line)
+	self.object:set_path_type(game_object.level_path)
+	self.last_state = nil
+	self.bdo_id     = nil
+	self.bdo_lvid   = nil
+	self.last_lvid  = nil
+	self.st.cur_act = iActDanger
+end
+
+function action_zombie_go_to_danger:execute()
+	action_base.execute( self )
+	if self.was_hit then
+		self.was_hit = false
+		self.hit_reaction_end_time = time_global() + 5000
+		self:set_state( "raid_fire", self.enemy_last_seen_pos )
+	elseif self.hit_reaction_end_time <= time_global() then
+		local oBestDanger = self.object:best_danger()
+		local oObjBD = oBestDanger and ( oBestDanger:dependent_object() or oBestDanger:object() )
+		if oObjBD and oBestDanger:type() ~= danger_object.grenade then
+			if not self.bdo_id or self.bdo_id ~= oObjBD:id() then
+				self.bdo_id   = oObjBD:id()
+				self.bdo_lvid = oObjBD:level_vertex_id()
+			end
+			if self.bdo_lvid ~= self.last_lvid then
+				self.last_lvid = self.bdo_lvid
+				utils.send_to_nearest_accessible_vertex( self.object, self.bdo_lvid )
+			end
+			self:set_state("raid", oBestDanger:position())
+		else
+			self:set_state("threat_na", this.Calc_Random_Direction(self.object))
+		end
+	--else --/ continue to go and fire to point from where hitted
+	end
+end
+
+function action_zombie_go_to_danger:finalize()
+	self.st.cur_act = nil
+	action_base.finalize( self )
+end
+
+function action_zombie_go_to_danger:set_state( sState, vPos )
+	self.t.look_position = vPos
+	if self.last_state ~= sState or (self.tm_state or 0) < time_global() then
+		self.tm_state = time_global() + 1000
+		self.last_state = sState
+		state_mgr.set_state( self.object, sState, nil, nil, self.t )
+	end
+end
+
+--/ calls for action_zombie_shoot as for action_zombie_go_to_danger
+function action_zombie_go_to_danger:hit_callback(oNPC, iAmount, vLocalDirection, oWho, iBoneIndex )
+	if oWho and self.st.cur_act and self.st.cur_act == iActDanger and self.object then
+		local oBestDanger = self.object:best_danger()
+		if oBestDanger and (iAmount > 0 or oBestDanger:type() == danger_object.attacked) then
+			local oObjBD = oBestDanger:dependent_object() or oBestDanger:object()
+			if oObjBD then
+				self.enemy_last_seen_pos = oObjBD:position()
+				--self.enemy_last_seen_vid = oObjBD:level_vertex_id()
+				self.was_hit = true
+			end
+		end
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(oNPC, ini, st, oPlanner) --/< from xr_combat.script
+-- log("add_to_binder:NPC=[%s],Comm=[%s]:[%s]", oNPC:name(), oNPC:character_community(), ">") --/#~#
+	--/ Evaluator
+	oPlanner:add_evaluator( iEvl_Enable, this.evaluator_combat_zombied( "combat_zombied", st, db.storage[oNPC:id()] ) )
+	--/ New Action(1)
+	local oNewAction = this.action_zombie_shoot( "ac_zombie_shoot", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_alive,     true  ) )
+	oNewAction:add_precondition( world_property( iEvl_Enable,                    true  ) )
+	oNewAction:add_precondition( world_property( xr_evaluators_id.script_combat, true  ) )
+	oNewAction:add_effect( world_property( stalker_ids.property_enemy, false ) )
+	oPlanner:add_action( iAct_Shoot, oNewAction )
+	--/ subscribe to hit callbacks:
+	xr_logic.subscribe_action_for_events( oNPC, st, oNewAction )
+	--/ New Action(12)
+	oNewAction = this.action_zombie_go_to_danger( "ac_zombie_go_to_danger", st )
+	oNewAction:add_precondition( world_property( stalker_ids.property_alive,  true  ) )
+	oNewAction:add_precondition( world_property( iEvl_Enable,                 true  ) )
+	oNewAction:add_precondition( world_property( stalker_ids.property_enemy,  false ) )
+	oNewAction:add_precondition( world_property( stalker_ids.property_danger, true  ) )
+	oNewAction:add_effect( world_property( stalker_ids.property_danger, false ) )
+	oPlanner:add_action( iAct_GoToDanger, oNewAction )
+	--/ subscribe to hit callbacks:
+	xr_logic.subscribe_action_for_events( oNPC, st, oNewAction )
+	--/ for debug!
+	if st.log then log("add_to_binder:NPC=[%s],Comm=[%s]:[%s]", oNPC:name(), oNPC:character_community(), "+") end --/#~#
+end
+
+--/ ---------------------------------------------
+function Calc_Random_Direction(oObj)
+	local vPos = ( oObj and vector():set( oObj:position() )) or vector():set(0,0,0)
+	local iAng = math.rad( Random.I(0,359) )
+	return vPos:add( vector():set( math.cos(iAng), 0, math.sin(iAng) ) ) --/>
+end
+--/ -----------------------------------------------------------------------------------------------

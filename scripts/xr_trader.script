@@ -1,0 +1,296 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_trader.script (old name: mob_trader)
+ Description: Scheme: "Controlling trader" (Sidorovich)
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : loxotron, Gr1ph00n
+ Last edit  : 13.06.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local oTrader = nil
+
+global_animations = {
+	desk_idle                = {"idle","idle_1","palci","zatylok"},
+	desk_wait          		 = {"idle","idle_1","palci"},
+	desk_talk                = {"idle","idle_1"},
+	desk_to_chair_hack       = {"idle_spinka"},
+	desk_to_listen           = {"idle_chitaet"},
+	desk_to_diagonal         = {"perehod_0"},
+	desk_idle_to_diagonal    = {"perehod_0"},
+	
+	chair_hack_idle          = {"idle_2","idle_2_def_0"},
+	chair_hack_talk          = {"idle_2_talk_0","idle_2_talk_1","idle_2_talk_2","idle_2_talk_3"},
+	chair_hack_to_diagonal   = {"idle_2_to_idle_0"},
+	chair_hack_to_desk       = {"spinka_idle"},
+	
+	compute_idle             = {"idle_1_spec_think_0","idle_1_spec_think_1"},
+	compute_idle_to_diagonal = {"idle_1_to_idle_0"},
+	
+	diagonal_idle            = {"idle_0_def_0","idle_0_spec_scratch_0"}, --/#-# loxotron (,"idle_0_spec_click_0")
+	diagonal_idle_short      = {"idle_0_def_0"},
+	diagonal_talk            = {"idle_0_talk_0","idle_0_talk_1","idle_0_talk_2","idle_0_talk_3"},
+	diagonal_to_chair_hack   = {"idle_0_to_idle_2"},
+	diagonal_to_compute      = {"idle_0_to_idle_1"},
+	diagonal_to_desk         = {"perehod_1"},
+		
+	first_phrase             = {"vstuplenie"},
+	intro_phrase             = {"vstuplenie_2"},
+	
+	listen_idle              = {"chitaet"},
+	listen_to_desk           = {"chitaet_idle"},
+	
+	hello                    = {"hello"},
+	
+	mutant_idle              = {"stand_idle_0","stand_idle_1","stand_idle_2"},
+	
+	trader_lulz_start        = {"dance_trader_0"},
+	trader_lulz1             = {"dance_trader_2"},
+	trader_lulz2_start       = {"dance_trader_3_0"},
+	trader_lulz2             = {"dance_trader_3"}
+}
+head_animations = {
+	normal       = {"talk_0","talk_1","talk_4"},
+	angry        = {"talk_3","talk_2","talk_1"},
+	good         = {"talk_glad_0"},
+	first_phrase = {"vstuplenie_head"},
+	intro_phrase = {"vstuplenie_2_head"}
+}
+local tSounds = { --/#+# it is transferred from 'mob_sound.script'
+	trader_come_here      = { "characters_voice\\scenario\\trader\trader1a" },
+	trader_come_here2     = { "characters_voice\\scenario\\trader\trader1b" },
+	trader_start       = { "script_replics\\trader\\sido_convo_2" },
+	trader_monolog1       = { "script_replics\\trader\\trader_monolog1" },
+	trader_monolog2       = { "script_replics\\trader\\trader_monolog2" },
+	trader_tut_choice     = { "characters_voice\\scenario\\trader\\trader_dialog_choice" },
+	trader_map_quest_1    = { "characters_voice\\scenario\\trader\\trader_tutorial_map_quest_1" },
+	trader_pda_on_1       = { "characters_voice\\scenario\\trader\\trader_tutorial_pda_on_1" },
+	trader_pda_on_2       = { "characters_voice\\scenario\\trader\\trader_tutorial_pda_on_2" },
+	trader_pda_on_3       = { "characters_voice\\scenario\\trader\\trader_tutorial_pda_on_3" },
+	trader_pda_1          = { "characters_voice\\scenario\\trader\\trader_tutorial_pda_1" },
+	trader_map_on_1       = { "characters_voice\\scenario\\trader\\trader_tutorial_map_on_1" },
+	trader_map_on_2       = { "characters_voice\\scenario\\trader\\trader_tutorial_map_on_2" },
+	trader_map_on_3       = { "characters_voice\\scenario\\trader\\trader_tutorial_map_on_3" },
+	trader_minimap		  = { "characters_voice\\scenario\\trader\\trader_tutorial_pda_12" },
+	trader_tutorial_alarm = { "characters_voice\\scenario\\trader\\trader_tutorial_rejection_1" },
+	trader_go_help_tolik  = { "characters_voice\\scenario\\trader\\trader_tutorial_go_help_tolik_2" },
+	trader_hello_what_have_you_got = {
+		"script_replics\\trader\\trader_script1a_1",
+		"script_replics\\trader\\trader_script1a_2",
+		"script_replics\\trader\\trader_script1a_3",
+		"script_replics\\trader\\trader_script1a_4",
+		"script_replics\\trader\\trader_script1a_5"
+	},
+	trader_bye            = { "script_replics\\trader\\trader_script1c_5" },
+	trader_exchanged      = { "script_replics\\trader\\trader_script1c_1" },
+	trader_good_trade     = {
+		"script_replics\\trader\\trader_script1c_2",
+		"script_replics\\trader\\trader_script1c_3",
+		"script_replics\\trader\\trader_script1c_4"
+	},
+	trader_bad_trade      = {
+		"script_replics\\trader\\trader_script1c_6",
+		"script_replics\\trader\\trader_script1c_7",
+		"script_replics\\trader\\trader_script1c_8",
+		"script_replics\\trader\\trader_script1c_9"
+	},
+	--/ UNUSED:
+	go_out = {
+		"script_replics\\trader\\trader_script1b_1",
+		"script_replics\\trader\\trader_script1b_2",
+		"script_replics\\trader\\trader_script1b_3",
+		"script_replics\\trader\\trader_script1b_4",
+		"script_replics\\trader\\trader_script1b_5"
+	},
+	monolog2 = { "script_replics\\trader\\trader_monolog2" },
+	monolog3 = { "script_replics\\trader\\trader_script1b_1" },
+}
+--/---------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "npc_trader"
+--/ -----------------------------------------------------------------------------------------------
+function npc_trader:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+
+function npc_trader:reset_scheme()
+	if self.log then log("reset_scheme:NPC=[%s],npc_id=[%s]:(%s)", self.object:name(), self.object:id(), ">") end --/#~#
+	if not oTrader then
+		oTrader = self.object
+	end
+	self.st.signals = {}
+	
+	self.object:set_callback(callback.trader_global_anim_request, self.on_global_anim_request, self )
+	self.object:set_callback(callback.trader_head_anim_request,   self.on_head_anim_request, self )
+	self.object:set_callback(callback.trader_sound_end,           self.on_sound_end, self )
+	
+	--/ start global animation
+	local sAnim = self:select_global_animation()
+	if sAnim then
+		self.object:set_trader_global_anim(sAnim)
+	end
+	
+	--/ start sound and head animation
+	local sSnd = self:select_sound()
+	if sSnd then
+		self.object:set_trader_sound(sSnd, self:select_head_animation())
+	end
+	
+	--/ stor
+	if not self.st.anim_head then
+		self.st.anim_head = "normal"
+	end
+	if self.log then log("reset_scheme:NPC=[%s],anim=[%s],snd=[%s]:(%s)", self.object:name(), sAnim, sSnd, "<") end --/#~#
+end
+
+function npc_trader:deactivate()
+	if self.log then log("deactivate:NPC=[%s]%s", self.object:name(), "") end --/#~#
+	self.object:set_callback(callback.trader_global_anim_request, nil )
+	self.object:set_callback(callback.trader_head_anim_request,   nil )
+	self.object:set_callback(callback.trader_sound_end,           nil )
+	self.st.signals = {}
+	oTrader = nil
+end
+--/ --------------------------
+--/ CALLBACKs
+--/ --------------------------
+function npc_trader:update(delta)
+	--if self.log then log("update:NPC=[%s]:%s", self.object:name(), ">") end --/#~#
+	xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+end
+--/ --------------------------
+--/ SERVICE FUNCTIONs
+--/ --------------------------
+function npc_trader:select_global_animation()
+	local tAnimSet = global_animations[self.st.anim_global]
+	if tAnimSet then
+		return tAnimSet[math.random(1,#tAnimSet)] --/> random select
+	end
+	abort("Can't find anim '%s' for trader in table global_animations",self.st.anim_global)
+end
+
+function npc_trader:select_head_animation()
+	local tAnimSet = self.st.anim_head and head_animations[self.st.anim_head]
+	if tAnimSet then
+		return tAnimSet[math.random(1,#tAnimSet)] --/> random select
+	end
+	return nil --/>
+end
+
+function npc_trader:select_sound()
+	if self.st.sound_phrase then
+		local tSnds = tSounds[self.st.sound_phrase] --/ it is transferred from 'mob_sound.script'
+		if tSnds and next(tSnds) then
+			local sSnd = tSnds[math.random(1,#tSnds)]
+			if getFS():exist("$game_sounds$", sSnd..".ogg") then  --log("select_sound:NPC=[%s],Snd=[%s]:[%s]", self.object:name(), sSnd, "<") --/#~#
+				return sSnd --/> random select
+			end
+			log("select_sound:NPC=[%s/%s],phrase=[%s]~Not_sound_file=[%s]:<%s>", self.object:name(), self.object:id(), self.st.sound_phrase, sSnd, "Warning!") --/#~#
+		end
+	end
+	return nil --/>
+end
+
+--/ -----------------------------------------------------------------
+function npc_trader:on_global_anim_request()
+	self.st.signals["animation_end"] = true
+	if not self.st.play_once then
+		self.object:set_trader_global_anim( self:select_global_animation() )
+	end
+end
+
+function npc_trader:on_head_anim_request()
+	if self.st.anim_head then
+		self.object:set_trader_head_anim( self:select_head_animation() )
+	end
+end
+
+function npc_trader:on_sound_end()
+	self.st.signals["sound_phrase_end"] = true
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, st)
+	if st.log then log("add_to_binder:NPC=[%s/%s],scheme=[%s],section=[%s]:(%s)", npc:name(), Get_CharName(npc), scheme, section, ">") end --/#~#
+	st.action = this.npc_trader(npc, st)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+--	log("set_scheme:NPC=[%s],scheme=[%s],section=[%s],gulag=[%s]:%s", npc:name(), scheme, section, gulag_name, ">") --/#~#
+	local st = xr_logic.assign_storage_and_bind(npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, npc)
+	--/ registration of action to call method 'reset_scheme' when scheme settings changed:
+	xr_logic.subscribe_action_for_events(npc, st, st.action)
+	
+	st.anim_global = Get_Cfg_String(ini, section, "anim_global", nil, true)
+	
+	if ini:line_exist(section, "sound_phrase") then
+		st.sound_phrase = Get_Cfg_String(ini, section, "sound_phrase")
+		st.anim_head    = Get_Cfg_String(ini, section, "anim_head")
+	else
+		st.sound_phrase = nil
+		st.anim_head    = nil
+	end
+	--/ check if play once animation
+	st.play_once = false
+	if ini:line_exist(section, "on_signal") then
+		local sSignals = Get_Cfg_String(ini, section, "on_signal")
+		local tSignals = utils.parse_params(sSignals)
+		if tSignals[1] == "animation_end" then
+			st.play_once = true
+		end
+	end
+	
+	st.can_talk = Get_Cfg_Bool(ini, section, "can_talk", true)
+	if st.can_talk then
+		npc:enable_talk()
+	else
+		npc:disable_talk()
+	end
+	
+	st.tip_text = Get_Cfg_String(ini, section, "tip_text", "character_use") or ""
+	npc:set_tip_text(st.tip_text)
+	--/ for debug!
+	if st.log then log("set_scheme:NPC=[%s],scheme=[%s],section=[%s]:anim(%s),snd(%s),cond(%s)", npc:name(), scheme, section, st.anim_global, st.sound_phrase, table.size(st.logic), "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+--	log("disable_scheme:NPC=[%s],scheme=[%s]", npc and npc:name(), scheme, "") --/#~#
+	if npc then
+		npc:set_callback(callback.trader_global_anim_request, nil)
+		npc:set_callback(callback.trader_head_anim_request, nil)
+		npc:set_callback(callback.trader_sound_end, nil)
+	end
+end
+--/ ------------------------------------------------------------------
+--/ Process (call from game_tutorials.xml)
+--/ ------------------------------------------------------------------
+function on_start_tutorial_pda_12()
+	if oTrader then
+		give_info("esc_sid_minimap_tut")
+		--oTrader:external_sound_start("characters_voice\\scenario\\trader\\trader_tutorial_pda_12")
+	end
+end
+
+function on_stop_tutorial_pda_12()
+	if oTrader then
+		give_info("esc_sid_minimap_tut_stop")
+		--oTrader:external_sound_stop()
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

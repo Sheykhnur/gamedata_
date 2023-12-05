@@ -1,0 +1,16 @@
+[logic]
+active = {-bas_switcher_off} sr_idle, {+bas_switcher_off} nil %=release%
+ 
+[sr_idle]
+on_actor_inside = sr_psy_antenna
+on_info = {+bas_switcher_off} nil %=release%
+
+[sr_psy_antenna]
+eff_intensity = +70
+hit_intensity = 4.15
+phantom_prob = 50
+postprocess = psy_antenna_indoor.ppe
+min_phantom_idle = 1000
+max_phantom_idle = 3000
+on_info = {+bas_switcher_off} nil %=release%
+on_actor_outside = sr_idle

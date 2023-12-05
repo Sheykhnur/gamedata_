@@ -1,0 +1,49 @@
+;cond = {-gar_wandering_cond1 -gar_wandering_cond2}
+
+[danger@gar_wandering_terrain]
+;ignore_distance = 60
+;ignore_distance_sound = 60
+;danger_inertion_time = 5000
+
+[threshold@gar_wandering_terrain]
+;max_ignore_distance = 12
+;ignore_monster      = 0
+
+[logic@gar_wandering_terrain_kamper1]
+active = kamper@gar_wandering_terrain_stalker1
+threshold = threshold@gar_wandering_terrain
+danger = danger@gar_wandering_terrain
+
+[kamper@gar_wandering_terrain_stalker1]
+path_walk = kamp1_walk
+path_look = kamp1_look
+kamp_name = kamp1
+def_state_moving1 = walk
+threshold = threshold@gar_wandering_terrain
+danger = danger@gar_wandering_terrain 
+
+[logic@gar_wandering_terrain_kamper2]
+active = kamper@gar_wandering_terrain_stalker2
+threshold = threshold@gar_wandering_terrain
+danger = danger@gar_wandering_terrain
+
+[kamper@gar_wandering_terrain_stalker2]
+path_walk = kamp2_walk
+path_look = kamp2_look
+kamp_name = kamp1
+def_state_moving1 = walk
+threshold = threshold@gar_wandering_terrain
+danger = danger@gar_wandering_terrain
+
+[logic@gar_wandering_terrain_kamper3]
+active = kamper@gar_wandering_terrain_stalker3
+threshold = threshold@gar_wandering_terrain
+danger = danger@gar_wandering_terrain
+
+[kamper@gar_wandering_terrain_stalker3]
+path_walk = kamp3_walk
+path_look = kamp3_look
+kamp_name = kamp1
+def_state_moving1 = walk
+threshold = threshold@gar_wandering_terrain
+danger = danger@gar_wandering_terrain

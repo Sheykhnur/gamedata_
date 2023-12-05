@@ -1,0 +1,162 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : sr_blocker.script
+ Description: "Запретные зоны"
+ Copyright  : 2011 © GSC LA-team
+ Author     : Gr1ph00n
+ Editors    : Gr1ph00n(24.09.2012), vintar(26.11.2012), lox(12.02.2013)
+ Last edit  : 20.03.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local DEFAULT_MESSAGE = "cant_reach_area_warning"
+local custom_messages = {
+	["esc_ds_blocker"]   = "sr_blocker_esc_ds_blocker",
+	["esc_gar_blocker"]  = "sr_blocker_esc_gar_blocker",
+	["gar_agr_blocker"]  = "sr_blocker_gar_agr_blocker",
+	["gar_rosf_blocker"] = "sr_blocker_gar_rosf_blocker",
+	["gar_val1_blocker"] = "sr_blocker_gar_val_blocker",
+	["gar_val2_blocker"] = "sr_blocker_gar_val_blocker",
+	["gar_val3_blocker"] = "sr_blocker_gar_val_blocker",
+	["agr_forg_blocker"] = "sr_blocker_agr_forg_blocker",
+	["agr_rosf_blocker"] = "sr_blocker_agr_rosf_blocker",
+	["dol_ds_blocker"]   = "sr_blocker_dol_ds_blocker",
+	["dol_gar1_blocker"] = "sr_blocker_esc_gar_blocker",
+	["dol_gar2_blocker"] = "sr_blocker_esc_gar_blocker",
+	["dol_gar3_blocker"] = "sr_blocker_esc_gar_blocker",
+	["ds_esc_blocker"]   = "sr_blocker_dol_ds_blocker",
+	["ds_val_blocker"]   = "sr_blocker_gar_val_blocker",
+	["bar_mil_blocker"]  = "sr_blocker_agr_forg_blocker",
+	["mil_rad_blocker"]  = "sr_blocker_mil_rad_blocker",
+	["yan_swa_blocker"]  = "sr_blocker_yan_swa_blocker",
+	["yan_dc_blocker"]   = "sr_blocker_yan_dc_blocker",
+	["cit_rad_blocker"]  = "sr_blocker_mil_rad_blocker",
+	["swa_out_blocker"]  = "sr_blocker_dol_ds_blocker",
+	["rad_dam_blocker"]  = "sr_blocker_agr_forg_blocker",
+	["rad_npp1_blocker"] = "sr_blocker_mil_rad_blocker",
+	["rad_out_blocker"]  = "sr_blocker_dol_ds_blocker",
+	["dam_out_blocker"]  = "sr_blocker_dam_out_blocker",
+	["bar_yan_blocker"]  = "sr_blocker_dol_ds_blocker",
+	["lost_lab_blocker"] = "sr_blocker_lost_lab_blocker",
+	["npp_gens_blocker"] = "sr_blocker_mil_rad_blocker",
+	["forg_yan_blocker"] = "sr_blocker_agr_rosf_blocker",
+	["rad_bun_blocker"]  = "sr_blocker_rad_bun_blocker",
+	["bar_for_blocker"]  = "sr_blocker_bar_for_blocker",
+	["out_pri_blocker"]  = "sr_blocker_out_pri_blocker",
+	["esc_rosf_blocker"] = "sr_blocker_esc_rosf_blocker",
+	["dol_for_blocker"]  = "sr_blocker_bar_for_blocker",
+}
+--/--------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_blocker"
+--/ -----------------------------------------------------------------------------------------------
+function action_blocker:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_blocker:reset_scheme()
+	if self.log then log("ac:reset_scheme:Obj=[%s]", self.object:name(), "") end --/#~#
+	self.path_walk = self.st.path_walk and get_patrol(self.st.path_walk)
+	self.path_look = self.st.path_look and get_patrol(self.st.path_look)
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_blocker:update(delta)
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return --/>
+	elseif xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.condlist.condlist) ~= nil then
+		return --/>
+	elseif not self.path_walk then
+		return --/>
+	end
+	if self.object:inside( db.actor:position() ) then
+		if self.log then log("ac:update:Obj=[%s]", self.object:name(), "") end --/#~#
+		if not has_info("esc_blocker_diary") then
+			give_info("esc_blocker_diary")
+			news_manager.send_encyclopedy("Diary", "esc_blocker_diary")
+		end
+		local pos = self.path_walk:point(0)	
+		local dir = db.actor:direction()
+		if self.path_look then
+			dir = self.path_look:point(0):sub(pos)
+		end
+		self:teleport(pos, dir, self.path_walk:level_vertex_id(0))
+		local hud = get_hud()
+		hud:AddCustomStatic("main_task", true)
+		hud:GetCustomStatic("main_task"):wnd():SetTextST(self:get_message())
+		hud:GetCustomStatic("main_task").m_endTime = time_global() / 1000 + 5
+	end
+end
+
+function action_blocker:teleport(pos, dir, lvid)
+	log("teleport")
+	local car = db.actor:get_actor_car()
+	local car_pos, new_lvid = nil, nil
+--[[	if car then
+		log("with car")
+	else
+		log("no car")
+		db.actor:set_actor_position(pos)
+		db.actor:set_actor_direction(-dir:getH())
+	end ]]
+	log(car and "w/ car" or "w/o car")
+	db.actor:set_actor_position(pos)
+	db.actor:set_actor_direction(-dir:getH())
+	if car then
+		new_lvid = level.vertex_in_direction(lvid, dir, 5)
+		car_pos = level.vertex_position(new_lvid)
+		alife():teleport_entity(car:id(), car_pos, new_lvid, db.actor:game_vertex_id())
+		start_quick_timer(0.5, attach_car, { id = car:id() }, "car_attacher")
+	end
+end
+
+function attach_car(e)
+	db.actor:attach_vehicle(e.id)
+end
+
+function action_blocker:get_message()
+	return custom_messages[self.object:name()] or DEFAULT_MESSAGE --/>
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+--	log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:[%s]", obj:name(), scheme, section, ">") --/#~#
+	local oNewAction = this.action_blocker(obj, st)
+	--/ регистрация 'action', для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+	--/ for debug!
+	if st.log then log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	
+	st.path_walk = Get_Cfg_String(ini, section, "path_walk", nil, true,  gulag_name)
+	st.path_look = Get_Cfg_String(ini, section, "path_look", nil, false, gulag_name)
+	if not validate_patrol_path(st.path_walk, obj, true) then
+		log("set_scheme:Obj=[%s],section=[%s],path_walk=[%s]<~NOT_validate:<%s>", obj:name(), section, st.path_walk, "Warning!")
+	end
+	if st.path_look and not validate_patrol_path(st.path_look, obj, false) then
+		log("set_scheme:Obj=[%s],section=[%s],path_look=[%s]<~not_validate:<%s>", obj:name(), section, st.path_look, "Warning!")
+	end
+	st.condlist = xr_logic.cfg_get_condlist(ini, section, "cond", obj)
+	--/ for debug!
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") end --/#~#
+end
+--/ -----------------------------------------------------------------------------------------------

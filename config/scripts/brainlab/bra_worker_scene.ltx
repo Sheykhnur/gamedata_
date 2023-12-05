@@ -1,0 +1,57 @@
+[combat_ignore]
+
+[logic]
+active = remark@ventile
+combat_ignore = combat_ignore
+
+[remark@ventile]
+anim = worker_ventile_big_sleep
+snd = x16_replics36
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@ventile2
+on_info = {+x16_worker1} remark@listen
+
+[remark@ventile2]
+anim = worker_ventile_big_sleep
+snd = x16_replics36
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@ventile
+on_info = {+x16_worker1} remark@listen
+
+[remark@listen]
+anim = worker_ventile_big_listen
+snd = x16_replics37
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+x16_worker2%
+on_info = {+x16_worker3} remark@listen2
+
+[remark@listen2]
+anim = worker_ventile_big_listen
+snd = x16_replics39
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | remark@work
+
+[remark@work]
+anim = worker_ventile_big_work
+combat_ignore_cond = always
+meet = no_meet
+on_timer = 6000 | remark@stand %+x16_particle_smoke_off%
+
+[remark@stand]
+anim = worker_ventile_big_normal
+snd = x16_replics40
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+x16_worker4%
+on_signal2 = anim_end | %+x16_worker_light%
+on_info = {+x16_worker5} remark@comment
+
+[remark@comment]
+anim = worker_ventile_big_normal
+snd = x16_replics42
+combat_ignore_cond = always
+meet = no_meet

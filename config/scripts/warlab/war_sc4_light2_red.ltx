@@ -1,0 +1,24 @@
+[logic]
+active = ph_idle
+
+[ph_idle]
+on_info = {+war_sc4_toxic -war_sc4_end} ph_light_mgr@1
+
+[ph_light_mgr@1]
+lights_on = always_on
+on_blowout = blink
+osciallator = true
+on_timer = 3000 | ph_light_mgr@2
+on_info = {+war_sc4_end} ph_light_mgr@def
+
+[ph_light_mgr@2]
+lights_on = always_off
+on_blowout = blink
+osciallator = true
+on_timer = 3000 | ph_light_mgr@1
+on_info = {+war_sc4_end} ph_light_mgr@def
+
+[ph_light_mgr@def]
+lights_on = always_off
+on_blowout = blink
+osciallator = true

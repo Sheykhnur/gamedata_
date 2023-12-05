@@ -1,0 +1,423 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ph_camera.script
+ Description: Cameras
+ Copyright  : 2004 © GSC Game World
+ Author     : Oleg Hryptul (Haron) haronk@ukr.net
+ Editors    : barin(24.06.2009), Gr1phoon(10.07.2009),barin(09.07.2010)
+ Last edit  : 11.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local cameras = {}
+
+local camera_off = 0 -- disabled / destroyed
+local camera_enemy_tracking = 1 -- looking at enemy
+local camera_move = 2 -- looking at waypoints
+local camera_pause = 3 -- pause on enemy lost
+local camera_wait = 4 -- waiting on end points
+
+local pause_on_target_lost = 5000
+local pause_on_end_points = 3000
+
+local lense_bone = "bone_light"
+local enemy_bone = "bip01_head"
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function display_status(s)
+	local str = ""
+	if s == camera_off then
+		str = "camera_off"
+	elseif s == camera_enemy_tracking then
+		str = "camera_enemy_tracking"
+	elseif s == camera_move then
+		str = "camera_move"
+	elseif s == camera_wait then
+		str = "camera_wait"
+	elseif s == camera_pause then
+		str = "camera_pause"
+	end
+	get_hud():GetCustomStatic("barin"):wnd():SetTextST(str)
+end
+
+function angle_diff(a1, a2)
+	local b1 = a1:normalize()
+	local b2 = a2:normalize()
+	local dotp = b1:dotproduct(b2)
+	return utils.rad2deg(math.acos(math.abs(dotp)))
+end
+
+function parse_list(string_list)
+	if not string_list then
+		return {}
+	end
+	
+	local t = {}
+	
+	for str in string.gfind(string_list, "%s*([^%,]+)%s*") do
+		if not t[str] then
+			t[str] = true
+		end
+	end
+	
+	return t
+end
+
+--/ ---------------------------------------------
+--/ SCHEME CONSTRUCTION
+--/ -----------------------------------------------------------------------------------------------
+class "action_camera_activity"
+--/ -----------------------------------------------------------------------------------------------
+function action_camera_activity:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	
+	self.state = camera_off
+	self.move_direction = 1
+	self.pause_wait     = 0
+	self.path = nil
+	self.cur_wp = -1
+	self.num_wp = 0
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ RESET SCHEME
+--/------------------------------------------------------------------
+function action_camera_activity:reset_scheme()
+	if self.log then log("reset_scheme:Obj=[%s]%s", self.object:name(), "") end --/#~#
+	xr_logic.mob_capture(self.object, true, sModule)
+	
+	self.object:set_tip_text(game.translate_string("tip_camera"))
+	self.st.signals = {}
+	
+	if self.st.state == "path_tracking" then
+		self.state = camera_move
+		if self.path == nil then
+			self.path = get_patrol(self.st.path_look)
+		end
+		self.snd_camera_move = sound_object("camera\\move")
+		self.snd_camera_beep = sound_object("camera\\beep")
+		
+		self.num_wp = self.path:count()
+		self.cur_wp = self.st.start_wp
+		
+		if self.num_wp < 2 then
+			abort("camera path_look need at least 2 waypoints!")
+		end
+		if self.cur_wp > self.num_wp then
+			self.cur_wp = 0
+		end
+		
+		action(self.object, look(self.path:point(self.cur_wp), self.st.speed_h, self.st.speed_p), cond(cond.look_end))
+		self:start_stop_sound("start", "move")
+	else
+		self.state = camera_off
+	end
+	
+	if self.state == camera_off then
+		self:set_state(camera_off)
+		local pos = self.object:bone_position(lense_bone)
+		action(self.object, look(vector():set(pos.x, pos.y - 1.5, pos.z), 10, 10), cond(cond.look_end))
+	end
+end
+
+function action_camera_activity:explode()
+	if self.state ~= camera_off then
+		self:set_state(camera_off)
+		self:reset_action()
+		
+		local snd = sound_object("ambient\\mon_explosion")
+		snd:play_at_pos(self.object, self.object:position(), 0, sound_object.s2d)
+		
+		local pos = self.object:bone_position(lense_bone)
+		action(self.object, look(vector():set(pos.x, pos.y - 1.5, pos.z), 10, 10), cond(cond.look_end))
+		particles_object("damage_fx\\burn_creatures"):play_at_pos(pos)
+	end
+end
+
+function action_camera_activity:reset_action()
+	if self.object:action() then
+		xr_logic.mob_capture(self.object, true, sModule)
+	end
+end
+
+function action_camera_activity:start_stop_sound(action, sound)
+	if action == "start" then
+		--/ play sound
+		if sound == "move" then
+			--/ camera rotating sound
+			if not self.snd_camera_move:playing() then
+				self.snd_camera_move:play_at_pos(self.object, self.object:position(), 0, sound_object.looped)
+			end
+		else
+			--/ camera beeping sound
+			if not self.snd_camera_beep:playing() then
+				self.snd_camera_beep:play_at_pos(self.object, self.object:position(), 0, sound_object.looped)
+			end
+		end
+	else
+		--/ stop sound
+		if sound == "move" then
+			--/ camera rotating sound
+			if self.snd_camera_move:playing() then
+				self.snd_camera_move:stop()
+			end
+		elseif sound == "beep" then
+			--/ camera beeping sound
+			if self.snd_camera_beep:playing() then
+				self.snd_camera_beep:stop()
+			end
+		else
+			--/ stop both sounds
+			self:start_stop_sound("stop", "move")
+			self:start_stop_sound("stop", "beep")
+		end
+	end
+end
+
+function action_camera_activity:is_on_end_point()
+	return (self.cur_wp == 0 or self.cur_wp == self.num_wp - 1)
+end
+
+function action_camera_activity:set_next_point()
+	if self.cur_wp == 0 then
+		self.move_direction = 1
+	elseif self.cur_wp == self.num_wp - 1 then
+		self.move_direction = -1
+	end
+	self.cur_wp = self.cur_wp + self.move_direction
+end
+
+function action_camera_activity:set_state(new_state)
+	self.state = new_state
+	
+	if new_state == camera_move then --/ look at point
+		self:set_next_point()
+		action(self.object, look(self.path:point(self.cur_wp),
+			self.st.speed_h, self.st.speed_p), cond(cond.look_end))
+		self:start_stop_sound("start", "move")
+	elseif new_state == camera_wait then --/ wait on end point
+		self:start_stop_sound("stop", "move")
+		self.pause_wait = time_global() + pause_on_end_points
+	elseif new_state == camera_pause then --/ pause on target lost
+		self:start_stop_sound("stop", "beep")
+		self.st.signals["enemy_tracking"] = false
+		self.pause_wait = time_global() + pause_on_target_lost
+	elseif new_state == camera_enemy_tracking then --/ look at enemy
+		self:start_stop_sound("stop", "move")
+		self:start_stop_sound("start", "beep")
+		self.st.signals["enemy_tracking"] = true
+		self:reset_action()
+		action(self.object, look(self.enemy:center(), 5, 5), cond(cond.look_end))
+		--action(self.object, look(self.enemy:position(), 5, 5), cond(cond.look_end))
+		--action(self.object, look(self.enemy:bone_position(enemy_bone), 5, 5), cond(cond.look_end))
+	elseif new_state == camera_off then --/ camera is destroyed / disabled
+		self:start_stop_sound("stop", "all")
+		self.st.signals["camera_destroyed"] = true
+	end
+end
+
+function action_camera_activity:in_focus(enemy)
+	local enemy_pos = utils.vector_copy_by_val(enemy:bone_position(enemy_bone))
+	local lense_pos = utils.vector_copy_by_val(self.object:bone_position(lense_bone))
+	
+	local enemy_dir = utils.vector_copy_by_val(enemy_pos):sub(lense_pos)
+	local lense_dir = self.object:get_current_direction()
+	
+	local angle = angle_diff(lense_dir, enemy_dir)
+	if angle >= self.st.fov_angle_min and
+	   angle <= self.st.fov_angle_max then
+		return true
+	end
+	
+	return false
+end
+
+function action_camera_activity:see_enemy()
+	if self.enemy ~= nil and self.enemy_zone ~= nil then
+		if bind_camera_zone.is_object_inside(self.enemy_zone, self.enemy) then
+			--if self:in_focus(self.enemy) then
+				return true
+			--end
+		end
+	end
+	
+	self.enemy_zone = nil
+	self.enemy = nil
+	
+	local enemy, zone = nil, nil
+	for _, zone_name in pairs(self.st.fov_zones) do
+		enemy, zone = bind_camera_zone.get_object(zone_name, self.st.enemies, self.st.track_mutants)
+		if enemy ~= nil and zone ~= nil then
+			if self:in_focus(enemy) then
+				self.enemy_zone = zone
+				self.enemy = enemy
+				return true
+			end
+		end
+	end
+	
+	return false
+end
+--/------------------------------------------------------------------
+--/ UPDATE
+--/------------------------------------------------------------------
+function action_camera_activity:update(delta)
+	if not db.actor then
+		return
+	end
+	
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return
+	end
+	
+	if not xr_logic.mob_captured(self.object) then
+		self:reset_scheme()
+		return
+	end
+	
+	--display_status(self.state)
+	
+	if self.state ~= camera_off then
+		if self.state == camera_move then
+			if self:see_enemy() then
+				self:set_state(camera_enemy_tracking)
+			else
+				if self.object:action() then
+					if self.object:action():completed() then
+						if self:is_on_end_point() and self.st.stop_at_end_points then
+							self:set_state(camera_wait)
+						else
+							self:set_state(camera_move)
+						end
+					end
+				else
+					self:set_state(camera_move)
+				end
+			end
+		elseif self.state == camera_wait then
+			if self:see_enemy() then
+				self:set_state(camera_enemy_tracking)
+			else
+				if time_global() >= self.pause_wait then
+					self:set_state(camera_move)
+				end
+			end
+		elseif self.state == camera_pause then
+			if self:see_enemy() then
+				self:set_state(camera_enemy_tracking)
+			else
+				if time_global() >= self.pause_wait then
+					self:set_state(camera_move)
+				end
+			end
+		elseif self.state == camera_enemy_tracking then
+			if self:see_enemy() then
+				self:set_state(camera_enemy_tracking)
+			else
+				self:set_state(camera_pause)
+			end
+		end
+	end
+end
+
+function action_camera_activity:net_destroy()
+	self:deactivate()
+end
+--/------------------------------------------------------------------
+--/ DEACTIVATE
+--/------------------------------------------------------------------
+function action_camera_activity:deactivate()
+	self.object:set_tip_text("")
+	self:start_stop_sound("stop", "all")
+	self.snd_camera_move = nil
+	self.snd_camera_beep = nil
+end
+
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ BINDER
+--/ -----------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+	local oNewAction = this.action_camera_activity(obj, st)
+	--/ регистрация action, для вызова метода 'reset_scheme' при изменении настроек схемы:
+	xr_logic.subscribe_action_for_events(obj, st, oNewAction)
+	
+	cameras[obj:name()] = oNewAction
+	--/ fot debug!
+	if st.log then log("add_to_binder: Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, "+") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	--/ state: off (turned off) | path_tracking (looking at waypoints)
+	st.state = Get_Cfg_String(ini, section, "state", "path_tracking")
+	if st.state == "path_tracking" then
+		--/ path_look - путь, по которому будет поворачиваться камера
+		st.path_look = Get_Cfg_String(ini, section, "path_look", nil) --/ points to look at
+		if not st.path_look then
+			abort("%s:set_scheme: path_look not specified for %s", sModule, obj:name(), "")
+			st.state = "off"
+		end
+		--/ start_wp - вейпоинт, с которого будет начинаться движение камеры
+		st.start_wp  = Get_Cfg_Num32(ini, section, "start_wp", 0) --/ starting waypoint
+	else
+		st.state = "off"
+	end
+	if st.state == "off" then
+		return --/ camera disabled
+	end
+	
+	--/ rotation speed (скорость поворота камеры по горизонтали и вертикали)
+	st.speed_h = Get_Cfg_Number(ini, section, "speed_h", 0.2) --/ horizontal
+	st.speed_p = Get_Cfg_Number(ini, section, "speed_p", 0.2) --/ vertical
+	--/ fov angle range [min, max]
+	st.fov_angle_min = Get_Cfg_Number(ini, section, "fov_angle_min", 5)
+	st.fov_angle_max = Get_Cfg_Number(ini, section, "fov_angle_max", 30)
+	--/ stop and wait on end points (both - left/right)
+	st.stop_at_end_points = Get_Cfg_Bool(ini, section, "stop_at_end_points", true)
+	
+	--/ ignore_enemy = cond_list
+	--/ enemy list (community names)
+	st.enemies = parse_list(Get_Cfg_String(ini, section, "enemies", nil))
+	--/ treat mutants as enemy
+	st.track_mutants = Get_Cfg_Bool(ini, section, "track_mutants", false)
+	--/ list of space restrictors where camera can see enemies
+	st.fov_zones = parser.r_string_list(ini, section, "fov_zones", nil)
+	--/ fot debug:
+	if st.log then log("set_scheme:Obj=[%s/%s],scheme=[%s],section=[%s]", obj:name(), obj:id(), scheme, section, "") end --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ DISABLE SCHEME
+--/ -----------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	local stor = db.storage[obj:id()][scheme]
+	if stor then
+		xr_logic.unsubscribe_action_from_events(obj, stor, stor.action)
+	end
+end
+--/ -----------------------------------------------------------------
+--/ External calls
+--/ -----------------------------------------------------------------
+function subscribe_camera_for_events(camera, action)
+	if cameras[camera:name()] == nil then
+		cameras[camera:name()] = action
+	end
+end
+
+function camera_explode(cam_name) --/< from xr_effect
+	if cam_name and cameras[cam_name] then
+		cameras[cam_name]:explode()
+	end
+end
+--/ ------------------------------------------------------------------------------------------------

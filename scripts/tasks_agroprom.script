@@ -1,0 +1,202 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_agroprom.script
+ Description: Tasks agroprom
+ Copyright  : 2010 © LA-team
+ Author     : vintar
+ Editors    : gri, lox(22.02.2013)
+ Last edit  : 15.07.2013 (by vintar) [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local info_tbl = {
+	"agr_spetsnaz_dead1",
+	"agr_spetsnaz_dead2",
+	"agr_spetsnaz_dead3",
+	"agr_spetsnaz_dead4",
+	"agr_spetsnaz_dead5",
+	"agr_spetsnaz_dead6",
+	"agr_spetsnaz_dead7",
+	"agr_spetsnaz_dead8"
+}
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+	if sEvent == "item_take" then
+		if obj:story_id() == 6303 then
+			give_info("agroprom_military_case_have")
+		end
+	end
+	if info_tbl and has_info_portions(info_tbl) then
+		info_tbl = nil --/ clear
+		give_info("agr_factory_spetsnaz_cleared")
+	end
+	if not has_info("agr_krot_sent") then
+		local g = xr_gulag.get_gulag("agr_stalker_tunnel_terrain")
+		if g then
+			local se_obj = alife():story_object(6304) --alife():object("agr_krot")
+			if se_obj and level.object_by_id(se_obj.id) then
+				give_info("agr_krot_sent")
+				g.smrttrn:enabled(se_obj)
+				g.smrttrn:enabled(alife():object("agr_stalker_tunnel_sleeper1")) --/#?#
+				g.smrttrn:enabled(alife():object("agr_stalker_tunnel_sleeper2")) --/#?#
+				g.smrttrn:enabled(alife():object("agr_stalker_tunnel_guard")) --/#?#
+			end
+		end
+	end
+	if not has_info("agr_defector_sent") then
+		local g = xr_gulag.get_gulag("agr2_st_factory")
+		if g then
+			local se_obj = alife():object("agr_defector_stalker1")
+			if se_obj then
+				g.smrttrn:enabled(se_obj)
+				give_info("agr_defector_sent")
+			end
+		end
+	end
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^agr_') then
+		return false --/>
+	end
+	if info_id == "agr_krot_secret_info" then
+		local se_box = alife():object("agr_ug_gunslinger_box")
+		if se_box then
+			alife():create("af_drops", vector(), 0, 0, se_box.id)
+		end
+		return true --/>
+	end
+	if info_id == "agr_mole_invite" then
+		news_manager.send_tip_hud(game.translate_string("mole_message_header"), game.translate_string("agr_mole_invitation"), "krot", 6)
+		return true --/>
+	end
+	if info_id == "agr_find_gunslinger_cache_start" then
+		local npc = level_object_by_sid(6304) --/ "agr_krot"
+		if npc then
+			this.teleport_npc_not_seen(npc, "agr_stalker_tunnel_terrain_kamper_walk", "agr_mole_teleported")
+		end
+		return true --/>
+	end
+	if info_id == "agr_find_gunslinger_cache_start_dead" then
+		give_info("agr_krot_secret_info")
+		news_manager.send_tip_hud(game.translate_string("mole_dead_header"), game.translate_string("agr_mole_dead_info"), "krot")
+		return true --/>
+	end
+	if info_id == "agr_nii_location" then
+		if has_info("agr_factory_location") then
+			give_info("agr_mole_told_all")
+		end
+		return true --/>
+	end
+	if info_id == "agr_factory_location" then
+		if has_info("agr_nii_location") then
+			give_info("agr_mole_told_all")
+		end
+		return true --/>
+	end
+	if info_id == "agr_krot_band_start" then
+		give_info("agr_gar_blocker_open")
+		return true --/>
+	end
+	if info_id == "agr_assault_cleared" then
+		if not has_info("agr_defence_cleared") then
+			give_info( "agr_help_stalkers_done" )
+			give_info( "agr_help_stalkers_assault_dead" )
+			give_info( "agr_help_krot_start" )
+			give_info( "agr_krot_skirmish_start" )
+		else
+			give_info( "agr_help_stalkers_done" )
+			give_info( "agr_help_krot_start" )
+			give_info( "agr_help_stalkers_defence_dead" )
+			give_info( "agr_krot_skirmish_start" )
+		end
+		return true --/>
+	end
+	if info_id == "agr_defence_cleared" then
+		if not has_info( "agr_help_stalkers_done" ) then
+			give_info( "agr_help_stalkers_done" )
+			give_info( "agr_help_stalkers_defence_dead" )
+			give_info( "agr_krot_skirmish_start" )
+		end
+		return true --/>
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function have_quest_case_02()
+	return db.actor:object("quest_case_02") ~= nil
+end
+
+function play_barman_message()
+	local snd = xr_sound.get_safe_sound_object("characters_voice\\scenario\\agr\\agr_barman_message")
+	--snd:play_no_feedback(db.actor, sound_object.s2d, 0, db.actor:position(), 1.0)
+	snd:play(db.actor, 0, sound_object.s2d)
+end
+
+function have_gunslingers_flash()
+	local flash = db.actor:object("gunslinger_flash")
+	if flash then
+		if not has_info("agr_gunslinger_flash_have") then
+			give_info("agr_gunslinger_flash_have")
+		end
+		return true
+	end
+	return false
+end
+
+function agr_trader_documents()
+	news_manager.send_tip_hud(game.translate_string("trader_message_header"), game.translate_string("tips_agr_trader_documents"), "trader")
+end
+
+function ghost_tips()
+	news_manager.send_tip_hud(game.translate_string("hmm"), game.translate_string("agr_gunslinger_flash_doc"), "actor")
+	db.actor:give_info_portion("agr_new_ghost_searching") 
+end
+
+function agr_actor_enemy()
+	local npc = level_object_by_sid(302)
+	if npc then
+		local t = db.storage[npc:id()].death
+		return npc:relation(db.actor) == game_object.enemy or (t and t.killer == idActor)
+	end
+	return false
+end
+
+function teleport_npc_not_seen(npc, point, info)
+	if not db.actor:see(npc) then
+		local p = get_patrol(point)
+		local sobj = alife():object(npc:id())
+		if p and sobj then
+			alife():teleport_entity(sobj, p:point(0),  p:level_vertex_id(0), p:game_vertex_id(0))
+		end
+		if info then
+			give_info(info)
+		end
+	end
+end
+
+function agr_ratcatcher_fail()
+	return not has_info("agr_help_ratcatcher_done") and has_info("agr_ratcatcher_dead")
+end
+
+function is_defence_waiting(name)
+	return 	name == "agr_factory_defence_stalker5" or 
+			name == "agr_factory_defence_stalker7" or
+			name == "agr_factory_defence_stalker8"
+end
+
+function agr_help_stalkers_check()
+	return has_info("agr_help_stalkers_start") or has_info("agr_help_stalkers_done")
+end
+--/ -----------------------------------------------------------------------------------------------

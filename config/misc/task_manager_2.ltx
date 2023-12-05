@@ -1,0 +1,1251 @@
+;====================================================================
+;--/ Last edit: 30.03.2020
+;====================================================================
+
+[list_2]
+;--/=================================================================
+
+;--/ esc --------------------
+
+esc_wolf_kill_stalker_1
+esc_wolf_kill_stalker_2
+esc_wolf_kill_stalker_3
+esc_wolf_kill_stalker_4
+
+sid_kill_mutants_1
+sid_kill_mutants_2
+sid_kill_mutants_3
+sid_kill_mutants_4
+sid_kill_mutants_5
+sid_kill_mutants_6
+
+;--/ agroprom --------------------
+
+;agr_krot_kill_stalker_1
+
+agr_mole_kill_agr_ug_burer_terrain
+agr_mole_kill_agr_ug_controller_ladc_terrain
+
+;--/ bar --------------------
+
+bar_informer_kill_stalker_1
+bar_informer_kill_stalker_2
+bar_informer_kill_stalker_3
+
+bar_informer_find_item
+
+bar_hunter_bring_meat_1
+bar_hunter_bring_meat_2
+bar_hunter_bring_meat_3
+
+bar_petrenko_kill_controller
+bar_petrenko_kill_snork
+;bar_petrenko_find_item_1
+;bar_petrenko_find_item_2
+;bar_petrenko_find_item_3
+;bar_petrenko_find_item_4
+
+;--/ forest --------------------
+
+;forest_dolg_leader_finde_1
+;forest_dolg_leader_finde_2
+;forest_dolg_leader_finde_3
+
+;--/ rostok factory --------------------
+
+rosf_duty_leader_dog_1
+rosf_duty_leader_dog_2
+
+;--/ forgotten --------------------
+
+forg_alex_kill_swampbeast
+forg_alex_kill_bandit
+forg_alex_kill_mutants_1
+forg_alex_kill_mutants_2
+
+;--/ dolina --------------------
+
+dolina_gusarov_kill_stalker_1
+dolina_gusarov_kill_stalker_2
+dolina_gusarov_kill_stalker_3
+
+;--/ darkscape --------------------
+
+ds_veles_find_artefact_1
+ds_veles_find_artefact_2
+ds_veles_kill_giant
+ds_veles_find_item_1
+
+;--/ yan --------------------
+
+yan_professor_find_item
+yan_professor_kill_zombie_1
+yan_professor_kill_zombie_2
+yan_professor_kill_zombie_3
+yan_professor_kill_controller
+
+;--/ swamp-----------------------------------
+
+swa_doctor_kill_bandits_1
+swa_doctor_kill_bandits_2
+
+;--/ military --------------------
+
+mil_supplier_kill_stalker
+mil_supplier_kill_stalker_2
+mil_supplier_kill_stalker_3
+mil_supplier_kill_bloodsucker
+mil_supplier_kill_snorks_1
+mil_supplier_kill_snorks_2
+
+;--/ outskirts --------------------
+
+out_barman_kill_mutants_1
+out_barman_kill_mutants_2
+out_barman_kill_stalker_1
+
+lukash_kill_stalker_1
+;lukash_find_item_1
+;lukash_find_item_2
+;lukash_find_item_3
+;lukash_find_item_4
+lukash_kill_poltergeist
+
+;--/ country-----------------------------------
+
+hermit_find_item_1
+hermit_find_item_2
+hermit_find_item_3
+
+hills_major_eliminate_lager
+hills_major_find_item_1
+hills_major_find_item_2
+hills_major_find_item_3
+
+;--/ lost factory-----------------------------------
+
+;deedee_find_item_og-7b
+
+=====================================================================
+
+;--/ esc --------------------
+
+[esc_wolf_kill_stalker_1]
+type = kill_stalker
+community = actor
+text = esc_wolf_kill_stalker_1_text
+description = esc_wolf_kill_stalker_1_descr
+parent = esc_wolf
+target = sim_bandit_t1_general
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +2
+reward_money = 4500
+idle_time = 386400
+prior = 1
+
+
+[esc_wolf_kill_stalker_2]
+type = kill_stalker
+community = actor
+text = esc_wolf_kill_stalker_2_text
+description = esc_wolf_kill_stalker_2_descr
+parent = esc_wolf
+target = sim_bandit_t2_general
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +2
+reward_money = 4500
+idle_time = 386400
+prior = 2
+
+[esc_wolf_kill_stalker_3]
+type = kill_stalker
+community = actor
+text = esc_wolf_kill_stalker_3_text
+description = esc_wolf_kill_stalker_3_descr
+parent = esc_wolf
+target = sim_killer_t1_veteran
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 4000
+idle_time = 386400
+prior = 1
+idx = 1
+
+[esc_wolf_kill_stalker_4]
+type = kill_stalker
+community = actor
+text = esc_wolf_kill_stalker_4_text
+description = esc_wolf_kill_stalker_4_descr
+parent = esc_wolf
+target = sim_killer_t2_veteran
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 5000
+idle_time = 386400
+prior = 2
+idx = 1
+
+[sid_kill_mutants_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_boar_back) +esc_fox_rescued}
+text = sid_kill_mutants_1_text
+description = sid_kill_mutants_1_descr
+parent = trader
+target = esc_boar_back
+reward_reputation = 1
+reward_rank = 3
+reward_relation = stalker, +3
+reward_money = 2400
+reward_item = bandage
+time = 604800
+prior = 1
+idx = 2
+
+[sid_kill_mutants_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_flesh_lair) +esc_fox_rescued}
+text = sid_kill_mutants_2_text
+description = sid_kill_mutants_2_descr
+parent = trader
+target = esc_flesh_lair
+reward_reputation = 1
+reward_rank = 3
+reward_relation = stalker, +3
+reward_money = 2000
+reward_item = bandage
+time = 604800
+prior = 2
+idx = 3
+
+[sid_kill_mutants_3]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(esc_psevdo_lair) +esc_fox_rescued}
+text = sid_kill_mutants_3_text
+description = sid_kill_mutants_3_descr
+parent = trader
+target = esc_psevdo_lair
+reward_reputation = 1
+reward_rank = 3
+reward_relation = military, +5
+reward_money = 1200
+reward_item = cmuphob_vodka, dolg_bandage
+time = 604800
+prior = 3
+idx = 1
+
+[sid_kill_mutants_4]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_ds_flesh_terrain2) +dol_get_doc_about_x18_done}
+text = sid_kill_mutants_4_text
+description = sid_kill_mutants_4_descr
+parent = trader
+target = ladc_ds_flesh_terrain2
+reward_reputation = 1
+reward_rank = 3
+reward_relation = killer, +3
+reward_money = 2500
+time = 604800
+prior = 4
+
+[sid_kill_mutants_5]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_ds_flesh_terrain1) +dol_get_doc_about_x18_done}
+text = sid_kill_mutants_5_text
+description = sid_kill_mutants_5_descr
+parent = trader
+target = ladc_ds_flesh_terrain1
+reward_reputation = 1
+reward_rank = 3
+reward_relation = killer, +3
+reward_money = 2500
+reward_item = antirad, medkit_army
+time = 604800
+prior = 4
+idx = 1
+
+[sid_kill_mutants_6]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_ds_boar_terrain6) +dol_get_doc_about_x18_done}
+text = sid_kill_mutants_6_text
+description = sid_kill_mutants_6_descr
+parent = trader
+target = ladc_ds_boar_terrain6
+reward_reputation = 1
+reward_rank = 3
+reward_relation = killer, +4
+reward_money = 3000
+reward_item = ammo_5.56x45_ss190
+time = 604800
+prior = 4
+idx = 2
+
+
+;--/ agroprom --------------------
+
+[agr_krot_kill_stalker_1]
+type = kill_stalker
+community = actor
+text = agr_krot_kill_stalker_1_text
+description = agr_krot_kill_stalker_1_descr
+parent = agr_krot
+target = sim_soldier_t2_regular                                                                ;ÍÅ ÕÎ×ÅÒ ÄÀÂÀÒÜ ÇÀÄÈÍÈÅ ÍÀ ÓÁÈÉÑÒÂÎ ÂÎÅÍÍÎÃÎ ÍÀ ÁÀÇÅ
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +3
+reward_money = 4000
+idle_time = 2086400
+prior = 1
+
+[agr_mole_kill_agr_ug_burer_terrain]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(agr_ug_burer_terrain) +agr_ratcatcher_start}
+text = agr_mole_kill_agr_ug_burer_terrain_text
+description = agr_mole_kill_agr_ug_burer_descr
+parent = agr_krot
+target = agr_ug_burer_terrain
+reward_rank = 5
+;reward_reputation = 5
+reward_money = 4000
+idle_time = 172800
+prior = 5
+
+[agr_mole_kill_agr_ug_controller_ladc_terrain]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(agr_ug_controller_ladc_terrain) +agr_ratcatcher_start}
+text = agr_mole_kill_agr_ug_controller_ladc_terrain_text
+description = agr_mole_kill_agr_ug_controller_descr
+parent = agr_krot
+target = agr_ug_controller_ladc_terrain
+reward_rank = 5
+;reward_reputation = 5
+reward_money = 5000
+time = 604800
+idle_time = 172800
+prior = 5
+idx = 1
+
+;--/ bar --------------------
+
+[bar_informer_kill_stalker_1]
+type = kill_stalker
+community = actor
+text = bar_informer_kill_stalker_1_text
+description = bar_informer_kill_stalker_1_descr
+parent = bar_informer
+target = sim_bandit_t1_veteran
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +3
+reward_money = 4000
+idle_time = 166400
+prior = 1
+
+
+[bar_informer_kill_stalker_2]
+type = kill_stalker
+community = actor
+text = bar_informer_kill_stalker_2_text
+description = bar_informer_kill_stalker_2_descr
+parent = bar_informer
+target = sim_killer_t2_master
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +3
+reward_money = 5000
+idle_time = 166400
+prior = 2
+
+
+[bar_informer_kill_stalker_3]
+type = kill_stalker
+community = actor
+text = bar_informer_kill_stalker_3_text
+description = bar_informer_kill_stalker_3_descr
+parent = bar_informer
+target = sim_monolith_t3_veteran
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +5
+reward_money = 8000
+idle_time = 166400
+prior = 3
+
+
+[bar_informer_find_item]
+type = find_item_hide
+condlist = {+has_no_infos}
+text = bar_informer_find_item_text
+description = bar_informer_find_item_descr
+parent = bar_informer
+target = device_pda
+target_count = 10
+targer_check = false
+reward_money = 2800
+reward_rank = 1
+idle_time = 172800
+prior = 1
+
+[bar_hunter_bring_meat_1]
+type = monster_part
+community = actor
+text = bar_hunter_bring_meat_1_text
+description = bar_hunter_bring_meat_1_descr
+parent = bar_hunter
+target = mutant_controller_foot
+target_count = 5
+reward_money = 2000
+reward_item = booster_antipsy, booster_antipsy, af_electra_moonlight
+reward_rank = 15
+idle_time = 2000000
+prior = 1
+
+[bar_hunter_bring_meat_2]
+type = monster_part
+community = actor
+text = bar_hunter_bring_meat_2_text
+description = bar_hunter_bring_meat_2_descr
+parent = bar_hunter
+target = mutant_chimera_hand
+target_count = 10
+reward_money = 1500
+reward_item = af_rusty_sea_urchin, af_ameba_mica, medkit_scientic, medkit_scientic
+reward_rank = 30
+reward_relation = stalker, +20
+idle_time = 2000000
+prior = 2
+
+[bar_hunter_bring_meat_3]
+type = monster_part
+community = actor
+text = bar_hunter_bring_meat_3_text
+description = bar_hunter_bring_meat_3_descr
+parent = bar_hunter
+target = mutant_giant_eye
+target_count = 5
+reward_money = 14000
+reward_rank = 20
+idle_time = 2000000
+prior = 3
+
+[bar_petrenko_kill_controller]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_bar_controller_terrain)}
+text = bar_petrenko_kill_controller_text
+description = bar_petrenko_kill_controller_descr
+parent = bar_petrenko
+target = ladc_bar_controller_terrain
+reward_money = 5000
+reward_rank = 3
+reward_reputation = 5
+reward_relation = dolg, +5
+time = 604800
+idle_time	= 1172800
+prior = 1
+
+[bar_petrenko_kill_snork]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_bar_snork_terrain)}
+text = bar_petrenko_kill_snork_text
+description = bar_petrenko_kill_snork_descr
+parent = bar_petrenko
+target = ladc_bar_snork_terrain
+reward_money = 4200
+reward_rank = 3
+reward_reputation = 5
+reward_relation = dolg, +5
+time = 604800
+idle_time	= 1172800
+prior = 1                                   ;íóæíî ïîñìîòğåòü ãäå ıòè çîíû è ïîñòàâèòü ïğèğèòåò â çàâèñèìîñòè îò çîíû ( çîíû ó ñíîğêîâ 2 øòóêè áûëî )
+idx = 1
+
+
+[bar_petrenko_find_item_1]
+type = find_item_hide
+community = actor
+text = bar_petrenko_find_item_1_text
+description = bar_petrenko_find_item_1_descr
+parent = bar_petrenko
+target = medkit_army
+target_count = 10
+targer_check = false
+reward_money = 3000
+reward_rank = 2
+idle_time = 345600
+reward_relation = dolg, +5
+prior = 1
+
+[bar_petrenko_find_item_2]
+type = find_item_hide
+community = actor
+text = bar_petrenko_find_item_2_text
+description = bar_petrenko_find_item_2_descr
+parent = bar_petrenko
+target = w_sig550_up
+targer_check = false
+reward_money = 4000
+reward_rank = 5
+idle_time = 2400000
+reward_relation = dolg, +10
+prior = 2
+
+[bar_petrenko_find_item_3]
+type = find_item_hide
+community = actor
+text = bar_petrenko_find_item_3_text
+description = bar_petrenko_find_item_3_descr
+parent = bar_petrenko
+target = w_g36
+targer_check = false
+reward_money = 4000
+reward_rank = 5
+idle_time = 2400000
+reward_relation = dolg, +5
+prior = 3
+
+[bar_petrenko_find_item_4]
+type = find_item_hide
+community = actor
+text = bar_petrenko_find_item_4_text
+description = bar_petrenko_find_item_4_descr
+parent = bar_petrenko
+target = svoboda_light_outfit
+targer_check = false
+reward_money = 10000
+reward_rank = 5
+idle_time = 2400000
+reward_relation = dolg, +10
+prior = 4
+
+;--/ forest --------------------
+
+[forest_dolg_leader_finde_1]
+type = find_item_hide
+community = actor
+text = forest_dolg_leader_finde_1_text
+description = forest_dolg_leader_finde_1_descr
+parent = a_fore_dolg_leader
+target = ammo_5.45x39_fmj
+target_count = 10
+targer_check = false
+reward_money = 2000
+reward_item = antirad, antirad, antirad, dolg_bandage, dolg_bandage, dolg_bandage, dolg_bandage, dolg_bandage, medkit_army
+reward_rank = 4
+idle_time = 1728000
+reward_relation = dolg, +5
+prior = 1
+
+[forest_dolg_leader_finde_2]
+type = find_item_hide
+community = actor
+text = forest_dolg_leader_finde_2_text
+description = forest_dolg_leader_finde_2_descr
+parent = a_fore_dolg_leader
+target = ammo_7.62x39_s
+target_count = 10
+targer_check = false
+reward_money = 3000
+reward_item = mutant_chimera_hand, medkit_army, medkit_army
+reward_rank = 4
+idle_time = 1728000
+reward_relation = dolg, +5
+prior = 2
+
+[forest_dolg_leader_finde_3]
+type = find_item_hide
+community = actor
+text = forest_dolg_leader_finde_3_text
+description = forest_dolg_leader_finde_3_descr
+parent = a_fore_dolg_leader
+target = ammo_7.62x39_s
+target_count = 10
+targer_check = false
+reward_money = 4000
+reward_item = mutant_burer_hand, mutant_burer_hand, medkit_army, medkit_army, dolg_bandage, dolg_bandage, dolg_bandage, dolg_bandage
+reward_rank = 4
+idle_time = 1728000
+reward_relation = dolg, +5
+prior = 3
+
+;--/ rostok factory --------------------
+
+[rosf_duty_leader_dog_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(rosf_factory_dog_terrain1) +rosf_petrenko_meet}
+text = rosf_duty_leader_dog_1_text
+description = rosf_duty_leader_dog_1_descr
+parent = rosf_duty_leader
+target = rosf_factory_dog_terrain1
+reward_money = 2200
+reward_rank = 3
+reward_reputation = 3
+reward_relation = dolg, +5
+time = 864000
+idle_time = 1209600
+prior = 1
+
+
+[rosf_duty_leader_dog_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(rosf_factory_dog_terrain2) +rosf_petrenko_meet}
+text = rosf_duty_leader_dog_2_text
+description = rosf_duty_leader_dog_2_descr
+parent = rosf_duty_leader
+target = rosf_factory_dog_terrain2
+reward_money = 2500
+reward_rank = 3
+reward_reputation = 3
+reward_relation = dolg, +5
+time = 864000
+idle_time = 1209600
+prior = 2
+
+
+
+;--/ forgotten --------------------
+
+[forg_alex_kill_swampbeast]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(forg_swampbeast_terrain)}
+text = forg_alex_kill_swampbeast_text
+description = forg_alex_kill_swampbeast_descr
+parent = forg_alex
+target = forg_swampbeast_terrain
+reward_money = 3300
+reward_rank = 3
+reward_reputation = 5
+reward_relation = stalker, +10
+time = 864000
+idle_time = 432000
+prior = 1
+
+[forg_alex_kill_bandit]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(forg_bandit_terrain)}
+text = forg_alex_kill_bandit_text
+description = forg_alex_kill_bandit_descr
+parent = forg_alex
+target = forg_bandit_terrain
+reward_money = 4400
+reward_rank = 3
+reward_reputation = 3
+reward_relation = stalker, +10
+time = 864000
+idle_time = 432000
+prior = 2
+
+[forg_alex_kill_mutants_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(forg_cat_terrain1)}
+text = forg_alex_kill_mutants_1_text
+description = forg_alex_kill_mutants_1_descr
+parent = forg_alex
+target = forg_cat_terrain1
+reward_money = 2500
+reward_rank = 3
+reward_reputation = 3
+reward_relation = stalker, +5
+reward_item = pripiat_beer, pripiat_beer, pripiat_beer, pripiat_beer          ;â íàãğàäó òèïî äîëæíû äàòü ÿùèê ïèâà,õç ñêîëüêî â ÿùèêå îáû÷íî ïèâà íàïèñàë ñğåäíåå ÷èñëî
+time = 864000
+idle_time = 259200
+prior = 3
+
+[forg_alex_kill_mutants_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(forg_zombie_terrain2)}
+text = forg_alex_kill_mutants_2_text
+description = forg_alex_kill_mutants_2_descr
+parent = forg_alex
+target = forg_zombie_terrain2
+reward_money = 3300
+reward_rank = 3
+reward_reputation = 3
+reward_relation = stalker, +5
+time = 864000
+idle_time = 259200
+prior = 2
+
+;--/ darksdolina --------------------
+
+[dolina_gusarov_kill_stalker_3]
+type = kill_stalker
+community = actor
+text = dolina_gusarov_kill_stalker_3_text
+description = dolina_gusarov_kill_stalker_3_descr
+parent = dolina_gusarov
+target = sim_killer_t2_general
+reward_reputation = 2
+reward_rank = 5
+reward_relation = stalker, +2
+reward_money = 6000
+idle_time = 2000000
+prior = 1
+
+[dolina_gusarov_kill_stalker_1]
+type = kill_stalker
+community = actor
+text = dolina_gusarov_kill_stalker_1_text
+description = dolina_gusarov_kill_stalker_1_descr
+parent = dolina_gusarov
+target = sim_clear_sky_t1_veteran
+reward_reputation = +2
+reward_rank = 3
+reward_money = 3700
+idle_time = 2228000
+prior = 2
+
+[dolina_gusarov_kill_stalker_2]
+type = kill_stalker
+community = actor
+text = dolina_gusarov_kill_stalker_2_text
+description = dolina_gusarov_kill_stalker_2_descr
+parent = dolina_gusarov
+target = sim_clear_sky_t3_veteran
+reward_reputation = +2
+reward_rank = 3
+reward_money = 7000
+idle_time = 2228000
+prior = 3
+
+;--/ darkscape --------------------
+
+[ds_veles_find_artefact_1]
+type = artefact
+text = ds_veles_find_artefact_1_text
+description = ds_veles_find_artefact_1_descr
+parent = ds_veles
+target = af_electra_flash
+reward_money = 3000
+reward_rank = 10
+reward_relation = dark_stalker, +10
+reward_item = antirad, antirad, medkit_army, medkit_army, medkit, mutant_giant_eye, mutant_controller_foot, mutant_chimera_hand
+idle_time = 259200
+prior = 1
+
+[ds_veles_find_artefact_2]
+type = artefact
+text = ds_veles_find_artefact_2_text
+description = ds_veles_find_artefact_2_descr
+parent = ds_veles
+target = af_ameba_mica
+reward_money = 4000
+reward_rank = 15
+reward_relation = dark_stalker, +10
+reward_item = mutant_krovosos_jaw, mutant_psevdodog_tail, mutant_izlom_arm, mutant_giant_eye, mutant_chimera_hand
+idle_time = 259200
+prior = 2
+
+[ds_veles_kill_giant]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(ladc_ds_giant_terrain)}
+text = ds_veles_kill_giant_text
+description = ds_veles_kill_giant_descr
+parent = ds_veles
+target = ladc_ds_giant_terrain
+reward_rank = 5
+reward_relation = dark_stalker, +10
+reward_reputation = 3
+reward_money = 5000
+idle_time = 2228000
+prior = 1
+
+[ds_veles_find_item_1]
+type = find_item_hide
+condlist = {+has_no_infos}
+text = ds_veles_find_item_1_text
+description = ds_veles_find_item_1_descr
+parent = ds_veles
+target = kolbasa
+target_count = 15
+targer_check = false
+reward_money = 2000
+reward_rank = 1
+reward_relation = dark_stalker, +10
+reward_item = vodka, vodka, vodka, cmuphob_vodka
+idle_time = 259200
+prior = 1
+
+
+;--/ yantar --------------------
+
+[yan_professor_find_item]
+type = find_item_hide
+community = actor
+text = yan_professor_find_item_text
+description = yan_professor_find_item_descr
+parent = yan_professor
+target = detector_af_bad
+target_count = 5
+targer_check = false
+reward_money = 4000
+reward_rank = 5
+time = 864000
+idle_time = 172800
+reward_relation = clear_sky, +5
+prior = 1
+
+
+[yan_professor_kill_zombie_1]
+type = eliminate_lager
+community = actor
+condlist = {+yan_scientist_package_start !is_gulag_population_inactive(yan_zombied4_terrain_ladc)}
+text = yan_professor_kill_zombie_1_text
+description = yan_professor_kill_zombie_1_descr
+parent = yan_professor
+target = yan_zombied4_terrain_ladc
+reward_money = 2700
+reward_rank = 3
+reward_relation = ecolog, +2, clear_sky, +15
+time = 864000
+idle_time = 1696000
+prior = 1
+
+[yan_professor_kill_zombie_2]
+type = eliminate_lager
+community = actor
+condlist = {+yan_scientist_package_start !is_gulag_population_inactive(yan_ug_zombie_terrain2)}
+text = yan_professor_kill_zombie_2_text
+description = yan_professor_kill_zombie_2_descr
+parent = yan_professor
+target = yan_ug_zombie_terrain2
+reward_money = 2700
+reward_rank = 3
+reward_relation = ecolog, +3, clear_sky, +15
+time = 864000
+idle_time = 1696000
+prior = 2
+
+[yan_professor_kill_zombie_3]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(yan_zombie_terrain2) +yan_scientist_package_start}
+text = yan_professor_kill_zombie_3_text
+description = yan_professor_kill_zombie_3_descr
+parent = yan_professor
+target = yan_zombie_terrain2
+reward_money = 3000
+reward_rank = 4
+reward_relation = ecolog, +4, clear_sky, +20
+time = 864000
+idle_time = 1696000
+prior = 3
+
+[yan_professor_kill_controller]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(cit_controller_lair) +yan_scientist_package_done}
+text = yan_professor_kill_controller_text
+description = yan_professor_kill_controller_descr
+parent = yan_professor
+target = cit_controller_lair
+reward_money = 5000
+reward_rank = 3
+reward_relation = ecolog, +5, clear_sky, +25
+time = 864000
+idle_time = 1696000
+prior = 4
+
+;--/ swamp-----------------------------------
+
+[swa_doctor_kill_bandits_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(swamp_bandit_terrain2)}
+text = swa_doctor_kill_bandits_1_text
+description = swa_doctor_kill_bandits_1_descr
+parent = swa_doctor
+target = swamp_bandit_terrain2                                                                          ; ÌÈØÀ,ÏĞÎÂÅĞÜ ÑÎÂÏÀÄÀÅÒ ËÈ ÒÅĞĞÈÒÎĞÈß ÏÎ ÎÏÈÑÀÍÈŞ
+reward_money = 4500
+reward_item = antirad, medkit_scientic, medkit_scientic
+reward_rank = 3
+reward_reputation = 5
+reward_relation = stalker, +5
+time = 386400
+idle_time = 172800
+prior = 1
+
+
+[swa_doctor_kill_bandits_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(swamp_bandit_terrain3)}
+text = swa_doctor_kill_bandits_2_text
+description = swa_doctor_kill_bandits_2_descr
+parent = swa_doctor
+target = swamp_bandit_terrain3                                                                          ; ÌÈØÀ,ÏĞÎÂÅĞÜ ÑÎÂÏÀÄÀÅÒ ËÈ ÒÅĞĞÈÒÎĞÈß ÏÎ ÎÏÈÑÀÍÈŞ
+reward_money = 4500
+;reward_item = antirad, medkit_scientic, medkit_scientic
+reward_rank = 3
+reward_reputation = 5
+reward_relation = stalker, +5
+time = 386400
+idle_time = 172800
+prior = 1
+
+;--/ military --------------------
+
+[mil_supplier_kill_stalker]
+type = kill_stalker
+text = mil_supplier_kill_stalker_text
+description = mil_supplier_kill_stalker_descr
+parent = mil_supplier
+target = sim_killer_t2_sniper
+reward_reputation = +5
+reward_rank = 3
+reward_relation = stalker, +5
+reward_money = 4000
+idle_time = 432000
+prior = 1
+
+[mil_supplier_kill_stalker_2]
+type = kill_stalker
+text = mil_supplier_kill_stalker_2_text
+description = mil_supplier_kill_stalker_2_descr
+parent = mil_supplier
+target = sim_monolith_t2_sniper                                                       ;ÌÈØÀ Ó ÌÅÍß ÎÍÈ ÍÅ ÑÏÀÂÍÈËÈÑÜ ß ÈÕ ÍÅ ÏĞÎÂÅĞÈË ÑÌÛÑË ÇÀÄÀÍÈß - ÓÁÈÒÜ ÌÎÍÎËÈÒÎÂÖÀ ÍÀ ÑÅÂÅĞÅ,ÂÎÇÌÎÆÍÎ ÄÀÆÅ Â ÏĞÈÏßÒÈ ÊÎÒÎĞÛÅ ÍÀ İÒÀÆÊÀÕ ÑÈÄßÒ
+reward_reputation = +5
+reward_rank = 3
+reward_relation = stalker, +5, milstalker, +5
+reward_money = 6000
+idle_time = 432000
+prior = 2
+
+[mil_supplier_kill_stalker_3]
+type = kill_stalker
+text = mil_supplier_kill_stalker_3_text
+description = mil_supplier_kill_stalker_3_descr
+parent = mil_supplier
+target = sim_monolith_t3_regular
+reward_reputation = +5
+reward_rank = 3
+reward_relation = stalker, +5, milstalker, +5
+reward_money = 8000
+idle_time = 432000
+prior = 3
+
+[mil_supplier_kill_bloodsucker]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(military_bloodsucker_area)}
+text = mil_supplier_kill_bloodsucker_text
+description = mil_supplier_kill_bloodsucker_descr
+parent = mil_supplier
+target = military_bloodsucker_area
+reward_money = 4000
+reward_rank = 3
+reward_relation = stalker, +5
+idle_time = 1009600
+prior = 1
+
+[mil_supplier_kill_snorks_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(rad_snorks_camp) +deactivate_radar_done}
+text = mil_supplier_kill_snorks_1_text
+description = mil_supplier_kill_snorks_1_descr
+parent = mil_supplier
+target = rad_snorks_camp
+reward_money = 5000
+reward_rank = 3
+reward_relation = stalker, +10
+idle_time = 1009600
+prior = 2
+
+[mil_supplier_kill_snorks_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(rad_snorks_lair_base) +deactivate_radar_done}
+text = mil_supplier_kill_snorks_2_text
+description = mil_supplier_kill_snorks_2_descr
+parent = mil_supplier
+target = rad_snorks_lair_base
+reward_money = 5000
+reward_rank = 3
+reward_relation = stalker, +10
+idle_time = 1009600
+prior = 2
+idx = 1
+
+;--/ outkirts --------------------
+
+[out_barman_kill_mutants_1]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_dog_terrain2)}
+text = out_barman_kill_mutants_1_text
+description = out_barman_kill_mutants_1_descr
+parent = out_bar_barman
+target = out_dog_terrain2
+reward_money = 4200
+reward_rank = 3
+reward_relation = stalker, +10
+time = 186400
+idle_time	= 432000
+prior = 1
+
+[out_barman_kill_mutants_2]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(rad_boars_nest)}
+text = out_barman_kill_mutants_2_text
+description = out_barman_kill_mutants_2_descr
+parent = out_bar_barman
+target = rad_boars_nest
+reward_money = 4500
+reward_rank = 3
+reward_relation = stalker, +10
+time = 186400
+idle_time	= 432000
+prior = 1
+
+[out_barman_kill_stalker_1]
+type = kill_stalker
+text = out_barman_kill_stalker_1_text
+description = out_barman_kill_stalker_1_descr
+parent = out_bar_barman
+target = sim_zombied_t3_master
+reward_reputation = +5
+reward_rank = 3
+reward_relation = stalker, +5
+reward_money = 5000
+idle_time = 172800
+prior = 2
+
+[lukash_kill_stalker_1]
+type = kill_stalker
+text = lukash_kill_stalker_1_text
+description = lukash_kill_stalker_1_descr
+parent = lukash
+target = sim_zombied_t2_novice
+reward_reputation = +5
+reward_rank = 3
+reward_relation = freedom, +5
+reward_money = 4000
+idle_time = 172800
+prior = 1
+
+[lukash_find_item_1]
+type = find_item_hide
+community = actor
+text = lukash_find_item_1_text
+description = lukash_find_item_1_descr
+parent = lukash
+target = medkit_army
+target_count = 12
+targer_check = false
+reward_money = 3000
+reward_rank = 2
+idle_time = 345600
+reward_relation = freedom, +5
+prior = 1
+
+
+
+[lukash_find_item_2]
+type = find_item_hide
+community = actor
+text = lukash_find_item_2_text
+description = lukash_find_item_2_descr
+parent = lukash
+target = w_abakan_up
+targer_check = false
+reward_money = 4000
+reward_rank = 5
+idle_time = 2400000
+reward_relation = freedom, +10
+prior = 2
+
+
+[lukash_find_item_3]
+type = find_item_hide
+community = actor
+text = lukash_find_item_3_text
+description = lukash_find_item_3_descr
+parent = lukash
+target = w_groza
+targer_check = false
+reward_money = 4000
+reward_rank = 5
+idle_time = 2400000
+reward_relation = freedom, +5
+prior = 3
+
+
+[lukash_find_item_4]
+type = find_item_hide
+community = actor
+text = lukash_find_item_4_text
+description = lukash_find_item_4_descr
+parent = lukash
+target = dolg_scientific_outfit
+targer_check = false
+reward_money = 10000
+reward_rank = 5
+idle_time = 2400000
+reward_relation = freedom, +10
+prior = 4
+
+
+
+[lukash_kill_poltergeist]
+type = eliminate_lager
+community = actor
+condlist = {!is_gulag_population_inactive(out_poltergeist_terrain1)}
+text = lukash_kill_poltergeist_text
+description = lukash_kill_poltergeist_descr
+parent = lukash
+target = out_poltergeist_terrain1
+reward_money = 5300
+reward_rank = 3
+reward_relation = freedom, +8
+time = 186400
+idle_time	= 432000
+prior = 1
+
+;--/ country-----------------------------------
+
+[hermit_find_item_1]
+type = find_item_hide
+community = actor
+text = hermit_find_item_1_text
+description = hermit_find_item_1_descr
+parent = hermit
+target = conserva
+target_count = 20
+targer_check = false
+reward_item = af_fireball
+reward_rank = 5
+idle_time = 432000
+prior = 1
+
+[hermit_find_item_2]
+type = find_item_hide
+community = actor
+text = hermit_find_item_2_text
+description = hermit_find_item_2_descr
+parent = hermit
+target = mineral_water
+target_count = 20
+targer_check = false
+reward_item = af_liver
+reward_rank = 5
+idle_time = 432000
+prior = 2
+
+[hermit_find_item_3]
+type = monster_part
+community = actor
+text = hermit_find_item_3_text
+description = hermit_find_item_3_descr
+parent = hermit
+target = mutant_flesh_eye
+target_count = 15
+targer_check = false
+reward_item = af_electra_flash
+reward_rank = 20
+idle_time = 432000
+prior = 3
+
+
+
+[hills_major_eliminate_lager]
+type = eliminate_lager
+condlist = {!is_gulag_population_inactive(ladc_bcr_chimera_terrain1)}
+text = hills_major_eliminate_lager_text
+description = hills_major_eliminate_lager_descr
+parent = hills_major
+target = ladc_bcr_chimera_terrain1
+reward_money = 8000
+reward_rank = 5
+reward_reputation = 5
+reward_relation = military, +20,  milstalker, +15, stalker, +15
+time = 386400
+idle_time = 2000800
+prior = 1
+
+[hills_major_find_item_1]
+type = find_item_hide
+text = hills_major_find_item_1_text
+description = hills_major_find_item_1_descr
+parent = hills_major
+target = tushenka_conserva
+target_count = 10
+targer_check = false
+reward_money = 2000
+reward_rank = 1
+reward_relation = military, +30,  milstalker, +15
+idle_time = 1728000
+prior = 1
+
+[hills_major_find_item_2]
+type = find_item_hide
+community = actor
+text = hills_major_find_item_2_text
+description = hills_major_find_item_2_descr
+parent = hills_major
+target = korn_conserva
+target_count = 10
+reward_money = 2000
+targer_check = false
+reward_item = ammo_7.62x39_s
+reward_rank = 3
+reward_relation = military, +30,  milstalker, +15
+idle_time = 1728000
+prior = 2
+
+[hills_major_find_item_3]
+type = find_item_hide
+community = actor
+text = hills_major_find_item_3_text
+description = hills_major_find_item_3_descr
+parent = hills_major
+target = vodka
+targer_check = false
+target_count = 20
+reward_money = 2500
+reward_item = medkit_army, medkit_army
+reward_rank = 5
+reward_relation = military, +40,  milstalker, +20
+idle_time = 1728000
+prior = 3
+
+;--/ lost factory-----------------------------------
+
+[deedee_find_item_og-7b]
+type = find_item_hide
+community = actor
+text = deedee_find_item_og-7b_text
+description = deedee_find_item_og-7b_descr
+parent = deedee
+target = ammo_og-7b
+target_count = 10
+targer_check = false
+reward_money = 8000
+reward_rank = 5
+idle_time = 432000
+reward_relation = military, +10 ecolog, +10
+prior = 1
+
+
+
+

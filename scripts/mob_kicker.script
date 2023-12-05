@@ -1,0 +1,293 @@
+--
+-- edited by Gr1ph00n 15-08-2009
+--[[------------------------------------------------------------------------------
+local max_corpse_dist = 10
+local state_move_to_corpse  =   0
+local state_move_to_start   =   1
+local state_rest            =   2
+local state_kick            =   3
+local state_turn            =   4
+local state_wait            =   5
+--------------------------------------------------------------------------------]]
+
+local state_move_to_corpse = 0
+local state_kick = 1
+local state_conclude = 2
+local state_wait = 3
+
+local CORPSE_UNCHECKED = 0
+local CORPSE_RESERVED = 1
+local CORPSE_CHECKED = 2
+
+corpses_checked = { }
+
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+function on_bloodsucker_update(binder)
+	if not binder or not binder.object then
+		return
+	end
+	if not binder.object:get_enemy() then
+		if binder.object:get_corpse() then
+			if not mob_kicker.is_corpse_checked(binder.object:get_corpse():id()) and
+				not mob_kicker.is_corpse_reserved(binder.object:get_corpse():id())
+			then
+				if not binder.mob_kicker_active then
+					la_utils.mob_override_scheme(binder.object, "mob_kicker")
+					xr_logic.issue_event(binder.object, "mob_kicker", "update", delta)
+					binder.mob_kicker_active = true
+				end
+			else
+				if db.storage[binder.object:id()].active_section == "mob_kicker" then
+					la_utils.mob_disable_overrided_scheme(binder.object, "mob_kicker")
+					binder.mob_kicker_active = false
+					la_utils.mob_reset_logic(binder.object, binder.object:spawn_ini())
+				end
+			end
+		else
+			if db.storage[binder.object:id()].active_section == "mob_kicker" then
+				la_utils.mob_disable_overrided_scheme(binder.object, "mob_kicker")
+				binder.mob_kicker_active = false
+				la_utils.mob_reset_logic(binder.object, binder.object:spawn_ini())
+			end
+		end
+	else
+		if binder.mob_kicker_active then
+			la_utils.mob_disable_overrided_scheme(binder.object, "mob_kicker")
+			binder.mob_kicker_active = false
+			la_utils.mob_reset_logic(binder.object, binder.object:spawn_ini())
+		end
+	end
+end
+
+class "mob_kicker"
+------------------
+function mob_kicker:__init(npc, storage)
+    self.st = storage
+    self.object = npc
+    self.corpse = nil
+    self.corpse_pos = vector():set(0, 0, 0)
+    self.pshell = nil
+    self.start_point = vector():set(0, 0, 0)
+    self.dir = vector():set(0, 0, 1)
+    self.start_point_id = -1
+    self.state = state_wait
+    self.initialized = false
+	self.timer = nil
+end
+------------------
+function mob_kicker:reset_scheme()
+    xr_logic.mob_capture(self.object, true, sModule)
+    self.state = state_wait
+    self.initialized = false
+end
+------------------
+function mob_kicker:common()
+	if not db.actor then
+		return false
+	end
+
+	if not xr_logic.is_active(self.object, self.st) then
+		return false
+	end
+
+	if mob_alife_mgr.alife_control(self.object, db.actor, self.st.alife_mode) then
+		return false
+	end
+	
+	if not xr_logic.mob_captured(self.object) then
+		self:reset_scheme()
+		return false
+	end
+
+	if xr_logic.try_switch_to_another_section(self.object, self.st, db.actor) then
+		return false
+	end
+    return true	    
+end
+------------------
+function mob_kicker:reset_action()
+	xr_logic.mob_capture(self.object, false, sModule)
+	xr_logic.mob_capture(self.object, true, sModule)
+end
+------------------
+function mob_kicker:update(delta)
+	parser.dbg_print("mob_kicker:update1")
+    if not self:common() then return end
+	parser.dbg_print("mob_kicker:update2")
+    if not self.initialized then
+		if not self:initialize() then 
+			return 
+		end 
+    end    
+    parser.dbg_print("mob_kicker:update3")
+	corpses_checked[self.corpse:id()] = CORPSE_RESERVED
+	if self.state == state_move_to_corpse then
+		self.object:set_invisible(false)
+		if self.object:position():distance_to(self.corpse_pos) > 2.2 then
+			action(self.object, move(move.walk_fwd, db.actor:position()), sound(sound.idle), cond(cond.move_end))
+		else
+			self.state = state_kick
+			self:reset_action()
+			action(self.object, move(move.none))
+			self:reset_action()
+			action(self.object, anim(anim.stand_idle, 0))
+			return
+		end
+	elseif self.state == state_kick then
+		if self.timer == nil then
+			self:reset_action()
+			action(self.object, anim("stand_check_corpse_0"), cond(cond.anim_end))
+			self.timer = time_global() + 2250
+		elseif self.timer < time_global() then
+			local dir = self.corpse:position():sub(self.object:position()):normalize()
+			dir.y = 0.5
+			self.pshell:apply_force(dir.x * 25000, dir.y * 25000, dir.z * 25000)
+			self.state = state_conclude
+		end
+	elseif self.state == state_conclude then
+		corpses_checked[self.corpse:id()] = CORPSE_CHECKED
+		xr_logic.mob_capture(self.object, false, sModule)
+	end
+    parser.dbg_print("mob_kicker:update4")
+end
+------------------
+function mob_kicker:initialize()
+	self.corpse = self.object:get_corpse ()
+    if self.corpse == nil then 
+		return false
+	end
+    parser.dbg_print("Found corpse : %s", self.corpse:name())
+    self.corpse_pos = self.corpse:position()
+    self.pshell = self.corpse:get_physics_shell()
+    self.start_point = self.object:position()
+    self.start_point_id = self.object:level_vertex_id()
+    self.state = state_move_to_corpse
+    self.initialized = true
+	if corpses_checked[self.corpse:id()] == CORPSE_RESERVED then
+		xr_logic.mob_capture(self.object, false, sModule)
+	end
+	return true
+end
+------------------
+
+
+--[[-- old gsc stuff -------------
+function mob_kicker:move_and_kick()
+    if distance_between (self.object, self.corpse) < 2.2 then
+       local vDir = self.corpse:position ():sub (self.object:position ())
+       vDir:normalize ()
+       self.dir = vDir
+       if yaw_degree (vDir, self.object:direction ()) > 10 then
+          xr_logic.mob_capture (self.object, false)
+          xr_logic.mob_capture (self.object, true)
+          action (self.object, look (look.point, self.corpse:position ()), anim (anim.turn, 0), cond (cond.look_end))
+          return
+       else
+          --xr_logic.mob_capture (self.object, false)
+          --xr_logic.mob_capture (self.object, true)
+          --action (self.object, move (move.run_fwd, self.corpse), sound (sound.attack), cond(cond.time_end, cond.move_end))
+          --action (self.object, anim (anim.attack, 0), cond (cond.time_end, 600))
+          vDir.y = 0.6
+          local constant = 200000
+          self.pshell:apply_force (constant * self.dir.x, constant * self.dir.y, constant * self.dir.z)
+          self.state = state_move_to_start
+          self.time = device ():time_global() + math.random (300, 400)
+          self.start_point = self:select_point ()
+          self.set = false
+          return
+       end   
+    else
+       if self.rnd > 50 then 
+          action (self.object, move (move.run_fwd, self.corpse), sound (sound.attack), cond(cond.move_end))
+       else
+          action (self.object, move (move.run_fwd, self.corpse:position (), 0.5), sound (sound.attack), cond (cond.move_end))
+       end           
+       self.rnd = math.random (1, 100)
+    end          
+end
+------------------
+function mob_kicker:move_to_start() 
+--    if self.time ~= 0 then
+       --if self.object:action() ~= nil then return end
+       --self.time = 0
+    --end 
+    if self.start_point:distance_to (self.object:position ()) < 2 then
+       xr_logic.mob_capture (self.object, false)
+       xr_logic.mob_capture (self.object, true)
+       self.state = state_move_to_corpse
+       self:move_and_kick ()
+       return
+    end   
+        
+    if self.set == false then        
+       xr_logic.mob_capture (self.object, false)
+       xr_logic.mob_capture (self.object, true)
+       self.set = true
+       action (self.object, move (move.run_fwd, self.start_point, 0.5), cond (cond.move_end))
+    end
+    self.rnd = math.random (1, 100)
+end
+------------------
+function mob_kicker:select_point()
+    local dir = self.corpse:position ():sub (self.corpse_pos)
+    local current = self.corpse:position ()
+    local dist
+    dir:normalize ()
+    if self.corpse_pos:distance_to (current) > max_corpse_dist then
+       dist = math.random (4, 8)
+    else
+       dir = self.object:position ():sub (self.corpse:position ())
+       dir:normalize ()
+       dir = vector_rotate_y (dir, math.random (30, 120))
+       dist = math.random (4, 8)
+    end   
+    self.start_point_id = level.vertex_in_direction (self.corpse:level_vertex_id (), dir, dist)
+    return level.vertex_position (self.start_point_id)
+end
+------------------
+function mob_kicker:initialize()
+    parser.dbg_print ("INITALIZE CALLED")
+    self.corpse = self.object:get_corpse ()
+    if self.corpse == nil then return end
+    parser.dbg_print ("Found corpse : %s", self.corpse:name ())
+    self.corpse_pos = self.corpse:position ()
+    self.pshell = self.corpse:get_physics_shell ()
+    self.start_point = self.object:position ()
+    self.start_point_id = self.object:level_vertex_id ()
+    --self.move_to_start = false
+    self.state = state_move_to_corpse
+    self.time = 0
+    self.rnd = math.random (1, 100)
+    self.initialized = true
+end
+]]
+--------------------------------------------------------------------------------
+function add_to_binder(npc, ini, scheme, section, storage)
+	parser.dbg_print ("DEBUG: add_to_binder: npc:name()='%s', scheme='%s', section='%s'", npc:name(), scheme, section)
+
+	local new_action = mob_kicker (npc, storage)
+	xr_logic.subscribe_action_for_events(npc, storage, new_action)
+end
+--------------------------------------------------------------------------------
+function set_scheme(npc, ini, scheme, section, gulag_name)
+	local st = xr_logic.assign_storage_and_bind (npc, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions (ini, section, npc)
+	st.alife_mode   = mob_alife_mgr.cfg_get_mode (ini, section, npc)
+end
+--------------------------------------------------------------------------------
+function disable_scheme(npc, scheme)
+	db.storage[npc:id()][scheme] = nil
+end
+---------------------------------------------------------------------------------
+function is_corpse_checked(corpse_id)
+	return corpses_checked[corpse_id] == CORPSE_CHECKED
+end
+---------------------------------------------------------------------------------
+function is_corpse_reserved(corpse_id)
+	return corpses_checked[corpse_id] == CORPSE_RESERVED
+end

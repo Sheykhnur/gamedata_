@@ -1,0 +1,3294 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : state_lib.script
+ Description: Библиотека состояний тела
+ Copyright  : 2004 © GSC Game World
+ Author     : Диденко Руслан (Stohe)
+ Last edit  : 27.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+states = {
+	--/ Дефолтовый
+	idle = {
+		weapon = nil,
+		movement = nil,
+		mental = nil,
+		bodystate = nil,
+		animstate = "stand",
+		animation = nil
+	},
+	danger = {
+		weapon = nil,
+		movement = nil,
+		mental = nil,
+		bodystate = nil,
+		animstate = "stand",
+		animation = nil
+	},
+	danger_rot = { --stub
+		weapon = nil,
+		movement = move.run, --different target rotation, why with danger it's now slow?
+		mental = anim.danger,
+		bodystate = nil,
+		animstate = "stand",
+		animation = nil
+	},
+	--/ Ходячие состояния
+	walk = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	run = {
+		weapon = "strapped",
+		movement = move.run,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	sprint = {
+		weapon = "unstrapped",
+		movement = move.run,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	patrol = {
+		weapon = "unstrapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	patrol_fire = {
+		weapon = "fire",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	raid = {
+		weapon = "unstrapped",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	raid_fire = {
+		weapon = "fire",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	sneak = {
+		weapon = "unstrapped",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = nil
+	},
+	sneak_run = {
+		weapon = "unstrapped",
+		movement = move.run,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = nil
+	},
+	sneak_no_wpn = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = nil
+	},
+	sneak_fire = {
+		weapon = "fire",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = nil
+	},
+	assault = {
+		weapon = "unstrapped",
+		movement = move.run,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	assault_fire = {
+		weapon = "fire",
+		movement = move.run,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	rush = {
+		weapon = "unstrapped",
+		movement = move.run,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	--/ Стоячие состояния
+	wait = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "idle"
+	},
+	wait_trade = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "idle"
+	},
+	wait_na = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	guard = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "idle"
+	},
+	guard_na = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	guard_fire = {
+		weapon = "fire",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	threat = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	threat_heli = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	threat_na = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	threat_fire = {
+		weapon = "fire",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	threat_sniper_fire = {
+		weapon = "sniper_fire",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	hide = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "hide"
+	},
+	hide_na = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = nil
+	},
+	hide_fire = {
+		weapon = "fire",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = nil
+	},
+	hide_sniper_fire = {
+		weapon = "sniper_fire",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = nil
+	},
+	specnaz_hide = { 
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "specnaz_hide"
+	},
+	caution = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "caution"
+	},
+	choose = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "choosing"
+	},
+	press = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "press"
+	},
+	ward = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "warding"
+	},
+	search = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "poisk"
+	},
+	salut = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "salut"
+	},
+	salut_free = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "salut_free"
+	},
+	prisoner = {
+		weapon = "strapped",
+		movement = nil,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "prisoner"
+	},
+	hide_no_wpn = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "hide"
+	},
+	hide_no_wpn_stand = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "hide"
+	},
+	--/ Сидячие состояния
+	sit = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "sit"
+	},
+	sit_knee = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_knee",
+		animation = "sit_knee"
+	},
+	sit_ass = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "sit_ass"
+	},
+	sleep = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sleep",
+		animation = "sleeping"
+	},
+	sleep_sit = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "sleep_sit"
+	},
+	eat_bread = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_knee",
+		animation = "eat_bread"
+	},
+	eat_vodka = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "eat_vodka"
+	},
+	eat_energy = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "eat_energy"
+	},
+	eat_kolbasa = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "eat_kolbasa"
+	},
+	guitar = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_knee",
+		animation = "guitar"
+	},
+	harmonica = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "harmonica"
+	},
+	hello = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "hello",
+		reset = true
+	},
+	hello_wpn = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "hello",
+		reset = true
+	},
+	refuse = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "refuse",
+		reset = true
+	},
+	claim = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "claim",
+		reset = true
+	},
+	backoff = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "backoff",
+		reset = true
+	},
+	backoff2 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "backoff",
+		reset = true
+	},
+	suicide = {
+		weapon = "fire",
+		weapon_slot = 1,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "suicide",
+		--reset = true
+	},
+	punch = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "punch",
+		reset = true
+	},
+	punch_dc = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "punch_dc",
+		reset = true
+	},
+	punch_free = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "punch_free",
+		reset = true
+	},
+	hide_s_left = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "hide_s_left",
+		reset = true
+	},
+	hide_s_right = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "hide_s_right",
+		reset = true
+	},
+	dynamite = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "dynamite",
+		reset = true
+	},
+	binocular = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "binocular"
+	},
+	hide_rac = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "cr_raciya"
+	},
+	hide_rac_stand = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya"
+	},
+	wait_rac = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya"
+	},
+	guard_rac = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya"
+	},
+	probe = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe"
+	},
+	probe_1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_1"
+	},
+	probe_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_2"
+	},
+	probe_3 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_3"
+	},
+	mode_shlem = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "mode_shlem"
+	},
+	hands_up = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "hands_up"
+	},
+	--/ Раненый
+	wounded = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "wounded"
+	},
+	wounded_heavy = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "wounded_heavy_1"
+	},
+	wounded_heavy_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "wounded_heavy_2"
+	},
+	wounded_heavy_3 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "wounded_heavy_3"
+	},
+	wounded_zombie = {
+		weapon = "drop",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "wounded_zombie"
+	},
+	help_me = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "wounded",
+		animation = "help_me"
+	},
+	trans_0 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "trans_0"
+	},
+	trans_1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "trans_1"
+	},
+	trans_zombied = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "trans_zombied"
+	},
+	--/ Пси раненый
+	psy_pain = {
+		weapon = "drop",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psy_armed"
+	},
+	psy_armed = {
+		weapon = "unstrapped",
+		weapon_slot = 1,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psy_armed"
+	},
+	psy_shoot = {
+		weapon = "fire",
+		weapon_slot = 1,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psy_shoot"
+	},
+	--/ Псих в баре
+	psycho_pain = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psycho_pain"
+	},
+	mil_psycho_pain = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psycho_pain"
+	},
+	psycho_shoot = {
+		weapon = "fire",
+		weapon_slot = 1,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psycho_shoot"
+		},
+	--/ Бармен
+	bar_fas = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "bar_fas"
+	},
+	bar_left= {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "bar_left"
+	},
+	bar_head= {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "bar_head"
+	},
+	bar_sleep= {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "bar_sleep"
+	},
+	bar_right= {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "bar_right"
+	},
+	barman_talk_free = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "barman_free_anims"
+	},
+	barman_walk_free = {
+		weapon = "none",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	barman_tv = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "barman_tv"
+	},
+	barman_wait_free = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "barman_wait"
+	},
+	barman_walk_danger = {
+		weapon = "none",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	barman_shock = {
+		weapon = "none",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "barman_shock"
+	},
+	barman_wait_danger = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "barman_talk"
+	},
+	--/ Доктор в мертвом городе
+	doctor_wakeup = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "doctor_wakeup"
+	},
+	--/ Профессор на Янтаре
+	yan_professor_walk = {
+		weapon = "none",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	yan_professor_wait = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "idle"
+	},
+	help_agr = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "help_agr"
+	},
+	oso_flying = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_flying"
+	},
+	--/#+# barin start
+	sit_cop = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_cop_short",
+		animation = "sit_cop",
+		reset = false
+	},
+	sit_cop_short = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_cop",
+		animation = "sit_cop_short",
+		reset = false
+	},
+	sit_cop_sleep = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_cop_sleep",
+		reset = false
+	},
+	sit_take_item = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_take_item",
+		reset = true
+	},
+	clear_wpn = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "clear_wpn",
+		reset = false
+	},
+	stand_wait = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "stand_wait",
+		reset = false
+	},
+	blow_no_cover = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "blow_no_cover"
+	},
+	blow_cover = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "blow_cover"
+	},
+	blow_no_cover_hide = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "blow_no_cover_hide"
+	},
+	blow_no_cover_panic = {
+		weapon = "none",
+		movement = move.run,
+		mental = anim.panic,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	},
+	npc_check_corpse_1 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "npc_check_corpse_weapon",
+		reset = true
+	},
+	npc_check_corpse_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "npc_check_corpse_no_weapon",
+		reset = true
+	},
+	npc_check_corpse_3 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "npc_check_corpse_kick",
+		reset = true
+	},
+	npc_pickup_item = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "npc_pickup_item",
+		reset = true
+	},
+	throw_bolt = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "throw_bolt"
+	},
+	--/< barin end
+	--/#+# gr1ph start
+	climbing = {
+		weapon = "none",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "climbing"
+	},
+	pkm_idle = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "pkm_idle",
+		reset = false
+	},
+	pkm_attack = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "pkm_attack",
+		reset = false
+	},
+	pkm_left = {
+		weapon = "strapped",
+		movement = move.left,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "pkm_left",
+		reset = false	
+	},
+	pkm_right = {
+		weapon = "strapped",
+		movement = move.right,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "pkm_right",
+		reset = false
+	},
+	looking = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "looking_anim",
+		reset = false
+	},
+--/#+# lox
+	chasovoy_4 = { weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "chasovoy_4",
+		reset = false
+	},
+	stalker_1_s_1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_1_s_1",
+	},
+	stalker_1_s_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "stalker_1_s_2",
+	},
+	stalker_1_s_3 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "stalker_1_s_3",
+	},
+	stalker_2_s_1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_2_s_1",
+	},
+	stalker_2_s_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_2_s_2",
+	},
+	stalker_3_s_1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_3_s_1",
+	},
+	stalker_3_s_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_3_s_2",
+	},
+	stalker_2_1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_2_1"
+	},
+	stalker_3_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_3_2",
+	},
+	stalker_1_2_spec = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "stalker_1_2_spec",
+	},
+	stalker_1_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "sit",
+		animation = "stalker_1_2",
+	},
+	raciya_10_draw_1 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya_10_draw_1",
+	},
+	raciya_10_idle_0 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya_10_idle_0",
+	},
+	raciya_10_hide_0 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya_10_hide_0",
+	},
+	chasovoy_1 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "chasovoy_1",
+	},
+	chasovoy_2 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "chasovoy_2",
+	},
+	chasovoy_3 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "chasovoy_3",
+	},
+	chasovoy_4 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "chasovoy_4",
+	},
+	chasovoy_5 = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "chasovoy_5",
+	},
+	gop_stop_player = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gop_stop_3_0",
+	},
+	wounded_pornosh = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "wounded_pornosh_0",
+	},
+	refuse_bible = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "refuse_bible",
+		reset = true
+	},
+	salut_synth	 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "salut_synth"
+	},
+	ghost_blowout = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_blowout"
+	},
+	ispug = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ispug"
+	},
+	probe_3n = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_3n"
+	},
+	probe_1n = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_1n"
+	},
+	probe_2n = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_2n"
+	},
+	probe_2n1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_2n1"
+	},
+	prisoner_cells_test = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "prisoner_cells"
+	},
+	incapsulation = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "incapsulation"
+	},
+	incapsulation_out = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "incapsulation_out"
+	},
+	incapsulation_out_n = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "incapsulation_out_n"
+	},
+	incapsulation_trans = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "incapsulation_trans"
+	},
+	incapsulation_trans_out = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_fear"
+	},
+	bio_wait = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "bio_wait"
+	},
+	sci_panel = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_panel"
+	},
+	sci_panel2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_panel2"
+	},
+	sci_panel3 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_panel3"
+	},
+	sci_panel_full = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_panel_full"
+	},
+	sci_panel_running = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_panel_running"
+	},
+	sci_panel_left_rotate = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_panel_left_rotate"
+	},
+	sci_fear = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_fear"
+	},
+	sci_fear_danger = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_fear_danger"
+	},
+	sci_fear_crouch = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "sci_fear"
+	},
+	sci_whisper = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_whisper"
+	},
+	sci_whisper_out = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_whisper_out"
+	},
+	sci_sit_relaxed = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_sit_relaxed"
+	},
+	sit_static_chair_left_scene = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_left_scene"
+	},
+	sit_static_chair_right_scene = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_right_scene"
+	},
+	sit_static_chair_right = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_right"
+	},
+	sit_static_chair_left = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_left"
+	},
+	sit_static_chair_right_clava = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_right_clava"
+	},
+	sit_static_chair_right_head = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_right_head"
+	},
+	sit_static_chair_right_head1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_right_head1"
+	},
+	sit_static_chair_right_back_normal = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sit_static_chair_right_back_normal"
+	},
+	sci_talk = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_talk"
+	},
+	drain = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drain"
+	},
+	drain_fly_idle = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drain_fly_idle"
+	},
+	robo_death = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "robo_death"
+	},
+	drain_fly = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drain_fly"
+	},
+	hologram_rotate = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "hologram_rotate"
+	},
+	drained = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drained"
+	},
+	sci_incident = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_incident"
+	},
+	sci_look_out = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_look_out"
+	},
+	sci_suprised = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_suprised"
+	},
+	sci_think = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_think"
+	},
+	sci_blame = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_blame"
+	},
+	sci_talking = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_talking"
+	},
+	sci_giving = {weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_giving"
+	},
+	sci_blame_facepalm = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_blame_facepalm"
+	},
+	sci_monster = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_monster"
+	},
+	mil_nope = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "mil_nope"
+	},
+	ghost_fly = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_fly"
+	},
+	sci_ghost_fly = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_ghost_fly"
+	},
+	holo_relaxing = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "holo_relaxing"
+	},
+	sci_wash_hands = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_wash_hands"
+	},
+	sci_walk_tank = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_walk_tank"
+	},
+	worker_ventile_sleep = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_sleep"
+	},
+	worker_ventile_listen = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_listen"
+	},
+	worker_ventile_work = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_work"
+	},
+	worker_ventile_normal = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_normal"
+	},
+	worker_ventile_big_sleep = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_big_sleep"
+	},
+	worker_ventile_big_listen = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_big_listen"
+	},
+	worker_ventile_big_work = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_big_work"
+	},
+	worker_ventile_big_normal = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "worker_ventile_big_normal"
+	},
+	dog_teach = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "dog_teach"
+	},
+	dog_teach_no_into = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "dog_teach_no_into"
+	},
+	hands_on_rails = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "hands_on_rails"
+	},
+	psycho_mind = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psycho_mind"
+	},
+	sci_laboratory = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_laboratory"
+	},
+	sci_laboratory_2 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_laboratory_2"
+	},
+	sci_laboratory_3 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_laboratory_3"
+	},
+	sci_laboratory_4 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_laboratory_4"
+	},
+	sci_meeting = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_meeting"
+	},
+	sci_blind = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_blind"
+	},
+	sci_blind2 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_blind2"
+	},
+	sci_walk_talk = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_walk_talk"
+	},
+	sci_ball = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_ball"
+	},
+	sci_worried = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_worried"
+	},
+	sci_panel_big = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_panel_big"
+	},
+	ghost_look_full = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_look_full"
+	},
+	ghost_look_synth = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_look_synth"
+	},
+	ghost_look_scary = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_look_scary"
+	},
+	ghost_look_finish = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_look_finish"
+	},
+	drink_vodka = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drink_vodka"
+	},
+	drink_vodka_out = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drink_vodka_out"
+	},
+	sci_ghost_fly_static = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_ghost_fly_static"
+	},
+	budda = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "budda"
+	},
+	convulsi = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "convulsi"
+	},
+	shooter = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "shooter"
+	},
+	death_no_ragdoll = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "death_no_ragdoll"
+	},
+	death_no_ragdoll_cycle = {	weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "death_no_ragdoll_cycle"
+	},
+	gen_talk_scene = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gen_talk_scene"
+	},
+	death_vision = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "death_vision"
+	},
+	ghost_pletenii = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_pletenii"
+	},
+	ghost_zov = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ghost_zov"
+	},
+	death_gen_repeater = {	weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "death_gen_repeater"
+	},
+	oso_pompez = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_pompez"
+	},
+	oso_teleport = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_teleport"
+	},
+	oso_talk = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_talk"
+	},
+	curious_look = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "curious_look"
+	},
+	mono_crazy = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "mono_crazy"
+	},
+	sar_zombie = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_zombie",
+	},
+	sar_angry = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_angry",
+	},
+	sar_panel = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_panel",
+	},
+	sar_launch2_start = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_launch2_start",
+	},
+	sar_launch2_idle = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_launch2_idle",
+	},
+	 sar_launch = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_launch",
+	},
+	sar_kgb_sign = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_kgb_sign",
+	},
+	sar_kgb = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_kgb",
+	},
+	sar_scene_gman_win = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_gman_win",
+	},
+	sar_scene_actor_loose = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_actor_loose",
+	},
+	sar_scene_gman_loose = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_gman_loose",
+	},
+	sar_scene_actor_win = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_actor_win",
+	},
+	sar_scene_gman_wait = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_gman_wait",
+	},
+	sar_scene_actor_clicking = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_actor_clicking",
+	},
+	sar_scene_gman_start = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_gman_start",
+	},
+	sar_scene_actor = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_actor",
+	},
+	sar_scene_actor_start = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_actor_start",
+	},
+	sar_scene_test_0 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_test_0",
+	},
+	sar_scene_test_1 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_test_1",
+	},
+	sar_player_end = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_player_end",
+	},
+	sci_facepalm = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_facepalm",
+	},
+	probe_old = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "probe_old",
+	},
+	sar_loader = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_loader"
+	},
+	sar_incident = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_incident"
+	},
+	sar_panel_special = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_panel_special"
+	},
+	sar_panel_special2 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_panel_special2"
+	},
+	sar_panel_special3 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_panel_special3"
+	},
+	sar_scene_gman_full = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sar_scene_gman_full"
+	},
+	oso_actor_berserk = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_actor_berserk"
+	},
+	oso_actor_fight = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_actor_fight"
+	},
+	oso_gman_fight = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_gman_fight"
+	},
+	oso_boss_final_pre = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_final_pre",
+		fast_unstrapp = true --/#?#
+	},
+	oso_boss_final_fire = {
+		weapon = "fire",
+		weapon_slot = 1,
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_final_fire",
+		fast_unstrapp = true --/#?#
+	},
+	oso_boss_final_out = {
+		weapon = "unstrapped",
+		weapon_slot = 1,
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_final_out"
+	},
+	oso_boss_final_loose = {
+		weapon = "fire",
+		weapon_slot = 1,
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_final_loose"
+	},
+	oso_gman_victory = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_gman_victory"
+	},
+	oso_gman_walk = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_gman_walk"
+	},
+	oso_gman_fail = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_gman_fail"
+	},
+	oso_gman_fireball_pose = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_gman_fireball_pose"
+	},
+	oso_gman_fireball_attack = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_gman_fireball_attack"
+	},
+	oso_gman_shield = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_gman_shield"
+	},
+	oso_actor_attempt_pre = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_actor_attempt_pre"
+	},
+	oso_actor_attempt_fire = {
+		weapon = "fire",
+		weapon_slot = 1,
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_actor_attempt_fire"
+	},
+	oso_boss_no = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_no"
+	},
+	oso_boss_pre_seq1 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_pre_seq1"
+	},
+	oso_boss_pre_seq2 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_pre_seq2"
+	},
+	oso_boss_seq_start = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_start"
+	},
+	oso_boss_seq_1 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_1"
+	},
+	oso_boss_seq_2 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_2"
+	},
+	oso_boss_seq_3 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_3"
+	},
+	oso_boss_seq_4 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_4"
+	},
+	oso_boss_seq_5 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_5"
+	},
+	oso_boss_seq_6 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_6"
+	},
+	oso_boss_seq_7 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_7"
+	},
+	oso_boss_special = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_special"
+	},
+	oso_boss_show = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_show"
+	},
+	oso_boss_sit_left_idle = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_sit_left_idle"
+	},
+	oso_boss_sit_left_seq1 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_sit_left_seq1"
+	},
+	oso_boss_sit_left_seq2 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_sit_left_seq2"
+	},
+	oso_boss_sit_left_hands = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_sit_left_hands"
+	},
+	oso_walk_tank_boss = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_walk_tank_boss"
+	},
+	oso_boss_seq_clear = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_seq_clear"
+	},
+	oso_wait = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_idle"
+	},
+	oso_control = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_control"
+	},
+	oso_shock = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_shock"
+	},
+	oso_dmg = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_dmg"
+	},
+	npc_torso_pick_item = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "npc_torso_pick_item"
+	},
+	guards_check = {
+		weapon = "strapped",
+			movement = move.stand,
+			mental = anim.free,
+			bodystate = move.standing,
+			animstate = "stand",
+			animation = "guards_check_on_wpn"
+	},
+	self_chocke_1 = {
+		weapon = "drop",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "self_chocke_1"
+	},
+	self_chocke_2 = {
+		weapon = "drop",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "self_chocke_2"
+	},
+	gman_telekinesis = {
+		weapon = "none",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gman_telekinesis"
+	},
+	wounded_barman = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		direction = look.cur_dir,
+		animstate = "stand",
+		animation = "wounded_barman"
+	},
+	psycho_shoot2 = {
+		weapon = "fire",
+		weapon_slot = 1,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "psycho_shoot2"
+	},
+	war_use_pc_keyboard = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_use_pc_keyboard"
+	},
+	war_oso_colbes_0 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_oso_colbes_0"
+	},
+	war_oso_colbes_1 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_oso_colbes_1"
+	},
+	war_oso_colbes_2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_oso_colbes_2"
+	},
+	oso_thing_death = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_thing_death"
+	},
+	stand_smoke = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "stand_smoke"
+	},
+	stand_wall = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "stand_wall"
+	},
+	stand_wall_syn = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "stand_wall_syn"
+	},
+	stand_wall_talk = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "stand_wall_talk"
+	},
+	stand_wall_out = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "stand_wall_out"
+	},
+	ordinary_talk = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk"
+	},
+	ordinary_talk2 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk2"
+	},
+	ordinary_talk3 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk3"
+	},
+	ordinary_talk4 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk4"
+	},
+	ordinary_talk5 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk5"
+	},
+	ordinary_talk6 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk6"
+	},
+	ordinary_talk7 = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk7"
+	},
+	war_earphone = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_earphone"
+	},
+	war_knocking = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_knocking"
+	},
+	war_repair = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_repair"
+	},
+	war_ok_deal = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_ok_deal"
+	},
+	smeh_simple = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "smeh_simple"
+	},
+	npc_refuse = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "npc_refuse",
+		reset = true
+	},
+	ordinary_talk7_specific = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "ordinary_talk7_specific",
+		reset = true
+	},
+	sci_rumors = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_rumors"
+	},
+	sci_calling = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_calling"
+	},
+	war_cough = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_cough"
+	},
+	war_incident = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "war_incident"
+	},
+	swa_doc_meet = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "swa_doc_meet"
+	},
+	swa_doc_hear = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "swa_doc_hear"
+	},
+	swa_actor_hear = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "swa_actor_hear"
+	},
+	wait_long = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "wait_long"
+	},
+	walk_relaxed = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "walk_relaxed"
+	},
+	sci_fear_new = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "sci_fear_new"
+	},
+	oso_obsorb = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_obsorb"
+	},
+	hold_pos = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "hold_pos"
+	},
+	gen_actor_bunker_zero = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gen_actor_bunker_zero"
+	},
+	gen_actor_bunker_start = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gen_actor_bunker_start"
+	},
+	gen_actor_final_start = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gen_actor_final_start"
+	},
+	gen_actor_final_start_old = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gen_actor_final_start_old"
+	},
+	gen_actor_final_action = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gen_actor_final_action"
+	},
+	gen_ghost_final_action = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "gen_ghost_final_action"
+	},
+	oso_boss_dna = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "oso_boss_dna"
+	},
+	megafon_intro = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "megafon_intro"
+	},
+	megafon_arena = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "megafon_arena"
+	},
+	arena_expressions = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "arena_expressions"
+	},
+	actor_ready = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "actor_ready"
+	},
+	actor_start = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "actor_start"
+	},
+	--/< lox end
+	laughing = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "smeh"
+	},
+	weapon_cleaning = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "clear_wpn",
+		reset = false
+	}, --[[
+	drunk_walk = { --/#?#
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	}, --]]
+	drunk_walk1 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drunk_walk_anim1"
+	},
+	drunk_walk2 = {
+		weapon = "strapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drunk_walk_anim2"
+	},
+	drunk_idle = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drunk_idle_anim"
+	},
+	drunk_vomit = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "drunk_vomit_anim"
+	},
+	--/#+# vintar
+	cr_raciya_draw = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "cr_raciya"
+	},
+	cr_raciya_talk = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya"
+	},
+	cr_raciya_idle = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "raciya_10_idle_0"
+	},
+	cr_raciya_hide = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "cr_raciya_hide"
+	},
+	--/#+# barin
+	npc_goto_corpse = {
+		weapon = "unstrapped",
+		movement = move.walk,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = nil
+	}, --[[
+	npc_pickup_item_1 = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "npc_pickup_item_no_wpn"
+	},
+	npc_pickup_item_2 = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "npc_pickup_item_wpn1"
+	},
+	npc_pickup_item_3 = {
+		weapon = nil,
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "npc_pickup_item_wpn2"
+	}, --]]
+	--/#+# Skyloader
+	wounded_run = {
+		weapon = "unstrapped",
+		movement = move.run,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "wounded_run"
+	},
+	wounded_walk = {
+		weapon = "unstrapped",
+		movement = move.walk,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "wounded_walk"
+	},
+	--/#+#
+	preblow = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "preblow"
+	},
+	trading = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "trading"
+	},
+	punch_corpse = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "punch_corpse"
+	},
+	search_corpse = {
+		weapon = "unstrapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.crouch,
+		animstate = "stand",
+		animation = "search_corpse"
+	},
+	smoking = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "smoking"
+	},
+	eat_medkit = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "sit_ass",
+		animation = "eat_medkit"
+	},
+	bandaging = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.free,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "bandaging"
+	},
+	dmg_bandaging = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "dmg_bandaging"
+	},
+	use_pkm = {
+		weapon = "strapped",
+		movement = move.stand,
+		mental = anim.danger,
+		bodystate = move.standing,
+		animstate = "stand",
+		animation = "use_pkm"
+	},
+}
+--/ ------------------------------------------------------------------------------------------------

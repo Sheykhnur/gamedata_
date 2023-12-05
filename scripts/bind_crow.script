@@ -1,0 +1,140 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_crow.script
+ Description: Crow binder
+ Copyright  : 2008 © LA-team
+ Author     : Gr1ph00n (07.12.2008)
+ Editors    : barin (09.09.2009)
+ Last edit  : 28.12.2019 [ValeroK]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+function bind(obj)
+	obj:bind_object(crow_binder(obj))
+end
+
+--/ -----------------------------------------------------------------------------------------------
+class "crow_binder" (object_binder)
+--/------------------------------------------------------------------------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -------------------------
+function crow_binder:__init(object) super(object)
+	self.init_done = false
+	self.update    = 0
+	self.killed    = false
+	self.meat_spawned = false
+end
+
+function crow_binder:reload(section)
+	object_binder.reload(self, section)
+end
+
+function crow_binder:reinit()
+	object_binder.reinit(self)
+	db.storage[self.object:id()] = {}
+	self.init_done = false
+end
+
+function crow_binder:net_spawn(sobj)
+	if not object_binder.net_spawn(self, sobj) then
+		return false
+	end
+	return true
+end
+
+function crow_binder:net_destroy()
+	self:remove_callbacks()
+	db.del_obj(self.object)
+	object_binder.net_destroy(self)
+end
+
+function crow_binder:save(packet)
+	object_binder.save(self, packet)
+	xr_logic.save_obj(self.object, packet)
+end
+
+function crow_binder:load(reader)
+	object_binder.load(self, reader)
+	xr_logic.load_obj(self.object, reader)
+end
+
+function crow_binder:set_callbacks()
+	--self.object:set_callback(callback.death,      self.death_callback, self)
+	--self.object:set_callback(callback.use_object, self.use_callback, self)
+	--self.object:set_callback(callback.hit,        self.hit_callback, self)
+end
+
+function crow_binder:remove_callbacks()
+	--self.object:set_callback(callback.death,      nil)
+	--self.object:set_callback(callback.use_object, nil)
+	--self.object:set_callback(callback.hit,        nil)
+end
+
+function crow_binder:update(delta)
+	if not self.init_done then
+		self.init_done = true
+		self.blow_hit = false
+		self.object:set_callback(callback.use_object, self.use_callback, self)
+	end
+	
+	if not self.killed and not self.blow_hit then
+		--[[if la_blowout_mgr.isKillBirds() and la_blowout_mgr.get_phase() == "surge" then
+			if math.random() > 0.5 then
+				local h = hit()
+				h.type = hit.strike
+				h.power = 1000
+				h.impulse = 1000
+				h.direction = self.object:direction()
+				h.draftsman = self.object
+				self.object:hit(h)
+			end
+			self.blow_hit = true
+		end]]
+	end
+	
+	local is_dead = not self.object:alive()
+	
+	if not self.killed and is_dead then
+		self.object:set_tip_text("inventory_item_use")
+		self:death_callback()
+		self.killed = true
+	end
+	
+	if self.update <= time_global() then
+		if is_dead and not db.actor:see(self.object) then
+			alife():release(alife():object(self.object:id()), true)
+		end
+		self.update = time_global() + 30000
+	end
+end
+
+function crow_binder:hit_callback(obj, amount, local_direction, who, bone_index)
+	if crow_hunter and crow_hunter.RUN_GAME then
+		crow_hunter.GetCrowHunter():OnCrowDeath(self.object:id())
+	end
+end
+
+function crow_binder:death_callback()
+	--xr_statistic.addKillCount(self.object)
+	if crow_hunter and crow_hunter.is_running() == true then
+		crow_hunter.GetCrowHunter():OnCrowDeath(self.object:id())
+	end
+end
+
+function crow_binder:use_callback(who)
+	self.update = time_global()
+	if self.meat_spawned then
+		return
+	end
+	la_utils.spawn_items(db.actor, "crow_meat", 1, false)
+	self.meat_spawned = true
+	if (db.actor:active_slot() == 10) or db.actor:has_info("torch") or db.actor:has_info("anim_starts") or db.actor:has_info("anim_end") then return end
+	item_usage.pickup()
+end
+--/ ------------------------------------------------------------------------------------------------

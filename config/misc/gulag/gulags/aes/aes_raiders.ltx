@@ -1,0 +1,2220 @@
+[combat_ignore@raiders]
+
+[danger@aes_raiders_base]
+ignore_distance = 0
+ignore_distance_sound = 0
+danger_inertion_time = 5000
+
+[danger@aes_raiders]
+ignore_distance = 0
+ignore_distance_sound = 0
+ignore_distance_corpse = 0
+danger_inertion_time = 10000
+
+[danger@aes_raiders_breaktrough]
+ignore_distance = 50
+ignore_distance_sound = 50
+ignore_distance_corpse = 2
+danger_inertion_time = 15000
+danger_inertion_time_sound = 12000
+danger_inertion_time_corpse = 12000
+danger_inertion_time_ricochet = 30000
+danger_inertion_time_hit = 30000
+
+[danger@aes_raiders_hold]
+ignore_distance = 50
+ignore_distance_sound = 50
+danger_inertion_time = 15000
+danger_inertion_time_sound = 15000
+
+[danger@aes_raiders_pre_ambush]
+ignore_distance = 0
+ignore_distance_sound = 0
+ignore_distance_corpse = 0
+danger_inertion_time = 10000
+
+[danger@aes_raiders_leader]
+ignore_distance = 0
+
+[danger@aes_raiders_go]
+ignore_distance = 30
+ignore_distance_sound = 30
+ignore_distance_corpse = 2
+danger_inertion_time = 15000
+danger_inertion_time_sound = 10000
+danger_inertion_time_corpse = 10000
+danger_inertion_time_ricochet = 20000
+danger_inertion_time_hit = 20000
+
+[threshold@aes_raiders]
+max_ignore_distance = 10
+
+[threshold@aes_raiders_base]
+max_ignore_distance = 10
+
+[threshold@aes_raiders_special]
+max_ignore_distance = 1
+
+[threshold@aes_raiders_go]  
+max_ignore_distance = 12
+
+[threshold@aes_raiders_mutants]  
+max_ignore_distance = 100
+
+[hit@aes_raiders_leader]
+on_info = {=hit_by_actor} %+aes_leader_hitted =disable_invulnerability +aes_actor_attacked_military%
+
+[hit@aes_military_raid]
+on_info = %+aes_actor_attacked_military%
+
+[death@aes_military_raid]
+on_info = {=killed_by_actor} %+aes_actor_killed_military +aes_actor_attacked_military%
+
+;************************************** state 0 ****************************************************
+
+[logic@aes_raiders_prepare1]
+active = walker@aes_raiders_prepare1
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_prepare1]
+path_walk = troops_wait1
+path_look = troops_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[logic@aes_raiders_prepare2]
+active = walker@aes_raiders_prepare2
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_prepare2]
+path_walk = troops_wait2
+path_look = troops_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[logic@aes_raiders_prepare3]
+active = walker@aes_raiders_prepare3
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_prepare3]
+path_walk = troops_wait3
+path_look = troops_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[logic@aes_raiders_prepare4]
+active = walker@aes_raiders_prepare4
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_prepare4]
+path_walk = troops_wait4
+path_look = troops_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[logic@aes_raiders_prepare5]
+active = walker@aes_raiders_prepare5
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_prepare5]
+path_walk = troops_wait5
+path_look = troops_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[logic@aes_raiders_guard1]
+active = camper@aes_raiders_guard1
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[camper@aes_raiders_guard1]
+path_walk = spec_wait3
+path_look = spec_wait3_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+def_state_moving = raid
+def_state_campering = binocular
+def_state_campering_fire = hide_sniper_fire
+sniper = true
+
+[logic@aes_raiders_guard2]
+active = walker@aes_raiders_guard2
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_guard2]
+path_walk = spec_wait2
+path_look = spec_wait2_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+def_state_standing = guard
+
+[logic@aes_raiders_patrol]
+active = patrol@aes_raiders_zone
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[patrol@aes_raiders_zone]
+path_walk = mil_patrol
+path_look = mil_patrol_look
+formation = back
+commander = false
+combat_ignore_cond = {-aes_actor_attacked_military}
+threshold = threshold@aes_raiders_base
+danger = danger@aes_raiders_base
+
+[logic@aes_raiders_leader]
+active = walker@aes_raiders_leader
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_leader]
+path_walk = lead_walk
+path_look = lead_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+meet = meet@aes_raiders_leader
+;def_state_standing = ward
+
+[meet@aes_raiders_leader]
+meet_state     = 5|ward
+meet_state_wpn = 5|backoff@threat_weap
+use = true
+use_wpn = true
+meet_dialog = aes_meet_player
+meet_talk_enabled = true
+
+[logic@aes_raiders_talkers1]
+active = walker@aes_raiders_talker1
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_talker1]
+path_walk = talker1
+path_look = talkers_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[logic@aes_raiders_talkers2]
+active = walker@aes_raiders_talker2
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_talker2]
+path_walk = talker2
+path_look = talkers_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[logic@aes_raiders_cleaner]
+active = walker@aes_raiders_cleaner
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+
+[walker@aes_raiders_cleaner]
+path_walk = spec_wait4
+path_look = spec_wait4_look
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+
+[remark@aes_raiders_cleaner]
+anim = weapon_cleaning
+combat_ignore_cond = {-aes_actor_attacked_military}
+danger = danger@aes_raiders_base
+threshold = threshold@aes_raiders_base
+target = aes_raiders_spec_wait4_look, 0
+meet = no_meet
+
+
+;********************************************state 1*******************************************************************
+
+[logic@aes_raiders_raid1]
+active = walker@aes_raiders_raid
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid]
+path_walk = raid1
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid011
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid1_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid0111
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid011]
+path_walk = raid_wait1
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_raid_done} walker@aes_raiders_raid0111
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid0111]
+path_walk = raid_wait1
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough]
+path_walk = breakthrough1
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid1_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid1_cover]
+path_walk = raid_wait1
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough1_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough1_2]
+path_walk = breakthrough1
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+danger = danger@aes_raiders_breaktrough
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point
+meet = no_meet
+
+[walker@aes_breakthrough_point]
+path_walk = breakthrough11
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point1_go
+
+[walker@aes_mutant_point]
+path_walk = breakthrough11111
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached1} walker@aes_mutant_point1_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached1} walker@aes_hold_mutants
+on_signal = hold | %+aes_breakthrough_reached1%
+
+[walker@aes_mutant_point1_go]
+path_walk = breakthrough11111
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached1} walker@aes_hold_mutants
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants
+on_signal = hold | {-aes_breakthrough_reached1} %+aes_breakthrough_reached1%
+
+[walker@aes_hold_mutants]
+path_walk = hold1
+path_look = hold1_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon
+
+;**********************************************************************************************
+[logic@aes_raiders_raid2]
+active = walker@aes_raiders_raid2
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid2]
+path_walk = raid2
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid21
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid2_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid211
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid21]
+path_walk = raid_wait2
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_raid_done} walker@aes_raiders_raid211
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid211]
+path_walk = raid_wait2
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough2]
+path_walk = breakthrough2
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid2_cover
+danger = danger@aes_raiders_breaktrough
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid2_cover]
+path_walk = raid_wait2
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough2_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough2_2]
+path_walk = breakthrough2
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point2
+danger = danger@aes_raiders_breaktrough
+meet = no_meet
+
+[walker@aes_breakthrough_point2]
+path_walk = breakthrough22
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders
+danger = danger@aes_raiders_breaktrough
+on_signal = reached | walker@aes_mutant_point2
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point2_go
+
+[walker@aes_mutant_point2]
+path_walk = breakthrough222
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached2} walker@aes_mutant_point2_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon2
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached2} walker@aes_hold_mutants2
+on_signal = hold | %+aes_breakthrough_reached2%
+
+[walker@aes_mutant_point2_go]
+path_walk = breakthrough222
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached2} walker@aes_hold_mutants2
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon2
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants2
+on_signal = hold | {-aes_breakthrough_reached2} %+aes_breakthrough_reached2%
+
+[walker@aes_hold_mutants2]
+path_walk = hold2
+path_look = hold2_look
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon2
+
+;***********************************************************************************************
+[logic@aes_raiders_raid3]
+active = walker@aes_raiders_raid3
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid3]
+path_walk = raid3
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid31
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid3_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid311
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid31]
+path_walk = raid_wait3
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_raid_done} walker@aes_raiders_raid311
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid311]
+path_walk = raid_wait3
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough3
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough3]
+path_walk = breakthrough3
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid3_cover
+danger = danger@aes_raiders_breaktrough
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid3_cover]
+path_walk = raid_wait3
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough3_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough3_2]
+path_walk = breakthrough3
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point3
+danger = danger@aes_raiders_breaktrough
+meet = no_meet
+
+[walker@aes_breakthrough_point3]
+path_walk = breakthrough33
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point3
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point3_go
+
+[walker@aes_mutant_point3]
+path_walk = breakthrough333
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached3} walker@aes_mutant_point3_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon3
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached3} walker@aes_hold_mutants3
+on_signal = hold | %+aes_breakthrough_reached3%
+
+[walker@aes_mutant_point3_go]
+path_walk = breakthrough333
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached3} walker@aes_hold_mutants3
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon3
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants3
+on_signal = hold | {-aes_breakthrough_reached3} %+aes_breakthrough_reached3%
+
+[walker@aes_hold_mutants3]
+path_walk = hold3
+path_look = hold3_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon3
+
+;**********************************************************************************************
+[logic@aes_raiders_raid4]
+active = walker@aes_raiders_raid4
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid4]
+path_walk = raid4
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid41
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid4_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid411
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid41]
+path_walk = raid_wait4
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_raid_done} walker@aes_raiders_raid411
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid411]
+path_walk = raid_wait4
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough4
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough4]
+path_walk = breakthrough4
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid4_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid4_cover]
+path_walk = raid_wait4
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough4_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough4_2]
+path_walk = breakthrough4
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point4
+danger = danger@aes_raiders_breaktrough
+meet = no_meet
+
+[walker@aes_breakthrough_point4]
+path_walk = breakthrough44
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point4
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point4_go
+
+[walker@aes_mutant_point4]
+path_walk = breakthrough444
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached4} walker@aes_mutant_point4_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon4
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached4} walker@aes_hold_mutants4
+on_signal = hold | %+aes_breakthrough_reached4%
+
+[walker@aes_mutant_point4_go]
+path_walk = breakthrough444
+danger = danger@aes_raiders_go
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached4} walker@aes_hold_mutants4
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon4
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants4
+on_signal = hold | {-aes_breakthrough_reached4} %+aes_breakthrough_reached4%
+
+[walker@aes_hold_mutants4]
+path_walk = hold4
+path_look = hold4_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon4
+
+;**********************************************************************************************
+[logic@aes_raiders_raid5]
+active = walker@aes_raiders_raid5
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid5]
+path_walk = raid5
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid51
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid5_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid511
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid51]
+path_walk = raid_wait5
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_raid_done} walker@aes_raiders_raid511
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid511]
+path_walk = raid_wait5
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough5
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough5]
+path_walk = breakthrough5
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid5_cover
+danger = danger@aes_raiders_breaktrough
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid5_cover]
+path_walk = raid_wait5
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough5_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough5_2]
+path_walk = breakthrough5
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point5
+danger = danger@aes_raiders_breaktrough
+meet = no_meet
+
+[walker@aes_breakthrough_point5]
+path_walk = breakthrough55
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point5
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point5_go
+
+[walker@aes_mutant_point5]
+path_walk = breakthrough555
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached5} walker@aes_mutant_point5_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon5
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached5} walker@aes_hold_mutants5
+on_signal = hold | %+aes_breakthrough_reached5%
+
+[walker@aes_mutant_point5_go]
+path_walk = breakthrough555
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached5} walker@aes_hold_mutants5
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon5
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants5
+on_signal = hold | {-aes_breakthrough_reached5} %+aes_breakthrough_reached5%
+
+[walker@aes_hold_mutants5]
+path_walk = hold5
+path_look = hold5_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon5
+
+;**********************************************************************************************
+[logic@aes_raiders_raid6]
+active = walker@aes_raiders_raid6
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid6]
+path_walk = raid6
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid61
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid6_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid611
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid61]
+path_walk = raid_wait6
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_raid_done} walker@aes_raiders_raid611
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid611]
+path_walk = raid_wait6
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough6
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough6]
+path_walk = breakthrough6
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid6_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid6_cover]
+path_walk = raid_wait6
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough6_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough6_2]
+path_walk = breakthrough6
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point6
+meet = no_meet
+
+[walker@aes_breakthrough_point6]
+path_walk = breakthrough66
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point6
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point6_go
+
+[walker@aes_mutant_point6]
+path_walk = breakthrough666
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached6} walker@aes_mutant_point6_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon6
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached6} walker@aes_hold_mutants6
+on_signal = hold | %+aes_breakthrough_reached6%
+
+[walker@aes_mutant_point6_go]
+path_walk = breakthrough666
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached6} walker@aes_hold_mutants6
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon6
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants6
+on_signal = hold | {-aes_breakthrough_reached6} %+aes_breakthrough_reached6%
+
+[walker@aes_hold_mutants6]
+path_walk = hold6
+path_look = hold6_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon6
+
+;**********************************************************************************************
+[logic@aes_raiders_raid7]
+active = walker@aes_raiders_raid7
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid7]
+path_walk = raid7
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid71
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid7_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid711
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid71]
+path_walk = raid_wait7
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_raid_done} walker@aes_raiders_raid711
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid711]
+path_walk = raid_wait7
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough7
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough7]
+path_walk = breakthrough7
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid7_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid7_cover]
+path_walk = raid_wait7
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough7_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough7_2]
+path_walk = breakthrough7
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point7
+meet = no_meet
+
+[walker@aes_breakthrough_point7]
+path_walk = breakthrough77
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point7
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point7_go
+
+[walker@aes_mutant_point7]
+path_walk = breakthrough777
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached7} walker@aes_mutant_point7_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon7
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached7} walker@aes_hold_mutants7
+on_signal = hold | %+aes_breakthrough_reached7%
+
+[walker@aes_mutant_point7_go]
+path_walk = breakthrough777
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached7} walker@aes_hold_mutants7
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon7
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants7
+on_signal = hold | {-aes_breakthrough_reached7} %+aes_breakthrough_reached7%
+
+[walker@aes_hold_mutants7]
+path_walk = hold7
+path_look = hold7_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon7
+
+;**********************************************************************************************
+[logic@aes_raiders_raid8]
+active = walker@aes_raiders_raid8
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid8]
+path_walk = raid8
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid81
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid8_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid811
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid81]
+path_walk = raid_wait8
+path_look = raid_wait_look_lc   
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+danger = danger@aes_raiders_go
+on_info = {+aes_raid_done} walker@aes_raiders_raid811
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid811]
+path_walk = raid_wait8
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough8
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough8]
+path_walk = breakthrough8
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid8_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid8_cover]
+path_walk = raid_wait8
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough8_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough8_2]
+path_walk = breakthrough8
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point8
+meet = no_meet
+
+[walker@aes_breakthrough_point8]
+path_walk = breakthrough88
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached| walker@aes_mutant_point8
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point8_go
+
+[walker@aes_mutant_point8]
+path_walk = breakthrough888
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached8} walker@aes_mutant_point8_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon8
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached8} walker@aes_hold_mutants8 
+on_signal = hold | %+aes_breakthrough_reached8%
+
+[walker@aes_mutant_point8_go]
+path_walk = breakthrough888
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached8} walker@aes_hold_mutants8
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon8
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants8
+on_signal = hold | {-aes_breakthrough_reached8} %+aes_breakthrough_reached8%
+
+[walker@aes_hold_mutants8]
+path_walk = hold8
+path_look = hold8_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon8
+
+;**********************************************************************************************
+[logic@aes_raiders_raid9]
+active = walker@aes_raiders_raid9
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid9]
+path_walk = raid9
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid91
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid9_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid911
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid91]
+path_walk = raid_wait9
+path_look = raid_wait_look_lc
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+danger = danger@aes_raiders_go
+on_info = {+aes_raid_done} walker@aes_raiders_raid911
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid911]
+path_walk = raid_wait9
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough9
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough9]
+path_walk = breakthrough9
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid9_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid9_cover]
+path_walk = raid_wait9
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough9_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough9_2]
+path_walk = breakthrough9
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point9
+meet = no_meet
+
+[walker@aes_breakthrough_point9]
+path_walk = breakthrough99
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point9
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point9_go
+
+[walker@aes_mutant_point9]
+path_walk = breakthrough999
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached9} walker@aes_mutant_point9_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon9
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached9} walker@aes_hold_mutants9
+on_signal = hold | %+aes_breakthrough_reached9%
+
+[walker@aes_mutant_point9_go]
+path_walk = breakthrough999
+danger = danger@aes_raiders_go
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached9} walker@aes_hold_mutants9
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon9
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants9
+on_signal = hold | {-aes_breakthrough_reached9} %+aes_breakthrough_reached9%
+
+[walker@aes_hold_mutants9]
+path_walk = hold9
+path_look = hold9_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon9
+
+;**********************************************************************************************
+[logic@aes_raiders_raid10]
+active = walker@aes_raiders_raid10
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid10]
+path_walk = raid10
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid10_1
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid10_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid10_11
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid10_1]
+path_walk = raid_wait10
+path_look = raid_wait_look_lc
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+danger = danger@aes_raiders_go
+on_info = {+aes_raid_done} walker@aes_raiders_raid10_11
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid10_11]
+path_walk = raid_wait10
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough100
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough100]
+path_walk = breakthrough100
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid10_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid10_cover]
+path_walk = raid_wait10
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough10_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough10_2]
+path_walk = breakthrough100
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point10
+meet = no_meet
+
+[walker@aes_breakthrough_point10]
+path_walk = breakthrough1000
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_mutant_point10
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point10_go
+
+[walker@aes_mutant_point10]
+path_walk = breakthrough10000
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached10} walker@aes_mutant_point10_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon10
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached10} walker@aes_hold_mutants9
+on_signal = hold | %+aes_breakthrough_reached10%
+
+[walker@aes_mutant_point10_go]
+path_walk = breakthrough10000
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached10} walker@aes_hold_mutants10
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon10
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants10
+on_signal = hold | {-aes_breakthrough_reached10} %+aes_breakthrough_reached10%
+
+[walker@aes_hold_mutants10]
+path_walk = hold10
+path_look = hold10_look
+danger = danger@aes_raiders_hold
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon10
+
+;**********************************************************************************************
+[logic@aes_raiders_raid11]
+active = walker@aes_raiders_raid11
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_raiders_raid11]
+path_walk = raid11
+danger = danger@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = shoot | walker@aes_raiders_raid11_1
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid11_cover
+on_info2 = {+aes_raid_done} walker@aes_raiders_raid11_11
+;on_info3 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid11_1]
+path_walk = raid_wait11
+path_look = raid_wait_look_lc
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+danger = danger@aes_raiders_go
+on_info = {+aes_raid_done} walker@aes_raiders_raid11_11
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid11_11]
+path_walk = raid_wait11
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = assault
+on_info = {+aes_gates_opened} walker@aes_breakthrough11
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough11]
+path_walk = breakthrough11
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_heli_raid_delay} walker@aes_raiders_raid11_cover
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_raiders_raid11_cover]
+path_walk = raid_wait11
+path_look = raid_wait_look_lc
+danger = danger@aes_raiders_pre_ambush
+combat_ignore_cond = {-aes_actor_killed_military !fighting_actor}
+def_state_standing = assault
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_btr_death2} walker@aes_breakthrough11_2
+meet = no_meet
+threshold = threshold@aes_raiders
+
+[walker@aes_breakthrough11_2]
+path_walk = breakthrough11
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_info = {+aes_ambush_dead} walker@aes_breakthrough_point11
+meet = no_meet
+
+[walker@aes_breakthrough_point11]
+path_walk = breakthrough1111
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders
+on_signal = reached| walker@aes_mutant_point11
+on_info = {+aes_heli_hunters_dead} walker@aes_mutant_point11_go
+
+[walker@aes_mutant_point11]
+path_walk = breakthrough111111
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_breaktrough
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(80)}
+on_info = {+aes_heli_hunters_dead -aes_breakthrough_reached11} walker@aes_mutant_point11_go
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon11
+on_info3 = {+aes_heli_hunters_dead +aes_breakthrough_reached11} walker@aes_hold_mutants11
+on_signal = hold | %+aes_breakthrough_reached11%
+
+[walker@aes_mutant_point11_go]
+path_walk = breakthrough111111
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders_go
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+on_info = {+aes_heli_hunters_dead +aes_breakthrough_reached11} walker@aes_hold_mutants11
+on_info2 = {+aes_after_wave_speak} walker@aes_raiders_to_recon11
+on_info3 = {+aes_after_hunters_meet} walker@aes_hold_mutants11
+on_signal = hold | {-aes_breakthrough_reached11} %+aes_breakthrough_reached11%
+
+[walker@aes_hold_mutants11]
+path_walk = hold11
+path_look = hold11_look
+danger = danger@aes_raiders_hold
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon11
+
+;**********************************************************************************************
+[logic@aes_raiders_raid_lead]
+active = walker@aes_raiders_raid_lead
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_raiders_leader
+
+[walker@aes_raiders_raid_lead]
+path_walk = leader_walk
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders
+combat_ignore_cond = {-aes_leader_hitted -aes_actor_killed_military}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_signal = end | walker@aes_raiders_raid_lead_prehide
+on_info = {+npp_chose_dolg1} walker@aes_raiders_raid_lead_hide
+on_info2 = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide
+on_info3 = {+aes_heli_hunters_dead} walker@aes_raiders_raid_lead_hiding
+meet = no_meet
+invulnerable = {-aes_leader_hitted} true
+
+[walker@aes_raiders_raid_lead_prehide]
+path_walk = leader_wait
+path_look = leader_wait_look
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted =fighting_actor}
+threshold = threshold@aes_raiders
+;def_state_standing = assault
+on_info = {+aes_raid_done} walker@aes_raiders_raid_lead_hiding
+meet = no_meet
+invulnerable = {-aes_leader_hitted} true
+
+[walker@aes_raiders_raid_lead_hiding]
+path_walk = leader_hide
+path_look = leader_wait_look2
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = ward
+on_signal = hidden | remark@aes_raiders_raid_lead1
+meet = no_meet
+invulnerable = {-aes_leader_hitted} true
+
+[remark@aes_raiders_raid_lead1]
+;snd = sta_open_gates
+;snd_delay = 0
+target = actor
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted !fighting_actor}
+threshold = threshold@aes_raiders
+on_info = {+npp_chose_mil -npp_said_open} %=play_snd(characters_voice\scenario\sta\open_the_gates) +npp_said_open%
+on_timer = 3000 | walker@aes_raiders_raid_lead_hide %+aes_open_the_gate%
+meet = no_meet
+invulnerable = {-aes_leader_hitted} true
+
+[walker@aes_raiders_raid_lead_hide]
+path_walk = leader_hide
+path_look = leader_wait_look2
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders
+def_state_standing = ward
+meet = meet@aes_raiders_leader_second
+on_info = {+aes_help_raiders_refuse} walker@aes_raiders_raid_lead_hide_fake
+on_info2 = {+aes_gates_opened} remark@aes_raiders_raid_lead_cover
+invulnerable = {-aes_leader_hitted} true
+
+[walker@aes_raiders_raid_lead_hide_fake]
+path_walk = leader_hide
+path_look = leader_wait_look2
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+on_info = {+aes_ambush_dead} walker@aes_raiders_lead_breakthrough
+invulnerable = {-aes_leader_hitted} true
+meet = no_meet
+
+[remark@aes_raiders_raid_lead_cover]
+;snd = sta_fall_back
+;snd_delay = 0
+target = actor
+danger = danger@aes_raiders
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted !fighting_actor}
+threshold = threshold@aes_raiders
+def_state_standing = guard
+on_info = {+npp_chose_mil -npp_said_btr} %=play_snd(characters_voice\scenario\sta\btr_fall_back) +npp_said_btr%
+on_timer = 3000 | {-npp_chose_dolg1} %+aes_heli_raid% remark@aes_raiders_raid_lead_cover_synth
+invulnerable = {-aes_leader_hitted} true
+
+[remark@aes_raiders_raid_lead_cover_synth]
+target = actor
+danger = danger@aes_raiders
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted !fighting_actor}
+def_state_standing = guard
+meet = meet@aes_raiders_leader_btr
+on_info = {+aes_btr_death2_delay} remark@aes_breakthrough_warn 
+invulnerable = {-aes_leader_hitted} true
+
+[remark@aes_breakthrough_warn]
+;snd = sta_ambush
+;snd_delay = 0
+on_timer = 3000 | %+aes_ambush_task_start%
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted !fighting_actor}
+threshold = threshold@aes_raiders
+danger = danger@aes_raiders
+def_state_standing = guard
+no_move = true
+on_info = {+npp_chose_mil -npp_said_ambush}  %=play_snd(characters_voice\scenario\sta\ambush) +npp_said_ambush%
+on_info2 = {+aes_ambush_dead} walker@aes_raiders_lead_breakthrough
+invulnerable = {-aes_leader_hitted} true
+meet = no_meet
+
+[walker@aes_raiders_lead_breakthrough]
+path_walk = lead_break
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+danger = danger@aes_raiders
+combat_ignore_cond = {-aes_leader_hitted +aes_heli_hunters_dead}
+invulnerable = {-aes_leader_hitted} true
+on_info = {+aes_ambush_dead -aes_help_raiders_refuse -npp_chose_dolg1 -aes_heli_hunters_dead} %+aes_hunter_task_start%
+on_info2 = {+aes_heli_hunters_dead} walker@aes_raiders_lead_breakthrough_end %+aes_hunter_task_start%
+on_signal = hunter | walker@aes_raiders_lead_hunter_wait
+meet = no_meet
+
+[walker@aes_raiders_lead_hunter_wait]
+path_walk = lead_hunter_wait
+path_look = lead_hunter_wait_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = caution
+threshold = threshold@aes_raiders
+invulnerable = {-aes_leader_hitted} true
+danger = danger@aes_raiders
+on_info = {+aes_heli_hunters_dead} walker@aes_raiders_lead_breakthrough_end
+on_info2 = {+npp_chose_dolg1} walker@aes_raiders_lead_breakthrough_end
+meet = no_meet
+
+[walker@aes_raiders_lead_breakthrough_end]
+path_walk = lead_end_walk
+path_look = lead_end_look
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted !fighting_actor}
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders
+invulnerable = {-aes_leader_hitted} true
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = guard
+on_signal = wave | remark@aes_raiders_lead_binoc_talk
+meet = no_meet
+
+[remark@aes_raiders_lead_binoc_talk]
+;snd = aes_leader_mutants
+snd = out_bar_whistle1
+anim = binocular
+target = aes_raiders_lead_end_look, 0
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted !fighting_actor}
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders
+on_actor_dist_le_nvis = 6 | {+aes_heli_hunters_dead} %+aes_after_hunters_meet%
+invulnerable = {-aes_leader_hitted} true
+
+[meet@aes_raiders_leader_second]
+use = true
+use_wpn = true
+meet_dialog = aes_ask_player
+meet_talk_enabled = true
+
+[meet@aes_raiders_leader_btr]
+use = true
+use_wpn = true
+meet_dialog = aes_raid_btr
+meet_talk_enabled = true
+
+[meet@aes_raiders_mutants]
+use = true
+use_wpn = true
+meet_dialog = aes_mutant_wave_dialog
+meet_talk_enabled = true
+
+;********************************************state 2*******************************************
+[logic@aes_raiders_raid_mutants1]
+active = walker@aes_regroup_mutants
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants]
+path_walk = hold1
+path_look = hold1_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon
+
+[walker@aes_raiders_to_recon]
+path_walk = to_recon1
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;**********************************************************************************************
+[logic@aes_raiders_raid_mutants2]
+active = walker@aes_regroup_mutants2
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants2]
+path_walk = hold2
+path_look = hold2_look
+combat_ignore_cond = {-aes_actor_killed_military =fighting_dist_ge(40)}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_go
+threshold = threshold@aes_raiders
+on_signal = turret | mgunner@aes_hold_mutants_mgun
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon2
+
+[mgunner@aes_hold_mutants_mgun]
+path_walk = hold2
+path_look = hold2_look
+turret_sid = 7149
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon2
+threshold = threshold@aes_raiders_mutants
+
+[walker@aes_raiders_to_recon2]
+path_walk = to_recon2
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants3]
+active = walker@aes_regroup_mutants3
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants3]
+path_walk = hold3
+path_look = hold3_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon3
+
+[walker@aes_raiders_to_recon3]
+path_walk = to_recon3
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants4]
+active = walker@aes_regroup_mutants4
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants4]
+path_walk = hold4
+path_look = hold4_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon4
+
+[walker@aes_raiders_to_recon4]
+path_walk = to_recon4
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants5]
+active = walker@aes_regroup_mutants5
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants5]
+path_walk = hold5
+path_look = hold5_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon5
+
+[walker@aes_raiders_to_recon5]
+path_walk = to_recon5
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants6]
+active = walker@aes_regroup_mutants6
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants6]
+path_walk = hold6
+path_look = hold6_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon6
+
+[walker@aes_raiders_to_recon6]
+path_walk = to_recon6
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants7]
+active = walker@aes_regroup_mutants7
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants7]
+path_walk = hold7
+path_look = hold7_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon7
+
+[walker@aes_raiders_to_recon7]
+path_walk = to_recon7
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants8]
+active = walker@aes_regroup_mutants8
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants8]
+path_walk = hold8
+path_look = hold8_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+danger = danger@aes_raiders_hold
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon8
+
+[walker@aes_raiders_to_recon8]
+path_walk = to_recon8
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders
+danger = danger@aes_raiders_hold
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants9]
+active = walker@aes_regroup_mutants9
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants9]
+path_walk = hold9
+path_look = hold9_look
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon9
+
+[walker@aes_raiders_to_recon9]
+path_walk = to_recon9
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants10]
+active = walker@aes_regroup_mutants10
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants10]
+path_walk = hold10
+path_look = hold10_look
+danger = danger@aes_raiders_hold
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon10
+
+[walker@aes_raiders_to_recon10]
+path_walk = to_recon10
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_raid_mutants11]
+active = walker@aes_regroup_mutants11
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_military_raid
+on_death = death@aes_military_raid
+
+[walker@aes_regroup_mutants11]
+path_walk = hold11
+path_look = hold11_look
+danger = danger@aes_raiders_hold
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+threshold = threshold@aes_raiders_mutants
+on_info = {+aes_after_wave_speak} walker@aes_raiders_to_recon11
+
+[walker@aes_raiders_to_recon11]
+path_walk = to_recon11
+combat_ignore_cond = {-aes_actor_attacked_military !fighting_actor}
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+meet = no_meet
+danger = danger@aes_raiders_hold
+threshold = threshold@aes_raiders
+
+;***********************************************************************************************
+[logic@aes_raiders_lead_mutants]
+active = camper@aes_raiders_lead_mutants
+combat_ignore = combat_ignore@raiders
+on_hit = hit@aes_raiders_leader
+
+[camper@aes_raiders_lead_mutants]
+path_walk = lead_end_walk
+path_look = lead_end_look
+invulnerable = {-aes_leader_hitted} true
+combat_ignore_cond = {-aes_leader_hitted =fighting_dist_ge(120)}
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders_mutants
+def_state_campering = hide_na
+def_state_campering_fire = hide_sniper_fire
+meet = meet@aes_raiders_mutants
+on_info = {+aes_wave_over} walker@aes_raid_leader_recon_wait
+sniper = true
+radius = 200
+
+[walker@aes_raid_leader_recon_wait]
+path_walk = leader_recon_wait
+path_look = leader_recon_wait_look
+combat_ignore_cond = {-aes_leader_hitted !fighting_actor}
+danger = danger@aes_raiders
+threshold = threshold@aes_raiders_special
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+def_state_standing = guard
+on_info = {+aes_after_wave_speak} walker@aes_raiders_lead_recon
+meet = meet@aes_raiders_mutants
+invulnerable = {-aes_leader_hitted} true
+
+[walker@aes_raiders_lead_recon]
+path_walk = leader_to_recon
+combat_ignore_cond = {-aes_leader_hitted =fighting_dist_ge(5)}
+danger = danger@aes_raiders
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+threshold = threshold@aes_raiders
+on_signal = reached | walker@aes_raiders_leader_dudaev_talk
+meet = no_meet
+invulnerable = {-aes_leader_hitted} true
+
+[walker@aes_raiders_leader_dudaev_talk]
+path_walk = leader_to_dudaev
+path_look = leader_to_dudaev_look
+danger = danger@aes_raiders
+combat_ignore_cond = {-aes_leader_hitted =fighting_dist_ge(5)}
+def_state_standing = ward
+threshold = threshold@aes_raiders
+meet = no_meet
+on_signal = dreached | %+aes_dudaev_reached%
+on_actor_dist_le_nvis = 3 | {+aes_dudaev_reached} remark@aes_raiders_join %+aes_commander_rotate%
+invulnerable = {-aes_leader_hitted} true
+
+[remark@aes_raiders_join]
+anim = wait
+snd = sta_replics4
+target = aes_mil_recon_group_leader, 0
+combat_ignore_cond = {-aes_leader_hitted !fighting_actor}
+danger = danger@aes_mil_recon
+on_signal = sound_end | %+aes_mil_recon_dialog%
+meet = no_meet
+on_info = {+aes_mil_recon_dialog_end} walker@aes_raiders_position
+invulnerable = {-aes_leader_hitted} true
+
+[walker@aes_raiders_position]
+path_walk = leader_to_camper
+path_look = leader_to_camper_look
+combat_ignore_cond = {-aes_actor_killed_military -aes_leader_hitted !fighting_actor}
+danger = danger@aes_mil_recon
+def_state_moving = raid
+def_state_campering = binocular
+def_state_campering_fire = hide_sniper_fire
+meet = no_meet
+invulnerable = {-aes_leader_hitted} true

@@ -1,0 +1,65 @@
+;-------*********--------
+[zone_rusty_fog]
+$spawn 						= "zones\rusty fog"
+$prefetch 					= 16
+class						= Z_RUSTYF	
+;script_binding 			= bind_fog.init 						;-- handled by engine
+ef_anomaly_type				= 2
+ef_weapon_type				= 14
+
+sound						= ambient\random\rt_sickened1
+postprocess					= postprocess_fog
+artefacts					= 
+
+hit_type					= strike
+hit_impulse_scale			= 0.005							
+effective_radius			= 0.90		
+					
+hit_power				= 0.99
+
+attenuation					= 1
+period						= 1
+art_onstart_spawn   		= false
+
+idle_particles				= la_particles\fog_00
+blowout_particles			= la_particles\fog_00
+
+idle_sound					= ambient\random\rt_sickened1
+blowout_sound				= ambient\random\rt_sickened1
+hit_sound					= ambient\random\rt_sickened1
+entrance_sound				= ambient\random\rt_sickened1
+
+awaking_time				= 100
+blowout_time				= 500	
+accamulate_time				= 245
+
+blowout_light_time			= 200
+blowout_explosion_time		= 200
+blowout_particles_time		= 200
+blowout_sound_time  		= 100
+
+disable_time				= 5000
+disable_time_small			= 5000
+disable_idle_time			= 100	
+
+ignore_nonalive				= false
+ignore_small				= false
+ignore_artefacts			= false
+
+blowout_light				= off
+light_color		    		= 0.5,0.4,0.3
+light_range		   			= 30.0
+light_time 		   			= 0.9;0.35
+light_height				= 1.5	
+
+idle_light					= off
+
+visible_by_detector 		= off
+
+spawn_blowout_artefacts 	= off
+
+blowout_wind				= off
+blowout_wind_time_start     = 0
+blowout_wind_time_peak      = 300
+blowout_wind_time_end		= 600
+blowout_wind_power			= 0.9

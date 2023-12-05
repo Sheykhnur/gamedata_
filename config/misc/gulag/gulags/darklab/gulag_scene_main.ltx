@@ -1,0 +1,300 @@
+[combat_ignore@dar_scene]
+
+[danger@dar_scene]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_scene]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic@darklab_sci_scene_sci1_off]
+active = walker@darklab_sci_scene_sci1_off
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_sci1_off]
+path_walk = walk1
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+
+[logic@darklab_sci_scene_sci2_off]
+active = walker@darklab_sci_scene_sci2_off
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_sci2_off]
+path_walk = walk2
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+
+[logic@darklab_sci_scene_ds2_off]
+active = walker@darklab_sci_scene_ds2_off
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_ds2_off]
+path_walk = walk3
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+
+[logic@darklab_sci_scene_ds1_off]
+active = walker@darklab_sci_scene_ds1_off
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_ds1_off]
+path_walk = walk4
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+
+[logic@darklab_sci_scene_guard_off]
+active = walker@darklab_sci_scene_guard_off
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_guard_off]
+path_walk = guard_walk
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+
+[logic@darklab_sci_scene_sci1]
+active = walker@darklab_sci_scene_sci1_on
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_sci1_on]
+path_walk = walk1_on
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+on_info = {+dar_cutscene_activate} remark@darklab_sci_scene_sci1
+
+[remark@darklab_sci_scene_sci1]
+anim = sci_panel2
+snd = dar_replics1
+on_signal = action_end | remark@darklab_sci_scene_sci1_1
+combat_ignore_cond = always
+threshold = threshold@dar_scene
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+
+[remark@darklab_sci_scene_sci1_1]
+anim = sci_panel2
+snd = dar_replics2
+on_signal = action_end | %+dar_sci_info_1%
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+on_info = {+dar_sci_info_2} remark@darklab_sci_scene_sci1_2
+
+[remark@darklab_sci_scene_sci1_2]
+anim = raciya
+snd = dar_replics4
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look
+on_signal = sound_end | %+dar_sci_base_response%
+on_info = {+dar_sci_info_3} remark@darklab_sci_scene_sci1_3
+
+[remark@darklab_sci_scene_sci1_3]
+anim = sci_panel
+snd = dar_replics6
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+on_signal = sound_end | %+dar_sci_info4% remark@darklab_sci_scene_sci1_3_synth
+
+[remark@darklab_sci_scene_sci1_3_synth]
+anim = ward
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+on_info = {+dar_sci_info_5} remark@darklab_sci_scene_sci1_4
+
+[remark@darklab_sci_scene_sci1_4]
+anim = sci_panel2
+snd = dar_replics8
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look
+on_signal = sound_end | %+dar_sci_info6%
+on_info = {+dar_sci_info7} remark@darklab_sci_scene_sci1_end
+
+[remark@darklab_sci_scene_sci1_end]
+anim = sci_fear
+snd = dar_replics10_x1
+combat_ignore_cond = always
+danger = danger@dar_scene
+on_signal = sound_end | %+sci_running% walker@darklab_sci_scene_end_run_away
+
+[walker@darklab_sci_scene_end_run_away]
+path_walk = run3
+combat_ignore_cond = always
+danger = danger@dar_scene
+on_signal = monster_catch | remark@darklab_sci_scene_sci1_die
+
+[remark@darklab_sci_scene_sci1_die]
+anim = hide
+snd = dar_replics10_x2
+combat_ignore_cond = always
+danger = danger@dar_scene
+
+[logic@darklab_sci_scene_sci2]
+active = walker@darklab_sci_scene_sci2_on
+combat_ignore = combat_ignore@dar_scene
+
+[walker@darklab_sci_scene_sci2_on]
+path_walk = walk2_on
+combat_ignore_cond = always
+danger = danger@dar_scene
+on_info = {+dar_cutscene_activate} remark@darklab_sci_scene_synth
+
+[remark@darklab_sci_scene_synth]
+anim = ward
+on_info = {+dar_sci_info1} remark@darklab_sci_scene_sci2
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk2_look, 0
+
+[remark@darklab_sci_scene_sci2]
+anim = probe
+snd = dar_replics3
+on_signal = sound_end | %+dar_sci_info_2%
+on_info = {+dar_sci_info4} remark@darklab_sci_scene_sci2_1
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk2_look, 0
+
+[remark@darklab_sci_scene_sci2_1]
+anim = sci_panel2
+snd = dar_replics7
+on_signal = sound_end | %+dar_sci_info_5%
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk2_look, 0
+on_info = {+dar_sci_info6} remark@darklab_sci_scene_sci2_2
+
+[remark@darklab_sci_scene_sci2_2]
+anim = sci_fear
+snd = dar_replics9
+on_signal = sound_end | %+dar_sci_info_7% walker@darklab_sci_scene_sci2
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+
+[walker@darklab_sci_scene_sci2]
+path_walk = run2
+combat_ignore_cond = always
+danger = danger@dar_scene
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {+sci_running} walker@darklab_sci_scene_sci2_1
+target = darklab_sci_scene_walk1_look, 0
+
+[walker@darklab_sci_scene_sci2_1]
+path_walk = run1
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_signal = reached_place | remark@darklab_sci_scene_sci2_end
+
+[remark@darklab_sci_scene_sci2_end]
+anim = hide
+combat_ignore_cond = always
+danger = danger@dar_scene
+
+[logic@darklab_sci_scene_ds1]
+active = walker@darklab_sci_scene_ds1_on
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_ds1_on]
+path_walk = walk4_on
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+on_info = {+dar_cutscene_activate} remark@darklab_sci_scene_ds1
+
+[remark@darklab_sci_scene_ds1]
+anim = ward
+on_info = {+dar_sci_info_3} remark@darklab_sci_scene_ds1_2
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+
+[remark@darklab_sci_scene_ds1_2]
+anim = incapsulation
+on_info = {+dar_sci_info_5 -dar_tele_sin_ds2} %=teleport_npc(dar_tele_ds1_loc:dar_tele_sin_ds1)% remark@darklab_sci_scene_ds1_3
+combat_ignore_cond = always
+danger = danger@dar_scene
+
+[remark@darklab_sci_scene_ds1_3]
+anim = psycho_pain
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+on_info = {+dar_sci_info_7} %=release +dar_transformation%
+
+[logic@darklab_sci_scene_ds2]
+active = walker@darklab_sci_scene_ds2_on
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_ds2_on]
+path_walk = walk3_on
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+on_info = {+dar_cutscene_activate} remark@darklab_sci_scene_ds2
+
+[remark@darklab_sci_scene_ds2]
+anim = ward
+on_info = {+dar_sci_info_3} remark@darklab_sci_scene_ds2_2
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+
+[remark@darklab_sci_scene_ds2_2]
+anim = incapsulation
+on_info = {+dar_sci_info_5 -dar_tele_sin_ds2} %=teleport_npc(dar_tele_ds2_loc:dar_tele_sin_ds2)% remark@darklab_sci_scene_ds2_3
+combat_ignore_cond = always
+danger = danger@dar_scene
+
+[remark@darklab_sci_scene_ds2_3]
+anim = psycho_pain
+combat_ignore_cond = always
+danger = danger@dar_scene
+target = darklab_sci_scene_walk1_look, 0
+on_info = {+dar_sci_info_7} %=release +dar_transformation%
+
+[logic@darklab_sci_scene_guard]
+active = walker@darklab_sci_scene_guard1_on
+combat_ignore = combat_ignore@dar_scene
+threshold = threshold@dar_scene
+
+[walker@darklab_sci_scene_guard1_on]
+path_walk = guard_walk_on
+combat_ignore_cond = always
+danger = danger@dar_scene
+threshold = threshold@dar_scene
+on_info = {+dar_cutscene_activate} remark@darklab_sci_scene_guard1
+
+[remark@darklab_sci_scene_guard1]
+anim = weapon_cleaning_sit
+combat_ignore_cond = always
+threshold = threshold@dar_scene
+danger = danger@dar_scene
+on_info = {+dar_sci_info_7} walker@darklab_sci_scene_guard1
+
+[walker@darklab_sci_scene_guard1]
+path_walk = guard1
+combat_ignore_cond = {=fighting_actor}
+danger = danger@dar_scene

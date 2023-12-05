@@ -1,0 +1,73 @@
+[spawner]
+cond = {+has_freeplay_info}
+
+[smart_terrains]
+none = true
+
+[combat_ignore@mil_task_mad_guy]
+
+[logic]
+active = walker@mil_task_mad_guy_block
+combat_ignore = combat_ignore@mil_task_mad_guy
+
+[walker@mil_task_mad_guy_block]
+path_walk = mil_task_mad_guy_block_walk
+path_look = mil_task_mad_guy_block_look
+on_info = {+mil_task_mad_guy_move} walker@mil_task_mad_guy_move_wait
+combat_ignore_cond = always
+invulnerable = {-mil_task_mad_guy_move} true
+
+[walker@mil_task_mad_guy_move_wait]
+path_walk = mil_task_mad_guy_block_walk
+path_look = mil_task_mad_guy_block_look
+on_info = {+mil_task_mad_guy_done} walker@mil_task_mad_guy_wait
+combat_ignore_cond = always
+
+[walker@mil_task_mad_guy_wait]
+path_walk = mil_task_mad_guy_block_walk
+path_look = mil_task_mad_guy_block_look
+on_actor_dist_ge_nvis = 3| walker@mil_task_mad_guy_shout
+combat_ignore_cond = always
+meet = no_meet
+
+[walker@mil_task_mad_guy_shout]
+path_walk = mil_task_mad_guy_suicide_walk
+path_look = mil_task_mad_guy_suicide_look
+on_signal = suicide| remark@mil_task_mad_guy_shout
+meet = no_meet
+combat_ignore_cond = always
+
+[remark@mil_task_mad_guy_shout]
+snd = mil_suicide_cry
+target = mil_task_mad_guy_suicide_look, 0
+on_signal = sound_end| %=mil_mad_pistol% remark@mil_task_mad_guy_suicide
+combat_ignore_cond = always
+meet = no_meet
+
+[remark@mil_task_mad_guy_suicide]
+anim = suicide
+target = mil_task_mad_guy_suicide_look, 0
+;on_signal = anim_end| %=suicide%
+combat_ignore_cond = always
+meet = no_meet
+
+[remark@mil_task_mad_guy_suicide_start]
+anim = psycho_pain
+target = mil_task_mad_guy_suicide_look, 0
+on_signal = anim_end| remark@mil_task_mad_guy_suicide_shot
+combat_ignore_cond = always
+meet = no_meet
+
+[remark@mil_task_mad_guy_suicide_shot]
+snd = mil_suicide_shot
+target = mil_task_mad_guy_suicide_look, 0
+on_signal = sound_end| remark@mil_task_mad_guy_suicide_end
+combat_ignore_cond = always
+meet = no_meet
+
+[remark@mil_task_mad_guy_suicide_end]
+anim = psycho_shoot
+target = mil_task_mad_guy_suicide_look, 0
+;on_signal = anim_end| %=suicide%
+combat_ignore_cond = always
+meet = no_meet

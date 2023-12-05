@@ -1,0 +1,141 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : ui_mm_opt_video.script
+ Description: options video dialog
+ Copyright  : 2005 © Game World
+ Author     : Game World
+ Editors    : gr1ph00n, SkyLoader, phobos2077
+ Last edit  : 05.01.2018 [phobos2077]
+--]] -----------------------------------------------------------------------------------------------
+
+local VIDEO_ADV_PREFIX = "video_adv:"
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ ------------------------------------------------------------------------------------------------
+class "opt_video_adv" (CUIWindow)
+--/ ------------------------------------------------------------------------------------------------
+function opt_video_adv:__init() super()
+end
+
+function opt_video_adv:__finalize()
+end
+
+function all_modes(ctrl, id)
+	ctrl:Enable(true)
+end
+
+function only_2_mode(ctrl, id)
+	local bEnabled = id >= 2
+	ctrl:Enable(bEnabled)
+end
+
+function only_12_mode(ctrl, id)
+	local bEnabled = id >= 1
+	ctrl:Enable(bEnabled)
+end
+
+function only_less_3_mode(ctrl, id)
+	local bEnabled = id < 3
+	ctrl:Enable(bEnabled)
+end
+
+function only_3_mode(ctrl, id)
+	local bEnabled = id >= 3
+	ctrl:Enable(bEnabled)
+end
+
+function only_4_mode(ctrl, id)
+	local bEnabled = id >= 4
+	ctrl:Enable(bEnabled)
+end
+
+function opt_video_adv:InitSubsectionLabel(text)
+	local xml = self._xml
+	local container = xml:InitStatic(VIDEO_ADV_PREFIX .. "templ_item", self.scroll_v)
+	local label = xml:InitLabel(VIDEO_ADV_PREFIX .. "cap_settings_subsection", container)
+	label:SetText(game.translate_string(text))
+	return label
+end
+
+function opt_video_adv:InitOption(initFn, staticTag, controlTag, precond)
+	local xml = self._xml
+	local container = xml:InitStatic(VIDEO_ADV_PREFIX .. "templ_item", self.scroll_v)
+	xml:InitStatic(VIDEO_ADV_PREFIX .. staticTag, container)
+	local ctrl = initFn(xml, VIDEO_ADV_PREFIX .. controlTag, container)
+	if precond then
+		self._handler.m_preconditions[ctrl] = precond
+	end
+	return ctrl
+end
+
+function opt_video_adv:InitTrackBarOpt(name, precond)
+	return self:InitOption(self._xml.InitTrackBar, "cap_" .. name, "track_" .. name, precond)
+end
+
+function opt_video_adv:InitCheckBoxOpt(name, precond)
+	return self:InitOption(self._xml.InitCheck, "cap_" .. name, "check_" .. name, precond)
+end
+
+function opt_video_adv:InitComboBoxOpt(name, precond)
+	return self:InitOption(self._xml.InitComboBox, "cap_" .. name, "combo_" .. name, precond)
+end
+
+function opt_video_adv:InitControls(x, y, xml, handler)
+	self:Init(x, y, 738, 416)
+	self:SetAutoDelete(true)
+
+	self._xml = xml
+	self._handler = handler
+
+	self.bk = xml:InitFrame("frame_videoadv", self)
+	self.scroll_v = xml:InitScrollView(VIDEO_ADV_PREFIX .. "scroll_v", self)
+
+	self:InitSubsectionLabel("ui_mm_video_quality")
+	self:InitTrackBarOpt("vis_dist")
+	self:InitTrackBarOpt("texture_lod")
+	self:InitTrackBarOpt("aniso")
+	self:InitTrackBarOpt("geom_quality_dist_f")
+	self:InitTrackBarOpt("geom_discard_dist_f")
+	self:InitTrackBarOpt("detail_density")
+	self:InitTrackBarOpt("grass_distance")
+	self:InitComboBoxOpt("smap_size", only_2_mode)
+	self:InitTrackBarOpt("light_distance", all_modes)
+	self:InitTrackBarOpt("particles_distance", all_modes)
+
+	self:InitCheckBoxOpt("r2_sun", only_2_mode)
+	self:InitComboBoxOpt("sun_shafts", only_2_mode)
+	self:InitComboBoxOpt("r2_sun_quality", only_2_mode)
+	self:InitCheckBoxOpt("dof_aim", only_2_mode)
+	self:InitCheckBoxOpt("r2_steep_parallax", only_2_mode)
+	self:InitCheckBoxOpt("r2_detail_bump", only_2_mode)
+	self:InitTrackBarOpt("dtexture_dist_f", only_2_mode)
+	self:InitCheckBoxOpt("r4_tessellation", only_4_mode)
+	self:InitComboBoxOpt("r4_tess_quality", only_4_mode)
+	self:InitCheckBoxOpt("soft_particles", only_2_mode)
+	self:InitCheckBoxOpt("soft_water", only_2_mode)
+	self:InitComboBoxOpt("ao", only_2_mode)
+	self:InitComboBoxOpt("ssao", only_2_mode)
+
+	self:InitCheckBoxOpt("r3_dynamic_wet_surfaces", only_3_mode)
+	self:InitTrackBarOpt("ssample", only_less_3_mode)
+	self:InitCheckBoxOpt("FXAA", only_3_mode)
+	self:InitComboBoxOpt("msaa", only_3_mode)
+	self:InitComboBoxOpt("r3_msaa_alphatest", only_3_mode)
+
+	self:InitSubsectionLabel("ui_mm_video_preferences")
+	self:InitCheckBoxOpt("r3_use_dx10_1", only_3_mode)
+	self:InitCheckBoxOpt("vsync")
+	self:InitCheckBoxOpt("60hz")
+	self:InitCheckBoxOpt("mt_texture_load")
+	self:InitCheckBoxOpt("r2_mblur", only_2_mode)
+	self:InitTrackBarOpt("r2_mblur_level")
+	self:InitCheckBoxOpt("npc_torch")
+	self:InitCheckBoxOpt("inverse_kinematics")
+	self:InitComboBoxOpt("backbuffer", only_3_mode)
+	self:InitComboBoxOpt("bloom_type", only_2_mode)
+	self:InitCheckBoxOpt("build_2218_gloss", only_2_mode)
+
+	local btn = xml:Init3tButton(VIDEO_ADV_PREFIX .. "btn_to_simply", self)
+	handler:Register(btn, "btn_simply_graphic")
+end
+--/ ------------------------------------------------------------------------------------------------

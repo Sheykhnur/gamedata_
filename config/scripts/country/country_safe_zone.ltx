@@ -1,0 +1,22 @@
+[logic]
+active = sr_idle@check
+
+[sr_idle@check]
+on_actor_inside = sr_idle@in
+on_actor_outside = sr_idle@out
+on_info = {+country_major_third_mutant_quest_start00 -country_major_wave_kontr} sr_idle@wait
+
+[sr_idle@out]
+on_actor_inside = {!check_for_enemy(28)} sr_idle@in %=enable_save =set_safe_zone(in) =send_tip_hud(actor:hmm:st_partly_safe_zone_no_enemy:15)%
+on_actor_inside2 = {=check_for_enemy(28)} sr_idle@in_check %=set_safe_zone(in) =send_tip_hud(actor:hmm:st_partly_safe_zone_enemy:15)%
+
+[sr_idle@in_check]
+on_actor_outside = sr_idle@out %=disable_save =set_safe_zone(out)%
+on_info = {!check_for_enemy(28)} sr_idle@in %=enable_save =send_tip_hud(actor:hmm:st_partly_safe_zone_no_enemy_in:15)%
+
+[sr_idle@in]
+on_info = {=check_for_enemy(15)} sr_idle@in_check %=disable_save =send_tip_hud(actor:hmm:st_partly_safe_zone_enemy_in:15)%
+on_actor_outside = sr_idle@out %=disable_save =set_safe_zone(out)%
+
+[sr_idle@wait]
+on_info = {+country_major_wave_kontr} sr_idle@check

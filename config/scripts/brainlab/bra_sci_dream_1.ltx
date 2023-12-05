@@ -1,0 +1,291 @@
+[combat_ignore]
+
+[logic]
+active = walker@bra_sci_dream_main
+combat_ignore = combat_ignore
+
+[walker@bra_sci_dream_main]
+path_walk = x16_sci_meet
+path_look = x16_sci_meet_look
+combat_ignore_cond = always
+meet = meet@bra_sci_dream
+on_info = {=dist_to_actor_le(3)} remark@start_dialog %=shut_up_npc%
+
+[meet@bra_sci_dream]
+meet_state = 15|hello@x16_meet|3|ward
+meet_state_wpn = 15|hello@x16_meet|3|ward
+victim = 15|actor|3|actor
+victim_wpn = 15|actor|3|actor
+use = true
+use_wpn = false
+abuse = false
+precond = visibility
+
+[remark@start_dialog]
+anim = ward
+snd = x16_replics2
+combat_ignore_cond = always
+target = actor
+meet = no_meet
+on_signal = sound_end | remark@sci_laugh
+
+[remark@sci_laugh]
+anim = laughing
+snd = x16_replics3
+combat_ignore_cond = always
+target = actor
+meet = no_meet
+on_signal = action_end | remark@sci_replics1
+
+[remark@sci_replics1]
+anim = ordinary_talk
+snd = x16_replics4
+combat_ignore_cond = always
+target = actor
+meet = no_meet
+on_signal = sound_end | remark@sci_replics2
+
+[remark@sci_replics2]
+anim = ordinary_talk2
+snd = x16_replics5
+combat_ignore_cond = always
+target = actor
+meet = no_meet
+on_signal = sound_end | %+x16_call_observation% remark@sci_replics2_synth
+
+[remark@sci_replics2_synth]
+anim = wait
+combat_ignore_cond = always
+target = actor
+meet = no_meet
+on_info = {+x16_notification_end} remark@sci_pre
+
+[remark@sci_pre]
+anim = ordinary_talk4
+snd = x16_replics46
+combat_ignore_cond = always
+target = actor
+meet = no_meet
+on_timer = 3000 | walker@to_control_room
+
+[walker@to_control_room]
+path_walk = x16_path_to_control_room_1
+path_look = x16_path_to_control_room_1_look
+combat_ignore_cond = always
+on_signal = pathend | remark@talker
+meet = no_meet
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+on_info = {=dist_to_actor_ge(13)} walker@to_control1_wait
+
+[walker@to_control1_wait]
+path_walk = x16_sci_wait
+path_look = x16_sci_wait_look
+combat_ignore_cond = always
+meet = meet@wait
+on_info = {=dist_to_actor_le(5)} walker@to_worker
+
+[meet@wait]
+meet_state = 15|hello|3|ward
+meet_state_wpn = 15|hello|3|ward
+victim = 15|actor|3|actor
+victim_wpn = 15|actor|3|actor
+use = true
+use_wpn = false
+abuse = false
+precond = visibility
+
+[walker@to_worker]
+path_walk = x16_way_wait_end
+combat_ignore_cond = always
+meet = no_meet
+target = x16_notations_look, 0
+on_signal = watafaka | remark@talker
+
+[remark@talker]
+anim = wait
+snd = x16_replics34
+combat_ignore_cond = always
+target = x16_notations_look, 0
+meet = no_meet
+on_timer = 5000 | remark@worker_argue
+
+[remark@worker_argue]
+anim = sci_ball
+snd = x16_replics35
+combat_ignore_cond = always
+meet = no_meet
+target = x16_notations_look, 0
+on_timer = 3000 | %+x16_worker1%
+on_info = {+x16_worker2} remark@worker_argue2
+
+[remark@worker_argue2]
+anim = ordinary_talk3
+snd = x16_replics38
+combat_ignore_cond = always
+meet = no_meet
+target = x16_notations_look, 0
+on_signal = sound_end | %+x16_worker3% remark@worker_argue2_synth
+
+[remark@worker_argue2_synth]
+anim = wait
+combat_ignore_cond = always
+meet = no_meet
+target = x16_notations_look, 0
+on_info = {+x16_worker4} remark@worker_argue3
+
+[remark@worker_argue3]
+anim = ordinary_talk2
+snd = x16_replics41
+combat_ignore_cond = always
+meet = no_meet
+target = x16_notations_look, 0
+on_signal = sound_end | %+x16_notations% walker@to_control_room2
+
+[walker@to_control_room2]
+path_walk = x16_path_to_control_room_2
+path_look = x16_path_to_control_room_2_look
+combat_ignore_cond = always
+on_timer = 6000 | %+x16_worker5%
+on_signal = goingdone | %+x16_path2_finished% remark@sci_synth_meet
+meet = no_meet
+def_state_moving1 = run
+def_state_moving2 = run
+def_state_moving3 = run
+
+[remark@sci_synth_meet]
+anim = wait
+target = x16_sci_embrace2, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+x16_path2_finished +x16_reached_meet +x16_actor_near} remark@sci_meet_lab
+
+[remark@sci_meet_lab]
+anim = sci_meeting
+combat_ignore_cond = always
+meet = no_meet
+no_move = true
+no_rotate = true
+target = x16_sci_embrace2, 0
+on_info = {+x16_meet_end} remark@sci_meet_lab_synth
+
+[remark@sci_meet_lab_synth]
+anim = wait
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_info = {+x16_cutscene_talk1} remark@replics_sc1_scene
+
+[remark@replics_sc1_scene]
+anim = ordinary_talk3
+snd = x16_replics8
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_signal = sound_end | %+x16_cutscene_talk2% remark@replics_sc1_scene_synth
+
+[remark@replics_sc1_scene_synth]
+anim = wait
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_info = {+x16_cutscene_talk3} remark@replics_trust_buggy2
+
+[remark@replics_trust_buggy2]
+anim = ordinary_talk7
+snd = x16_replics10
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_signal = sound_end | %+x16_cutscene_talk4% remark@replics_sc1_trustb_synth
+
+[remark@replics_sc1_trustb_synth]
+anim = wait
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_info = {+x16_cutscene_talk5} remark@replics_sc1_scene3
+
+[remark@replics_sc1_scene3]
+anim = sci_worried
+snd = x16_replics12
+combat_ignore_cond = always
+meet = no_meet
+target = x16_flame_wall2, 0
+;target = x16_sci_lead_look, 0
+on_signal = sound_end | %+x16_cutscene_talk6%
+on_info = {+x16_cutscene_talk7} remark@replics_sc1_scene4
+
+[remark@replics_sc1_scene4]
+anim = wait
+snd = x16_replics14
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_signal = sound_end | %+x16_brain_signals_1%
+on_info = {+x16_cutscene_talk8} remark@replics_sc1_scene5
+
+[remark@replics_sc1_scene5]
+anim = sci_suprised
+snd = x16_replics15
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_signal = sound_end | %+x16_cutscene_talk9%
+on_info = {+x16_cutscene_talk10} remark@replics_sc1_scene6
+
+[remark@replics_sc1_scene6]
+anim = ordinary_talk5 ;sci_whisper
+snd = x16_replics17
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_signal = sound_end | %+x16_cutscene_talk11% remark@replics_sc1_scene6_synth
+
+[remark@replics_sc1_scene6_synth]
+anim = wait
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_info = {+x16_cutscene_talk12} remark@replics_sc1_scene7
+
+[remark@replics_sc1_scene7]
+anim = sci_fear
+snd = x16_replics19
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_signal = sound_end | %+x16_brain_signals_3%
+on_timer = 8000 | remark@replics_sc1_scene7_synth
+
+[remark@replics_sc1_scene7_synth]
+anim = wait
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_embrace2, 0
+on_info = {+x16_cutscene_talk13} remark@replics_sc1_scene8
+
+[remark@replics_sc1_scene8]
+anim = sci_suprised
+snd = x16_replics20
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_signal = sound_end | %+x16_brain_signals_4%
+on_info = {+x16_brain_sci_no} remark@replics_sc1_no
+
+[remark@replics_sc1_no]
+anim = sci_blind
+snd = x16_replics22
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci_lead_look, 0
+on_info = {+x16_start_waves} remark@scipsycons
+
+[remark@scipsycons]
+anim = psycho_mind
+snd = x16_replics23
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+x16_dream_ended} %=release%

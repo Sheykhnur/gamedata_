@@ -1,0 +1,46 @@
+[spawner]
+cond = {+yan_scientist_parts_start}
+
+[smart_terrains]
+none = true
+
+[hit@yan_rifle_dude]
+on_info = {=hit_by_actor} %+yan_rifle_dude_hit +yan_bloodsucker_den_fail%
+
+[death@yan_rifle_dude]
+on_info = %+yan_bloodsucker_den_death%
+
+[combat_ignore@yan_rifle_dude]
+
+[logic]
+active = {+yan_rifle_has} walker@yan_rifle_dude_stand, {-yan_rifle_has} walker@yan_rifle_dude_wait
+on_hit = hit@yan_rifle_dude
+on_death = death@yan_rifle_dude
+combat_ignore = combat_ignore@yan_rifle_dude
+
+[walker@yan_rifle_dude_wait]
+path_walk = yan_rifle_dude_walk
+path_look = yan_rifle_dude_look
+def_state_standing = sit_ass
+combat_ignore_cond = always
+on_actor_dist_le_nvis = 8| %=play_snd(characters_voice\scenario\yan\yan_rifle_dude_cry)% walker@yan_rifle_dude_talk
+meet = no_meet
+
+[remark@yan_rifle_dude_cry]
+snd = yan_rifle_dude_cry
+combat_ignore_cond = always
+on_signal = sound_end| walker@yan_rifle_dude_talk
+meet = no_meet
+
+[walker@yan_rifle_dude_talk]
+path_walk = yan_rifle_dude_walk
+path_look = yan_rifle_dude_look
+def_state_standing = sit_ass
+combat_ignore_cond = always
+on_info = {+yan_rifle_has} walker@yan_rifle_dude_stand
+
+[walker@yan_rifle_dude_stand]
+path_walk = yan_rifle_dude_walk
+path_look = yan_rifle_dude_look
+combat_ignore_cond = always
+on_info = {+yan_bloodsucker_den_done} nil

@@ -1,0 +1,18 @@
+[combat_ignore]
+
+[logic]
+active = remark@laboratory2
+combat_ignore = combat_ignore
+
+[remark@laboratory2]
+anim = sci_laboratory_2
+combat_ignore_cond = always
+meet = no_meet
+target = x16_sci10_look, 0
+on_info = {+x16_start_waves} remark@scipsy
+
+[remark@scipsy]
+anim = psycho_pain
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+x16_dream_ended} %=release%

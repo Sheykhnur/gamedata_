@@ -1,0 +1,56 @@
+[combat_ignore@sci2]
+
+[danger@sar_sci2_sc4]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sci_2_0
+combat_ignore = combat_ignore@sci2
+danger = danger@sar_sci2_sc4
+
+[remark@sci_2_0]
+anim = probe
+target = sar_scene_4_sci4_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_16} remark@sci_2_1
+
+[remark@sci_2_1]
+anim = wait
+snd = sar_replics16b
+target = sar_scene_4_talk_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+sar_scene4_info_17% walker@sc4_sci2
+;on_timer = 3000
+;on_info = {+sar_scene4_info_18} walker@sc4_sci2
+
+[walker@sc4_sci2]
+path_walk = sar_scene4_launch_walk
+meet = no_meet
+combat_ignore_cond = always
+on_signal = launchr | remark@sci_2_2
+
+[remark@sci_2_2]
+anim = sar_launch
+target = sar_scene4_launch_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+sar_scene4_info_19} remark@sar_sci2_3
+
+[remark@sar_sci2_3]
+anim = sci_worried
+snd = sar_replics19
+meet = no_meet
+target = sar_scene4_launch_look, 0
+combat_ignore_cond = always
+on_signal = sound_end | %+sar_scene4_info_20%
+on_info = {+sar_scene4_info_24} remark@sar_sci2_4
+
+[remark@sar_sci2_4]
+anim = sar_incident
+combat_ignore_cond = always
+meet = no_meet
+target = sar_scene_4_boss_walk, 0
+on_info = {+sar_scene4_info_30} %=release%

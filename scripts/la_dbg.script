@@ -1,0 +1,684 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : la_dbg.script [optional]
+ Description: Debug functions [only for development and testing!]
+ Copyright  : 2012 © LA-team
+ Author     : ...
+ Editors    : 
+ Last edit  : 30.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local bDebug       = nil --/ flag "Output to log" (common)
+local bIgnoreSav   = nil --/ flag
+local tScripts     = nil
+local iTimeError   = nil
+local iTimeUp1s    = 1000
+local iTimeUpdFps  = 0
+local iTimeInfo    = 0
+local bShowInf     = false
+local bShowFps     = false
+local iCntFps      = 0
+local sSpamInfo    = ""
+local tActionNames = {}
+local tDbgName     = {} --/ for debug! (see from: my_dbg.ltx)
+local dbg_ini      = ini_file("lost_alpha\\debug.ltx")
+local dev          = device()
+local oWndInf,oWndFps = nil,nil
+--/ --------------------------
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name() --/ string name of this file module
+--/ -----------------------------------------------------------------
+--/ print-log (output of the debug information)
+--/ -----------------------------------------------------------------
+local to_log = function(fmt, ...) _G.log(fmt, ...) end
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ Initialize Module
+--/ -----------------------------------------------------------------
+function init()
+--	debug_print(sModule..":init:[>]") --/#~#
+	this.InitDebug()
+	if bInit then return end --/>
+	oWndInf,oWndFps = nil,nil
+	if event then
+		event("connect"):register(OnConnect)
+		event("load_storehouse"):register(OnloadStorehouse)
+		event("actor_bind"):register(OnActorBind)
+		event("presets"):register(PreSets)
+		event("game_load"):register(OnLoad_Game)
+		event("game_save"):register(OnSave_Game)
+	end
+	bInit = true
+end
+--/ ---------------------------------------------
+function PreSets(e)
+--	log("PreSets:[>]") --/#~#
+	event("options"):register(ReInit_Options)
+	ReInit_Options()
+end
+function ReInit_Options(e)
+--	log("ReInit_Options:(%s/%s):[%s]", db.is_dbg2, db.is_dbg3, ">") --/#~#
+	bShowFps = db.is_dbg1 and bit_and(GetVar("opt_dbg",0),16) == 0
+	bShowInf = db.is_dbg2
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+function OnloadStorehouse(e) --/ for for compatibility with the old game saves
+	if db.storehouse["1st"] and db.storehouse["sav_timers"] and not db.storehouse["sav_task_manager"] then
+		debug_print(sModule..":OnloadStorehouse: saved game no Extended Edition!") --/#~#
+		db.is_NoSavEE = true
+		for idx,v in ipairs(db.storehouse["sav_timers"]) do
+			if v["a"] then
+				if v.a:match('^actor_thirst%.') or v.a:match('^actor_hunger%.') or v.a:match('^actor_sleep%.') then
+					v.a = "la_"..v.a
+				end
+			end
+		end
+	end
+end
+
+function InitDebug()
+--	debug_print(sModule..":InitDebug:[>]") --/#~#
+	if bDebug ~= nil then return end --/> already initialized
+	this.Check_Scripts(db.is_dbg1) --/ flag of checking correctness of game script-files
+	--/ first set
+	bDebug = db.is_debug or false
+	if bDebug then
+		Set_Debug_Funcs()
+		tDbgName = Get_IniSection(dbg_ini, "dbg_names", "true")
+		if next(tDbgName) then
+			db.tDbgName = tDbgName
+			for _,v in ipairs({"xr_logic","bind_stalker","bind_trader","bind_monster","smart_terrain","se_respawn"}) do --/,"xr_reach_task"
+				local script = _G[v]
+				if script and type(script.InitDebug) == 'function' then
+					script.InitDebug()
+				end
+			end
+		end
+		if la_netpk and la_netpk.init then la_netpk.init() end --/#!# Only for development and testings
+--		log("InitDebug: done...")
+	end
+	db.is_debug = bDebug or false
+end
+--/ ---------------------------------------------
+function OnConnect(e)
+	debug_print( string.rep("~",78) ) --/#~#
+	local idMap = alife() and alife():level_id()
+	if idMap then
+		db.bServerStart = true --/#?# do we need it?
+		to_log( "Server_Started:[%s] : Map(%s)=[%s] :%s", e.clsid, idMap, alife():level_name(idMap), Get_MemUsage(true) ) --/#~#
+	else
+		to_log( "Server_Starting:[%s] : User=[%s] :b[%s] :%s", e.clsid, user_name(), db.iBuildMod, Get_MemUsage(true) ) --/#~#
+	end
+	debug_print( string.rep("~",78) ) --/#~#
+end
+--/ ---------------------------------------------
+function OnActorBind(e) --/ from 'actor_binder'
+	debug_print( string.rep("~",96) ) --/#~#
+	debug_print("Bind_Actor: "..Get_MemUsage(true) ) --/#~#
+	if bDebug then
+		this.Prepare_ControlActions()
+	end
+end
+--/ ---------------------------------------------
+function OnLoad_Game(e)
+	debug_print( string.rep("~",55) ) --/#~#
+	if e.sav then
+		debug_print( "Load_GameSav:=["..tostring(e.sav).."] " ) --/#~#
+	else
+		debug_print( "Load_LastSav: ..." ) --/#~#
+	end
+	debug_print( string.rep("~",55) ) --/#~#
+end
+--/ ---------------------------------------------
+function OnSave_Game(e)
+	debug_print( string.rep("~",55) ) --/#~#
+	debug_print( "Save_Game:=["..tostring(e.sav).."]" ) --/#~#
+	debug_print( string.rep("~",55) ) --/#~#
+end
+--/ -----------------------------------------------------------------
+--/ Actor: update
+--/ -----------------------------------------------------------------
+function OnUpdate(e)
+	--slowdown.update() --/#!# for DEBUG
+	if iTimeUp1s < e.time then --/ next period: ~1sec ( e.time: time_global() )
+		iTimeUp1s = e.time + 1000
+		local bReSetFps = bShowFps and (iTimeUpdFps < e.time)
+		if bReSetFps then
+			iTimeUpdFps = e.time + 10000 --/ ~10sec
+		end
+		Control_Errors(e)
+		UpdateFps(bReSetFps)
+		UpdateInformer()
+	elseif bShowFps then
+		iCntFps = iCntFps +1
+	end
+end
+--/--------------------------
+--/ error control
+function Control_Errors(e)
+	if db.iErrIdx then
+		local tErrors = { --/ + min of game time
+			[ 0] = {sec = 60, str = "warn_cheat_attention"}, --/ error in codes of file modules
+			[ 1] = {sec = 60, str = "warn_code_attention"},  --/ error in codes
+			[10] = {sec = 60, str = "warn_load_attention"},  --/ error when loading save
+			[11] = {sec = 60, str = "warn_set_attention"},   --/ error of game version
+			[12] = {sec = 60, str = "warn_ver_attention"},   --/ error of installing mode
+			[13] = {sec = 60, str = "warn_cheat_attention"}, --/ error in codes of file modules
+			[20] = {sec = 10, str = "sav_warn_note"},        --/ big save
+			[21] = {sec = 45, str = "sav_warn_attention"},   --/ overflow of save (with unloading)
+			[22] = {sec = 60, str = "sav_warn_critical"},    --/ critical overflow of save
+			[23] = {sec = 60, str = "sav_warn_attention_0"}, --/ fatal overflow of save
+			[31] = {sec = 60, str = "info_dll_attention"}    --/ dll's not installed
+		}
+		local tE = tErrors[db.iErrIdx]
+		if tE then
+			local cs = "hud_save_warning"
+			if db.iErrIdx == 0 or db.iErrIdx == 10 then
+				cs = "hud_load_warning" --/ error in codes of file modules|error in loading save
+			end --/ TODO: to figure out with overflows ...
+			get_hud():AddCustomStatic(cs, true)
+			local wnd = get_hud():GetCustomStatic(cs):wnd()
+			wnd:SetTextST(tE.str or "warn_code_attention")
+			if db.iErrIdx == 0 then
+				wnd:SetTextColor(255,255,0,0) --/ red
+			end
+			iTimeError = e.time + (tE.sec or 10)*1000
+		end
+		db.iErrIdx = nil
+	elseif iTimeError and iTimeError < e.time then --/ clear huds
+		iTimeError = nil
+		local hud = get_hud()
+		if hud:GetCustomStatic("hud_load_warning") then
+			hud:RemoveCustomStatic("hud_load_warning")
+		end
+		if hud:GetCustomStatic("hud_save_warning") then
+			hud:RemoveCustomStatic("hud_save_warning")
+		end
+	end
+end
+--/------------------------------------------------------------------
+--/ Debug HUDs
+--/------------------------------------------------------------------
+--/ ---------------------------------------------
+--/ Show FPS
+--/ ---------------------------------------------
+function UpdateFps(bFlg)
+	if bShowFps and not bFlg then
+		if not oWndFps then
+			local hud = get_hud()
+			if not hud:GetCustomStatic("hud_fps") then
+				hud:AddCustomStatic("hud_fps", true)
+			end
+			oWndFps = hud:GetCustomStatic("hud_fps"):wnd()
+			if db.iSSVer < 12 then --/for SHoC&STCS
+				oWndFps:SetTextColor(255,238,238,23)
+			else --/for SCoP
+				oWndFps = oWndInf:TextControl()
+				oWndFps:SetTextColor(GetARGB(255,238,238,23))
+			end
+			oWndFps:SetFont(GetFontGraffiti19Russian())
+			UpdateFps() --/> recursive call
+		else
+			oWndFps:SetText(tostring(iCntFps))
+		end
+		iCntFps = 0
+	elseif oWndFps then
+		oWndFps = nil
+		get_hud():RemoveCustomStatic("hud_fps")
+		if bFlg then UpdateFps() end --/> recursive call
+	end
+end
+--/ ---------------------------------------------
+--/ Informer (show coordinates)
+--/ ---------------------------------------------
+function UpdateInformer()
+	if bShowInf then
+		if oWndInf then
+			local vPosCam,vDirCam = dev.cam_pos,dev.cam_dir
+			local ca = vector() --/cam_angles
+			ca.x = math.atan2(-vDirCam.y,vDirCam.z)
+			ca.y = math.atan2(-vDirCam.x,vDirCam.z)
+			ca.z = math.atan2(-vDirCam.y,vDirCam.x)
+			local oActor = db.actor
+			local vPos,idLv,idGv = oActor:position(),oActor:level_vertex_id(),oActor:game_vertex_id()
+			local iDist = level.vertex_position(idLv):distance_to(vPos)
+			local sStr = "\\n\\nPos: X= %.1f Y= %.1f Z= %.1f \\nMap: idGv= %d idLv= %d lv_Dist= %.1f \\nCam: x= %.1f y= %.1f z= %.1f \\ncam_angles: %.2f %.2f %.2f "
+			oWndInf:SetText( string.format(sStr, vPos.x,vPos.y,vPos.z,idGv,idLv,iDist,vPosCam.x,vPosCam.y,vPosCam.z,ca.x,ca.y,ca.z) )
+		else
+			local hud = get_hud()
+			if not hud:GetCustomStatic("hud_coord") then
+				hud:AddCustomStatic("hud_coord", true)
+			end
+			oWndInf = hud:GetCustomStatic("hud_coord") and hud:GetCustomStatic("hud_coord"):wnd()
+			if oWndInf then
+				oWndInf:SetTextColor(255,238,238,23)
+				oWndInf:SetFont(GetFontLetterica16Russian()) --/GetFontSmall()
+			else
+				log("UpdateInformer:'hud_coord'~NOT_exist:<%s>", "Warning!") --/#~#
+			end
+		end
+	elseif oWndInf then
+		get_hud():RemoveCustomStatic("hud_coord")
+		oWndInf = nil
+	end
+end
+--/ ---------------------------------------------
+--/ SkyLoader: Show infoportions
+--/ ---------------------------------------------
+local dbg_infos = {
+	"huita"
+	}
+
+function UpdateInfos()
+	local message = "Current infopotions \\n"
+	
+	for i=1,#dbg_infos do
+		message = message .. dbg_infos[i] .. " = " .. tostring(has_info(dbg_infos[i])) .. "\\n"
+	end
+	
+	local hud = get_hud()
+	local custom_static = hud:GetCustomStatic("priboy_dump_vertex")
+	if custom_static == nil then
+		hud:AddCustomStatic("priboy_dump_vertex", true)
+		custom_static = hud:GetCustomStatic("priboy_dump_vertex")
+	end
+	custom_static:wnd():SetTextST(message)
+end
+--/ -----------------------------------------------------------------
+--/ 
+--/ -----------------------------------------------------------------
+function Check_Ignore_BAD_Sav(sLog,...)
+	if sLog and sLog:match('SAVE_FILE_IS_CORRUPT') then
+		db.iErrIdx = 10 --/ flag of error when loading save
+		bIgnoreSav = bIgnoreSav or Get_Cfg_Bool(dbg_ini, "options", "dbg_bad_sav", false)
+		if bIgnoreSav then
+			return true --/> continue game with 'broken' save
+		else
+			local arg = {...}
+			if arg and type(arg[3]) == 'number' then
+				local soObj = alife():object(arg[3])
+				if soObj then
+					to_log(string.rep("~",64))
+					--/ 
+					if db.is_dbg1 and IsNPC(soObj) then
+						if IsTrader(soObj) or not (la_netpk) then
+							return true --/>
+						end
+						local pk = get_netpk(soObj,1) --/ request of net-packet ('state')
+						local data = pk:isOk() and pk:get() --/ reading data from net-packet
+						if data and data.job_online and data.job_online == 255 then
+							soObj.job_online = nil
+							soObj.job_online_condlist = nil
+							--data.left_chunk = nil --/#?#
+							data.job_online = nil
+							data.was_in_smart_terrain = 0
+							data.death_droped = nil --/#?#
+							data.wounded      = nil --/#?#
+							data.state        = nil --/#?#
+							data.death_used   = nil --/#?#
+							pk:set(data) --/< record
+							debug_print("Ignore_BAD_Sav:Obj=["..tostring(soObj:name()).."/"..tostring(soObj.id).."]~>ReInit:<Warning!>")
+							table.print( data, sModule..":NetPacket|"..tostring(soObj:name()) ) --/#~#
+							Add_MapSpot(soObj.id, "dbg_metka2", soObj:name().."-???") --/#~#
+							return true --/>
+						end
+						table.print( data, sModule..":NetPacket|"..soObj:name()..":cid="..soObj:clsid() ) --/#~#
+					end
+					--/<
+					debug_print("Ignore_BAD_Sav:Obj=["..tostring(soObj:name()).."/"..tostring(soObj.id).."]~>RELEASE:<Warning!>")
+					--Print_NetPacket(soObj,true,true) --/#~# true|false
+					--unregister_story_object_by_id(soObj.id)
+					alife():release(soObj,true)
+					return true --/>
+				end
+			end
+		end
+	end
+	return false --/>
+end
+
+function Print_NetPacket(soObj,bUpd,bTest)
+	if db.is_dbg1 and soObj and (la_netpk) then
+		table.print( get_netpk(soObj):get(), sModule..":NetPacket|"..soObj:name()..":"..soObj:clsid() ) --/#~#
+	end
+end
+
+--/ -----------------------------------------------------------------
+function MemUsage_CollectInfo(sReason, Obj)
+	if Obj then
+		log("MemUsageInfo:[%s]:Obj=[%s]:[%s]%s", sReason, Obj:name(), Get_MemUsage(), "kB") --/#~#
+	else
+		log("MemUsageInfo:[%s]:[%s]%s", sReason, Get_MemUsage(), "kB") --/#~#
+	end
+end
+--/------------------------------------------------------------------------------------------------
+fGetExec = function(sFileFullName, bFunc, ...)
+	local Return = assert(loadfile(sFileFullName))
+	if type(Return) == 'function' then
+		if bFunc == nil then --/ only to load external file (like table)
+			return true --/>
+		elseif bFunc == false then  --/ to execute external file like chunk
+			Return()
+		elseif bFunc == true then --/ to execute external file like chunk and call function
+			Return()
+			tst_func(...) --/ execute specific function with arguments
+		end
+	else debug_print(sModule..":fGetExec:ERROR:Call=["..tostring(Return).."]") --/#~#
+	end
+end
+fSandbox = function(...)
+	local bStatus,Result = pcall(fGetExec, ...)
+	if bStatus then
+		return true --/> return result of execution of function 'fGetExec'
+	elseif not Result:match('No such file or directory$') then
+		local sTxt = Result:match('%S+%s(.+)') or Result
+		debug_print("ERROR: "..sTxt)
+		return false --/>
+	end
+	return nil --/>
+end
+--/------------------------------------------------------------------------------------------------
+--/ Scripts-Checker. Control of having/correctness of files (in folder $game_scripts$)
+--/------------------------------------------------------------------------------------------------
+function Check_Scripts(bToLog)
+--	to_log(sModule..":Check_Scripts:tbl("..type(tScripts).."):mixed("..tostring(db.is_mixed_mode).."):>") --/#~#
+	if not (db.bGameLoaded or type(tScripts) == 'table') then --/ and db.is_mixed_mode == false
+		tScripts = {}
+		local iCountFiles = Get_Cfg_Num32(dbg_ini, "options", "count_scripts", 0) --/ number of checking files
+		if iCountFiles > 0 then
+			local tNoCheckedScript = {sModule=true,["_g"]=true,["db"]=true} --/ list of NOT checked scripts
+			local tExludedScript = Get_IniSection(dbg_ini,"exluded_scripts","true") --/ list of NOT checked scripts (in original ones there are fatal errors!)
+			local sFDir = "$game_scripts$" --/ check in folder '$game_scripts$'
+			local sFMask = "*.script" --/ mask names of checking files
+			local fs = getFS()
+			local flist = fs:file_list_open_ex(sFDir,bit_or(FS.FS_ListFiles,FS.FS_RootOnly),sFMask)
+			flist:Sort(FS.FS_sort_by_modif_down) --/ sort by date of last modification/edit
+			local iFCnt = math.min(flist:Size(),iCountFiles) --/ checking no more then N files
+			local file,sFName,oFile,Result
+			for i=0, iFCnt-1 do
+				file = flist:GetAt(i) --/ class FS_item
+				if file and file:Size() > 8 then --/ and not file:Modif():match('1970')
+					sFName = file:NameShort():match('([^\.]*)') or "" --/ reading name of file 'till point'
+					--/ check of scripts correctnessm excluding ..
+					--to_log(string.format("%s:Check_Scripts:File(%s)=[%s]:[%s]", sModule, tostring(i+1), sFName, ">>>")) --/#~#
+					if sFName and sFName ~= "" and not (tNoCheckedScript[sFName] or tExludedScript[sFName]) then
+						if sFName:match('[\+|\-|\~|\!|\#|\@|\$|%s]') or sFName:match('^\_*test') then
+							--/ excluded names with 'garbage', 'tests' or 'broken'
+--							log("Check_Scripts:NoChecked:File(%d)=[%s]:<%s>", tostring(i+1), sFName:gsub('%s','\160'), "X") --/#~#
+						elseif sFName:match('[%w|_]*(_BAK)') or sFName:match('[%w|_]*(_OLD)') or sFName:match('[%w|_]*(_NEW)') then
+						else --log("Check_Scripts:File(%s)=[%s],tm=[%s]:[%s]", tostring(i+1), sFName, string.gsub(file:ModifDigitOnly(),'%s','\160'), ">") --/#~#
+							oFile = fs:exist( sFDir, file:NameFull() )
+							if oFile then
+								Result = fSandbox(oFile.name)
+								if Result and _G[sFName] then
+									tScripts[sFName] = true
+								else
+									tScripts[sFName] = false
+									if Result == false then
+										sFName = sFName:gsub('%s','\160')
+										db.sErrTxt = "%c[255,231,153,022]-= Error of codes in script-files =-\\n%c[255,255,255,0]< "..sFName.." >"
+										debug_print(sModule..":Check_Scripts:FileName("..tostring(i+1)..")=["..sFName.."]<~is_BAD:<<<ERROR!>>>")
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+			if bToLog then
+				debug_print( string.exformat("Validated_Scripts=[%d]:(%d/%d):%s", table.size(tScripts), iFCnt, flist:Size(), Get_MemUsage(true)))
+			end
+		end
+	end
+	db.tCheckedModules = tScripts
+--	log("Check_Scripts:[<]") --/#~#
+end
+
+local bDbgLog_Enable = true
+local bDbgLog_Header = false
+
+function PrintToDbgLog(msg)
+	if bDbgLog_Enable and msg then
+		--local fname = getFS():update_path("$game_data$", "la_logs\\log_" .. os.date("%y-%m-%d") .. ".log") --/ in development!
+		--local fname = getFS():update_path("$game_data$", "la_log.log") --/ options
+		local fname = getFS():update_path("$logs$", "la_errors.log") --/ options
+		local file = io.open(fname, "a+")
+		if io.type(file) == 'file' then
+			if not bDbgLog_Header then
+				file:write(string.format("%s %s %s", string.rep("*",10), os.date(), string.rep("*",10)), "\n")
+				bDbgLog_Header = true
+			end
+			file:write(msg, "\n")
+			file:write("\n\n")
+			file:flush()
+			file:close()
+		end
+	end
+end
+
+--/------------------------------------------------------------------------------------------------
+--/ 
+--/------------------------------------------------------------------------------------------------
+function Prepare_ControlActions()
+	tActionNames = {
+	[stalker_ids.action_accomplish_task]                            = "action_accomplish_task",
+	[stalker_ids.action_aim_enemy]                                  = "action_aim_enemy",
+	[stalker_ids.action_alife_planner]                              = "action_alife_planner",
+	[stalker_ids.action_anomaly_planner]                            = "action_anomaly_planner",
+	[stalker_ids.action_combat_planner]                             = "action_combat_planner",
+	[stalker_ids.action_communicate_with_customer]                  = "action_communicate_with_customer",
+	[stalker_ids.action_critically_wounded]                         = "action_critically_wounded",
+	[stalker_ids.action_danger_by_sound_planner]                    = "action_by_sound_planner",
+	[stalker_ids.action_danger_grenade_look_around]                 = "action_grenade_look_around",
+	[stalker_ids.action_danger_grenade_planner]                     = "action_grenade_planner",
+	[stalker_ids.action_danger_grenade_search]                      = "action_grenade_search",
+	[stalker_ids.action_danger_grenade_take_cover]                  = "action_grenade_take_cover",
+	[stalker_ids.action_danger_grenade_take_cover_after_explosion]  = "action_danger_grenade_take_cover_after_explosion",
+	[stalker_ids.action_danger_grenade_wait_for_explosion]          = "action_danger_grenade_wait_for_explosion",
+	[stalker_ids.action_danger_in_direction_detour]                 = "action_danger_in_direction_detour",
+	[stalker_ids.action_danger_in_direction_hold_position]          = "action_danger_in_direction_hold_position",
+	[stalker_ids.action_danger_in_direction_look_out]               = "action_danger_in_direction_look_out",
+	[stalker_ids.action_danger_in_direction_planner]                = "action_danger_in_direction_planner",
+	[stalker_ids.action_danger_in_direction_search]                 = "action_danger_in_direction_search",
+	[stalker_ids.action_danger_in_direction_take_cover]             = "action_danger_in_direction_take_cover",
+	[stalker_ids.action_danger_planner]                             = "action_danger_planner",
+	[stalker_ids.action_danger_unknown_look_around]                 = "action_danger_unknown_look_around",
+	[stalker_ids.action_danger_unknown_planner]                     = "action_danger_unknown_planner",
+	[stalker_ids.action_danger_unknown_search]                      = "action_danger_unknown_search",
+	[stalker_ids.action_danger_unknown_take_cover]                  = "action_danger_unknown_take_cover",
+	[stalker_ids.action_dead]                                       = "action_dead",
+	[stalker_ids.action_death_planner]                              = "action_death_planner",
+	[stalker_ids.action_detour_enemy]                               = "action_detour_enemy",
+	[stalker_ids.action_dying]                                      = "action_dying",
+	[stalker_ids.action_find_ammo]                                  = "action_find_ammo",
+	[stalker_ids.action_find_item_to_kill]                          = "action_find_item_to_kill",
+	[stalker_ids.action_gather_items]                               = "action_gather_items",
+	[stalker_ids.action_get_distance]                               = "action_get_distance",
+	[stalker_ids.action_get_item_to_kill]                           = "action_get_item_to_kill",
+	[stalker_ids.action_get_ready_to_kill]                          = "action_get_ready_to_kill",
+	[stalker_ids.action_hold_position]                              = "action_hold_position",
+	[stalker_ids.action_kill_enemy]                                 = "action_kill_enemy",
+	[stalker_ids.action_kill_enemy_if_not_visible]                  = "action_kill_enemy_if_not_visible",
+	[stalker_ids.action_kill_if_enemy_critically_wounded]           = "action_kill_if_enemy_critically_wounded",
+	[stalker_ids.action_kill_if_player_on_the_path]                 = "action_kill_if_player_on_the_path",
+	[stalker_ids.action_kill_wounded_enemy]                         = "action_kill_wounded_enemy",
+	[stalker_ids.action_look_out]                                   = "action_action_look_out", --/#+#
+	[stalker_ids.action_make_item_killing]                          = "action_make_item_killing",
+	[stalker_ids.action_no_alife]                                   = "action_no_alife",
+	[stalker_ids.action_post_combat_wait]                           = "action_post_combat_wait",
+	[stalker_ids.action_prepare_wounded_enemy]                      = "action_prepare_wounded_enemy",
+	[stalker_ids.action_reach_customer_location]                    = "action_reach_customer_location",
+	[stalker_ids.action_reach_task_location]                        = "action_reach_task_location",
+	[stalker_ids.action_reach_wounded_enemy]                        = "action_reach_wounded_enemy",
+	[stalker_ids.action_retreat_from_enemy]                         = "action_retreat_from_enemy",
+	[stalker_ids.action_script]                                     = "action_script",
+	[stalker_ids.action_search_enemy]                               = "action_search_enemy",
+	[stalker_ids.action_smart_terrain_task]                         = "action_smart_terrain_task",
+	[stalker_ids.action_solve_zone_puzzle]                          = "action_solve_zone_puzzle",
+	[stalker_ids.action_sudden_attack]                              = "action_sudden_attack",
+	[stalker_ids.action_take_cover]                                 = "action_take_cover",
+	[stalker_ids.action_throw_grenade]                              = "action_throw_grenade", --/#+#
+	[stalker_ids.detect_anomaly]                                    = "detect_anomaly",
+	[stalker_ids.get_out_of_anomaly]                                = "get_out_of_anomaly",
+	--/
+	[xr_actions_id.zmey_walker_base + 1]                            = "xr_walker:ac_walker",
+	[xr_actions_id.stohe_kamp_base + 1]                             = "xr_kamp:ac_go_position",
+	[xr_actions_id.stohe_kamp_base + 2]                             = "xr_kamp:ac_wait",
+	[xr_actions_id.stohe_kamp_base + 3]                             = "xr_kamp:ac_GoToCorpse", --/#+#
+	[xr_actions_id.stohe_kamp_base + 4]                             = "xr_kamp:ac_MovingCorpse", --/#+#
+	[xr_actions_id.stohe_kamp_base + 7]                             = "xr_kamper:ac_kamper", --/#+#
+	[xr_actions_id.sidor_act_patrol]                                = "xr_patrol:ac_patrol",
+	[xr_actions_id.sidor_act_patrol + 1]                            = "xr_patrol:ac_commander",
+	[xr_actions_id.stohe_meet_base + 1]                             = "xr_meet:ac_contact",
+	[xr_actions_id.state_mgr + 0]                                   = "state_mgr:actions",
+	[xr_actions_id.state_mgr + 1]                                   = "state_mgr:to_idle_combat",
+	[xr_actions_id.state_mgr + 2]                                   = "state_mgr:to_idle_alife",
+	[xr_actions_id.state_mgr + 3]                                   = "state_mgr:to_idle_items",
+	[xr_actions_id.zmey_remark_base + 1]                            = "xr_remark:ac_remark",
+	[xr_actions_id.zmey_sleeper_base + 1]                           = "xr_sleeper:ac_sleeper",
+	[xr_actions_id.sidor_act_wounded_base + 0]                      = "xr_wounded:ac_wounded",
+	[xr_actions_id.stohe_camper_base + 1]                           = "xr_camper:ac_patrol",
+	[xr_actions_id.abuse_base]                                      = "xr_abuse:ac_abuse",
+	[xr_actions_id.sidor_attendant_act + 0]                         = "xr_attendant:ac_wait",
+	[xr_actions_id.sidor_attendant_act + 1]                         = "xr_attendant:ac_follow",
+	[xr_actions_id.combat_zombied_base + 0]                         = "xr_combat_zombied:ac_shoot",
+	[xr_actions_id.combat_zombied_base + 1]                         = "xr_combat_zombied:ac_go_to_danger",
+	[xr_actions_id.la_schemes_actions + 20]                         = "xr_mgunner:ac_turret_reach", --/#+#
+	[xr_actions_id.la_schemes_actions + 21]                         = "xr_mgunner:ac_turret_find", --/#+#
+	[xr_actions_id.la_schemes_actions + 22]                         = "xr_mgunner:ac_mgunner_active", --/#+#
+	[xr_actions_id.la_schemes_actions + 30]                         = "xr_light_guard:ac_projector_reach", --/#+#
+	[xr_actions_id.la_schemes_actions + 31]                         = "xr_light_guard:ac_projector_find", --/#+#
+	[xr_actions_id.la_schemes_actions + 32]                         = "xr_light_guard:ac_light_guard", --/#+#
+	[xr_actions_id.la_schemes_actions + 40]                         = "xr_draining:action", --/#+#
+	[4294967295]                                                    = "undefined",
+	[4294967296]                                                    = "undefined",
+	--/#+#
+	[xr_actions_id.ai_manager_actions]                              = "la_ai_mgr:actions"
+	}
+	--table.print(tActionNames) --/#~#
+	event("npc_update_dbg"):register(OnUpdate_NPC) --/ control actions
+	event("mob_update_dbg"):register(OnUpdate_Mob) --/ control schemes
+end
+--/ -----------------------------------------------------------------
+--/ Mob: update
+--/ -----------------------------------------------------------------
+function OnUpdate_Mob(e)
+	if db.is_dbg1 and e.binder then --/ and binder.log
+		local mob = e.binder.object
+		local scr_capture = mob:get_script() and mob:get_script_name() or ""
+		if scr_capture ~= (e.binder.scr_capture or "") then
+			if e.binder.scr_capture then
+				_G.log("Mob=[%s] script_capture: [%s] => [%s]", mob:name(), e.binder.scr_capture, scr_capture, "") --/#~#
+			elseif scr_capture ~= "" then
+				_G.log("Mob=[%s] script_capture: => [%s]", mob:name(), scr_capture, "") --/#~#
+			end
+			e.binder.scr_capture = scr_capture
+			--if mob:action() then ... --/ entity_action
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/ NPC: update
+--/ -----------------------------------------------------------------
+function OnUpdate_NPC(e)
+	if db.is_dbg1 and e.binder and e.binder.planner then --/ and binder.log
+		if e.binder.curr_act_id ~= (e.binder.last_act_id or db.iMax_s32) then
+			this.print_action(e.binder.object, e.binder.curr_act_id, e.binder.last_act_id)
+		end
+		e.binder.last_act_id = e.binder.curr_act_id
+	end
+end
+function print_action(npc, curr_id, last_id)
+	--/ db.iMax_s32: 4294967296(5)|-2147483648
+	if curr_id ~= (last_id or db.iMax_s32) then
+		local last_action_name = (last_id ~= db.iMax_s32 and " ["..tostring(last_id).."]") or ""
+		local action_name = tActionNames[curr_id]
+		if action_name then
+			action_name = string.format(" '%s'", action_name)
+		elseif db.la_ai_mgr and curr_id > xr_actions_id.ai_manager_actions then
+			action_name = string.format(" '%s'", la_ai_mgr.get_scheme_by_acid(curr_id) or "<unkhown>" )
+		end
+		--_G.log("NPC=[%s]/[%s] action:%s => [%s]%s%s", npc:name(), npc:character_community(), last_action_name, curr_id, action_name or " '<unkhown>'", "")
+	end
+end
+
+function get_current_action_id(oNPC, oPlanner)
+	if not oPlanner then oPlanner = oNPC:motivation_action_manager() end
+	return ( oPlanner and oPlanner:initialized() and oPlanner:current_action_id() ) or db.iMax_s32 --/> idAction
+end
+function get_action_name(idAction)
+	return idAction and tActionNames[idAction] --/>
+end
+--/------------------------------------------------------------------
+--/ Debug functions
+--/------------------------------------------------------------------
+function Set_Debug_Funcs()
+	if not debug then return end --/>
+	_G.debug_script_skip = {
+		["_g"] = true,
+		["heli_move"] = true,
+		["ph_idle"]   = true,
+	}
+	_G.printf = function(fmt, ...)
+		local info = debug.getinfo(2)
+		local name_script = info.short_src:match('.*\\scripts\\([%w|_]+)%.script') or "_g"
+		if not debug_script_skip[name_script] then
+			if {...} and type(fmt) == 'string' then
+				_G.log(name_script..":printf("..info.currentline.."):"..fmt, ...)
+			else
+				_G.log(name_script..":printf("..info.currentline.."):"..tostring(fmt))
+			end
+		end
+	end
+	--/----------------------------------------------
+	--/ output to log stack of calling functions
+	_G.callstack = function(fmt,is_abort)
+		fmt = ((is_abort and "[LUA][ERROR] ") or "* INFO:")..tostring(fmt)
+		debug_print( debug.traceback(fmt, (is_abort and 3) or 2) )
+	end
+	--/----------------------------------------------
+	--/ in module (sScriptName) will work calls of function: debug_log(sScriptName,...)
+	_G.debug_log = function (sScriptName, fmt, ...)
+		if sScriptName == debug_script_name then
+			_G.log(sScriptName..":"..tostring(fmt), ...)
+		end
+	end
+	--/----------------------------------------------
+	_G.abort = function(fmt,...)
+		local caller = debug.getinfo(2, "nSl")
+		if caller.what == "Lua" then
+			local file_name = caller.short_src:sub(caller.short_src:find("gamedata"), caller.short_src:len())
+			local func_name = (caller.name or "<unknown>") --/.. caller.namewhat
+			local str = "ABORT ~> "..string.rep("~",87)
+			if func_name == "ASSERT" then
+				str = str.."\n[error]ASSERTION FAILED:"
+				fmt = string.match(tostring(fmt),'<ASSERT>:(.*)') or ""
+			else
+				str = str.."\n[error]ABORT CALLED:"
+			end
+			str = str..string.format("\n[error]From: %s in function '%s' (%d)", file_name, func_name, caller.linedefined)
+			str = str..string.format("\n[error]Line: %d", caller.currentline)
+			str = str..string.format("\n[error]Description: %s", string.exformat(fmt, ...))
+			debug_print( str )
+		else
+			debug_print("ABORT ~> "..string.rep("~",87))
+			debug_print( string.exformat(fmt, ...) )
+		end
+		--/ check of possibility of continuation of game
+		if not this.Check_Ignore_BAD_Sav(fmt,...) then
+			callstack(":",true)
+			debug_print("ABORT ~x "..string.rep("~",87))
+			assert(false,"ATTENTION! Game is interrupted! The information in lines above.")
+			--get_console():execute("quit") --/x secure: interrupt game in case of fatal errors
+			exit() --/x secure: interrupt game in case of fatal errors
+		else
+			debug_print("ATTENTION: The continued game can lead to problems in game and to BAD-saving!")
+		end
+		debug_print("ABORT ~< "..string.rep("~",87))
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

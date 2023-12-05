@@ -1,0 +1,85 @@
+[death@mil_ghost]
+on_info = {+mil_ghost_dead}
+
+[logic]
+active = walker@a
+combat_ignore = combat_ignore
+threshold = threshold@ghost
+on_death = death@mil_ghost
+
+[walker@a]
+path_walk = army_ghost_a_walk
+path_look = army_ghost_a_look
+on_info = {=npc_stay_on_point(120:ready) !dist_to_way_point_less_or_equal(army_ghost_b_walk:4:2)} walker@b
+on_info2 = {+mil_actor_talked_ghost} walker@c
+combat_ignore_cond = {=actor_enemy}
+danger = danger_condition
+threshold = threshold@ghost
+meet = meet
+
+[walker@b]
+path_walk = army_ghost_b_walk
+path_look = army_ghost_b_look
+on_info = {=npc_stay_on_point(120:ready) !dist_to_way_point_less_or_equal(army_ghost_a_walk:3:2)} walker@a
+on_info2 = {+mil_actor_talked_ghost} walker@d
+combat_ignore_cond = {=actor_enemy}
+danger = danger_condition
+threshold = threshold@ghost
+meet = meet
+
+[walker@c]
+path_walk = army_ghost_a_walk
+path_look = army_ghost_a_look
+on_info = {=npc_stay_on_point(120:ready) !dist_to_way_point_less_or_equal(army_ghost_b_walk:4:2)} walker@d
+on_info2 = {+mil_actor_brought_art -mil_ghost_teleported} %=teleport_npc_not_seen(army_ghost_b_walk:mil_ghost_teleported)%
+on_info3 = {+mil_ghost_teleported} %=release +pri_spawn_ghost%
+combat_ignore_cond = {=actor_enemy}
+danger = danger_condition
+threshold = threshold@ghost
+meet = meet@2
+
+[walker@d]
+path_walk = army_ghost_b_walk
+path_look = army_ghost_b_look
+on_info = {=npc_stay_on_point(120:ready) !dist_to_way_point_less_or_equal(army_ghost_a_walk:3:2)} walker@c
+on_info2 = {+mil_actor_brought_art -mil_ghost_teleported} %=teleport_npc_not_seen(army_ghost_a_walk:mil_ghost_teleported)%
+on_info3 = {+mil_ghost_teleported} %=release +pri_spawn_ghost%
+combat_ignore_cond = {=actor_enemy}
+danger = danger_condition
+threshold = threshold@ghost
+meet = meet@2
+
+[combat_ignore]
+
+[danger_condition]
+ignore_distance = 0
+ignore_distance_grenade = 10
+ignore_distance_corpse  = 0
+ignore_distance_danger_hit     = 20
+ignore_distance_sound   = 0 
+
+[threshold@ghost]
+max_ignore_distance = 3
+ignore_monster      = 0
+
+[meet]
+meet_state = 10|hello@esc_wolf_say_thanks|3|ward
+meet_state_wpn = 10|hello@esc_wolf_say_thanks|3|ward
+victim = 10|actor
+victim_wpn = 10|actor
+meet_dialog_enabled = true
+meet_dialog = mil_ghost_dialog_cristal
+use = true
+use_wpn = true
+abuse = false
+;precond = visibility
+
+[meet@2]
+meet_state = 10|hello|3|ward
+meet_state_wpn = 10|hello|3|ward
+meet_dialog_enabled = true
+meet_dialog = mil_ghost_dialog_cristal_end
+victim = 10|actor
+victim_wpn = 10|actor
+use = true
+use_wpn = true

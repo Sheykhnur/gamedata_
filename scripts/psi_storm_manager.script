@@ -1,0 +1,519 @@
+--------------------------------------------------------------------------------
+-- Psi Storm manager class -----------------------------------------------------
+-- Made by Cromm Cruac ---------------------------------------------------------
+-- for AtmosFear 3 -------------------------------------------------------------
+-- 25.06.2011 ------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- Psi Storm manager class -----------------------------------------------------
+-- edited by vintar ------------------------------------------------------------
+-- for Lost Alpha --------------------------------------------------------------
+-- 14.12.2013 28.01.2018.cz07 --------------------------------------------------
+-- Last edited by tomilovsenya on 22.06.18 – PDA messages fix ------------------
+--------------------------------------------------------------------------------
+local LOADED = nil
+local psi_storm_manager 	= nil
+local prev_sec 			= -1
+local prev_game_sec 		= -1
+local diff_sec 			= -1
+local diff_game_sec		= -1
+local sMapNow,idMapNow = db.sMapNow,db.idMapNow
+local blowout_sounds = {begin01		=sound_object("ambient\\blowout\\blowout_begin"), 
+						begin02		=sound_object("ambient\\blowout\\blowout_begin_02"), 
+						impact01	=sound_object("ambient\\blowout\\blowout_impact"), 
+						impact02	=sound_object("ambient\\blowout\\blowout_impact_02"), 
+						wave01		=sound_object("ambient\\blowout\\blowout_wave_01"), 
+						wave02		=sound_object("ambient\\blowout\\blowout_wave_02_short"), 
+						wave03		=sound_object("ambient\\blowout\\blowout_wave_03_short"), 
+						wave04		=sound_object("ambient\\blowout\\blowout_wave_04"),
+						siren		=sound_object("ambient\\blowout\\blowout_siren"),
+						rumble		=sound_object("ambient\\blowout\\blowout_rumble"),
+						particle	=sound_object("ambient\\blowout\\blowout_particle_wave"),
+						earthquake	=sound_object("ambient\\earthquake"),
+						outro		=sound_object("ambient\\blowout\\blowout_outro")
+						}
+						
+local bInit = false --/ flag of initialization of the module
+local sModule = script_name() --/ string name of the file module
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+
+function init()
+	if bInit then return end
+	event("presets"):register(PreSets)
+	event("update"):register(update)
+	event("level_change"):register(stop)
+	bInit = true
+end
+--/ --------------------------
+function PreSets(e)
+	if not bInit then abort(sModule..":Not_initialised!") end
+	get_psi_storm_manager():load_params()
+end
+
+function update(e)
+	get_psi_storm_manager():update()
+end
+
+function stop(e)
+	local p = get_psi_storm_manager()
+	if p.started == true then
+		log("stopping blowout on level change")
+		p:finish()
+		bind_shelter.Update() --/ skyloader: make last update
+		for id=1,65535 do      --/ hack for shelters
+			local obj = alife():object(id)
+			if obj then
+				Del_MapSpot(id, "blowout_hideplace_location")
+			end
+		end
+		if event("update_1sec"):registered(bind_shelter.Update) then
+			event("update_1sec"):unregister(bind_shelter.Update)
+		end
+	end
+end
+
+function load(packet)
+	get_psi_storm_manager():load(packet)
+end
+
+function save(packet)
+	get_psi_storm_manager():save(packet)
+end
+
+
+class "PsiStormManager"
+function PsiStormManager:__init()
+	self.surge_manager = surge_manager.get_surge_manager()
+	self.ini = ini_file("misc\\surge_manager.ltx")
+	self.game_time_factor = level.get_time_factor()
+	self.started = false
+	self.finished = true
+	self.siren_sounded = false
+	self.count = 0
+	self.covers = {}
+	self.inited_time = nil --game.get_game_time()
+	self.vortexes = {}
+	self.lights = {}
+	self.vortex_index = 0
+	self.vortex_period_min = 8
+	self.vortex_period_max = 16
+	self.vortex_distance_max = 150
+	self.next_vortex_at = nil
+	self.max_distance_psi_hit = 200
+	self.max_distance_electro_hit = 50
+	self.psi_storm_duration = 280 -- (duration: about 45mins of game time)
+	self.stages = {}
+	self.showed_warning = false
+	self.time_forwarded = false
+	self.fx_set = false
+end
+
+function PsiStormManager:load_params()
+	local parameters = la_utils.parse_ini_section_to_array(self.ini,"la_atmosfear_default_paramaters")
+	self.show_hideplaces = la_utils.str_to_bool(parameters["opt_show_hideplaces"])
+	self.show_warning = la_utils.str_to_bool(parameters["opt_show_warning"])
+	self.opt_psi_storm_freq	= tonumber(parameters["opt_psi_storm_freq"])
+	self.min_psi_storm_time = math.floor(self.opt_psi_storm_freq/2)*3600
+	self.max_psi_storm_time = self.opt_psi_storm_freq*3600
+	self._delta = Random.I(self.min_psi_storm_time, self.max_psi_storm_time)
+	self.opt_psi_storm_warning = parameters["opt_psi_storm_warning"]
+	self.god_mode = la_utils.str_to_bool(parameters["god_mode"])
+	self.psi_storm_hud_timer = la_utils.str_to_bool(parameters["opt_psi_storm_hud_timer"])
+	--self.opt_psi_storm_fate = parameters["opt_psi_storm_fate"]
+end
+
+function PsiStormManager:start()
+	level.save_allowed(false)
+	local ALIFE_TIME_FACTOR = system_ini():r_float("alife","time_factor")
+	level.set_time_factor(ALIFE_TIME_FACTOR)
+	self.inited_time = game.get_game_time()
+	self.started = true
+	
+	self.finished = false
+	self.hitFactor=0
+	self.stages={}
+	self.vortexes={}
+	self.lights={}
+	self.next_vortex_at = nil
+	self.last_vortex_hit_at = nil
+	
+end
+
+function PsiStormManager:finish(manual)
+	--log("psi storm stopped at: [%s]",tostring(diff_sec))
+	self.started 			= false
+	self.finished 			= true
+	self.showed_warning		= false
+	if manual then
+		for key,vortex in pairs(self.vortexes) do
+			vortex.effect:stop()
+			vortex.sound:stop()
+			vortex=nil
+		end
+	end
+	for k,snd in pairs(blowout_sounds) do
+		if snd ~= nil and snd:playing() then
+			snd:stop()
+		end
+	end
+	prev_sec = 0
+
+	local timer = get_hud_timer()
+	if timer then
+		timer:remove()
+	end
+
+	level.set_time_factor(self.game_time_factor)
+	if self.show_warning and bind_shelter.actor_inside_shelter() then
+		news_manager.send_tip_hud(game.translate_string("hmm"), game.translate_string("psi_storm_end"), "actor", 15)
+	end
+	self.stages = {}
+	DelVar("booster")
+	DelVar("blow_type")
+	--log("end surge called")
+	level_weathers.get_weather_manager():BlowEnd()
+end
+
+function distance_2d(p1, p2)
+	return p1:distance_to_xz(p2)
+end
+
+function distance_3d(p1, p2)
+	return p1:distance_to(p2)
+end
+
+-- ###############################################################################################
+--                                  UPDATE
+-- ###############################################################################################
+
+function PsiStormManager:update()
+	if(device().precache_frame > 1) then
+		return
+	end
+	if not(self.started) then
+		return
+	end
+	if IsUnderground(db.sMapNow) then
+		self:finish()
+	end
+	if not self.inited_time then self.inited_time = game.get_game_time() end
+	diff_sec = math.ceil(game.get_game_time():diffSec(self.inited_time)/level.get_time_factor())
+	if(prev_sec ~= diff_sec) then
+		prev_sec = diff_sec
+		if(diff_sec>=self.psi_storm_duration) then
+			self:finish()
+		else
+			if(LOADED) then
+				if (diff_sec>=20) and (diff_sec<=50) then
+					log("game loaded psi storm active diff sec = [%s]",tostring(diff_sec))
+					if self.stages['beginning'] ~= nil then
+						start_hud_timer(51-diff_sec, nil, {log = "caption_HT"}, game.translate_string("st_psistorm_timer_header"))
+					end
+					self.surge_manager:play_siren_sound()
+				end
+				LOADED = false
+			end
+			--log(" diff sec = [%s] and weather fx playing = [%s] an fx time = [%s]",tostring(diff_sec),tostring(level.is_wfx_playing()),tostring(level.get_wfx_time()))
+			if self.show_hideplaces then
+				if not event("update_1sec"):registered(bind_shelter.Update) then
+					event("update_1sec"):register(bind_shelter.Update)
+				end
+			end
+			-- psi storm begins -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=2) and (self.stages['beginning']==nil) then
+				if not self.fx_set then
+					if (level.get_time_hours() >= 5 and level.get_time_hours() <= 20) then
+						level.set_weather_fx("psi_storm_day")
+					else
+						level.set_weather_fx("psi_storm_night")
+					end
+					self.fx_set = true
+				end
+				if self.psi_storm_hud_timer then
+					start_hud_timer(45-diff_sec, nil, {log = "caption_HT"}, game.translate_string("st_psistorm_timer_header"))
+				end
+				if self.show_warning and not self.showed_warning and not bind_shelter.actor_inside_shelter() then
+					self.showed_warning = true
+					news_manager.send_tip_hud(game.translate_string("psi_storm_start_header"), game.translate_string("psi_storm_start_msg"), "actor", 20)
+				end
+				self.stages['beginning']=true
+				--log("psi storm launched at: [%s]",tostring(diff_sec))
+			end
+			-- siren warning -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=22) and (self.stages['siren']==nil) then
+				if (self.opt_psi_storm_warning=="siren") and not (self.siren_sounded) then
+					self.surge_manager:play_siren_sound()
+					self.siren_sounded = true
+				end
+				self.stages['siren']=true
+				--log("psi storm siren played at: [%s]",tostring(diff_sec))
+			end
+			-- psi storm main phase -----------------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=50) and (diff_sec<=250) then		
+				if self.next_vortex_at == nil then
+					self.next_vortex_at = diff_sec + Random.I(self.vortex_period_min, self.vortex_period_max)
+				end
+				if self.next_vortex_at == diff_sec then
+					self:vortex()
+					self.next_vortex_at = diff_sec + Random.I(self.vortex_period_min, self.vortex_period_max)
+				end
+				if self.next_vortex_at >= diff_sec + self.vortex_period_max + 2 then
+					self:vortex()
+					self.next_vortex_at = diff_sec + Random.I(self.vortex_period_min, self.vortex_period_max)
+				end
+				if self.next_vortex_at < diff_sec then   -- insurance for timer/render sync error
+					self:vortex()
+					self.next_vortex_at = diff_sec + Random.I(self.vortex_period_min, self.vortex_period_max)
+				end
+				self.stages['vortex']=true
+				--log("next_vortex_at: [%s]",tostring(self.next_vortex_at))
+			end
+			-- after blow calming -------------------------------------------------------------------------------------------------------------------------------
+			if (diff_sec>=221) and (self.stages['after_blow']==nil) then	
+				--log("after blow effects")
+				self.stages['after_blow'] = true
+			end
+			for key,vortex in pairs(self.vortexes) do
+				local life_time=diff_sec-vortex.start_time
+				if life_time>=20 and vortex.hit==false then
+					self:kill_crows_at_pos(vortex.sound_pos)
+					--if (self.opt_psi_storm_fate~="unhurt") then
+						--self:kill_obj_at_pos(vortex.sound_pos)
+					--end
+					if not bind_shelter.actor_inside_shelter() then
+						self:vortex_actor_hit(vortex)
+					end
+					vortex.hit=true
+				end
+				if life_time>=25 then
+					vortex=nil
+				end
+			end
+		end
+	end
+end
+
+
+-- ###############################################################################################
+
+function PsiStormManager:vortex()
+	self.vortex_index=self.vortex_index+1
+	local effect=particles_object("crommcruac\\psi_storm_01")
+	local sound=sound_object("anomaly\\psi_storm_01") 
+	local actor_pos=db.actor:position()
+	local angle_dec=Random.I(0,359)
+	local angle_rad=math.rad(angle_dec)
+	local distance=Random.I(0,self.vortex_distance_max)
+	local pos_x=math.cos(angle_rad)*distance
+	local pos_z=math.sin(angle_rad)*distance
+	local particle_pos=vector():set(actor_pos.x+pos_x, actor_pos.y+20, actor_pos.z+pos_z)
+	local sound_pos=vector():set(actor_pos.x+pos_x, actor_pos.y+60, actor_pos.z+pos_z)
+	self.vortexes[self.vortex_index]={effect=effect, particle_pos=particle_pos,sound=sound, sound_pos=sound_pos, start_time=diff_sec, hit=false}
+	--particle
+	self.vortexes[self.vortex_index].effect:play_at_pos(self.vortexes[self.vortex_index].particle_pos)
+	--sound
+	if self.vortexes[self.vortex_index].sound ~= nil and self.vortexes[self.vortex_index].sound:playing() then
+		self.vortexes[self.vortex_index].sound:stop()
+	end
+	if self.vortexes[self.vortex_index].sound ~= nil then
+		self.vortexes[self.vortex_index].sound:play_at_pos(db.actor, self.vortexes[self.vortex_index].sound_pos)
+		self.vortexes[self.vortex_index].sound.volume = 1
+	end
+end
+
+function PsiStormManager:vortex_actor_hit(vortex)
+	if not bind_shelter.actor_inside_shelter() and not get_console():get_bool('g_god') == true then
+		local hit_power = 0
+		local distance = distance_2d(db.actor:position(), vortex.particle_pos)
+		if distance < self.max_distance_psi_hit then
+			hit_power = math.cos(distance * math.pi / self.max_distance_psi_hit)+1
+			local h = hit()
+			h.type = hit.telepatic
+			h.power = this.calc_hit_power(hit_power, h.type)
+			h.impulse = 0
+			h.direction = vector():set(0,0,1)
+			h.draftsman = db.actor
+			if not(self.god_mode) then
+				db.actor:hit(h)
+				xr_effects.gen_phantoms(db.actor, nil, {10,25})
+			end
+			level.remove_pp_effector(666)
+			level.add_pp_effector("psi_fade.ppe", 666, false)
+			level.set_pp_effector_factor(666,h.power)
+		end
+		if distance < self.max_distance_electro_hit then
+			hit_power = math.cos(distance * math.pi / self.max_distance_electro_hit) + 1
+			local h = hit()
+			h.type = hit.shock
+			h.power = this.calc_hit_power(hit_power, h.type)
+			h.impulse = 0
+			h.direction = vector():set(0,0,1)
+			h.draftsman = db.actor
+			if not(self.god_mode) then
+				db.actor:hit(h)
+			end
+			level.remove_pp_effector(667)
+			level.add_pp_effector("electro_fade.ppe", 667, false)
+			level.set_pp_effector_factor(667,h.power)
+		end
+	end
+	xr_effects.gen_phantoms(db.actor, nil, {4,10})
+end
+
+function PsiStormManager:kill_crows_at_pos(pos)
+	local obj, h = nil, nil
+	for id, v in pairs(db.storage) do
+		obj = level.object_by_id(id)
+		if obj and obj:section() == "m_crow" then
+			h = hit()
+			h.type = hit.strike
+			h.power = 1000
+			h.impulse = 1000
+			h.direction = obj:direction()
+			h.draftsman = obj
+			if pos.z < obj:position().z then
+				obj:hit(h)
+			end
+		end
+	end
+end
+
+function PsiStormManager:save(packet)
+	set_save_marker(packet, "save", false, "PsiStorm")
+	packet:w_bool(self.finished)
+	packet:w_bool(self.started)
+	if(self.started) then
+		packet:w_float(level.get_wfx_time())
+		utils.w_CTime(packet, self.inited_time)
+		packet:w_u32(self.game_time_factor)
+		packet:w_bool(self.showed_warning)
+		packet:w_bool(self.siren_sounded)
+		local count = 0
+		for k,v in pairs(self.stages) do
+			count = count + 1
+		end
+		packet:w_u32(count)
+		for st, bool in pairs(self.stages) do
+			packet:w_stringZ(st)
+			packet:w_bool(bool)
+		end
+	end
+	packet:w_u32(self._delta)
+	set_save_marker(packet, "save", true, "PsiStorm")
+end
+
+function PsiStormManager:load(packet)
+	set_save_marker(packet, "load", false, "PsiStorm")
+	self:load_params()
+	self.finished = packet:r_bool()
+	self.started = packet:r_bool()
+	if(self.started) then
+		local time = packet:r_float()
+		--log("loading weather fx at time = [%s]",tostring(time))
+		if (level.get_time_hours() >= 5 and level.get_time_hours() <= 20) then
+			level.start_weather_fx_from_time("psi_storm_day", time)
+		else
+			level.start_weather_fx_from_time("psi_storm_night", time)
+		end
+		self.fx_set = true
+		self.inited_time = utils.r_CTime(packet)
+		self.game_time_factor = packet:r_u32()
+		self.showed_warning = packet:r_bool()
+		self.siren_sounded = packet:r_bool()
+		local count = packet:r_u32()
+		if count ~= nil then
+			for i = 1, count do
+				local str = packet:r_stringZ()
+				--log("stage str [%d] = [%s]",i,str)
+				self.stages[str] = packet:r_bool()
+			end
+		end
+	end
+	self._delta = packet:r_u32()
+	LOADED = true
+	set_save_marker(packet, "load", true, "PsiStorm")
+end
+
+function PsiStormManager:start_psi_storm()
+	self.started = true
+end
+
+function get_psi_storm_manager()
+	if psi_storm_manager == nil then
+		psi_storm_manager = PsiStormManager()
+	end
+	return psi_storm_manager
+end
+
+function is_started()
+	local p = get_psi_storm_manager()
+	return p.started == true
+end
+
+function is_surge()
+	local p = get_psi_storm_manager()
+	return p.stages['vortex'] == true
+end
+
+function is_finished()
+	local p = get_psi_storm_manager()
+	return p.finished == true
+end
+
+function is_blowout_finishing()
+	local p = surge_manager.get_surge_manager()
+	return p.stages['after_blow'] == true
+end
+
+function actor_in_cover()
+	return bind_shelter.actor_inside_shelter()
+end
+
+function start_psi_storm()
+	local m = get_psi_storm_manager()
+	m:start()
+end
+
+function is_preblow()
+	return is_started() and not is_surge()
+end
+
+function is_blowout_visible()
+	local p = get_psi_storm_manager()
+	return p.started and not p.is_underground
+end
+
+function calc_hit_power(power,hit_type)
+	local hit_types={"burn", "shock", "chemical_burn", "radiation", "telepatic"}
+	local suit_factors={10,1,5,33,10}
+	local drug_factors={1,1,5,33,5}
+	local artefact_factors={10,5,10,10,10}
+	local protection = 0
+	local suit_protection = 0
+	local suit = db.actor:item_in_slot(6)
+	if suit then
+		--log("hit type = [%s]",tostring(hit_type))
+		local str = hit_types[hit_type].."_protection"
+		suit_protection = system_ini():r_float(suit:section(),str)
+		if suit_protection then
+			suit_protection = suit_protection * suit_factors[hit_type]
+		end
+	end
+	
+	local helmet_protection = 0
+	
+	local drug_protection = 0
+	local is_boost = GetVar("booster", false)
+	if is_boost then
+		drug_protection = system_ini():r_float("antidote","boost_blowout_protection") * drug_factors[hit_type]
+	end
+	--log("suit protection = [%s], helmet protection = [%s], drug protection = [%s]",tostring(suit_protection),tostring(helmet_protection),tostring(drug_protection))
+	protection = (suit_protection + helmet_protection + drug_protection)
+	if protection > 1 then 
+		protection = 1
+	end
+	
+	hit_power = power * (1 - protection)
+	--log("hit power = [%s] and protection = [%s]",tostring(hit_power),tostring(protection))
+	return hit_power
+end

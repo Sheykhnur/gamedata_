@@ -1,0 +1,222 @@
+;********************************************state 0***********************************************
+[combat_ignore@forg_dolg_raid]
+
+[death@forg_dolg_raid]
+on_info = {=is_gulag_population_inactive(forg_dolg_raid_terrain)} %+forg_dolg_raid_dead%
+
+[danger@forg_dolg_raid]
+;ignore_distance = 0
+
+[danger@forg_dolg_raid_battle]
+;ignore_types = corpse
+;ignore_distance = 30
+
+[actor_dialogs@forg_dolg_raid]
+id = forg_dolg_raid_dialog_finished
+
+[logic@forg_dolg_raid_terrain_walk_off1]
+active = walker@forg_dolg_raid_terrain_walker_off1
+
+[walker@forg_dolg_raid_terrain_walker_off1]
+path_walk = walk1
+
+[logic@forg_dolg_raid_terrain_walk_off2]
+active = walker@forg_dolg_raid_terrain_walker_off2
+
+[walker@forg_dolg_raid_terrain_walker_off2]
+path_walk = walk3
+
+[logic@forg_dolg_raid_terrain_walk_off3]
+active = walker@forg_dolg_raid_terrain_walker_off3
+
+[walker@forg_dolg_raid_terrain_walker_off3]
+path_walk = walk4
+
+[logic@forg_dolg_raid_terrain_walk_off4]
+active = walker@forg_dolg_raid_terrain_walker_off4
+
+[walker@forg_dolg_raid_terrain_walker_off4]
+path_walk = walk5_new
+
+[logic@forg_dolg_raid_terrain_walk_off5]
+active = walker@forg_dolg_raid_terrain_walker_off5
+
+[walker@forg_dolg_raid_terrain_walker_off5]
+path_walk = walk6_new
+
+[logic@forg_dolg_raid_terrain_leader_off]
+active = walker@forg_dolg_raid_terrain_leader_off
+
+[walker@forg_dolg_raid_terrain_leader_off]
+path_walk = walk2
+
+;********************************************state 1***********************************************
+
+[logic@forg_dolg_raid_terrain_walk1]
+active = walker@forg_dolg_raid_terrain_walk1
+combat_ignore = combat_ignore@forg_dolg_raid
+danger = danger@forg_dolg_raid
+on_death = death@forg_dolg_raid
+
+[walker@forg_dolg_raid_terrain_walk1]
+path_walk = walk1
+path_look = walk1_look
+combat_ignore_cond = always
+danger = danger@forg_dolg_raid
+meet = no_meet
+def_state_standing = assault
+on_info = {+forg_dolg_battle_start} walker@forg_dolg_raid_terrain_walk1_fire
+
+[walker@forg_dolg_raid_terrain_walk1_fire]
+path_walk = walk1
+combat_ignore_cond = {+forg_chimeras_dead !hit_by_actor}
+danger = danger@forg_dolg_raid_battle
+on_info = {+forg_zuver_talked} walker@forg_dolg_raid_terrain_walk1_after
+
+[walker@forg_dolg_raid_terrain_walk1_after]
+path_walk = walk1_after
+path_look = walk1_after_look
+danger = danger@forg_dolg_raid
+on_signal = fclean | remark@forg_dolg_raid_terrain_walk1_cleaner
+
+[remark@forg_dolg_raid_terrain_walk1_cleaner]
+anim = weapon_cleaning
+danger = danger@forg_dolg_raid
+target = forg_dolg_raid_terrain_walk1_after_look, 0
+
+[logic@forg_dolg_raid_terrain_leader]
+active = walker@forg_dolg_raid_terrain_leader
+combat_ignore = combat_ignore@forg_dolg_raid
+danger = danger@forg_dolg_raid
+on_death = death@forg_dolg_raid
+;actor_dialogs = actor_dialogs@forg_dolg_raid
+
+[walker@forg_dolg_raid_terrain_leader]
+path_walk = walk2
+path_look = walk2_look
+combat_ignore_cond = always
+danger = danger@forg_dolg_raid
+meet = no_meet
+def_state_standing = assault
+on_info = {+forg_actor_in_scene_zone} remark@forg_dolg_raid_terrain_battle
+
+[remark@forg_dolg_raid_terrain_battle]
+anim = assault
+snd = forg_dolg_battle
+combat_ignore_cond = always
+danger = danger@forg_dolg_raid
+target = forg_dolg_raid_terrain_walk2_look, 0
+meet = no_meet
+on_signal = sound_end | %+forg_dolg_battle_start% walker@forg_dolg_raid_terrain_leader_fire
+
+[walker@forg_dolg_raid_terrain_leader_fire]
+path_walk = walk2
+combat_ignore_cond = {+forg_chimeras_dead !hit_by_actor}
+meet = meet@forg_dolg_raid_terrain_leader
+danger = danger@forg_dolg_raid_battle
+on_info = {+forg_zuver_talked} walker@forg_dolg_raid_terrain_leader_after
+invulnerable = true
+
+[meet@forg_dolg_raid_terrain_leader]
+meet_state		= 5|ward
+meet_state_wpn	= 5|ward
+victim		= 15|actor
+victim_wpn		= 15|actor
+use			= true
+use_wpn		= true
+meet_dialog = forg_dolg_raid_dialog
+
+[walker@forg_dolg_raid_terrain_leader_after]
+path_walk = walk2_after
+path_look = walk2_after_look
+danger = danger@forg_dolg_raid
+def_state_campering = binocular
+meet = meet@forg_dolg_raid_terrain_leader_after
+
+[meet@forg_dolg_raid_terrain_leader_after]
+meet_state		= 5|ward
+meet_state_wpn	= 5|ward
+victim		= 15|actor
+victim_wpn		= 15|actor
+use			= true
+use_wpn		= true
+meet_dialog = forg_dolg_raid_dialog_finished
+
+[logic@forg_dolg_raid_terrain_walk2]
+active = walker@forg_dolg_raid_terrain_walk2
+combat_ignore = combat_ignore@forg_dolg_raid
+danger = danger@forg_dolg_raid
+on_death = death@forg_dolg_raid
+
+[walker@forg_dolg_raid_terrain_walk2]
+path_walk = walk3
+path_look = walk3_look
+combat_ignore_cond = always
+danger = danger@forg_dolg_raid
+meet = no_meet
+def_state_standing = assault
+on_info = {+forg_dolg_battle_start} walker@forg_dolg_raid_terrain_walk2_fire
+
+[walker@forg_dolg_raid_terrain_walk2_fire]
+path_walk = walk3
+combat_ignore_cond = {+forg_chimeras_dead !hit_by_actor}
+danger = danger@forg_dolg_raid_battle
+on_info = {+forg_zuver_talked} walker@forg_dolg_raid_terrain_walk2_after
+
+[walker@forg_dolg_raid_terrain_walk2_after]
+path_walk = walk3_after
+path_look = walk3_after_look
+danger = danger@forg_dolg_raid
+def_state_standing = guard
+
+[logic@forg_dolg_raid_terrain_walk3]
+active = walker@forg_dolg_raid_terrain_walk3
+combat_ignore = combat_ignore@forg_dolg_raid
+danger = danger@forg_dolg_raid
+on_death = death@forg_dolg_raid
+
+[walker@forg_dolg_raid_terrain_walk3]
+path_walk = walk4
+path_look = walk4_look
+combat_ignore_cond = always
+danger = danger@forg_dolg_raid
+meet = no_meet
+def_state_standing = assault
+on_info = {+forg_dolg_battle_start} walker@forg_dolg_raid_terrain_walk3_fire
+
+[walker@forg_dolg_raid_terrain_walk3_fire]
+path_walk = walk4
+combat_ignore_cond = {+forg_chimeras_dead !hit_by_actor}
+danger = danger@forg_dolg_raid_battle
+on_info = {+forg_zuver_talked} kamper@forg_dolg_raid_terrain_walk3_after
+
+[kamper@forg_dolg_raid_terrain_walk3_after]
+path_walk = walk4_after
+path_look = walk4_after_look
+danger = danger@forg_dolg_raid
+kamp_name = kamp1
+
+[logic@forg_dolg_raid_terrain_walk4]
+active = kamper@forg_dolg_raid_terrain_walk4_after
+combat_ignore = combat_ignore@forg_dolg_raid
+danger = danger@forg_dolg_raid
+on_death = death@forg_dolg_raid
+
+[kamper@forg_dolg_raid_terrain_walk4_after]
+path_walk = walk5_new
+path_look = walk5_new_look
+danger = danger@forg_dolg_raid
+combat_ignore_cond = {!hit_by_actor}
+kamp_name = kamp1
+
+[logic@forg_dolg_raid_terrain_walk5]
+active = walker@forg_dolg_raid_terrain_walk5_after
+combat_ignore = combat_ignore@forg_dolg_raid
+danger = danger@forg_dolg_raid
+on_death = death@forg_dolg_raid
+
+[walker@forg_dolg_raid_terrain_walk5_after]
+path_walk = walk6_new
+path_look = walk6_new_look
+danger = danger@forg_dolg_raid
+combat_ignore_cond = {!hit_by_actor}

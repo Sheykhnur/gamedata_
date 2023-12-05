@@ -1,0 +1,56 @@
+--[[ -----------------------------------------------------------------------------------------------
+ File       : dialog_labx16.script
+ Description: Dialog & InfoPortions Function for lab x16
+ Copyright  : 2004 © GSC Game World
+ Author     : lox (2011-09)
+ Editors    : vintar (29.07.2012)
+ Last edit  : 09.11.2017 [lox]
+--]] -----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+local keep_list = { 
+	["device_torch"] = true, 
+	["device_torch_adv"] = true,
+	["device_torch_eco"] = true,
+}
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+
+function transfer_items_dream()
+	local oInvBox = level_object_by_sid(8430)
+	if not oInvBox then
+		abort(sModule..":transfer_items_dream:cannot find InvBox with id 8430")
+		return --/>
+	end
+
+	local oActor  = db.actor
+	local Transfer_Item = function(oItem)
+			if oItem then
+				if not string.find(oItem:section(), "bolt") then
+					if not keep_list[oItem:section()] then
+						oActor:transfer_item(oItem, oInvBox)
+					end
+				end
+			end
+	end
+	
+	oActor:inventory_for_each(Transfer_Item) --/ getting from Actor his items (to box)
+	--/#+# setting hint on box with actor stuff
+	--[[
+	if db.la_gps then
+		start_quick_timer(0.5,"la_gps.Timer_SetMetka",{box=oInvBox:id()})
+	else
+		level.map_add_object_spot_ser(oInvBox:id(), "treasure", "Items") --/#?#
+	end
+	--]]
+	--/ for saving in saves 'updated' stuff
+	db.do_switchings( oInvBox:id() ) --/#!# adding to array of transfer online->offline->online
+end
+--/ -----------------------------------------------------------------------------------------------

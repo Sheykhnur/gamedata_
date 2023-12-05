@@ -1,0 +1,55 @@
+[combat_ignore@dar_scene2]
+
+[danger@dar_scene2]
+ignore_distance = 0
+
+[logic@darklab_sci_scene2_sci3_off]
+active = walker@darklab_sci_scene2_sci3_off
+combat_ignore = combat_ignore@dar_scene2
+
+[walker@darklab_sci_scene2_sci3_off]
+path_walk = walk1
+combat_ignore_cond = always
+danger = danger@dar_scene2
+
+[logic@darklab_sci_scene2_ds3_off]
+active = walker@darklab_sci_scene2_ds3_off
+combat_ignore = combat_ignore@dar_scene2
+
+[walker@darklab_sci_scene2_ds3_off]
+path_walk = walk2
+combat_ignore_cond = always
+danger = danger@dar_scene2
+
+[logic@darklab_sci_scene2_sci3]
+active = walker@darklab_sci_scene2_sci3_on
+combat_ignore = combat_ignore@dar_scene2
+
+[walker@darklab_sci_scene2_sci3_on]
+path_walk = walk1_on
+combat_ignore_cond = always
+danger = danger@dar_scene2
+on_info = {+dar_cutscene_activate2} remark@darklab_sci_scene2_sci3
+
+[remark@darklab_sci_scene2_sci3]
+anim = sci_panel
+combat_ignore_cond = always
+danger = danger@dar_scene2
+target = darklab_sci_scene2_walk1_look
+
+[logic@darklab_sci_scene2_ds3]
+active = walker@darklab_sci_scene2_ds3_on
+combat_ignore = combat_ignore@dar_scene2
+
+[walker@darklab_sci_scene2_ds3_on]
+path_walk = walk2_on
+combat_ignore_cond = always
+danger = danger@dar_scene2
+on_info = {+dar_cutscene_activate2} remark@darklab_sci_scene2_ds3
+
+[remark@darklab_sci_scene2_ds3]
+anim = bio_wait
+combat_ignore_cond = always
+danger = danger@dar_scene2
+;on_info = {-dar_tele_sin} %=teleport_npc(dar_scene2_tele:dar_tele_sin)%
+

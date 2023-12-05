@@ -1,0 +1,22 @@
+[logic]
+active = ph_button@init
+
+[ph_button@init]
+anim = lab_primary_switcher_idle
+on_timer = 1 | ph_button@deactivate
+
+[ph_button@deactivate]
+anim = lab_primary_switcher_off
+on_info = {+x16_cutscene_switched} ph_button@deactivation
+
+[ph_button@deactivation]
+anim = lab_primary_switcher_off
+tooltip = tips_labx16switcher_press
+on_press = ph_button@active %=play_snd_from_obj(8427:ambient\switch_2) =play_snd(ambient\x16\x16_brain_run)  =play_particle_on_path(anomaly2\mozg:x16_lab_effects:100)%
+
+[ph_button@active]
+anim = lab_primary_switcher_idle
+on_timer = 6100 | %+x16_cutscene_talk5% ph_button@active_normal
+
+[ph_button@active_normal]
+anim = lab_primary_switcher_idle

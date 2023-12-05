@@ -1,0 +1,10 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = %=rad_psy_basic =sar_effect_start =play_snd(characters_voice\scenario\sar\sar_eff_fov)% sr_idle@2; causing game stalling and locking
+
+[sr_idle@2]
+on_timer = 1500 | %=play_snd(characters_voice\scenario\sar\sar_heartbeat)% sr_idle@3
+
+[sr_idle@3]

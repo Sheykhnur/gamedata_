@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<game_dialogs>
+    <dialog id="aes_meet_player">
+        <dont_has_info>aes_raid_start</dont_has_info>
+		<dont_has_info>aes_btr_death2</dont_has_info>
+		<dont_has_info>aes_helis_finished</dont_has_info>
+		<dont_has_info>aes_help_raiders_refuse</dont_has_info>
+		<dont_has_info>npp_chose_dolg1</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>aes_military_talk_0</text>
+				<next>1</next>
+				<next>2</next>
+            </phrase>
+            <phrase id="1">
+                <text>aes_military_talk_1</text>
+				<give_info>aes_help_raiders_done</give_info>
+				<give_info>npp_chose_mil</give_info>
+				<action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="2">
+                <text>aes_military_refuse_1</text>
+				<give_info>aes_help_raiders_refuse</give_info>
+				<next>21</next>
+            </phrase>
+			<phrase id="21">
+                <text>aes_military_refuse_21</text>
+				<next>211</next>
+            </phrase>
+			<phrase id="211">
+                <text>aes_military_refuse_211</text>
+				<action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+	<dialog id="aes_ask_player">
+		<dont_has_info>npp_chose_dolg1</dont_has_info>
+		<dont_has_info>aes_help_raiders_refuse</dont_has_info>
+        <has_info>aes_raid_start</has_info>
+		<dont_has_info>aes_gates_open</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text>aes_ask_player_0</text>
+			    <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>aes_ask_player_1</text>
+				<action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+	<dialog id="aes_raid_btr">
+		<dont_has_info>npp_chose_dolg1</dont_has_info>
+		<dont_has_info>aes_help_raiders_refuse</dont_has_info>
+		<dont_has_info>aes_btr_death2</dont_has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text></text>
+			    <next>5</next>
+            </phrase>
+			<phrase id="5">
+                <text></text>
+			    <next>4</next>
+				<next>6</next>
+            </phrase>
+			<phrase id="4">
+				<dont_has_info>aes_leader_gave_rpg</dont_has_info>
+                <text>aes_raid_btr_0</text>
+			    <next>1</next>
+            </phrase>
+			<phrase id="1">
+                <text>aes_raid_btr_1</text>
+                <next>2</next>
+				<next>3</next>
+            </phrase>
+			<phrase id="2">
+				<dont_has_info>aes_helis_finished</dont_has_info>
+                <text>aes_raid_btr_2</text>
+			    <next>21</next>
+            </phrase>
+			<phrase id="21">
+                <text>aes_raid_btr_21</text>
+            	<action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="3">
+				<has_info>aes_helis_finished</has_info>
+                <text>aes_raid_btr_3</text>
+				<action>dialog_stancia.aes_give_rpg</action>
+				<give_info>aes_leader_gave_rpg</give_info>
+			    <next>31</next>
+            </phrase>
+			<phrase id="31">
+                <text>aes_raid_btr_31</text>
+            	<action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="6">
+				<has_info>aes_leader_gave_rpg</has_info>
+                <text>aes_raid_btr_6</text>
+			    <next>61</next>
+				<next>62</next>
+            </phrase>
+			<phrase id="61">
+				<dont_has_info>aes_btr_death2</dont_has_info>
+                <text>aes_raid_btr_61</text>
+            	<action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="62">
+				<has_info>aes_btr_death2</has_info>
+                <text>aes_raid_btr_62</text>
+            	<next>621</next>
+            </phrase>
+			<phrase id="621">
+                <text>aes_raid_btr_621</text>
+            	<next>6211</next>
+            </phrase>
+			<phrase id="6211">
+                <text>aes_raid_btr_6211</text>
+            	<action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+	<dialog id="aes_mutant_wave_dialog">
+		<dont_has_info>npp_chose_dolg1</dont_has_info>
+		<dont_has_info>aes_help_raiders_refuse</dont_has_info>
+        <dont_has_info>aes_after_wave_speak</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text></text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text></text>
+			    <next>2</next>
+				<next>3</next>
+            </phrase>
+            <phrase id="2">
+				<dont_has_info>aes_wave_over</dont_has_info>
+                <text>aes_mutant_wave_dialog_2</text>
+				<next>21</next>
+            </phrase>
+			<phrase id="21">
+                <text>aes_mutant_wave_dialog_21</text>
+            	<action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="3">
+				<has_info>aes_wave_over</has_info>
+                <text>aes_mutant_wave_dialog_3</text>
+				<give_info>aes_after_wave_speak_delay</give_info>
+				<next>31</next>
+            </phrase>
+			<phrase id="31">
+                <text>aes_mutant_wave_dialog_31</text>
+				<give_info>aes_after_wave_speak</give_info>
+				<action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="aes_meet_dudaev">
+		<dont_has_info>npp_chose_dolg1</dont_has_info>
+		<dont_has_info>aes_help_raiders_refuse</dont_has_info>
+        <dont_has_info>aes_dudaev_wait_actor</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>aes_mil_recon_talk_0</text>
+                <next>1b</next>
+            </phrase>
+            <phrase id="1">
+                <text>aes_mil_recon_talk_1</text>
+                <next>2</next>
+            </phrase>
+            <phrase id="2">
+                <text>aes_mil_recon_talk_2</text>
+                <give_info>aes_dudaev_spoke</give_info>
+                <give_info>aes_dudaev_wait_actor</give_info>
+				<give_info>aes_raiders_to_recon</give_info>
+				<next>3</next>
+            </phrase>
+			<phrase id="3">
+                <text>aes_mil_recon_talk_3</text>
+				<action>dialogs.break_dialog</action>
+            </phrase>
+            <phrase id="1b">
+                <text>aes_mil_recon_talk_1b</text>
+                <next>2b</next>
+            </phrase>
+            <phrase id="2b">
+                <text>aes_mil_recon_talk_2b</text>
+				<next>3b</next>
+            </phrase>
+			<phrase id="3b">
+                <text>aes_mil_recon_talk_3b</text>
+                <give_info>aes_dudaev_spoke</give_info>
+                <give_info>aes_dudaev_wait_actor</give_info>
+				<give_info>aes_raiders_to_recon</give_info>
+                <give_info>aes_dudaev_raid_start</give_info>
+				<action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="aes_dudaev_done">
+		<dont_has_info>npp_chose_dolg1</dont_has_info>
+		<dont_has_info>aes_help_raiders_refuse</dont_has_info>
+		<dont_has_info>aes_dudaev_raid_done</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>aes_mil_recon_raid_done_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>aes_mil_recon_raid_done_1</text>
+                <next>2</next>
+            </phrase>
+            <phrase id="2">
+                <text>aes_mil_recon_raid_done_2</text>
+                <next>3</next>
+            </phrase>
+            <phrase id="3">
+                <text>aes_mil_recon_raid_done_3</text>
+                <give_info>aes_dudaev_raid_done</give_info>
+            </phrase>
+        </phrase_list>
+    </dialog>
+ 
+
+    <dialog id="oso_osoznanie_start">
+        <phrase_list>
+            <phrase id="2">
+                <text></text>
+                <has_info>oso_question</has_info>
+                <next>21</next>
+            </phrase>
+            <phrase id="1">
+                <text></text>
+                <dont_has_info>oso_question</dont_has_info>
+                <next>11</next>
+            </phrase>
+            <phrase id="0">
+                <text></text>
+                <next>1</next>
+                <next>2</next>
+            </phrase>
+            <phrase id="11">
+                <text>oso_osoznanie_start_11</text>
+            </phrase>
+            <phrase id="21">
+                <text>oso_osoznanie_start_21</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_chernobyl_crush">
+        <has_info>oso_why_chernobyl</has_info>
+        <dont_has_info>oso_chernobyl_crush</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_chernobyl_crush_0</text>
+                <give_info>oso_chernobyl_crush</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_chernobyl_crush_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_death_truck">
+        <has_info>oso_what_about_me</has_info>
+        <dont_has_info>oso_death_truck</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_death_truck_0</text>
+                <give_info>oso_death_truck</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_death_truck_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_stalker">
+        <has_info>oso_what_about_me</has_info>
+        <dont_has_info>oso_stalker</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_stalker_0</text>
+                <give_info>oso_stalker</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_stalker_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_what_about_me">
+        <has_info>oso_what_is_the_zone</has_info>
+        <dont_has_info>oso_what_about_me</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_what_about_me_0</text>
+                <give_info>oso_what_about_me</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_what_about_me_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_what_is_the_zone">
+        <has_info>oso_who_are_you</has_info>
+        <dont_has_info>oso_what_is_the_zone</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_what_is_the_zone_0</text>
+                <give_info>oso_what_is_the_zone</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_what_is_the_zone_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_what_next">
+        <has_info>oso_death_truck</has_info>
+        <has_info>oso_stalker</has_info>
+        <has_info>oso_chernobyl_crush</has_info>
+        <dont_has_info>oso_question</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_what_next_0</text>
+                <give_info>oso_question</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_what_next_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_who_are_you">
+        <dont_has_info>oso_who_are_you</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_who_are_you_0</text>
+                <give_info>oso_who_are_you</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_who_are_you_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_why_chernobyl">
+        <has_info>oso_what_is_the_zone</has_info>
+        <dont_has_info>oso_why_chernobyl</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_why_chernobyl_0</text>
+                <give_info>oso_why_chernobyl</give_info>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>oso_why_chernobyl_1</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_yes">
+        <has_info>oso_question</has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_yes_0</text>
+				<disable_info>oso_init_dialog</disable_info>
+                <action>xr_effects.oso_join_osoznanie</action>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+    <dialog id="oso_no">
+        <has_info>oso_question</has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text>oso_no_0</text>
+                <give_info>war_thing_tele</give_info>
+				<disable_info>oso_init_dialog</disable_info>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+        </phrase_list>
+    </dialog>
+
+	<dialog id="aes_dolg1_leader_start_dialog">
+		<has_info>pri_sar_task</has_info>
+		<dont_has_info>aes_btr_death</dont_has_info>
+		<dont_has_info>aes_dolg1_leader_decline</dont_has_info>
+		<dont_has_info>npp_chose_mil</dont_has_info>
+        <phrase_list>
+            <phrase id="0">
+                <text></text>
+                <next>1</next>
+            </phrase>
+			<phrase id="1">
+                <text></text>
+                <next>2</next>
+				<next>3</next>
+            </phrase>
+			<phrase id="2">
+				<dont_has_info>aes_dolg1_leader_accept</dont_has_info>
+                <text>aes_dolg1_leader_start_dialog_2</text>
+				<give_info>aes_help_dolg_done</give_info>
+                <next>21</next>
+				<next>22</next>
+            </phrase>
+			<phrase id="22">
+				<give_info>aes_dolg1_leader_decline</give_info>
+                <text>aes_dolg1_leader_start_dialog_22</text>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="21">
+                <text>aes_dolg1_leader_start_dialog_21</text>
+				<give_info>npp_chose_dolg1</give_info>
+                <next>211</next>
+            </phrase>
+			<phrase id="211">
+                <text>aes_dolg1_leader_start_dialog_211</text>
+                <next>2111</next>
+				<next>2112</next>
+            </phrase>
+			<phrase id="2112">
+				<give_info>aes_dolg1_leader_decline</give_info>
+                <text>aes_dolg1_leader_start_dialog_2112</text>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="2111">
+                <text>aes_dolg1_leader_start_dialog_2111</text>
+                <next>21111</next>
+            </phrase>
+			<phrase id="21111">
+                <text>aes_dolg1_leader_start_dialog_21111</text>
+				<give_info>aes_dolg1_leader_preaccept</give_info>
+				<action>dialog_stancia.give_tranceiver</action>
+                <next>211111</next>
+            </phrase>
+			<phrase id="211111">
+                <text>aes_dolg1_leader_start_dialog_211111</text>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="3">
+				<has_info>aes_dolg1_leader_accept</has_info>
+                <text>aes_dolg1_leader_start_dialog_3</text>
+                <next>31</next>
+			</phrase>
+			<phrase id="31">
+                <text>aes_dolg1_leader_start_dialog_31</text>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+		</phrase_list>
+    </dialog>
+	<dialog id="aes_dolg1_leader_raid_dialog">
+		<dont_has_info>npp_chose_mil</dont_has_info>
+		<has_info>aes_btr_death</has_info>
+		<phrase_list>
+            <phrase id="0">
+                <text></text>
+                <next>1</next>
+            </phrase>
+			<phrase id="1">
+                <text></text>
+                <next>2</next>
+				<next>3</next>
+				<next>4</next>
+            </phrase>
+			<phrase id="2">
+				<dont_has_info>aes_dolg1_sar_details</dont_has_info>
+				<dont_has_info>aes_meet_actor</dont_has_info>
+				<give_info>aes_mono_task_complete</give_info>
+                <text>aes_dolg1_leader_raid_dialog_2</text>
+                <next>21</next>
+				<next>22</next>
+            </phrase>
+			<phrase id="22">
+				<give_info>aes_dolg1_leader_decline</give_info>
+                <text>aes_dolg1_leader_raid_dialog_22</text>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="21">
+                <text>aes_dolg1_leader_raid_dialog_21</text>
+				<give_info>aes_find_recon_start</give_info>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="3">
+				<has_info>aes_dolg1_sar_details</has_info>
+                <text>aes_dolg1_leader_raid_dialog_3</text>
+                <next>31</next>
+			</phrase>
+			<phrase id="31">
+                <text>aes_dolg1_leader_raid_dialog_31</text>
+                <action>dialogs.break_dialog</action>
+            </phrase>
+			<phrase id="4">
+				<dont_has_info>aes_dolg1_sar_details</dont_has_info>
+				<has_info>aes_meet_actor</has_info>
+				<text>aes_dolg1_leader_raid_dialog_4</text>
+                <next>21</next>
+				<next>22</next>
+            </phrase>
+		</phrase_list>
+    </dialog>
+</game_dialogs>

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<game_dialogs>
+
+	<dialog id="pda_talk_npc_buy_dialog" first_speaker="actor">
+		<precondition>pda_talk_dialogs.precond_npc_can_buy</precondition>
+		<phrase_list>
+			<phrase id="0" speaker="actor">
+				<text>pda_talk_npc_buy_dialog_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1" speaker="npc">
+				<text>pda_talk_npc_buy_dialog_1</text>
+				<next>2</next>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="2" speaker="actor">
+				<precondition>pda_talk_dialogs.can_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_buy_dialog_2</text>
+				<next>21</next>
+			</phrase>
+			<phrase id="21" speaker="npc">
+				<text>pda_talk_npc_buy_dialog_21</text>
+				<action>pda_talk_dialogs.pda_npc_buy_actor_sell</action>
+			</phrase>
+			<phrase id="3" speaker="actor">
+				<precondition>pda_talk_dialogs.cannot_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_buy_dialog_3</text>
+				<next>31</next>
+			</phrase>
+			<phrase id="31" speaker="npc">
+				<text>pda_talk_npc_buy_dialog_31</text>
+			</phrase>
+			<phrase id="4" speaker="actor">
+				<text>pda_talk_npc_buy_dialog_4</text>
+				<next>41</next>
+			</phrase>
+			<phrase id="41" speaker="npc">
+				<text>pda_talk_npc_buy_dialog_41</text>
+				<next>412</next>
+				<next>413</next>
+				<next>414</next>
+			</phrase>
+			<phrase id="412" speaker="actor">
+				<precondition>pda_talk_dialogs.can_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_buy_dialog_412</text>
+				<next>21</next>
+			</phrase>
+			<phrase id="413" speaker="actor">
+				<precondition>pda_talk_dialogs.cannot_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_buy_dialog_413</text>
+				<next>31</next>
+			</phrase>
+			<phrase id="414" speaker="actor">
+				<text>pda_talk_npc_buy_dialog_414</text>
+				<next>4141</next>
+			</phrase>
+			<phrase id="4141" speaker="npc">
+				<text>pda_talk_npc_buy_dialog_4141</text>
+				<action>pda_talk_dialogs.pda_meet_actor_reject</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	
+	<dialog id="pda_talk_npc_sell_dialog" first_speaker="actor">
+		<precondition>pda_talk_dialogs.precond_npc_can_sell</precondition>
+		<phrase_list>
+			<phrase id="0" speaker="actor">
+				<text>pda_talk_npc_sell_dialog_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1" speaker="npc">
+				<text>pda_talk_npc_sell_dialog_1</text>
+				<next>2</next>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="2" speaker="actor">
+				<precondition>pda_talk_dialogs.can_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_sell_dialog_2</text>
+				<next>21</next>
+			</phrase>
+			<phrase id="21" speaker="npc">
+				<text>pda_talk_npc_sell_dialog_21</text>
+				<action>pda_talk_dialogs.pda_npc_sell_actor_buy</action>
+			</phrase>
+			<phrase id="3" speaker="actor">
+				<precondition>pda_talk_dialogs.cannot_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_sell_dialog_3</text>
+				<next>31</next>
+			</phrase>
+			<phrase id="31" speaker="npc">
+				<text>pda_talk_npc_sell_dialog_31</text>
+			</phrase>
+			<phrase id="4" speaker="actor">
+				<text>pda_talk_npc_sell_dialog_4</text>
+				<next>41</next>
+			</phrase>
+			<phrase id="41" speaker="npc">
+				<text>pda_talk_npc_sell_dialog_41</text>
+				<next>412</next>
+				<next>413</next>
+				<next>414</next>
+			</phrase>
+			<phrase id="412" speaker="actor">
+				<precondition>pda_talk_dialogs.can_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_sell_dialog_412</text>
+				<next>21</next>
+			</phrase>
+			<phrase id="413" speaker="actor">
+				<precondition>pda_talk_dialogs.cannot_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_sell_dialog_413</text>
+				<next>31</next>
+			</phrase>
+			<phrase id="414" speaker="actor">
+				<text>pda_talk_npc_sell_dialog_414</text>
+				<next>4141</next>
+			</phrase>
+			<phrase id="4141" speaker="npc">
+				<text>pda_talk_npc_sell_dialog_4141</text>
+				<action>pda_talk_dialogs.pda_meet_actor_reject</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+	
+		<dialog id="pda_talk_npc_know_dialog" first_speaker="actor">
+		<precondition>pda_talk_dialogs.precond_npc_knows</precondition>
+		<init_func>pda_talk_dialogs.init_npc_know_dialog</init_func>
+		<phrase_list>
+			<phrase id="0" speaker="actor">
+				<text>pda_talk_npc_know_dialog_0</text>
+				<next>1</next>
+			</phrase>
+			<phrase id="1" speaker="npc">
+				<text>pda_talk_npc_know_dialog_1</text>
+				<next>2</next>
+				<next>3</next>
+				<next>4</next>
+			</phrase>
+			<phrase id="2" speaker="actor">
+				<precondition>pda_talk_dialogs.can_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_know_dialog_2</text>
+				<action>pda_talk_dialogs.pda_actor_buy_story</action>
+				<next>21</next>
+			</phrase>
+			<phrase id="21" speaker="npc">
+				<text>pda_talk_npc_know_dialog_21</text>
+				<action>pda_talk_dialogs.pda_display_npc_info</action>
+			</phrase>
+			<phrase id="3" speaker="actor">
+				<precondition>pda_talk_dialogs.cannot_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_know_dialog_3</text>
+				<next>31</next>
+			</phrase>
+			<phrase id="31" speaker="npc">
+				<text>pda_talk_npc_know_dialog_31</text>
+			</phrase>
+			<phrase id="4" speaker="actor">
+				<text>pda_talk_npc_know_dialog_4</text>
+				<next>41</next>
+			</phrase>
+			<phrase id="41" speaker="npc">
+				<text>pda_talk_npc_know_dialog_41</text>
+				<next>412</next>
+				<next>413</next>
+				<next>414</next>
+			</phrase>
+			<phrase id="412" speaker="actor">
+				<precondition>pda_talk_dialogs.can_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_know_dialog_412</text>
+				<action>pda_talk_dialogs.pda_actor_buy_story</action>
+				<next>21</next>
+			</phrase>
+			<phrase id="413" speaker="actor">
+				<precondition>pda_talk_dialogs.cannot_finish_meet_dlg_task</precondition>
+				<text>pda_talk_npc_know_dialog_413</text>
+				<next>31</next>
+			</phrase>
+			<phrase id="414" speaker="actor">
+				<text>pda_talk_npc_know_dialog_414</text>
+				<next>4141</next>
+			</phrase>
+			<phrase id="4141" speaker="npc">
+				<text>pda_talk_npc_know_dialog_4141</text>
+				<action>pda_talk_dialogs.pda_meet_actor_reject</action>
+			</phrase>
+		</phrase_list>
+	</dialog>
+</game_dialogs>

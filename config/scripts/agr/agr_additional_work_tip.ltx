@@ -1,0 +1,15 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+agroprom_military_case_have +cordon_case_task_done} sr_tip %+agro_docs_task_start%
+
+[sr_tip]
+header = trader_message_header
+name = agro_docs_task_start_tip
+sender = sid
+type = tips
+cond = {+agroprom_military_case_have +cordon_case_task_done}
+single = true
+showtime = 25000
+on_signal = tip_sended|nil %=release%

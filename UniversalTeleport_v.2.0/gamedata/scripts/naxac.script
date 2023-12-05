@@ -1,0 +1,227 @@
+-- грузим массив
+function table_loading(tbl_name)
+	local var = this.load_variable(tbl_name)
+--	spying("table_loading:",var)
+	if var and var~=0 then return unpack_array_from_string(var)
+	else return {} end
+end
+-- сохран€ем массив
+function table_saving(tbl_name,t)
+	if t then
+		this.save_variable(tbl_name,pack_array_to_string(t))
+	end
+end
+--(c) proger_Dencheek
+-- записываем информацию в лог
+function spying(text, ...)
+local arg = {...}
+	if text ~= nil then
+		if type(text) ~= "string" then
+			text = tostring(text)
+		end
+		text = string.gsub(text," ","_")
+		get_console():execute(text)
+		get_console():execute("flush")
+		if arg[1] ~= nil then
+			for k,val in pairs(arg) do
+				spying(val)
+			end
+		end
+	end
+end
+-- сохран€ем переменную
+function save_variable(var, val)
+	if var ~= nil and db.actor ~= nil then
+		if val == nil then
+			del_variable(var)
+		--	spying("save_variable(val=nil)")
+		else
+			if type(val) == "table" then
+				val = naxac.pack_array_to_string(val)
+			end
+			xr_logic.pstor_store(db.actor, var, val)
+		end
+	end
+end
+-- грузим переменную
+function load_variable(var, val)
+	if var ~= nil and db.actor ~= nil then
+		return xr_logic.pstor_retrieve(db.actor, var, val)
+	end
+end
+-- удал€ем переменную
+function del_variable(var)
+	if var ~= nil and db.actor ~= nil then
+		if db.storage[db.actor:id()].pstor and db.storage[db.actor:id()].pstor[var] then
+			db.storage[db.actor:id()].pstor[var] = nil
+		else
+			spying("del_variable();db.storage[db.actor:id()].pstor[var]=nil")
+		end
+	else
+		spying("del_variable(var=nil or db.actor=nil)", var, db.actor)
+	end
+end
+----------------------------------------------------------------
+---------------------     from AMK     -------------------------
+----------------------------------------------------------------
+-- пакуем массив в строку
+function pack_array_to_string(array)
+	return string.char(1)..pack_new(array)
+end
+-- распаковываем массив из строки
+function unpack_array_from_string(str)
+	if str==nil or str=="" then return {} end
+--	get_console():execute("load ~~~ unpack_array_from_string: "..str)
+	if string.sub(str,1,1)~=string.char(1) then
+--	—тарый формат упаковки
+		return _parse(str)
+	else
+--	новый формат упаковки тэгирован символом c кодом 1.
+		return parse_new(string.sub(str,2,-1))
+	end
+end
+function _assign(tbl,key,val)
+	if  key ~= nil then
+		local key0=string.match(key,'"(.*)"')
+		if key0 then
+			tbl[key0]=val
+		else
+			tbl[key+0]=val
+		end
+	end
+end
+
+local pack_type_num=1
+local pack_type_string=2
+local pack_type_bool=3
+local pack_type_table=4
+local pack_val_endtable=5
+
+--[[
+ Ќовый формат упаковки: 
+ table ::= subtable
+ subtable ::= keytype key valuetype ( value | subtable 0x5 )
+ keytype ::= ( 0x1 | 0x2 | 0x3 | 0x4 )
+ valuetype ::= ( 0x1 | 0x2 | 0x3 | 0x4 )
+]]
+function pack_new(tbl)
+	local ret=""
+	for k,v in pairs(tbl) do
+		if type(k)=="number" then
+			ret=ret..string.char(pack_type_num)..k
+		elseif type(k)=="string" then
+			ret=ret..string.char(pack_type_string)..k
+		else
+			abort("unsupported key type "..type(k))
+		end
+		if type(v)=="number" then
+			ret=ret..string.char(pack_type_num)..v
+		elseif type(v)=="string" then
+			ret=ret..string.char(pack_type_string)..v
+		elseif type(v)=="boolean" then
+--			get_console():execute("load ~#I#:"..string.format(" !ѕакуем булев тип: "..tostring(v)))
+			if v then
+				ret=ret..string.char(pack_type_bool).."1"
+			else
+				ret=ret..string.char(pack_type_bool).."0"
+			end
+		elseif type(v)=="table" then
+			ret=ret..string.char(pack_type_table)..pack_new(v)..string.char(pack_val_endtable)
+		end
+	end
+	return ret
+end
+
+function parse_new(str,idx)
+	local ret={}
+	idx=idx or 1
+	while true do
+		local key,value
+		if idx>string.len(str) then
+			return ret,idx
+		end
+		vtype,idx=get_byte(str,idx)
+		if vtype==pack_type_num then
+			key,idx=get_num(str,idx)
+		elseif vtype==pack_type_string then
+			key,idx=get_string(str,idx)
+		elseif vtype==pack_val_endtable then
+			return ret,idx
+		else
+		abort("unsupported key type "..tostring(vtype))
+		end
+		vtype,idx=get_byte(str,idx)
+		if vtype==pack_type_num then
+			value,idx=get_num(str,idx)
+		elseif vtype==pack_type_string then
+			value,idx=get_string(str,idx)
+		elseif vtype==pack_type_bool then
+			value,idx=get_bool(str,idx)
+		elseif vtype==pack_type_table then
+			value,idx=parse_new(str,idx)
+		else
+			abort("unsupported key type "..tostring(vtype))
+		end
+		ret[key]=value
+	end
+end
+
+function get_byte(str,idx)
+	return string.byte(string.sub(str,idx,idx)),idx+1
+end
+
+function get_string(str,idx)
+	local idx1=string.len(str)+1
+	for i=idx,string.len(str),1 do
+		if string.byte(string.sub(str,i,i))<32 then
+			idx1=i
+			break
+		end
+	end
+	return string.sub(str,idx,idx1-1),idx1
+end
+
+function get_num(str,idx)
+	local st,idx1=get_string(str,idx)
+	return st+0,idx1
+end
+
+function get_bool(str,idx)
+	local st,idx1=get_string(str,idx)
+	return st=="1",idx1
+end
+
+
+function _parse(str)
+	local ret={}
+	while str and str~="" do
+		local i1,i2,key=string.find(str,'(.-)=>')
+		if i2 == nil then i2 = 0 end
+		str=string.sub(str,i2+1)
+		i1,i2,val=string.find(str,'"(.-)"|')
+		if val and i1==1 then
+			-- строка
+			_assign(ret,key,val)
+		else
+			i1,i2,val=string.find(str,'(%b{})|')
+			if val and i1==1 then
+				-- таблица
+				_assign(ret,key,_parse(string.sub(val,2,-2)))
+			else
+				i1,i2,val=string.find(str,'(.-)|')
+				-- число или булево значение
+				if val=="true" then
+					_assign(ret,key,true)
+				elseif val=="false" then
+					_assign(ret,key,false)
+				else
+					if val == nil then val = 0 end
+				_assign(ret,key,val+0)
+				end
+			end
+		end
+		if i2 == nil then i2 = 0 end
+		str=string.sub(str,i2+1)
+	end
+	return ret
+end

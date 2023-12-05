@@ -1,0 +1,28 @@
+[logic]
+active = sr_idle@precond
+
+[sr_idle@precond]
+;on_info = {+cit_actor_broke_the_rules} nil %=release%
+on_actor_inside = sr_idle@inside_precond
+
+[sr_idle@inside_precond]
+on_info = {-cit_jail_scene_start +yan_scientist_package_start} sr_idle@inside %=add_jail_effectors%, nil
+
+[sr_idle@inside]
+on_timer = 7500 | sr_idle@wake_up %=add_jail_effectors =transfer_inv_items =play_snd(characters_voice\human_01\stalker\states\breath\breath_2)%
+
+[sr_idle@wake_up]
+on_timer = 5000 | sr_idle@start_doctor_scene %=add_deadcity_breath%
+
+[sr_idle@start_doctor_scene]
+on_timer = 4000 | sr_idle@wait %+cit_start_doctor_scene%
+
+[sr_idle@wait]
+on_info = {+cit_jail_scene_start} sr_cutscene@play %=logic_print(okok)% ;=teleport_actor(cit_teleport_actor2:cit_doctor_look)
+ 
+[sr_cutscene@play]
+cam_effector = cit_jail_scene
+point = cit_actor_walk1
+look = cit_actor_look1
+restore_ui = true
+on_info = {+cit_jail_scene_end} nil %=release%

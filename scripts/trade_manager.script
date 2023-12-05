@@ -1,0 +1,299 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : trade_manager.script (for SHoC/CS/Cop)
+ Description: trade functions
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 01.05.2017 [phobos2077]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sGenericLtx = "misc\\trade\\trade_generic.ltx"
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+
+local resupply_min_hours = 8
+local resupply_max_hours = 12
+
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function get_trade_manager(oNPC, st)
+	local tStor = st or db.storage[oNPC:id()]
+	if not tStor.trade_mgr then
+		tStor.trade_mgr = this.CTrade_Manager(oNPC)
+	end
+	return tStor.trade_mgr --/>
+end
+--/ ----------------------------------------
+function trade_init(oNPC, ...)
+	get_trade_manager(oNPC):initialize(...)
+end
+function update(oNPC)
+	local tStor = db.storage[oNPC:id()]
+	if tStor and tStor.trade_mgr then
+		tStor.trade_mgr:update()
+	end
+end
+function save(oNPC, packet)
+	--/ Saving if initialized trading exist actually.
+	set_save_marker(packet, "save", false, "trade_manager", oNPC)
+	local tStor = db.storage[oNPC:id()]
+	if tStor and tStor.trade_mgr and tStor.trade_mgr.enabled then
+		packet:w_bool(true)
+		tStor.trade_mgr:save(packet)
+		--log("packet_saved %s", oNPC)
+	else
+		packet:w_bool(false)
+	end
+	set_save_marker(packet, "save", true, "trade_manager", oNPC)
+end
+function load(oNPC, reader)
+	set_save_marker(reader, "load", false, "trade_manager", oNPC)
+	local enabled = reader:r_bool()
+	if enabled then
+		get_trade_manager(oNPC):load(reader)
+		--log("packet_loaded %s", oNPC)
+	end
+	set_save_marker(reader, "load", true, "trade_manager", oNPC)
+end
+--/ -----------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "CTrade_Manager"
+--/ -----------------------------------------------------------------------------------------------
+function CTrade_Manager:__init(oNPC)
+	self.npc     = oNPC
+	self.npc_id  = oNPC:id()
+	self.enabled = false
+	self.log     = false -- oNPC:name() == "cordon_sidorovich"
+end
+
+function CTrade_Manager:initialize(ini,section)
+	self.enabled = false
+	if not (self.npc and ini and section) then
+		log("tm:initialize:NPC=[%s],section=[%s]~?,ini=(%s):<%s>", self.npc and self.npc:name(), section, type(ini), "Warning!") --/#~#
+		return nil --/>
+	end
+	self.cfg_ltx = Get_Cfg_String(ini, section, "trade", sGenericLtx)
+	self.cfg_ini = ini_file(self.cfg_ltx)
+
+	if not ( self.cfg_ini and self.cfg_ini:section_exist("trader") ) then
+		log("tm:initialize:NPC=[%s],section=[%s],cfg_ltx=[%s]~wrong section:<%s>", self.npc:name(), section, self.cfg_ltx, "Warning!") --/#~#
+		return nil --/>
+	elseif not ( self.cfg_ini:line_exist("trader", "buy_condition") and self.cfg_ini:line_exist("trader", "sell_condition") ) then
+		log("tm:initialize:NPC=[%s],section=[%s],cfg_ltx=[%s]~wrong fields:<%s>", self.npc:name(), section, self.cfg_ltx, "Warning!") --/#~#
+		return nil --/>
+	end
+	if self.log then log("tm:initialize:NPC=[%s],section=[%s],cfg_ltx=[%s]", self.npc:name(), section, self.cfg_ltx, "") end --/#~#
+
+	--/ coefficients of trading
+	self.buy_condition, sBuy = self:try_parse_setting("buy_condition", true)
+
+	--/ coefficients of selling
+	self.sell_condition, sSell = self:try_parse_setting("sell_condition", true)
+
+	--/ list of items to trade
+	self.buy_supplies, sSupplies = self:try_parse_setting("buy_supplies", false)
+	if not self.buy_supplies and self.cfg_ltx ~= sGenericLtx then
+		log("tm:initialize:NPC=[%s]->[%s]~Cannot find buy_supplies:<%s>", sModule,  self.npc:name(), self.cfg_ltx, "Warning!")
+	end
+
+	--/ condition factor
+	self.buy_item_condition_factor = self:try_parse_setting("buy_item_condition_factor", false)
+
+	--/ discounts
+	self.discounts = self:try_parse_setting("discounts", false)
+
+	--/ is buying or selling of unspecified items is allowed
+	-- self.buy_allowed_default = self:try_parse_setting("buy_allowed_default", false)
+	-- self.sell_allowed_default = self:try_parse_setting("sell_allowed_default", false)
+
+	if self.log then log("tm:initialize:NPC=[%s],section=[%s]=>[%s/%s/%s]", self.npc:name(), section, sBuy, sSell, sSupplies) end --/#~#
+	self.enabled = true
+	return self --/>
+end
+
+function CTrade_Manager:try_parse_setting(name, required)
+	local value = Get_Cfg_String(self.cfg_ini, "trader", name)
+	if value then
+		return xr_logic.parse_condlist(self.npc, "trade_manager", name, value), value
+	elseif required then
+		abort("%s:Incorrect trader settings. Cannot find %s. [%s]->[%s]", sModule, name, self.npc:name(), self.cfg_ltx)
+	end
+end
+
+function CTrade_Manager:update()
+	local gameMinutes = Get_PastMinutes()
+	if self.enabled and db.actor and (self.tm_update or 0) < gameMinutes then
+		local oActor, oNPC = db.actor, self.npc	
+		self.tm_update = gameMinutes + 10 --  60 --/ +1 hour
+		
+		if self.log then log("tm:UPDATE:NPC=[%s], resupply in [%d]m", oNPC:name(), (self.tm_resuply or 0) - gameMinutes) end --/#~#
+		--/ bying coefficients
+		local sBuy = xr_logic.pick_section_from_condlist(oActor, oNPC, self.buy_condition)
+		if not(sBuy and sBuy ~= "") then
+			abort("%s:tm:update:NPC=[%s]~Wrong section in buy_condition condlist!:<%s>", sModule, oNPC:name(), "Error!")
+		elseif sBuy ~= self.current_buy_condition and self.cfg_ini:section_exist(sBuy) then
+			if self.log then log("tm:update:NPC=[%s],buy_condition=[%s]=>[%s]", oNPC:name(), self.current_buy_condition, sBuy, "") end --/#~#
+			self.current_buy_condition = sBuy
+			oNPC:buy_condition(self:load_section(sBuy))
+		end
+		--/ selling coefficients
+		local sSell = xr_logic.pick_section_from_condlist(oActor, oNPC, self.sell_condition)
+		if not(sSell and sSell ~= "") then
+			abort("%s:tm:update:NPC=[%s]~Wrong section in sell_condition condlist!:<%s>", sModule, oNPC:name(), "Error!")
+		elseif sSell ~= self.current_sell_condition and self.cfg_ini:section_exist(sSell) then
+			if self.log then log("tm:update:NPC=[%s],sell_condition=[%s]=>[%s]", oNPC:name(), self.current_sell_condition, sSell, "") end --/#~#
+			self.current_sell_condition = sSell
+			oNPC:sell_condition(self:load_section(sSell))
+		end
+		--/ list of items to trade
+		if self.buy_supplies and (self.tm_resuply or 0) < gameMinutes then
+			local resupplyDelay = utils.RandomIDX(resupply_min_hours * 60, resupply_max_hours * 60)
+			self.tm_resuply = gameMinutes + resupplyDelay
+			local sSupp = xr_logic.pick_section_from_condlist(oActor, oNPC, self.buy_supplies)
+			if not (sSupp and sSupp ~= "") then
+				abort("%s:tm:update:NPC=[%s],buy_supplies=[%s]~wrong section in buy_supplies condlist!:<%s>", sModule, oNPC:name(), tostring(sSupp), "Error!")
+			elseif sSupp ~= self.current_buy_supplies and self.cfg_ini:section_exist(sSupp) then
+				if self.log then log("tm:update:NPC=[%s],current_buy_supplies=[%s]=>[%s]", oNPC:name(), self.current_buy_supplies, sSupp, "") end --/#~#
+				self.current_buy_supplies = sSupp
+			end
+			
+			if self.log then log("tm:RESUPPLY:NPC=[%s], section=[%s], next in [%d]m", oNPC:name(), sSupp, resupplyDelay) end --/#~#
+
+			-- TODO: we can use load_section() here as well and pass table to the engine, but we don't need this right now
+			oNPC:buy_supplies(self.cfg_ini, sSupp)
+		end
+		--/ condition factor
+		if self.buy_item_condition_factor then
+			fCondFactor = tonumber(xr_logic.pick_section_from_condlist(oActor, oNPC, self.buy_item_condition_factor))
+			if self.current_buy_item_condition_factor ~= fCondFactor then
+				oNPC:buy_item_condition_factor(fCondFactor)
+				self.current_buy_item_condition_factor = fCondFactor
+			end
+		end
+	end
+end
+
+function CTrade_Manager:save(packet)
+	packet:w_stringZ(self.cfg_ltx)
+	if self.log then log("tm:save:NPC=[%s],Cfg=[%s],current_buy_condition=[%s]", self.npc:name(), self.cfg_ltx, self.current_buy_condition) end --/#~#
+	packet:w_stringZ(self.current_buy_condition or "")
+	if self.log then log("tm:save:NPC=[%s],Cfg=[%s],current_sell_condition=[%s]", self.npc:name(), self.cfg_ltx, self.current_sell_condition) end --/#~#
+	packet:w_stringZ(self.current_sell_condition or "")
+	if self.log then log("tm:save:NPC=[%s],Cfg=[%s],current_buy_supplies=[%s]", self.npc:name(), self.cfg_ltx, self.current_buy_supplies) end --/#~#
+	packet:w_stringZ(self.current_buy_supplies or "")
+	
+	local gameMinutes = Get_PastMinutes()
+	packet:w_s32(-1) -- tm_update, not used
+	if self.tm_resuply then
+		if self.log then log("tm:save:NPC=[%s],tm_resuply in [%s]m", self.npc:name(), self.tm_resuply - gameMinutes) end --/#~#
+		packet:w_s32(self.tm_resuply)
+	else
+		packet:w_s32(-1)
+	end
+end
+
+function CTrade_Manager:load(reader)
+	self.cfg_ltx = reader:r_stringZ()
+	if self.log then log("tm:load:NPC=[%s],cfg_ltx=[%s]%s", self.npc:name(), self.cfg_ltx, "") end --/#~#
+	self.cfg_ini = ini_file(self.cfg_ltx)
+	
+	local val = reader:r_stringZ()
+	if val ~= "" then
+		if self.log then log("tm:load:NPC=[%s],current_buy_condition=[%s]", self.npc:name(), val) end --/#~#
+		self.current_buy_condition = val
+		self.npc:buy_condition(self:load_section(val))
+	end
+	
+	val = reader:r_stringZ()
+	if val ~= "" then
+		if self.log then log("tm:load:NPC=[%s],current_sell_condition=[%s]", self.npc:name(), val) end --/#~#
+		self.current_sell_condition = val
+		self.npc:sell_condition(self:load_section(val))
+	end
+	
+	val = reader:r_stringZ()
+	if val ~= "" then
+		if self.log then log("tm:load:NPC=[%s],current_buy_supplies=[%s]", self.npc:name(), val) end --/#~#
+		self.current_buy_supplies = val
+	end
+	
+	local gameMinutes = Get_PastMinutes()
+	reader:r_s32() -- tm_update, not used
+	self.tm_update = 0 -- force update after load
+	val = reader:r_s32()
+	-- check that correct value is saved and within resupply_max_hours (for compatibility with older saves)
+	if val ~= -1 and val - gameMinutes < resupply_max_hours * 60 then
+		if self.log then log("tm:load:NPC=[%s],tm_resuply in [%s]m", self.npc:name(), val - gameMinutes) end --/#~#
+		self.tm_resuply = val
+	end
+end
+
+--- Multiply trade coefficients, examples:
+-- "1, 3" x "2" = "2,6"
+-- "2, 3" x "0.5, 2.5" = "1, 7.5"
+--[[
+function multiply_coefs(...)
+	local tbl = {...}
+	if #tbl < 2 then
+		return tbl[1]
+	end
+	for i, val in ipairs(tbl) do
+		tbl[i] = string.split(v, ",", false)
+	end
+	for j = 1, 2 do -- for each coefficient (min,max)
+		local m = 1.0
+		for i = 1, #tbl do -- for each argument
+			m = m * (tbl[i][j] or tbl[i][1] or 1)
+		end
+		tbl[1][j] = string.format("%f", m)
+	end
+	return table.concat(tbl[1], ",")
+end
+]]--
+
+--- Loads given section of trade action parameters, using $ as a special symbol to include whole categories of items
+function CTrade_Manager:load_section(section, tbl, categoryPrice)
+	tbl = tbl or {}
+	local cnt = self.cfg_ini:line_count(section)
+	for i = 0, cnt - 1 do
+		local result,name,value = self.cfg_ini:r_line(section, i, "", "")
+		if result then 
+			if string.sub(name, 1, 1) == "$" then
+				if categoryPrice then
+					abort("%s: Trying to include %s from section %s - nested categories are not supported yet", sModule, name, section)
+				end
+				self:load_section(string.sub(name, 2), tbl, value)
+			else
+				tbl[name] = categoryPrice or value
+			end
+		end
+	end
+	return tbl
+end
+
+--/ -----------------------------------------------------------------------------------------------
+
+function get_discount(npc_id, action)
+	local stor = db.storage[npc_id]
+	if stor and stor.trade_mgr and stor.trade_mgr.discounts then
+		local sect = xr_logic.pick_section_from_condlist(db.actor, nil, stor.trade_mgr.discounts)
+		local result = Get_Cfg_Number(stor.trade_mgr.cfg_ini, sect, action, 1)
+		return result
+	end
+	return 1.0
+end
+
+----------- NOT TO DELETE!!!!!!!!! called from engine
+function get_buy_discount(npc_id)
+	return get_discount(npc_id, "buy")
+end
+----------- NOT TO DELETE!!!!!!!!! called from engine
+function get_sell_discount(npc_id)
+	return get_discount(npc_id, "sell")
+end

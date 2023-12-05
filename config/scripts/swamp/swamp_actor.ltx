@@ -1,0 +1,46 @@
+[combat_ignore]
+
+[logic]
+active = walker@swamp_actor
+combat_ignore = combat_ignore
+
+[walker@swamp_actor]
+path_walk = swamp_actor_way
+combat_ignore_cond = always
+meet = no_meet
+def_state_moving1 = walk_relaxed
+def_state_moving2 = walk_relaxed
+def_state_moving3 = walk_relaxed
+on_signal = reached | %+swamp_actor_reached% remark@swamp_actor
+
+[remark@swamp_actor]
+anim = wait
+target = swamp_actor_look, 0
+combat_ignore_cond = always
+on_info = {+swamp_actor_talk1} remark@swamp_actor_talk
+meet = no_meet
+
+[remark@swamp_actor_talk]
+anim = stand_wait
+snd = swa_replics2
+target = swamp_actor_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+swamp_actor_talk2%
+on_info = {+swamp_actor_talk3} remark@swamp_actor_talk2 %=play_snd(characters_voice\scenario\swa\swa_something)%
+
+[remark@swamp_actor_talk2]
+anim = swa_actor_hear
+target = swamp_actor_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_signal = sound_end | %+swamp_actor_talk4%
+;on_timer = 10000 | %+swamp_actor_talk4%
+on_info = {+swamp_actor_end} remark@swamp_actor_effect %=run_postprocess(swa_fade)%
+
+[remark@swamp_actor_effect]
+anim = psy_pain
+target = swamp_actor_look, 0
+combat_ignore_cond = always
+meet = no_meet
+on_info = {+swamp_scene_end} %=swamp_release_actor%

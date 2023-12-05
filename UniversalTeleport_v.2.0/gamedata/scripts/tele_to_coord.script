@@ -1,0 +1,256 @@
+
+class "text_item" (CUIListItemEx)
+
+function text_item:__init() super()
+	self:SetWndRect		(0,0,230,220)
+	
+	local ca = 255
+	local cr = 216
+	local cg = 186
+	local cb = 140
+	
+	self.fn					= CUIStatic	()
+	self.fn:SetAutoDelete	(true)
+	self:AttachChild		(self.fn)
+	self.fn:SetWndRect		(0,0,230,22)
+	self.fn:SetFont			(GetFontGraffiti19Russian())
+	self.fn:SetTextColor	(ca,cr,cg,cb)
+end
+
+class "tele_coord" (CUIScriptWnd)
+
+function tele_coord:__init() super()		
+	self:InitControls()
+	self:InitCallBacks()
+	self:FillList()
+end
+
+function tele_coord:__finalize()
+end
+
+function tele_coord:FillList()
+	local text = {"С помощью этого меню можно",
+				"перемещаться только в пределах той",
+				"локации, на которой вы в данный",
+				"момент находитесь.",
+				" ",
+				" Для того, чтобы телепортироваться в",
+				"нужную точку:",
+				" 1. Нажмите кнопку \"Обзор локации\".",
+				" 2. Подлетите камерой к нужной точке",
+				"и запишите/запомните координаты: они",
+				"показаны слева.",
+				" 3. Выйдите из режима \"demo_record\"",
+				"(кнопка Esc) и снова войдите в меню",
+				"телепортатора \"Телепортация по",
+				"координатам\".",
+				" 4. Введите координаты в соответствующие",
+				"им поля и нажмите \"ОК\".",
+				" ",
+				"ВНИМАНИЕ!!! ВВОДИТЕ КООРДИНАТЫ",
+				"КОРРЕКТНО! То есть, цифрами, через",
+				"точку или запятую!",
+				" ",
+				" Если хотите убрать показ координат -",
+				"нажмите кнопку \"Отключить показ",
+				"координат\".",
+				" ",
+				"С помощью кнопки \"Сохранение координат\"",
+				"можно сохранить координаты точки, в",
+				"которой вы находитесь, а затем, при",
+				"необходимости, переместиться в неё."
+				}
+	for a=1,#text,1 do
+		local txt = text[a]
+		self:AddItemToList(txt)
+	end
+	
+end
+
+function tele_coord:InitControls()
+	self:Init(0,0,1024,768)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_telecoord.xml")
+	
+	xml:InitStatic("background",		self)
+	xml:InitStatic("teleport",			self)
+	xml:InitStatic("teleframe",			self)
+	xml:InitStatic("teleport_frame",	self)
+	xml:InitStatic("caption",			self)
+	
+	xml:InitStatic("caption_instr",			self)
+	xml:InitFrame("instruction_frame",		self)
+	self.list = xml:InitList("instruction", self)
+	self.list:ShowSelectedItem(true)
+	self:Register(self.list, "instruction_window")
+	
+	local ctrl
+	self.form = xml:InitStatic("form",	self)
+	xml:InitStatic("form:caption_c",	self.form)
+	xml:InitStatic("form:caption_x",	self.form)
+	xml:InitStatic("form:caption_y",	self.form)
+	xml:InitStatic("form:caption_z",	self.form)
+	
+	ctrl = xml:InitEditBox("form:edit_x",	self.form)
+	self:Register(ctrl, "edit_coord_x")
+	ctrl = xml:InitEditBox("form:edit_y",	self.form)
+	self:Register(ctrl, "edit_coord_y")
+	ctrl = xml:InitEditBox("form:edit_z",	self.form)
+	self:Register(ctrl, "edit_coord_z")
+	
+	ctrl = xml:Init3tButton("form:btn_ok",	self.form)	
+	self:Register(ctrl, "button_ok")
+	ctrl = xml:Init3tButton("form:btn_view",	self.form)	
+	self:Register(ctrl, "button_view")
+	ctrl = xml:Init3tButton("form:btn_offcoord",	self.form)	
+	self:Register(ctrl, "button_offcoord")
+	ctrl = xml:Init3tButton("form:btn_savepoint",	self.form)	
+	self:Register(ctrl, "button_savepoint")
+
+	self:Register(xml:Init3tButton("btn_back", self), "btn_back")
+	self:Register(xml:Init3tButton("btn_quit", self), "btn_quit")
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box,"message_box")
+	self.mbox_mode	= 0
+end
+
+function tele_coord:InitCallBacks()
+	self:AddCallback("button_ok",		ui_events.BUTTON_CLICKED, self.OnButton_ok_clicked,		self)
+	self:AddCallback("btn_quit",		ui_events.BUTTON_CLICKED, self.OnButton_cancel_clicked,	self)
+	self:AddCallback("button_view",		ui_events.BUTTON_CLICKED, self.OnButton_view_clicked,	self)
+	self:AddCallback("button_offcoord",	ui_events.BUTTON_CLICKED, self.OnButton_offcoord_clicked,self)
+	self:AddCallback("button_savepoint",ui_events.BUTTON_CLICKED, self.OnButton_savepoint_clicked,self)
+	self:AddCallback("btn_back",		ui_events.BUTTON_CLICKED, self.OnButton_back_clicked,	self)
+	self:AddCallback("message_box",		ui_events.MESSAGE_BOX_YES_CLICKED,	self.OnMsgYes,		self)
+end
+
+function tele_coord:OnButton_cancel_clicked()
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function tele_coord:OnButton_view_clicked()
+	self:OnButton_cancel_clicked()
+	get_console():execute("demo_record on")
+	naxac.save_variable("show_position",1)
+end
+
+function tele_coord:OnButton_offcoord_clicked()
+	naxac.del_variable("show_position")
+end
+
+function tele_coord:OnButton_back_clicked()
+	self:OnButton_cancel_clicked()
+	teleportator.new_menu()
+end
+
+function tele_coord:OnButton_ok_clicked()
+	local message_box	= self.message_box
+	local main_frame	= self:GetFrameWindow("main_frame")	
+	
+	local edit_box_x	= self:GetEditBox("edit_coord_x")
+	self.coord_x		= edit_box_x:GetText()
+	local edit_box_y	= self:GetEditBox("edit_coord_y")
+	self.coord_y		= edit_box_y:GetText()
+	local edit_box_z	= self:GetEditBox("edit_coord_z")
+	self.coord_z		= edit_box_z:GetText()
+	
+	if (string.len(self.coord_x) == 0) or (string.len(self.coord_y) == 0) or (string.len(self.coord_z) == 0) then
+		self.mbox_mode = 0
+		self.message_box:Init("message_box_empty_coordinates")		
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		return
+	end
+	
+	self.coord_x = formatting(self.coord_x)
+	self.coord_y = formatting(self.coord_y)
+	self.coord_z = formatting(self.coord_z)
+	
+	if self.coord_x and self.coord_y and self.coord_z then
+		self:StartTeleport(self.coord_x,self.coord_y,self.coord_z)
+	else
+		self.mbox_mode = 0
+		self.message_box:Init("message_box_incorrect_coordinates")		
+		self:GetHolder():start_stop_menu(self.message_box, true)
+		return
+	end
+end
+
+function tele_coord:StartTeleport(posx,posy,posz)
+	self:OnButton_cancel_clicked()
+	
+	naxac.del_variable("show_position")
+	
+	if teleportator.need_art() then
+		level.add_pp_effector ("teleport.ppe", 25002, false)
+		db.actor:set_actor_position(vector():set(posx,posy,posz))
+		local snd_obj = xr_sound.get_safe_sound_object([[affects\tinnitus3a]])
+		snd_obj:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0)
+	else
+		teleportator.tele_msg()
+	end
+end
+
+function tele_coord:AddItemToList(text)	
+	local _itm			= text_item()
+	_itm.fn:SetText	(text)
+	local list_box = self:GetListWnd("instruction_window")
+	list_box:AddItem(_itm)	
+end
+
+function tele_coord:OnButton_savepoint_clicked()
+	self:OnButton_cancel_clicked()
+	local hud = save_position.save_coord(get_hud())
+	level.start_stop_menu(hud, true)
+end
+
+function formatting(str)
+	if str then
+		str = string.gsub(str,",",".")
+		str = tonumber(str)
+	end
+	return str
+end
+
+function show_pos()
+	local hud = get_hud()
+	if naxac.load_variable("show_position") then
+		local cs = hud:GetCustomStatic("hud_show_position")
+		if cs == nil then
+			hud:AddCustomStatic("hud_show_position", true)
+			cs = hud:GetCustomStatic("hud_show_position")
+		end
+		local pos = device().cam_pos
+	--	local dir = reception_angle()
+		local msg = string.format("Позиция:\\n") ..
+					string.format("X = %f\\n", pos.x) ..
+					string.format("Y = %f\\n", pos.y) ..
+					string.format("Z = %f\\n", pos.z)-- ..
+				--	string.format("Направление взгяда:\\n") ..
+				--	string.format("X = %f\\n", 0) ..
+				--	string.format("Y = %f\\n", dir) ..
+				--	string.format("Z = %f\\n", 0)
+		if cs ~= nil then cs:wnd():SetText(msg) end
+	else
+		if hud:GetCustomStatic("hud_show_position") then
+			hud:RemoveCustomStatic("hud_show_position")
+		end
+	end
+end
+
+-- возвращает угол поворота камеры относительно оси Y (не очень точно)
+function reception_angle()
+	local dir_x = device().cam_dir.x
+	local dir_z = device().cam_dir.z
+	local drct = 0
+	if dir_x<0 and dir_z>0 then drct = -1.57*dir_x
+	elseif dir_x<0 and dir_z<0 then drct = 1.57+(1.57*(1+dir_x))
+	elseif dir_x>0 and dir_z<0 then drct = 3.14+(1.57*dir_x)
+	elseif dir_x>0 and dir_z>0 then drct = 4.71+(1.57*(1-dir_x))
+	elseif dir_x==0 and dir_z>0 then drct = 0
+	elseif dir_x==0 and dir_z<0 then drct = 3.14
+	elseif dir_z==0 and dir_x>0 then drct = 4.71
+	elseif dir_z==0 and dir_x<0 then drct = 1.57 end
+	return drct
+end

@@ -1,0 +1,52 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = bar_attack_choppa_1_wait
+engine_sound = false
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 60
+on_info = {+bar_petrenko_heli_task_talked} heli_move@path3
+
+[heli_move@path1]
+path_move = bar_attack_choppa_1_attack1
+path_look = bar_attack_choppa1_look1
+engine_sound = true
+combat_enemy = actor
+combat_velocity = 40
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 60
+invulnerable = false
+on_heli_death = %+bar_attack_heli1_dead%
+on_info = {+bar_petrenko_heli_task_talked} heli_move@path3
+
+[heli_move@path3]
+path_move = bar_attack_choppa_1_path3
+combat_enemy = actor
+combat_ignore = false
+engine_sound = true
+combat_velocity = 40
+combat_use_rocket = false
+combat_use_mgun = true
+combat_safe_altitude = -10
+default_velocity = 60
+invulnerable = false
+on_heli_death = %+bar_attack_heli1_dead%
+on_info = {+bar_actor_on_tower} heli_move@path2
+
+[heli_move@path2]
+path_move = bar_attack_choppa_1_attack2
+path_look = bar_attack_choppa_1_look2
+combat_enemy = actor
+combat_ignore = false
+engine_sound = true
+combat_velocity = 40
+combat_use_rocket = false
+combat_use_mgun = true
+combat_safe_altitude = -10
+default_velocity = 60
+invulnerable = false
+on_heli_death = %+bar_attack_heli1_dead%
+on_info = {-bar_actor_on_tower} heli_move@path3

@@ -1,0 +1,87 @@
+[combat_ignore@dar_sc5]
+
+[danger@dar_sc5]
+ignore_types = grenade, hit, corpse, sound
+ignore_distance = 0
+
+[threshold@dar_sc5]
+max_ignore_distance = 0
+ignore_monster      = 1
+
+[logic]
+active = remark@darklab_sci_dar_dialog_wait
+combat_ignore = combat_ignore@dar_sc5
+threshold = threshold@dar_sc5
+
+[remark@darklab_sci_dar_dialog_wait]
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_start, 0
+on_info =  {+dar_sci5_info1} remark@darklab_sci_dar_dialog
+
+[remark@darklab_sci_dar_dialog]
+snd = dar_replics22
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_start, 0
+on_signal = sound_end | %+dar_sci5_info2%
+on_info =  {+dar_eco_here} remark@darklab_sci_dar_dialog_rotate_pre
+
+[remark@darklab_sci_dar_dialog_rotate_pre]
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point, 0
+on_info =  {+dar_sci5_eco_talk} remark@darklab_sci_dar_dialog2
+
+[remark@darklab_sci_dar_dialog2]
+snd = dar_replics25
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point, 0
+on_signal = sound_end | %+dar_sci5_info_letsgo%
+on_info =  {+dar_sci5_info4} remark@darklab_sci_dar_dialog3
+
+[remark@darklab_sci_dar_dialog3]
+anim = stand_wait
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point2, 0
+on_info = {+dar_sci5_eff} remark@darklab_sci_dar_dialog4
+
+[remark@darklab_sci_dar_dialog4]
+anim = danger
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point2, 0
+on_info = {+dar_sci5_info5} remark@darklab_sci_dar_dialog5
+
+[remark@darklab_sci_dar_dialog5]
+anim = danger
+snd = dar_replics31
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+target = dar_sci5_sci_look_point2, 0
+on_signal = sound_end | %+dar_play_scripted_quake%
+on_info = {+dar_sci_fall_timer} remark@darklab_sci_dar_dialog6
+
+[remark@darklab_sci_dar_dialog6]
+anim = hide
+combat_ignore_cond = always
+danger = danger@dar_sc5
+threshold = threshold@dar_sc5
+meet = no_meet
+on_signal = sound_end | nil %+dar_sc5_end =rad_psy_basic_clear =release%

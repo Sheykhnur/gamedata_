@@ -1,0 +1,53 @@
+[combat_ignore@out_bar2]
+
+[hit@out_bar2]
+on_info = %+out_bar_hit%
+
+[death@out_bar2]
+on_info = %+out_bar_hit%
+
+[logic]
+active = walker@out_freedom_bar_walker2
+combat_ignore = combat_ignore@out_bar2
+on_hit = hit@out_bar2
+on_death = death@out_bar2
+
+[walker@out_freedom_bar_walker2]
+path_walk = out_freedom_bar_walk2
+path_look = out_freedom_bar_look2
+combat_ignore_cond = {-out_bar_hit}
+on_info = {+out_drunken_stand -out_dialog_completed} remark@out_freedom_bar_walker
+on_info2 = {+out_actor_returned} walker@out_freedom_bar_walker_combat
+
+[remark@out_freedom_bar_walker]
+anim = wait
+target = out_freedom_bar_guard_walk2, 1
+combat_ignore_cond = {-out_bar_hit}
+on_timer = 2400 | %+out_drunken_stand2%
+on_info = {+out_guard_replic} remark@out_freedom_bar_drunken_talk
+
+[remark@out_freedom_bar_drunken_talk]
+anim = ordinary_talk5
+snd = out_drunken_replic1
+target = out_freedom_bar_guard_walk2, 1
+combat_ignore_cond = {-out_bar_hit}
+on_signal = sound_end | %+out_drunken_talk% remark@out_freedom_bar_drunken_synth
+
+[remark@out_freedom_bar_drunken_synth]
+anim = wait
+target = out_freedom_bar_guard_walk2, 1
+combat_ignore_cond = {-out_bar_hit}
+on_info = {+out_guard_replic2} remark@out_freedom_bar_drunket_talk2
+
+[remark@out_freedom_bar_drunket_talk2]
+anim = ordinary_talk6
+snd = out_drunken_replic2
+target = out_freedom_bar_guard_walk2, 1
+combat_ignore_cond = {-out_bar_hit}
+on_signal = sound_end | %+out_other_drunken%
+on_info = {+out_dialog_completed} walker@out_freedom_bar_walker_combat
+
+[walker@out_freedom_bar_walker_combat]
+path_walk = out_freedom_bar_walk2
+path_look = out_freedom_bar_look2
+combat_ignore_cond = {+out_actor_left -out_actor_returned -out_bar_hit}

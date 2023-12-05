@@ -1,0 +1,43 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : tasks_labx7.script
+ Description: Tasks labx7
+ Copyright  : 2012 © LA-team
+ Author     : lox
+ Editors    : lox(21.08.2011)
+ Last edit  : 23.06.18 (tomilovsenya) – fixed PDA messages
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ General process
+--/ -----------------------------------------------------------------------------------------------
+function proceed(obj, sEvent)
+end
+
+function process_info_portion(info_id)
+	if not info_id:match('^bas_') then
+		return false --/>
+	end
+	if info_id == "bas_task_activating" then
+		xr_effects.bas_earthquake_start()
+		start_real_timer(2, nil, {info_id = "bas_task_activating_start"})
+		local pass = db.actor:object("rad_lab_access_documents")
+		if pass then
+			alife():release(alife():object(pass:id()), true)
+		end
+		return true --/>
+	end
+	return false --/>
+end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+
+--/ ------------------------------------------------------------------------------------------------

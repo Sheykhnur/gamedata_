@@ -1,0 +1,496 @@
+
+-- file: pcPuzzle.script
+-- author: barin
+-- date: 2008-09-22
+-- edited by: barin
+-- last edited: 2009-09-09
+
+function DispatchClickEvent(wnd, btn_name)
+	wnd:OnButtonClicked(btn_name)
+end
+
+-- ************************************************************************* --
+
+class "uiImages" (CUIScriptWnd)
+
+function uiImages:__init(parent) super()
+	self.parent = parent
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiImages:__finalize()
+end
+
+function uiImages:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiImages:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	local child_of_pc = self.parent.parent:WindowName() ~= "pda_games"
+	
+	if child_of_pc then
+		self:SetWndRect(self.parent.wnd_x, self.parent.wnd_y,
+			self.parent.wnd_width, self.parent.wnd_height)
+	end
+	
+	local base_x = if_then_else(child_of_pc, 12, 20)
+	local base_y = if_then_else(child_of_pc, 40, 30)
+	local index = 0
+	local width = 135
+	local height = 115
+	
+	local btn_name = nil
+	local texture = nil
+	local btn = nil
+	
+	self.buttons = {}
+	
+	for i = 1, 3 do
+		for j = 1, 5 do
+			index = index + 1
+			
+			btn_name = string.format("button_%d%d", i, j)
+			texture = string.format("ui_puzzle_%s", string.char(97 + (index - 1)))
+			
+			btn = CUI3tButton()
+			btn:SetAutoDelete(true)
+			btn:SetWindowName(btn_name)
+			btn:Init(texture .. "_btn", base_x + (j - 1) * 145, base_y + (i - 1) * 125, 135, 115)
+			self:AttachChild(btn)
+			
+			self.buttons[btn_name] =
+			{
+				texture = texture,
+				callback = function() DispatchClickEvent(self, string.format("button_%d%d", i, j)) end
+			}
+		end
+	end
+	
+	btn = CUIStatic()
+	btn:SetAutoDelete(true)
+	if child_of_pc then
+		-- for pc
+		btn:SetWndRect(base_x, base_y + 420, 700, 50)
+	else
+		-- for pda
+		btn:SetWndRect(50, 410, 700, 50)
+	end
+	--btn:SetWndPos(50, 410)
+	btn:SetText(game.translate_string("ui_puzzle_select_image"))
+	btn:SetTextAlign(CGameFont.alCenter)
+	btn:SetFont(pcTextViewer.get_font("graffiti50"))
+	btn:SetTextColor(pcTextViewer.get_colour("yellow"))
+	self:AttachChild(btn)
+end
+
+function uiImages:InitCallBacks()
+	local btn_name = nil
+	
+	for i = 1, 3 do
+		for j = 1, 5 do
+			btn_name = string.format("button_%d%d", i, j)
+			self:AddCallback(btn_name, ui_events.BUTTON_CLICKED, self.buttons[btn_name].callback, self)
+		end
+	end
+end
+
+function uiImages:OnButtonClicked(btn_name)
+	self.parent:OnImageSelected(self.buttons[btn_name].texture)
+end
+
+-- ************************************************************************* --
+
+local ROWS = 9
+local COLS = 9
+
+local PUZZLE_SIZE = 50
+local CHEAT_MODE = false
+
+class "uiBoard" (CUIScriptWnd)
+
+function uiBoard:__init(parent) super()
+	self.parent = parent
+	
+	self.prev_clicked_btn = nil
+	self.active_elem = nil
+	self.puzzle_solved = false
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiBoard:__finalize()
+end
+
+function uiBoard:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiBoard:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	local child_of_pc = self.parent.parent:WindowName() ~= "pda_games"
+	
+	if child_of_pc then
+		self:SetWndRect(self.parent.wnd_x, self.parent.wnd_y,
+			self.parent.wnd_width, self.parent.wnd_height)
+	end
+	
+	self.base_x = if_then_else(child_of_pc, 10, 20)
+	self.base_y = if_then_else(child_of_pc, 40, 5)
+	
+	local dlg = nil
+	
+	dlg = CUIStatic()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("board")
+	dlg:InitTexture("ui_puzzle_skin_board")
+	dlg:SetWndPos(self.base_x, self.base_y)
+	self:AttachChild(dlg)
+	
+	self:AddButtons(self.base_x + 35, self.base_y + 10)
+	
+	self.preview = CUIStatic()
+	self.preview:SetAutoDelete(true)
+	self.preview:SetWindowName("preview")
+	self.preview:InitTexture("ui_puzzle_a")
+	self.preview:SetWndPos(self.base_x + 556, self.base_y + 91)
+	self.preview:SetWidth(130)
+	self.preview:SetHeight(130)
+	self.preview:SetStretchTexture(true)
+	self:AttachChild(self.preview)
+	
+	self.valid_elem = CUIStatic()
+	self.valid_elem:SetAutoDelete(true)
+	self.valid_elem:SetWndRect(self.base_x + 525, self.base_y + 260, 185, 25)
+	--self.valid_elem:SetWndPos(self.base_x + 525, 260)
+	self:DisplayValidElems(0)
+	self.valid_elem:SetTextAlign(CGameFont.alCenter)
+	self.valid_elem:SetFont(pcTextViewer.get_font("graffiti22"))
+	self.valid_elem:SetTextColor(pcTextViewer.get_colour("yellow"))
+	self:AttachChild(self.valid_elem)
+	
+	dlg = CUI3tButton()
+	dlg:SetAutoDelete(true)
+	dlg:SetWindowName("btn_new_image")
+	dlg:SetText(game.translate_string("ui_puzzle_new_image"))
+	dlg:Init("ui_button_ordinary", self.base_x + 560, self.base_y + 320, 117, 29)
+	self:AttachChild(dlg)
+	
+	if self.parent.parent:WindowName() == "pda_games" then
+		-- for pda only !!!
+		dlg = CUI3tButton()
+		dlg:SetAutoDelete(true)
+		dlg:SetWindowName("btn_game_mnu")
+		dlg:SetText(game.translate_string("ui_pda_games_mnu"))
+		dlg:Init("ui_button_ordinary", self.base_x + 560, self.base_y + 350, 117, 29)
+		self:AttachChild(dlg)
+	end
+end
+
+function uiBoard:AddButtons(base_x, base_y)
+	local btn, name = nil, nil
+	local x, y = nil, nil
+	local suffix = nil
+	
+	self.buttons = {}
+	
+	for i = 1, ROWS do
+		for j = 1, COLS do
+			suffix = string.format("%d%d", i, j)
+			btn_name = "button_" .. suffix
+			
+			x = base_x + (j - 1) * PUZZLE_SIZE
+			y = base_y + (i - 1) * PUZZLE_SIZE
+			
+			btn = CUIButton()
+			btn:SetAutoDelete(true)
+			btn:SetWindowName(btn_name)
+			btn:InitTexture("ui_puzzle_a_" .. suffix)
+			btn:SetWndPos(x, y)
+			btn:SetWidth(PUZZLE_SIZE)
+			btn:SetHeight(PUZZLE_SIZE)
+			if CHEAT_MODE then
+				btn:SetText(suffix)
+			end
+			self:AttachChild(btn)
+			
+			self.buttons[btn_name] =
+			{
+				src_pos = suffix,
+				curr_pos = suffix,
+				btn_pos = {x, y},
+				btn_src_pos = {x, y},
+				valid_pos = true,
+				callback = function() DispatchClickEvent(self, string.format("button_%d%d", i, j)) end
+			}
+		end
+	end
+end
+
+function uiBoard:InitCallBacks()
+	self:AddCallback("btn_new_image", ui_events.BUTTON_CLICKED, self.SelectNewImage, self)
+	
+	if self.parent.parent:WindowName() == "pda_games" then
+		-- for pda only !!!
+		self:AddCallback("btn_game_mnu", ui_events.BUTTON_CLICKED, self.DisplayGamesMenu, self)
+	end
+	
+	local btn_name = nil
+	
+	for i = 1, ROWS do
+		for j = 1, COLS do
+			btn_name = string.format("button_%d%d", i, j)
+			self:AddCallback(btn_name, ui_events.BUTTON_CLICKED, self.buttons[btn_name].callback, self)
+		end
+	end
+end
+
+function uiBoard:DisplayGamesMenu()
+	self.parent:DisplayGamesMenu()
+end
+
+function uiBoard:SelectNewImage()
+	self.parent:OnSelectNewImage()
+end
+
+function uiBoard:OnButtonClicked(btn_name)
+	if self.puzzle_solved then
+		self.prev_clicked_btn = nil
+		return
+	end
+	
+	if self.prev_clicked_btn then
+		if self.prev_clicked_btn ~= btn_name then
+			self:SetActiveElem(nil, nil)
+			local p = self.buttons[self.prev_clicked_btn].btn_pos
+			local s = self.buttons[self.prev_clicked_btn].curr_pos
+			
+			self.buttons[self.prev_clicked_btn].btn_pos = self.buttons[btn_name].btn_pos
+			self.buttons[self.prev_clicked_btn].curr_pos = self.buttons[btn_name].curr_pos
+			self.buttons[self.prev_clicked_btn].valid_pos = self:isValid(self.prev_clicked_btn)
+			self:GetButton(self.prev_clicked_btn):SetWndPos(unpack(self.buttons[btn_name].btn_pos))
+			
+			self.buttons[btn_name].btn_pos = p
+			self.buttons[btn_name].curr_pos = s
+			self.buttons[btn_name].valid_pos = self:isValid(btn_name)
+			self:GetButton(btn_name):SetWndPos(unpack(p))
+			
+			self.prev_clicked_btn = nil
+			self:CountValidElements()
+		end
+	else
+		self.prev_clicked_btn = btn_name
+		self:SetActiveElem(unpack(self.buttons[btn_name].btn_pos))
+	end
+end
+
+function uiBoard:CountValidElements()
+	local valid_elems = 0
+	
+	for k, v in pairs(self.buttons) do
+		if v.valid_pos then
+			valid_elems = valid_elems + 1
+		end
+	end
+	
+	if valid_elems == COLS * ROWS then
+		self.puzzle_solved = true
+		self.valid_elem:SetText(game.translate_string("ui_puzzle_solved"))
+		self:DetachChild(self.grid)
+		self.grid = nil
+	else
+		self:DisplayValidElems(valid_elems)
+	end
+end
+
+function uiBoard:DisplayValidElems(elems)
+	self.valid_elem:SetText(string.format("%s %d", game.translate_string("ui_puzzle_valid_elems"), elems))
+end
+
+function uiBoard:isValid(btn_name)
+	return self.buttons[btn_name].src_pos == self.buttons[btn_name].curr_pos
+end
+
+function uiBoard:Shuffle()
+	local btn_name, texture = nil, nil
+	local x, y = nil, nil
+	
+	local tbl = {}
+	
+	for i = 1, ROWS do
+		for j = 1, COLS do
+			tbl[tonumber(string.format("%d%d", i, j))] = true
+		end
+	end
+	
+	for	i = 1, ROWS do
+		for j = 1, COLS do
+			btn_name = string.format("button_%d%d", i, j)
+			while true do
+				x, y = math.random(1, ROWS), math.random(1, COLS)
+				suffix = string.format("%d%d", x, y)
+				if suffix ~= self.buttons[btn_name].src_pos and tbl[tonumber(suffix)] == true then
+					break
+				end
+			end
+			
+			self.buttons[btn_name].curr_pos = suffix
+			self.buttons[btn_name].valid_pos = false
+			self.buttons[btn_name].btn_pos = self.buttons["button_" .. suffix].btn_src_pos
+			self:GetButton(btn_name):SetWndPos(unpack(self.buttons["button_" .. suffix].btn_src_pos))
+			
+			tbl[tonumber(suffix)] = false
+			
+		end
+	end
+end
+
+function uiBoard:DrawGrid()
+	if not self.grid then
+		self.grid = CUIStatic()
+		self.grid:SetAutoDelete(true)
+		self.grid:SetWindowName("puzzle_grid")
+		self.grid:SetWndPos(self.base_x + 35, self.base_y + 10)
+		self.grid:InitTexture("ui\\pc\\ui_puzzle_grid")
+		self:AttachChild(self.grid)
+	else
+		self:DetachChild(self.grid)
+		self.grid = nil
+		self:DrawGrid()
+	end
+end
+
+function uiBoard:SetActiveElem(x, y)
+	if x and y then
+		self:SetActiveElem(nil, nil)
+		self.active_elem = CUIStatic()
+		self.active_elem:SetAutoDelete(true)
+		self.active_elem:SetWindowName("active_elem_frame")
+		self.active_elem:SetWndPos(x, y)
+		self.active_elem:InitTexture("ui\\pc\\ui_puzzle_frame")
+		self:AttachChild(self.active_elem)
+	else
+		if self.active_elem then
+			self:DetachChild(self.active_elem)
+			self.active_elem = nil
+		end
+	end
+end
+
+function uiBoard:OnNewImage(texture)
+	self.puzzle_solved = false
+	
+	for k, v in pairs(self.buttons) do
+		v.curr_pos = v.src_pos
+		v.btn_pos = v.btn_src_pos
+		v.valid_pos = true
+		self:GetButton(k):SetWndPos(unpack(v.btn_src_pos))
+		self:GetButton(k):InitTexture(string.format("%s_%s", texture, v.src_pos))
+	end
+	
+	self.preview:InitTexture(texture)
+	self:DisplayValidElems(0)
+	
+	self:Shuffle()
+	self:DrawGrid()
+end
+
+-- ************************************************************************* --
+
+class "uiPuzzles" (CUIScriptWnd)
+
+function uiPuzzles:__init(parent, x, y) super()
+	self:SetWindowName("uiPuzzles")
+	self.parent = parent
+	
+	self.wnd_width = 740
+	self.wnd_height = 520
+	self.wnd_x = x
+	self.wnd_y = y
+	
+	self:InitControls()
+	self:InitCallBacks()
+	
+	self.parent:AttachChild(self)
+end
+
+function uiPuzzles:__finalize()
+end
+
+function uiPuzzles:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiPuzzles:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	if self.parent:WindowName() ~= "pda_games" then
+		-- for pc only !!!
+		self.wnd_frame = pcWndFrame.uiWndFrame(self, self.wnd_x, self.wnd_y, self.wnd_width, self.wnd_height)
+		self.wnd_frame:SetAutoDelete(true)
+		self:AttachChild(self.wnd_frame)
+		self.wnd_frame:SetCaption("Puzzle")
+		self.wnd_frame:Show(true)
+	end
+	
+	self.images = uiImages(self)
+	self.images:SetAutoDelete(true)
+	self:AttachChild(self.images)
+	self.images:Show(true)
+	
+	self.board = uiBoard(self)
+	self.board:SetAutoDelete(true)
+	self:AttachChild(self.board)
+	self.board:Show(false)
+end
+
+function uiPuzzles:InitCallBacks()
+end
+
+function uiPuzzles:reset()
+	-- for pc only !!!
+end
+
+function uiPuzzles:DisplayGamesMenu()
+	if self.parent:WindowName() == "pda_games" then
+		-- for pda only !!!
+		self.parent:DisplayGamesMenu()
+	end
+end
+
+function uiPuzzles:OnImageSelected(texture)
+	self.images:Show(false)
+	self.board:OnNewImage(texture)
+	self.board:Show(true)
+end
+
+function uiPuzzles:OnSelectNewImage()
+	self.board:Show(false)
+	self.images:Show(true)
+end
+
+function uiPuzzles:OnExit()
+	if self.parent:WindowName() ~= "pda_games" then
+		-- for pc only !!!
+		self.parent:OnChildDialogExit(self:WindowName())
+		self:GetHolder():start_stop_menu(self, true)
+	end
+end
+
+function uiPuzzles:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if self:GetHolder() then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:OnExit()
+			end
+		end
+	end
+	
+	return true
+end

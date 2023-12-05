@@ -1,0 +1,123 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_inv_wnd.script
+ Description: 
+ Copyright  : 2009 © LA-team
+ Author     : barin(29.08.2009)
+ Editors    : barin(18.09.2010)
+ Last edit  : 07.05.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ ------------------------------------------------------------------
+class "uiInvWnd" (CUIScriptWnd)
+--/ ------------------------------------------------------------------
+function uiInvWnd:__init() super()
+	la_utils.custom_ui_usage("show", script_name())
+	
+	self:InitControls()
+	self:InitCallBacks()
+end
+
+function uiInvWnd:__finalize()
+end
+
+function uiInvWnd:Update()
+	CUIScriptWnd.Update(self)
+end
+
+function uiInvWnd:InitControls()
+	self:Init(0, 0, device().width, device().height)
+	
+	self.xml = CScriptXmlInit()
+	self.xml:ParseFile("ui_wnd\\ui_inv_wnd.xml")
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box, "message_box")
+	
+	self:Register(self.xml:InitStatic("wnd_frame", self), "wnd_frame")
+	self:Register(self.xml:Init3tButton("btn_quit", self), "btn_quit")
+	
+	self.left_panel = ui_inv_wnd_items.uiItemsPanel(self, 23, 136, 311, 580)
+	self.left_panel:SetAutoDelete(true)
+	self:AttachChild(self.left_panel)
+	self.left_panel:Show(true)
+	
+	self.info_panel = ui_inv_wnd_descr.uiItemInfo(self, 348, 107, 329, 473)
+	self.info_panel:SetAutoDelete(true)
+	self:AttachChild(self.info_panel)
+	self.info_panel:Show(true)
+	
+	self.right_panel = ui_inv_wnd_items.uiItemsPanel(self, 694, 136, 311, 580)
+	self.right_panel:SetAutoDelete(true)
+	self:AttachChild(self.right_panel)
+	self.right_panel:Show(true)
+	
+	self.left_panel:SetTargetContainer(self.right_panel)
+	self.right_panel:SetTargetContainer(self.left_panel)
+end
+
+function uiInvWnd:SetCallback(script, func)
+	self.callback = {}
+	self.callback.script = script
+	self.callback.func = func
+end
+
+function uiInvWnd:RunCallBack()
+	local a_items, t_items = nil, nil
+	
+	if self.left_panel.items_parent == "actor" then
+		a_items = self.left_panel:ItemsToArray()
+	else
+		t_items = self.left_panel:ItemsToArray()
+	end
+	
+	if self.right_panel.items_parent == "actor" then
+		a_items = self.right_panel:ItemsToArray()
+	else
+		t_items = self.right_panel:ItemsToArray()
+	end
+	
+	if _G[self.callback.script] then
+		if _G[self.callback.script][self.callback.func] then
+			_G[self.callback.script][self.callback.func](a_items, t_items)
+		else
+			abort("[%s.script] callback function %s does not exist in %s.script", script_name(), self.callback.func, self.callback.script)
+		end
+	else
+		abort("[%s.script] script %s does not exist!", script_name(), self.callback.script)
+	end
+end
+
+function uiInvWnd:InitCallBacks()
+	self:AddCallback("message_box", ui_events.MESSAGE_BOX_OK_CLICKED, self.OnMessageBoxOkClicked, self)
+	self:AddCallback("btn_quit",    ui_events.BUTTON_CLICKED,         self.OnQuit, self)
+end
+
+function uiInvWnd:OnMessageBoxOkClicked()
+end
+
+function uiInvWnd:OnTrunkCapacityReached()
+	self.message_box:Init("ui_st_trunk_capacity_reached")
+	level.start_stop_menu(self.message_box, true)
+	--self.message_box:SetTextST("ui_st_trunk_capacity_reached")
+	--self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function uiInvWnd:OnQuit()
+	self:RunCallBack()
+	la_utils.custom_ui_usage("hide", script_name())
+	self:GetHolder():start_stop_menu(self, true)
+end
+
+function uiInvWnd:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:OnQuit()
+		end
+	end
+	
+	return true
+end
+--/ ------------------------------------------------------------------------------------------------

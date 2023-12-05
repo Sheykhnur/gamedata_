@@ -1,0 +1,40 @@
+[combat_ignore@forest_killer]
+
+[hit@forest_killer]
+on_info = {=hit_by_actor} %+forest_killer_attack +forest_killer_fail%
+
+[death@forest_killer]
+on_info = %+fore_killer_fight +fore_killer_dead%
+
+[logic]
+active = walker@forest_task_killers_boss0
+on_hit = hit@forest_killer
+combat_ignore = combat_ignore@forest_killer
+
+[walker@forest_task_killers_boss0]
+path_walk = forest_task_killers_boss_walk0
+path_look = forest_task_killers_boss_look0
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_signal = tochka1 |  walker@forest_task_killers_boss0w
+
+[walker@forest_task_killers_boss0w]
+path_walk = forest_task_killers_boss_walk0
+path_look = forest_task_killers_boss_look0
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_timer = 9000| walker@forest_task_killers_boss1 %+forest_killer_move1%
+
+[walker@forest_task_killers_boss1]
+path_walk = forest_task_killers_boss_walk1
+path_look = forest_task_killers_boss_look1
+def_state_moving1 = rush
+def_state_moving2 = rush
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_signal = tochka1 |  walker@forest_task_killers_boss1w
+
+[walker@forest_task_killers_boss1w]
+path_walk = forest_task_killers_boss_walk1
+path_look = forest_task_killers_boss_look1
+combat_ignore_cond = {-forest_killer_attack =fighting_actor}
+on_timer = 9000| walker@forest_task_killers_boss0

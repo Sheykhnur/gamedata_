@@ -1,0 +1,191 @@
+;*****************state 0*********************************
+
+[combat_ignore@rosf_military]
+
+[hit@rosf_military]
+on_info = {=hit_by_actor} %+rosf_military_hostile%
+
+[logic@rosf_military_blokpost_guard1]
+active = walker@rosf_military_guard1
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_guard1]
+path_walk = guard_walk1
+path_look = guard_look1
+default_state_standing = guard
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_guard2]
+active = walker@rosf_military_guard2
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_guard2]
+path_walk = guard_walk2
+path_look = guard_look2
+default_state_standing = guard
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper1]
+active = kamper@rosf_military_kamper1
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[kamper@rosf_military_kamper1]
+path_walk = kamper_walk1
+path_look = kamper_look1
+kamp_name = kamp1
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper2]
+active = kamper@rosf_military_kamper2
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[kamper@rosf_military_kamper2]
+path_walk = kamper_walk2
+path_look = kamper_look2
+kamp_name = kamp1
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper3]
+active = kamper@rosf_military_kamper3
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[kamper@rosf_military_kamper3]
+path_walk = kamper_walk3
+path_look = kamper_look3
+kamp_name = kamp2
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper4]
+active = kamper@rosf_military_kamper4
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[kamper@rosf_military_kamper4]
+path_walk = kamper_walk4
+path_look = kamper_look4
+kamp_name = kamp2
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_sniper1]
+active = camper@rosf_military_sniper1
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[camper@rosf_military_sniper1]
+path_walk = sniper_walk1
+path_look = sniper_look1
+sniper = true
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_patrol1]
+active = walker@rosf_military_patrol1
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_patrol1]
+path_walk = patrol_walk1
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+;**********************state 1******************************
+
+[logic@rosf_military_blokpost_sleeper1]
+active = sleeper@rosf_military_sleeper1
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[sleeper@rosf_military_sleeper1]
+path_main = guard_sleep1
+wakeable = true
+combat_ignore_cond = always
+
+;***********************state 2******************************
+
+[logic@rosf_military_blokpost_guard2_warn]
+active = walker@rosf_military_guard2_warn
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_guard2_warn]
+path_walk = guard2_warning
+path_look = common_warning_look
+default_state_moving = run
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+on_signal = reached| remark@guard2_warn
+
+[remark@guard2_warn]
+anim = assault
+target = actor
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper1_warn]
+active = walker@rosf_military_kamper1_warn
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_kamper1_warn]
+path_walk = kamper1_warning
+path_look = common_warning_look
+default_state_moving = run
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+on_signal = reached| remark@kamper1_warn
+
+[remark@kamper1_warn]
+anim = assault
+target = actor
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper2_warn]
+active = walker@rosf_military_kamper2_warn
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_kamper2_warn]
+path_walk = kamper2_warning
+path_look = common_warning_look
+default_state_moving = run
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+on_signal = reached| remark@kamper2_warn
+
+[remark@kamper2_warn]
+anim = assault
+target = actor
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper3_warn]
+active = walker@rosf_military_kamper3_warn
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_kamper3_warn]
+path_walk = kamper3_warning
+path_look = common_warning_look
+default_state_moving = run
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+on_signal = reached| remark@kamper3_warn
+
+[remark@kamper3_warn]
+anim = assault
+target = actor
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+
+[logic@rosf_military_blokpost_kamper4_warn]
+active = walker@rosf_military_kamper4_warn
+combat_ignore = combat_ignore@rosf_military
+on_hit = hit@rosf_military
+
+[walker@rosf_military_kamper4_warn]
+path_walk = kamper4_warning
+path_look = common_warning_look
+default_state_moving = run
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}
+on_signal = reached| remark@kamper4_warn
+
+[remark@kamper4_warn]
+anim = assault
+target = actor
+combat_ignore_cond = {-rosf_military_hostile =fighting_actor}

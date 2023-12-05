@@ -1,0 +1,76 @@
+[danger@esc_bandit_factory]
+
+[hit@esc_bandit_factory] ;--/#+# начать воевать как только будет хит от врага или актора
+
+[combat_ignore@esc_bandit_factory]
+
+[threshold@bandit_factory]
+
+[death@esc_bandit_factory]
+on_info = {=gulag_inactive(esc_bandit_factory)} %+esc_factory_cleaned%
+
+[wounded@esc_bandit_factory]
+hp_cover = 100|false ;--/ запрет прятаться в каверы
+
+;-- **************** STATE 0 ***********************
+
+[logic@esc_bandit_factory_bandit_boss]
+active = walker@esc_bandit_factory_bandit_boss
+on_death = death@esc_bandit_factory
+danger = danger@bandit_factory
+
+[walker@esc_bandit_factory_bandit_boss]
+path_walk = boss_way
+path_look = boss_look
+wounded = wounded@esc_bandit_factory ;--/#!# не прятаться в каверы!
+
+
+[logic@esc_bandit_factory_bandit_up]
+active = walker@esc_bandit_factory_bandit_up
+on_death = death@esc_bandit_factory
+danger = danger@bandit_factory
+
+[walker@esc_bandit_factory_bandit_up]
+path_walk = path1e
+path_look = path1e_look
+wounded = wounded@esc_bandit_factory ;--/#!#
+
+
+[logic@esc_bandit_factory_bandit1]
+active = walker@esc_bandit_factory_bandit1
+on_death = death@esc_bandit_factory
+danger = danger@bandit_factory
+
+[walker@esc_bandit_factory_bandit1]
+path_walk = path1a
+wounded = wounded@esc_bandit_factory ;--/#!#
+
+
+[logic@esc_bandit_factory_bandit2]
+active = walker@esc_bandit_factory_bandit2
+on_death = death@esc_bandit_factory
+danger = danger@bandit_factory
+
+[walker@esc_bandit_factory_bandit2]
+path_walk = path1b
+wounded = wounded@esc_bandit_factory ;--/#!#
+
+
+[logic@esc_bandit_factory_bandit3]
+active = walker@esc_bandit_factory_bandit3
+on_death = death@esc_bandit_factory
+danger = danger@bandit_factory
+
+[walker@esc_bandit_factory_bandit3]
+path_walk = path1c
+wounded = wounded@esc_bandit_factory ;--/#!#
+
+
+[logic@esc_bandit_factory_bandit4]
+active = walker@esc_bandit_factory_bandit4
+on_death = death@esc_bandit_factory
+danger = danger@bandit_factory
+
+[walker@esc_bandit_factory_bandit4]
+path_walk = path1d
+wounded = wounded@esc_bandit_factory ;--/#!# 

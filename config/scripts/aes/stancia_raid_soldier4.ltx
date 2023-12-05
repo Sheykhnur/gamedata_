@@ -1,0 +1,31 @@
+[threshold@aes_assault_group]  
+max_ignore_distance = 2   
+ignore_monster      = 0
+
+[danger@aes_assault_group]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[combat_ignore@aes_assault_group]
+
+[logic]
+active = walker@assault_move
+combat_ignore = combat_ignore@aes_assault_group
+threshold = threshold@aes_assault_group
+
+[walker@assault_move]
+path_walk = aes_btr_group_walk1
+combat_ignore_cond = always
+danger = danger@aes_assault_group
+threshold = threshold@aes_assault_group
+on_signal = walkend | walker@fire
+def_state_moving1 = assault
+def_state_moving2 = assault
+def_state_moving3 = assault
+
+[walker@fire]
+path_walk = aes_btr_group_end
+danger = danger@aes_assault_group
+threshold = threshold@aes_assault_group
+combat_ignore_cond = {=fighting_actor =fighting_dist_ge(40)}
+;on_info = {+aes_raid_start} nil %=kill_npc%

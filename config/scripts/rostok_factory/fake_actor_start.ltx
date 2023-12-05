@@ -1,0 +1,55 @@
+;[spawner]
+;cond = {+rosf_spawn_fake_actor}
+
+;[smart_terrains]
+;none = true
+
+[logic]
+active = walker@fake_actor_start_weapon
+combat_ignore = combat_ignore
+danger = danger@rostok_fake_actor
+
+[walker@fake_actor_start_weapon]
+path_walk = fake_actor_start_walk
+path_look = fake_actor_start_look
+on_timer = 1| walker@fake_actor_start %+test_remark3%
+
+[walker@fake_actor_start]
+path_walk = fake_actor_start_walk
+path_look = fake_actor_start_look
+default_state_moving = walk
+combat_ignore_cond = always
+;on_timer = 8200| remark@fake_actor_check
+on_signal = reached| remark@fake_actor_check
+meet = no_meet
+
+[remark@fake_actor_check]
+anim = npc_check_corpse_1
+combat_ignore_cond = always
+on_timer = 3000| remark@raciya
+
+[remark@raciya]
+anim = cr_raciya_draw
+;anim = guard_rac
+snd = rosf_fake_actor
+combat_ignore_cond = always
+on_signal = sound_end| remark@raciya2 %+test_remark3 =play_snd(characters_voice\scenario\rosf\rosf_duty_scene)%
+
+[remark@raciya2]
+anim = cr_raciya_draw
+;anim = guard_rac
+combat_ignore_cond = always
+on_timer = 8800 | remark@end_wait %+rosf_spawn_suckers -rosf_spawn_fake_actor +test_remark4%
+
+[remark@end_wait]
+on_timer = 1| nil 
+combat_ignore_cond = always
+
+[combat_ignore]
+
+[danger@rostok_fake_actor]
+ignore_distance          = 0
+ignore_distance_grenade  = 0
+ignore_distance_corpse   = 0
+ignore_distance_hit      = 0
+ignore_distance_sound    = 0

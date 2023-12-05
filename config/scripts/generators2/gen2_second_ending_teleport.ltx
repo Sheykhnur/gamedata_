@@ -1,0 +1,12 @@
+[logic]
+active = {-gen_reach_sanctuary} sr_idle, {+gen_reach_sanctuary} nil
+
+[sr_idle]
+on_info = {+gen_recieve_invitation} sr_idle@docs
+
+[sr_idle@docs]
+on_actor_inside = {-gen_reach_sanctuary} sr_idle@wait
+
+[sr_idle@wait]
+on_info = {+gen_reach_sanctuary} nil
+on_timer = 1500|nil %+gen_reach_sanctuary =teleport_actor_to_oso =release%

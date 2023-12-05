@@ -1,0 +1,34 @@
+[combat_ignore]
+
+[logic]
+active = remark@war_sc3_oso2
+combat_ignore = combat_ignore
+
+[remark@war_sc3_oso2]
+anim = war_oso_colbes_0
+target = war_sc3_oso2, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc3_falture} remark@war_sc3_oso22
+
+[remark@war_sc3_oso22]
+anim = war_oso_colbes_1
+target = war_sc3_oso2, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc3_wake_up} remark@war_sc3_oso23
+
+[remark@war_sc3_oso23]
+anim = war_oso_colbes_2
+target = war_sc3_oso2, 0
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 6300 | %+war_sc3_explode =play_particle_on_path(anomaly2\body_tear_02:war_explode:100)%
+on_timer2 = 7000 | remark@war_sc3_oso24
+
+[remark@war_sc3_oso24]
+anim = war_oso_colbes_1
+target = war_sc3_oso2, 0
+meet = no_meet
+combat_ignore_cond = always
+on_info = {+war_sc3_end} %=release%

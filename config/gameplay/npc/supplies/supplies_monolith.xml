@@ -1,0 +1,235 @@
+	<!-- Supply templates for Monolith -->
+
+	<template id="monolith_regular_t1_common">
+		<item s="device_torch" 			prob="0.2"		cond="1.0"/>
+	</template>
+	<template id="monolith_regular_common">
+		<item s="device_torch" 			prob="0.3"		cond="1.0"/>
+		<include id="grenades_low"/>
+	</template>
+	<template id="monolith_veteran_common">
+		<item s="device_torch" 			prob="0.3"		cond="1.0"/>
+		<include id="grenades_low"/>
+	</template>
+	<template id="monolith_master_common">
+		<item s="device_torch" 			prob="0.3"		cond="1.0"/>
+		<include id="grenades_med"/>
+	</template>
+
+<!-- Tier 1 -->
+	<!-- Regular -->
+	<template id="monolith_t1_regular">
+		<random_select>
+			<opt w="3"><include id="weapon_mp5"/></opt>
+			<opt w="1"><include id="weapon_bizon"/></opt>
+		</random_select>
+		<include id="monolith_regular_t1_common"/>
+	</template>
+	
+	<!-- Veteran -->
+	<template id="monolith_t1_veteran">
+		<random_select>
+			<opt w="3"><include id="weapon_mp5_ap"/></opt>
+			<opt w="1"><include id="weapon_bizon_ap"/></opt>
+		</random_select>
+		<include id="monolith_regular_t1_common"/>
+	</template>
+	
+	<!-- Master -->
+	<template id="monolith_t1_master">
+		<random_select>
+			<opt w="1"><include id="weapon_mp5_sil_ap"/></opt>
+			<opt w="1"><include id="weapon_bizon_pmm"/></opt>
+		</random_select>
+		<include id="monolith_regular_t1_common"/>
+	</template>
+
+	<!-- Sniper -->
+	<template id="monolith_t1_sniper">
+		<random_select>
+			<opt w="3"><include id="weapon_sks_ap"/></opt>
+			<opt w="2"><include id="weapon_m1891_ap"/></opt>
+		</random_select>
+	</template>
+
+<!-- Tier 2 -->
+	<!-- Regular -->
+	<template id="monolith_t2_regular">
+		<random_select>
+			<opt w="3"><include id="monolith_t2_regular_auto"/></opt>
+			<opt w="1"><include id="monolith_t2_regular_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="monolith_t2_regular_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_p90"/></opt>
+			<opt w="2"><include id="weapon_lr300"/></opt>
+			<opt w="1"><include id="weapon_akm"/></opt>
+			<opt w="1"><include id="weapon_ak74"/></opt>
+		</random_select>
+		<include id="monolith_regular_common"/>
+	</template>
+	<template id="monolith_t2_regular_shotgun">
+		<item s="wpn_wincheaster1300" 	w_ammo="1"/>
+		<item s="wpn_hpsa" 				w_ammo="1"/>
+		<include id="monolith_regular_common"/>
+	</template>
+	<template id="monolith_t2_story_robbers">
+		<random_select>
+				<opt w="2"><include id="weapon_lr300"/></opt>
+				<opt w="1"><include id="weapon_akm"/></opt>
+				<opt w="1"><include id="weapon_ak74"/></opt>
+		</random_select>
+	</template>
+
+	<!-- Specnaz -->
+	<template id="monolith_t2_specnaz">
+		<random_select>
+			<opt w="1"><item s="wpn_lr300"	w_ammo="1" ammo_s="ammo_5.56x45_ap"/></opt>
+			<opt w="3"><item s="wpn_p90" 	w_ammo="1" ammo_s="ammo_5.7x28_jhp"/></opt>
+		</random_select>
+		<include id="monolith_regular_common"/>
+	</template>
+
+	<template id="monolith_t2_sniper">
+		<random_select>
+			<opt w="2"><include id="weapon_svd_h14"/></opt>
+			<opt w="1"><include id="weapon_svd_ap"/></opt>
+			<opt w="1"><include id="weapon_lr300_sniper"/></opt>
+		</random_select>
+		<include id="monolith_regular_common"/>
+	</template>
+
+<!-- Tier 3 -->
+	<!-- Regular -->
+	<template id="monolith_t3_regular">
+		<random_select>
+			<opt w="3"><include id="monolith_t3_regular_auto"/></opt>
+			<opt w="1"><include id="monolith_t3_regular_shotgun"/></opt>
+		</random_select>
+	</template>
+	<template id="monolith_t3_regular_auto">
+		<random_select>
+			<opt w="3"><include id="weapon_p90_ap"/></opt>
+			<opt w="2"><include id="weapon_val"/></opt>
+			<opt w="1"><include id="weapon_sig550"/></opt>
+		</random_select>
+		<include id="monolith_regular_common"/>
+	</template>
+	<template id="monolith_t3_regular_shotgun">
+		<random_select>
+			<opt w="3"><include id="weapon_ks23_ap"/></opt>
+			<opt w="1"><include id="weapon_spas12_dart"/></opt>
+		</random_select>
+		<include id="monolith_regular_common"/>
+	</template>
+
+	<!-- Veteran -->
+	<template id="monolith_t3_veteran">
+		<random_select>
+			<opt w="3"><include id="monolith_t3_veteran_auto"/></opt>
+			<opt w="1"><include id="monolith_t3_veteran_shotgun"/></opt>
+		</random_select>
+		<include id="monolith_veteran_common"/>
+	</template>
+	<template id="monolith_t3_veteran_auto">
+		<random_select>
+			<opt w="2"><include id="weapon_aek971_ap"/></opt>
+			<opt w="2"><include id="weapon_val_ap"/></opt>
+			<opt w="1"><include id="weapon_sig550_ap"/></opt>
+		</random_select>
+	</template>
+	<template id="monolith_t3_veteran_shotgun">
+		<random_select>
+			<opt w="2"><include id="weapon_ks23_ap"/></opt>
+			<opt w="1"><include id="weapon_ks23_slug"/></opt>
+		</random_select>
+	</template>
+
+	<!-- Master -->
+	<template id="monolith_t3_master">
+		<random_select>
+			<opt w="3"><include id="monolith_t3_master_auto"/></opt>
+			<opt w="1"><include id="monolith_t3_master_shotgun"/></opt>
+		</random_select>
+		<include id="monolith_master_common"/>
+	</template>
+	<template id="monolith_t3_master_auto">
+		<random_select>
+			<opt w="2"><include id="weapon_aek971_sil_ap"/></opt>
+			<opt w="2"><include id="weapon_sig550_sil_ap"/></opt>
+			<opt w="1"><include id="weapon_rpk74m_mag_ap"/></opt>
+		</random_select>
+	</template>
+	<template id="monolith_t3_master_shotgun">
+		<include id="weapon_ks23_slug"/>
+	</template>
+
+	<template id="monolith_t3_sniper">
+		<random_select>
+			<opt w="2"><include id="weapon_svu"/></opt>
+			<opt w="1"><include id="weapon_svu_ap"/></opt>
+			<opt w="1"><include id="weapon_svu_upg_ap"/></opt>
+		</random_select>
+		<include id="monolith_master_common"/>
+	</template>
+
+	<template id="monolith_t3_rpg">
+		<include id="weapon_rpg7"/>
+		<include id="weapon_usp45_ap"/>
+		<include id="monolith_master_common"/>
+	</template>
+
+<!-- Tier 4 -->
+	<template id="monolith_t4_regular">
+		<random_select>
+			<opt w="3"><include id="weapon_galil"/></opt>
+			<opt w="3"><include id="weapon_g36"/></opt>
+			<opt w="2"><include id="weapon_aek973_ap"/></opt>
+			<opt w="1"><include id="weapon_val_ap"/></opt>
+			<opt w="1"><include id="weapon_aek971_ap"/></opt>
+		</random_select>
+		<include id="monolith_master_common"/>
+	</template>
+
+	<template id="monolith_t4_veteran">
+		<random_select>
+			<opt w="2"><include id="weapon_galil_ap"/></opt>
+			<opt w="2"><include id="weapon_g36_ap"/></opt>
+			<opt w="1"><include id="weapon_m249_ap"/></opt>
+			<opt w="1"><include id="weapon_m249_762"/></opt>
+			<opt w="1"><include id="weapon_pkm"/></opt>
+		</random_select>
+		<random_select prob="0.25">
+			<opt w="2"><include id="weapon_deagle_ap"/></opt>
+			<opt w="1"><include id="weapon_usp45_auto"/></opt>
+		</random_select>
+		<include id="monolith_master_common"/>
+	</template>
+	
+	<template id="monolith_t4_master">
+		<random_select>
+			<opt w="2"><include id="weapon_galil_scope_ap"/></opt>
+			<opt w="2"><include id="weapon_g36_sil_ap"/></opt>
+			<opt w="1"><include id="weapon_m249_scope_ap"/></opt>
+			<opt w="1"><include id="weapon_m249_762_scope"/></opt>
+			<opt w="1"><include id="weapon_pkm"/></opt>
+		</random_select>
+		<random_select prob="0.25">
+			<opt w="2"><include id="weapon_deagle_ap"/></opt>
+			<opt w="1"><include id="weapon_usp45_auto"/></opt>
+		</random_select>
+		<include id="monolith_master_common"/>
+	</template>
+
+	<template id="monolith_t4_sniper">
+		<random_select>
+			<opt w="1"><item s="wpn_gauss"	w_ammo="1"/></opt>
+			<opt w="1"><item s="wpn_svu"	w_ammo="1" ammo_s="ammo_7.62x54_ap"/></opt>
+		</random_select>
+		<random_select>
+			<opt w="2"><item s="wpn_sig220" w_ammo="1" ammo_idx="1"/></opt>
+			<opt w="1"><include id="weapon_usp45_auto"/></opt>
+		</random_select>
+		<include id="monolith_master_common"/>
+	</template>

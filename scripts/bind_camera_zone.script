@@ -1,0 +1,116 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_camera_zone.script
+ Description: Camera binder
+ Copyright  : 2009 © LA-team
+ Author     : barin (24.11.2009)
+ Editors    : barin (25.06.2010)
+ Last edit  : 09.03.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local camera_zones = {}
+--/---------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+function bind(obj)
+	if alife() then
+		local binder = camera_zone_binder(obj)
+		camera_zones[obj:name()] = binder
+		obj:bind_object(binder)
+	end
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/------------------------------------------------------------------------------------------------
+class "camera_zone_binder" (object_binder)
+--/------------------------------------------------------------------------------------------------
+function camera_zone_binder:__init(obj) super(obj)
+	self.objects_inside = {}
+end
+
+function camera_zone_binder:net_spawn(server_obj)
+	if not object_binder.net_spawn(self, server_obj) then
+		return false
+	end
+	
+	self.object:set_callback(callback.zone_enter, self.on_enter, self)
+	self.object:set_callback(callback.zone_exit,  self.on_exit,  self)
+	
+	return true
+end
+
+function camera_zone_binder:net_destroy()
+	self.object:set_callback(callback.zone_enter, nil)
+	self.object:set_callback(callback.zone_exit,  nil)
+	
+	object_binder.net_destroy(self)
+end
+
+function camera_zone_binder:save(writer)
+	object_binder.save(self, writer)
+end
+
+function camera_zone_binder:load(reader)
+	object_binder.load(self, reader)
+end
+
+--/ -----------------------------------------------------------------
+--/ CALLBACKs
+--/ -----------------------------------------------------------------
+function camera_zone_binder:on_enter(zone, obj)
+	local class_id = get_clsid(obj)
+	if IsStalker(obj, class_id) or IsMonster(obj, class_id) then
+		if obj:alive() then
+			self.objects_inside[obj:id()] = true
+--			log("object %s[%d] enter zone %s", obj:character_community(), obj:id(), zone:name())
+		end
+	end
+end
+
+function camera_zone_binder:on_exit(zone, obj)
+--	log("object %s[%d] left zone %s", obj:name(), obj:id(), zone:name())
+	self.objects_inside[obj:id()] = nil
+end
+
+--/ -----------------------------------------------------------------
+--/ External calls
+--/ -----------------------------------------------------------------
+function is_object_inside(zone_name, obj)
+	if camera_zones[zone_name] then
+		if camera_zones[zone_name].objects_inside[obj:id()] then
+			return obj:alive() --/>
+		end
+	end
+	
+	return false
+end
+
+function get_object(zone_name, enemies, track_mutants)
+	if camera_zones[zone_name] then
+		local class_id = nil
+		for id,v in pairs(camera_zones[zone_name].objects_inside) do
+			local obj = level.object_by_id(id)
+			if obj and obj:alive() then
+				class_id = get_clsid(obj)
+				if IsStalker(obj, class_id) then
+					if enemies[obj:character_community()] then
+						return obj, zone_name --/>
+					end
+				elseif IsMonster(obj, class_id) then
+					if track_mutants then
+						return obj, zone_name --/>
+					end
+				end
+			else
+				camera_zones[zone_name].objects_inside[id] = nil --/ clear
+			end
+		end
+	end
+	
+	return nil, nil
+end
+--/ ------------------------------------------------------------------------------------------------

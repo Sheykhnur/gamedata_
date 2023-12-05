@@ -1,0 +1,139 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_use.script
+ Description: Scheme ...
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Editors    : Gr1ph00n
+ Last edit  : 16.12.2013 [vintar]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_process_use"
+--/------------------------------------
+function action_process_use:__init(obj, st)
+	self.object = obj
+	self.st = st
+end
+
+function action_process_use:use_callback(oVictim, oWho)
+--	log("use_callback:Victim=[%s],Who=[%s]:(%s)", oVictim and oVictim:name(), oWho and oWho:name(), ">") --/#~#
+	if db.actor and db.storage[self.object:id()].active_scheme then
+		xr_logic.try_switch_to_another_section(oVictim, self.st, db.actor)
+	end
+end
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Binder
+--/ -----------------------------------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+	if st.log then log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, "+") end --/#~#
+	st.action = this.action_process_use(obj, st)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	--/ registration of action to call method 'reset_scheme' when scheme settings changed:
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	--/ When disabling scheme, we need to get rid of subscribe, so 'use callback' will stop sending:
+	local st = db.storage[obj:id()][scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(obj, st, st.action)
+	end
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs
+--/------------------------------------------------------------------
+function set_use_checker(...)
+	set_scheme(...)
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------------------------------------
+function notify_on_use(oVictim, oWho)
+	--/ If we are deat - on use don't react
+	if not (oVictim and oVictim:alive() and db.actor) then
+		return --/>
+	elseif oVictim:active_sound_count() ~= 0 then
+		return --/> already speak phrase
+	elseif xr_abuse.is_abuse(oVictim) == false then
+		return --/> not touchy(offended)
+	end
+--	log("notify_on_use:Victim=[%s],Who=[%s]:[%s]", oVictim and oVictim:name(), oWho and oWho:name(), ">") --/#~#
+	--/ Do we agree to talk while this use or not.
+	if oVictim:is_talk_enabled() == true then --/ We agree to talk
+		--[[
+		if oVictim:best_enemy() ~= nil then
+			--/ During fight
+			xr_sound.set_sound_play(oVictim, "use_yes_fight")
+		elseif db.storage[oVictim:id()].state_mgr.animstate:state() == "sleep" then
+			--/ Using sleeper
+			xr_sound.set_sound_play(oVictim, "use_yes_sleep")
+		elseif db.storage[oVictim:id()].active_scheme == "kamp" then
+			--/ Using dude in camp
+			xr_sound.set_sound_play(oVictim, "use_yes_kamp")
+		else
+			--/ Default
+			xr_sound.set_sound_play(oVictim, "use_yes_default")
+		end
+		--]]
+		if xr_wounded.is_wounded(oVictim) then
+			--/ Using wounded
+			return --/> wounded not abused
+		elseif xr_meet.cannot_talk_by_weapon(oVictim) then
+			--/ Need to hide weapon
+			--xr_sound.set_sound_play(oVictim, "use_no_weapon")
+			xr_abuse.add_abuse(oVictim, 1)
+		end
+	else --/ We not agreed to talk:
+		if oVictim:best_enemy() then
+			--/ During fight
+			if oVictim:relation(db.actor) ~= game_object.enemy then
+				xr_sound.set_sound_play(oVictim, "use_no_fight")
+			end
+		elseif xr_wounded.is_wounded(oVictim) then
+			--/ Using wounded
+		elseif xr_sleeper.is_npc_asleep(oVictim) then
+			--/ Using sleeper
+			xr_sound.set_sound_play(oVictim, "use_no_sleep")
+		elseif xr_meet.cannot_talk_by_weapon(oVictim) then
+			--/ Need to hide weapon
+			xr_sound.set_sound_play(oVictim, "use_no_weapon")
+			xr_abuse.add_abuse(oVictim, 1)
+		elseif level_weathers.is_blowout_active() then --/#+# blowout
+			oVictim:disable_talk()
+			if oVictim:is_talking() then
+				oVictim:stop_talk()
+			end
+			xr_sound.set_sound_play(oVictim, "use_no_fight")
+			xr_abuse.add_abuse(oVictim, 0.5)
+		else --/#+# "kamper"
+			local sActiveScheme = db.storage[oVictim:id()].active_scheme
+			if sActiveScheme == "kamp" or sActiveScheme == "kamper" then
+				--/ Using dude in camp
+			else
+				--/ Default
+				xr_sound.set_sound_play(oVictim, "use_no_default")
+				xr_abuse.add_abuse(oVictim, 1)
+			end
+		end
+	end
+end
+--/------------------------------------------------------------------------------------------------

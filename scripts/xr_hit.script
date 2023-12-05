@@ -1,0 +1,100 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : xr_hit.script
+ Description: —ıÂÏ‡: "Registering of getting hits(injuries)"
+ Copyright  : 2004 © GSC Game World
+ Author     : GSC Game World
+ Last edit  : 15.06.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt, ...) _G.log(sModule..":"..tostring(fmt), ...) end
+--/ -----------------------------------------------------------------
+--/ CONSTRUCTION SCHEME
+--/ -----------------------------------------------------------------------------------------------
+class "action_process_hit"
+--/ -----------------------------------------------------------------------------------------------
+function action_process_hit:__init(obj, st)
+	self.object = obj
+	self.st     = st
+	self.log    = st.log
+end
+--/------------------------------------------------------------------
+--/ CALLBACK
+--/------------------------------------------------------------------
+function action_process_hit:hit_callback(obj, amount, local_direction, who, bone_index)
+	--if self.log then log("hit_callback:Obj=[%s]<~Who=[%s]:amount=[%s],bone=[%s]", obj and obj:name(), who and who:name(), amount, bone_index, "") end --/#~#
+	if amount == 0 or not obj then
+		return --/>
+	elseif self.st.is_helicopter and obj:invulnerable() then
+		return --/>
+	end
+	
+	local stor = db.storage[self.object:id()]
+	if stor then
+		if self.log then log("hit_callback:Obj=[%s]<~Who=[%s]:amount=[%s],bone=[%s]", self.object:name(), who and who:name(), amount, bone_index, "") end --/#~#
+		if not stor.hit then --/ insurance
+			log("hit_callback:Obj=[%s]:<%s>", self.object:name(), "Info!") --/#~#
+			stor.hit = self.st
+		end
+		self.st.who = who and who:id() or -1
+		self.st.bone_index = bone_index
+		if stor.active_scheme then
+			if self.st.is_helicopter or self.st.is_car then
+				xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+			else
+				self.st.deadly_hit = amount >= self.object.health*100 --/ mortality flag of hit
+				xr_logic.try_switch_to_another_section(self.object, self.st, db.actor)
+				self.st.deadly_hit = false
+			end
+		end
+	end
+end
+
+--/------------------------------------------------------------------
+--/ BINDER
+--/------------------------------------------------------------------
+function add_to_binder(obj, ini, scheme, section, st)
+	if st.log then log("add_to_binder:Obj=[%s],scheme=[%s],section=[%s]:(%s)", obj:name(), scheme, section, "+") end --/#~#
+	st.action = this.action_process_hit(obj, st)
+end
+--/------------------------------------------------------------------
+--/ SET SCHEME
+--/------------------------------------------------------------------
+function set_scheme(obj, ini, scheme, section)
+	local st = xr_logic.assign_storage_and_bind(obj, ini, scheme, section)
+	st.logic = xr_logic.cfg_get_switch_conditions(ini, section, obj)
+	--/ registration of action to call method 'hit_callback':
+	xr_logic.subscribe_action_for_events(obj, st, st.action)
+	local stor = db.storage[obj:id()]
+	if stor then
+		if stor.stype == modules.stype_heli then
+			st.is_helicopter = true
+		elseif stor.stype == modules.stype_car then
+			st.is_car = true
+		end
+	end
+	--/ for debug
+	if st.log then log("set_scheme:Obj=[%s],scheme=[%s],section=[%s]", obj:name(), scheme, section, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/ DISABLE SCHEME
+--/------------------------------------------------------------------
+function disable_scheme(obj, scheme)
+	--/ When scheme disabled, need to get rid of subcribing, so 'hit callback' will stop sending:
+	--obj:set_callback(callback.hit, nil)
+	local st = obj and db.storage[obj:id()][scheme]
+	if st and st.action then
+		xr_logic.unsubscribe_action_from_events(obj, st, st.action)
+	end
+end
+--/------------------------------------------------------------------
+--/ REDIRECTs (for compatibility, later delete)
+--/------------------------------------------------------------------
+function set_hit_checker(...)
+	set_scheme(...)
+end
+--/------------------------------------------------------------------------------------------------

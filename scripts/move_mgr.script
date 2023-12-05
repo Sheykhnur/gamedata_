@@ -1,0 +1,790 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : move_mgr.script
+ Description: Movement manager
+ Copyright  : 2004 © GSC Game World
+ Author     : Andrey Fidrya (Zmey), af@svitonline.com
+ Editors    : Gr1ph00n(23.09.2012)
+ Last edit  : 29.07.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local iDist_walk = 10 --/ < iDist_run
+local iDist_run  = 2500
+
+local iWalk_min_time = 3000
+local iRun_min_time  = 2000
+
+local iKeep_state_min_time = 1500 --/ switcting to condition (run,walk,sprint), not to switch to other N ms
+local iDefault_wait_time   = 5000
+
+local sDefault_state_standing = "guard"
+local sDefault_state_moving1  = "patrol"
+local sDefault_state_moving2  = "rush"
+local sDefault_state_moving3  = "sprint"
+
+arrival_before_rotation = 0
+arrival_after_rotation  = 1
+
+local iStateNone     = 0 --/#?# not used
+local iStateMoving   = 1
+local iStateStanding = 2
+
+local tSync = {}
+local tAccessibledPP = {} --/#+# array of checked available ways (true - , false -, nil -)
+--/ -------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+
+--/ -----------------------------------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------------------------------------
+function init_pp_accessibility() --/#+#
+	tAccessibledPP = {}
+end
+
+function choose_look_point(oPatrol, tPathLookInfo, oFlagSearch, oNPC) --/ oFlagSearch == search_for
+	local pt_chosen_idx = nil --/ index of selected point
+	local num_equal_pts = 0
+	if oPatrol and tPathLookInfo then
+		local iProbeAll = 0 --/ common probability of found poitns (with needed flags)
+		local oFlags,iProbe,iRnd --/ flag of current point, ...
+		for idx=0, oPatrol:count()-1 do
+			oFlags = tPathLookInfo[idx].flags
+			if oFlags:equal(oFlagSearch) then
+				num_equal_pts = num_equal_pts + 1
+				--/ Found point with necessary flags, but cause in ways can be other points,
+				--/ lets take current only with some probability:
+				--/ Chance, with which npc will look on it:
+				iProbe = tPathLookInfo[idx] and tPathLookInfo[idx].p
+				if iProbe then
+					iProbe = tonumber(iProbe)
+				else
+					iProbe = 100 --/ by default all points has weight = 100
+				end
+				iRnd,iProbeAll = 1, iProbeAll + iProbe
+				if iProbeAll > 1 then
+					iRnd = math.random(iProbeAll)
+				end
+				if iProbe >= iRnd then
+					pt_chosen_idx = idx
+				end
+			end
+		end
+--		log("choose_look_point:[%s]/[%s]:p[%s]/[%s],r[%s]:(%s)", pt_chosen_idx, num_equal_pts, iProbe, iProbeAll, iRnd, "<") --/#~#
+	else
+		abort("No patrol_look here! npc=[%d/%s]", oNPC and oNPC:id(), oNPC and oNPC:name())
+	end
+	return pt_chosen_idx, num_equal_pts --/>
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "move_mgr"
+--/ -----------------------------------------------------------------------------------------------
+function move_mgr:__init(oNPC,bLog)
+	self.object = oNPC
+	self.log = bLog
+	--self.log = oNPC:name() == "mil_contact"
+	if self.log then log("mm:__init:NPC=[%s]", oNPC:name(), "") end --/#~#
+end
+
+function move_mgr:initialize(oNPC)
+	if self.log then log("mm:initialize:NPC=[%s]", self.object:name(), "") end --/#~#
+	self.object:set_callback(callback.patrol_path_in_point, self.waypoint_callback, self)
+end
+--/ Let's make sure, that ways and flags on them setted correctly
+function move_mgr:validate_paths()
+	if not self.no_validation then
+		if not self.patrol_walk or (self.patrol_walk:count() == 1 and self.path_walk_info[0].flags:get() == 0) then
+			if self.patrol_walk then
+				log("validate_paths:path_walk=[%s],flags=[%s]", self.path_walk, self.path_walk_info[0].flags:get(), "")
+			end
+			abort("%s:mm:validate_paths:NPC=[%s],path_walk=[%s],has 1 waypoint, but has no flags:<%s>", sModule, self.object:name(), self.path_walk, "Error!")
+		end
+	end
+end
+
+function move_mgr:extrapolate_callback(oNPC)
+	if self.log then log("mm:extrapolate_callback:NPC=[%s]", self.object:name(), ">") end --/#~#
+	self.can_use_get_current_point_index = true
+	self.current_point_init_time = time_global()
+	self.current_point_index = self.object:get_current_point_index()
+end
+
+function move_mgr:standing_on_terminal_waypoint()
+	if self.patrol_walk then
+		for idx=0, self.patrol_walk:count()-1 do
+			if self.patrol_walk:terminal(idx) and utils.stalker_at_waypoint(self.object, self.patrol_walk, idx) then
+				return true, idx --/>
+			end
+		end
+	else
+		log("mm:standing_on_terminal_waypoint:patrol_walk=NIL:<%s>", "Warning!")
+	end
+	return false --/>
+end
+
+--/ Can be called by external script after call reset() and before call finalize()
+--/ Returns true, if npc arrived to end point of way
+function move_mgr:at_terminal_waypoint()
+	return self.at_terminal_waypoint_flag --/>
+end
+
+--/ From move_cb return true, to pause work of scheme. To continue movement,
+--/ need to call method set_movement_state, which will enable moving by waypoints with necessary speed.
+function move_mgr:reset(sPath_Walk, tPathWalkInfo, sPath_Look, tPathLookInfo, team, suggested_state, move_cb_info, no_validation, continue, use_default_sound, path_precond)
+	if self.log then log("mm:reset:NPC=[%s],path_walk=[%s],path_look=[%s]:(%s)", self.object:name(), sPath_Walk, sPath_Look, ">") end --/#~#
+	--/ how much to wait in pint, where plaing animation
+	self.pt_wait_time = iDefault_wait_time
+	--/ Remembering array completely in case if we will need to reset outselves, by calling reset() iteratively:
+	self.suggested_state = suggested_state
+	--/ After that parsing array:
+	if not suggested_state then
+		self.default_state_standing = sDefault_state_standing
+		self.default_state_moving1  = sDefault_state_moving1
+		self.default_state_moving2  = sDefault_state_moving2
+		self.default_state_moving3  = sDefault_state_moving3
+	else
+		self.default_state_standing = if_then_else(suggested_state.standing, suggested_state.standing, sDefault_state_standing)
+		self.default_state_moving1  = if_then_else(suggested_state.moving1,  suggested_state.moving1,  sDefault_state_moving1)
+		self.default_state_moving2  = if_then_else(suggested_state.moving2,  suggested_state.moving1,  sDefault_state_moving2)
+		self.default_state_moving3  = if_then_else(suggested_state.moving3,  suggested_state.moving1,  sDefault_state_moving3)
+	end
+	local iTime = time_global()
+	--/ From moment of enabling scheme, need to come at least second,
+	--/ before check condition of synth with other stalkers (otherwise after load they have no time to spawn).
+	self.syn_signal_set_tm = iTime + 1000
+	self.syn_signal = nil
+	
+	self.move_cb_info = move_cb_info
+	--/ Possible changes:
+	
+	--/ Changed command
+	if team ~= nil and team ~= self.team then --/#~#
+		self.team = team
+		if self.team then
+			local tS = tSync[self.team]
+			if not tS then
+				tSync[self.team] = {}
+				tS = tSync[self.team]
+			end
+			tS[self.object:id()] = false --/ not synchronized
+		end
+	end
+	
+	--/ Changed ways
+	if self.path_walk ~= sPath_Walk or self.path_look ~= sPath_Look then
+		if self.log then log("mm:reset:NPC=[%s],path_walk=[%s]>[%s],path_look=[%s]>[%s]:(%s)", self.object:name(), self.path_walk, sPath_Walk, self.path_look, sPath_Look, ">>") end --/#~#
+		self.no_validation = no_validation
+		--/ Path_Walk
+		self.path_walk      = sPath_Walk
+		self.path_walk_info = tPathWalkInfo
+		self.patrol_walk = get_patrol(sPath_Walk)
+		if not self.patrol_walk then
+			abort("%s:reset:Obj=[%s],unable to find path_walk=[%s] on the map", sModule, self.object:name(), sPath_Walk)
+		elseif not tPathWalkInfo then
+			abort("%s:reset:Obj=[%s],path_walk=[%s],field was supplied, but path_walk_info field is nil", sModule, self.object:name(), sPath_Walk)
+		end
+		--/ Path_Look
+		self.path_look      = sPath_Look
+		self.path_look_info = tPathLookInfo
+		if sPath_Look then
+			if not tPathLookInfo then
+				abort("%s:reset:Obj=[%s],path_look=[%s],field was supplied, but PathLookInfo field is nil", sModule, self.object:name(), sPath_Look)
+			else
+				self.patrol_look = get_patrol(sPath_Look)
+				if not self.patrol_look then
+					abort("%s:reset:Obj=[%s],unable to find path_look=[%s] on the map", sModule, self.object:name(), sPath_Look)
+					self.path_look_info = nil
+				end
+			end
+		else
+			self.patrol_look    = nil
+			self.path_look_info = nil
+		end
+		--
+		self:validate_paths()
+		
+		self.at_terminal_waypoint_flag = false
+		
+		self.cur_state_standing = self.default_state_standing
+		self.cur_state_moving   = self.default_state_moving1
+		
+		self.retval_after_rotation  = nil
+		self.sound_after_anim_start = nil
+		
+		--/ While this flag won't become true(it will be set in extrapolate_callback),
+		--/ can't be used value, which will return get_current_point_index().
+		self.can_use_get_current_point_index = false
+		self.current_point_index = nil
+		self.walk_until       = iTime + iWalk_min_time
+		self.run_until        = iTime + iWalk_min_time + iRun_min_time
+		self.keep_state_until = iTime
+		
+		self.last_index = nil
+		self.last_look_index = nil
+		
+		self.use_default_sound = use_default_sound
+		
+		self.object:patrol_path_make_inactual()
+	end
+	
+	-- path precond setup
+	
+	self.path_precond = nil
+	local t, idx, cond = nil, nil, nil
+	if path_precond then
+		self.path_precond = {}
+		for _, str in pairs(string.split(path_precond, ",", false)) do
+			t = string.split(path_precond, "|", false)
+			idx = tonumber(t[1])
+			cond = t[2]
+			self.path_precond[idx] = xr_logic.parse_condlist(self.object, "move_mgr:" .. self.object:name(), "path", cond)
+		end
+	end
+	
+	self:setup_movement_by_patrol_path()
+	if self.log then log("reset:Obj=[%s],patrol_look[%s]/[%s]=>(%s):(%s)", self.object:name(), self.path_look, sPath_Look, self.patrol_look ~= nil, "<") end --/#~#
+end
+
+--/ continue movement from next point, and not from closest.
+--/ condition of move manager don't reset.
+function move_mgr:continue()
+	if self.log then log("mm:continue:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	self:setup_movement_by_patrol_path()
+end
+
+function move_mgr:setup_movement_by_patrol_path()
+	if self.log then log("mm:setup_movement_by_patrol_path:NPC=[%s]:[%s]", self.object:name(), ">") end --/#~#
+	--/#+#>
+	local oNPC = self.object
+	if not oNPC then return false end --/>
+	local bValid = self:valid_pp_accessible()
+	if bValid and (self.patrol_walk and not self.patrol_walk.is_replacement) then --/ path (self.path_walk) avaliable
+		oNPC:set_path_type(game_object.patrol_path) --/ movement through ways
+		if self.current_point_index then
+			oNPC:set_start_point(self.current_point_index)
+			oNPC:set_patrol_path(self.path_walk, patrol.next, patrol.continue, true)
+		else
+			oNPC:set_patrol_path(self.path_walk, patrol.nearest, patrol.continue, true)
+		end
+	else --/ path (self.path_walk) not avaliable, sending to closest avaliable point
+		oNPC:set_path_type(game_object.level_path) --/ movement by vertexes
+		local oPatrol = get_patrol(self.path_walk)
+		if oPatrol and oPatrol:count() > 0 then
+			local idLv = utils.send_to_nearest_accessible_vertex(oNPC,oPatrol:level_vertex_id(0))
+			log("mm:setup_movement_by_patrol_path:NPC=[%s],path_walk=[%s]<~NOT_accessible:~>(%s):<%s>", self.object:name(), self.path_walk, idLv, "Warning!") --/#~#
+		else
+			local idLv = oNPC:vertex_in_direction(oNPC:level_vertex_id(), oNPC:direction(), math.random(2,5))
+			if not ( idLv and idLv ~= db.iMax_s32 and oNPC:accessible(idLv) ) then --/ if not avaliable, select the closest avaliable one
+				idLv = oNPC:accessible_nearest(level.vertex_position(idLv or oNPC:level_vertex_id()), vector():set(0,0,0))
+			end
+			log("mm:setup_movement_by_patrol_path:NPC=[%s],path_walk(%s)=[%s]<~NOT_valid:~>(%s):<%s>", oNPC:name(), oPatrol and oPatrol:count(), self.path_walk, idLv, "Warning!")
+			oNPC:set_dest_level_vertex_id(idLv)
+		end
+	end
+	--/<
+	oNPC:set_detail_path_type(move.line)
+	self.state = iStateMoving
+	
+	local is_term, idx = self:standing_on_terminal_waypoint()
+	if is_term or not bValid then --/#~#
+		if self.log then log("setup_movement_by_patrol_path:NPC=[%s]<~terminal_waypoint", oNPC:name(), "") end --/#~#
+		if idx then
+			--/ Standing on terminal vertex point - lets immitate arrival
+			self:waypoint_callback(oNPC, nil, idx)
+		end
+	else --/ Really going to vertex
+		self:update_movement_state()
+	end
+	
+	if self.use_default_sound then
+		self.default_sound = "state"
+		xr_sound.set_sound(oNPC, self.default_sound)
+	else
+		self.default_sound = nil
+	end
+	if self.log then log("mm:setup_movement_by_patrol_path:NPC=[%s],pWalk=[%s]:[%s]", self.object:name(), self.path_walk, "<") end --/#~#
+end
+--/-------------------------------------------------------------------
+--/#+# Checking avaliability at least one point of path, cleaning path frok anomalies (materials of Red75)
+--/-------------------------------------------------------------------
+function move_mgr:valid_pp_accessible()
+--	log("mm:valid_pp_accessible:NPC=[%s],path=[%s]:[%s]", self.object:name(), self.path_walk, ">") --/#~#
+	if not self.path_walk then return false end --/>
+	local idNPC = self.object:id()
+	local bValid = tAccessibledPP[idNPC] and tAccessibledPP[idNPC][self.path_walk]
+	if bValid == nil then --/ not checked yet
+		bValid = false
+		local oPatrol = get_patrol(self.path_walk)
+		if oPatrol then
+			local oNPC = self.object
+			local iCnt = oPatrol:count()
+			--self:clear_pp(oPatrol,iCnt) --/ disabling anomalies from restrictors of npc
+			--/ checking avaliability at least one of point of path
+			for i=0,iCnt-1 do
+				local idLv = oPatrol:level_vertex_id(i)
+				if idLv and idLv ~= db.iMax_s32 and oNPC:accessible(idLv) then
+					if self.log then log("mm:valid_pp_accessible:NPC=[%s],NamePP=[%s],idLv(%s)=[%s]", oNPC:name(), self.path_walk, i, idLv, "") end --/#~#
+					bValid = true
+					break
+				end
+			end
+			if oPatrol.is_replacement then --/ replaced path
+				log("mm:valid_pp_accessible:NPC=[%s],path=[%s],idLv(0)=[%s],flags(0)=[%s]:(is_replacement)", oNPC:name(), self.path_walk, oPatrol:level_vertex_id(0), oPatrol:flags(0):get(), "") --/#~#
+				bValid = true --/#?#
+			end
+			if not bValid then
+				local idLv = oPatrol:level_vertex_id(0)
+				log("mm:valid_pp_accessible:NPC=[%s],path(%s)=[%s],idLv(0)=[%s]<~NOT_accessibility:<%s>", oNPC:name(), iCnt, self.path_walk, idLv, "Warning!") --/#~#
+				if self.log then
+					local vPos = oPatrol:point(0)
+					local iDist = oNPC:position():distance_to(vPos)
+					log("mm:valid_pp_accessible:Pos_NPC=[%s]<=?=>Pos_PPath(0)=[%s],Dist=[%s]:<%s>", string.short(oNPC:position()), string.short(vPos), string.short(iDist), "Info!") --/#~#
+					--if db.is_dbg1 then get_patrol.Set_Metka_PPath(self.path_walk) end
+					--Add_MapSpot(idNPC, "dbg_metka2", oNPC:name()..":->PP?") --/#~#
+					if IsStalker(oNPC) then
+						local sRestIn,sRestOut = oNPC:in_restrictions(), oNPC:out_restrictions()
+						if sRestIn ~= "" then log("mm:valid_pp_accessible:NPC=[%s],Rest(in)=[%s]/[%s]:<%s>", oNPC:name(), sRestIn, "Info!") end --/#~#
+						if sRestOut ~= "" then log("mm:valid_pp_accessible:NPC=[%s],Rest(out)=[%s]/[%s]:<%s>", oNPC:name(), sRestOut, "Info!") end --/#~#
+					end
+				end
+			end
+		end
+		if not tAccessibledPP[idNPC] then tAccessibledPP[idNPC] = {} end
+		tAccessibledPP[idNPC][self.path_walk] = bValid --/ remembering
+	end
+	return bValid --/>
+end
+--[[/ -----------------------------------------------------------------
+--/ Cleaning of patrol ways (for move_mgr.script)
+--/ -----------------------------------------------------------------
+function move_mgr:clear_pp(oPatrol,iCnt)
+--	log("clear_pp:NPC=[%s],NamePP=[%s]~disabling:[%s]", self.object:name(), self.path_walk, ">") --/#~#
+	if not db.la_anoms then return end --/>
+	local sim = alife()
+	local func_remove = db.la_zone_mng and la_zone_mng.Remove_Restriction
+	for i=0,iCnt-1 do
+		local vPos = oPatrol:point(i) --/ vector (coordinates) i-point of way.
+		local tAnoms,soAnom = la_anoms.Get_Anomalies_for_Pos(vPos,3) --/<~1
+		for _,v in ipairs(tAnoms) do
+			soAnom = v.id and sim:object(v.id)
+			if soAnom then
+				if db.is_dbg1 then --/#!# for Debug
+					log("clear_pp:=[%s],point(%s/%s)=[%s],NPC=[%s],Anom=[%s/%s]~>:[%s]", self.path_walk, i, iCnt, oPatrol:name(i), self.object:name(), v.name, v.id, "x") --/#~#
+					--log("clear_pp:NamePP=[%s],Point(%s)=[%s],Pos=%s:[%s]", self.path_walk, i, oPatrol:name(i), string.short(vPos), "i") --/#~#
+					if db.is_dbg2 then Add_MapSpot(v.id,"yellow_location","Del_Anom: "..soAnom:section_name()) end --/#~# for Debug
+				end
+				--/ disabling anomaly and at once removing it from npc restrictors.
+				--/ for other npc it removes on next update
+				local bTurnOff = la_anoms.TurnOff_Anomaly(soAnom)
+				if bTurnOff then
+					if func_remove then
+						func_remove(self.object, v.id, v.name, true)
+					end
+				else
+					log("clear_pp:Wrong_TurnOff_Anomaly=[%s]:<%s>", soAnom:name(), "Warning!")
+				end
+			end
+		end
+	end
+end
+--/-------------------------------------------------------------------]]
+
+function move_mgr:arrived_to_first_waypoint()
+	return self.last_index ~= nil --/>
+end
+
+--/ Check of synth with other soldiers on way.
+--/ Returns true, if movement allowed.
+function move_mgr:sync_ok()
+	if self.team and tSync[self.team] then
+		for id,v in pairs(tSync[self.team]) do
+			local obj = level.object_by_id(id)
+			if obj and obj:alive() then
+				if v ~= true then
+					return false --/>
+				end
+			else
+				tSync[self.team][id] = nil
+			end
+		end
+	end
+	return true --/>
+end
+
+function move_mgr:update()
+	if self.log then log("mm:update:NPC=[%s],state=[%s],anims=[%s]:[%s]", self.object:name(), self.state, self.object:animation_count(), ">") end --/#~#
+	local iTime = time_global()
+	if self.syn_signal and iTime >= self.syn_signal_set_tm then
+		if self:sync_ok() then
+			self:scheme_set_signal(self.syn_signal)
+			self.syn_signal = nil
+		end
+	end
+	
+	if self.can_use_get_current_point_index and not self:arrived_to_first_waypoint() then
+		if iTime >= self.keep_state_until then
+			self.keep_state_until = iTime + iKeep_state_min_time
+			
+			local iCurPt = self.current_point_index
+			--/ here self.patrol_walk actually the same, that will return patrol(self.object:patrol()), cause of that using it for optimization.
+			local iDist = self.object:position():distance_to(self.patrol_walk:point(iCurPt))
+--			log("mm:update:distance_to_destination_waypoint=[%s]", iDist, "") --#~#
+			if iDist <= iDist_walk or iTime < self.walk_until then
+				self.cur_state_moving = self.default_state_moving1
+			elseif iDist <= iDist_run or iTime < self.run_until then
+				self.cur_state_moving = self.default_state_moving2
+			else
+				self.cur_state_moving = self.default_state_moving3
+			end
+			self:update_movement_state()
+		end
+	end
+	if self.log then log("mm:update:NPC=[%s],state=[%s],anims=[%s]:[%s]", self.object:name(), self.state, self.object:animation_count(), "<") end --/#~#
+end
+
+function move_mgr:set_current_state_moving(state)
+	self.cur_state_moving = state
+	self:update_movement_state()
+end
+
+function move_mgr:finalize(npc)
+	if self.log then log("mm:fin:NPC=[%s]:[%s]", self.object:name(), "x") end --/#~#
+	xr_sound.set_sound(self.object, nil)
+	if self.team then
+		tSync[self.team][self.object:id()] = nil
+	end
+	--/ to avoid after movement on way when restrictors setted
+	self.object:set_path_type(game_object.level_path)
+end
+
+--/----------------------------------------------
+--/ IMPLEMENTATION
+--/----------------------------------------------
+function move_mgr:update_movement_state()
+	if self.log then log("update_movement_state:NPC=[%s],state=[%s]%s", self.object:name(), self.cur_state_moving, ">") end
+	if state_mgr.get_state(self.object) ~= self.cur_state_moving then
+		state_mgr.set_state(self.object, self.cur_state_moving, nil, nil, nil)
+		if self.log then log("update_movement_state:NPC=[%s],state=[%s]%s", self.object:name(), self.cur_state_moving, "+") end
+	end
+	if self.log then log("update_movement_state:NPC=[%s],state=[%s]%s", self.object:name(), self.cur_state_moving, "<") end
+end
+
+function move_mgr:update_standing_state(look_pos, snd)
+	if self.log then log("update_standing_state:NPC=[%s],state=[%s],snd=[%s],wait_time=[%s],path=[%s]", self.object:name(), self.cur_state_standing, snd, self.pt_wait_time, self.path_walk, ">") end --/#~#
+	if state_mgr.get_state(self.object) ~= self.cur_state_standing then
+		if self.wait_condlist then
+			if xr_logic.pick_section_from_condlist(db.actor, self.object, self.wait_condlist) ~= nil then
+				self.pt_wait_time = iDefault_wait_time
+				self.wait_condlist = nil
+				if self.log then log("waypoint_callback:NPC=[%s] cond met", self.object:name()) end
+			end
+		end
+		state_mgr.set_state(
+			self.object, self.cur_state_standing,
+			{ obj = self, func = self.time_callback, turn_end_func = self.turn_end_callback },
+			self.pt_wait_time,
+			{look_position = look_pos},
+			nil,
+			snd
+		)
+		if self.log then log("update_standing_state:NPC=[%s],state=[%s],snd=[%s],wait_time=[%s],path=[%s]", self.object:name(), self.cur_state_standing, snd, self.pt_wait_time, self.path_walk, "+") end --/#~#
+	end
+	if self.log then log("update_standing_state:NPC=[%s],state=[%s],snd=[%s],wait_time=[%s],path=[%s]", self.object:name(), self.cur_state_standing, snd, self.pt_wait_time, self.path_walk, "<") end --/#~#
+end
+
+function move_mgr:time_callback()
+	if self.log then log("time_callback:NPC=[%s]%s", self.object:name(), ">") end --/#~#
+	local sigtm = self.path_look_info and self.path_look_info[self.last_look_index]["sigtm"]
+	if sigtm then
+		if self.log then log("time_callback:NPC=[%s] ~> scheme_set_signal 'sigtm'", self.object:name(), "") end --/#~#
+		self:scheme_set_signal(sigtm)
+	end
+	--/ If no active scheme - ignore.
+	local tStor = db.storage[self.object:id()]
+	if not (tStor and tStor.active_scheme) then
+		return --/>
+	end
+	if self.last_index and self.patrol_walk:terminal(self.last_index) then
+		if utils.stalker_at_waypoint(self.object, self.patrol_walk, self.last_index) then
+			--/ If we stand on final point of way and not moved to anywhere from it,
+			--/ imitate right away callback on arrival, to enable look.
+			self:waypoint_callback(self.object, nil, self.last_index)
+			return --/>
+		end
+		if self.log then log("time_callback:NPC=[%s],W/L=[%s/%s]", self.object:name(), self.path_walk, self.path_look, "") end --/#~#
+		--/ Standing on final point of way, but not precisely. To return to closest point of way, resetting scheme.
+		--/ Take a notice, that there can't be just called update_movement_state,
+		--/ cause we ALREADY was in last point of way and have no other place to go,
+		--/ and `reset_scheme` will reset settings of `movement manager` and choose closest point where will go.
+		self:reset(
+			self.path_walk,
+			self.path_walk_info,
+			self.path_look,
+			self.path_look_info,
+			self.team,
+			self.suggested_state,
+			self.move_cb_info,
+			self.no_validation)
+--		log("time_callback:NPC=[%s]%s", self.object:name(), "")
+	else
+		self:update_movement_state() --/ move on
+		local syn = self.path_look_info and self.path_look_info[self.last_look_index]["syn"]
+		if syn then
+			abort("%s:time_callback:obj=[%s],path_walk=[%s],syn flag used on non-terminal waypoint", sModule, self.object:name(), self.path_walk)
+		end
+	end
+end
+
+function move_mgr:scheme_set_signal(sig)
+	local stor = db.storage[self.object:id()]
+--	if self.log then log("scheme_set_signal:obj=[%s],active scheme=[%s],sig=[%s]:>", self.object:name(), stor.active_scheme, sig) end --/#~#
+	if stor and stor[stor.active_scheme] then
+		local tSignals = stor[stor.active_scheme].signals
+		if tSignals then
+			if self.log then log("scheme_set_signal:obj=[%s],active scheme=[%s],sig=[%s]=>TRUE", self.object:name(), stor.active_scheme, sig) end --/#~#
+			tSignals[sig] = true
+		end
+	end
+end
+
+function move_mgr:turn_end_callback()
+	local syn = self.path_look_info and self.path_look_info[self.last_look_index]["syn"]
+	if syn then
+		self.syn_signal = self.path_look_info[self.last_look_index]["sig"]
+		if not self.syn_signal then
+			abort("%s:turn_end_callback:obj=[%s],path_look=[%s]:syn flag uset without sig flag", sModule, self.object:name(), self.path_look)
+		end
+		
+		--/ Mark, that we already arrived to point of synth:
+		if self.team then
+			tSync[self.team][self.object:id()] = true
+		end
+	else
+		local sig = self.path_look_info and self.path_look_info[self.last_look_index]["sig"]
+		if sig then
+			self:scheme_set_signal(sig)
+		else
+			self:scheme_set_signal("turn_end")
+		end
+	end
+	
+	local anim_synced_snd = nil
+	if self.sound_after_anim_start then
+		--/ Play sound right after finishing rotate:
+		anim_synced_snd = self.sound_after_anim_start
+		self.sound_after_anim_start = nil
+	end
+	
+	if self.retval_after_rotation then
+		if not self.move_cb_info then
+			log("turn_end_callback:obj=[%s],path_look=[%s],ret flag is set, but callback function wasn't registered in move_mgr:reset:<%s>", self.object:name(), self.path_look, "Warning!")
+			self:reset(self.path_walk, self.path_walk_info, self.path_look, self.path_look_info, self.team, self.suggested_state, self.move_cb_info, self.no_validation)
+			if not self.move_cb_info then
+				abort("%s:turn_end_callback:obj=[%s],path_look=[%s]:ret flag is set, but callback function wasn't registered in move_mgr:reset", sModule, self.object:name(), self.path_look)
+			end
+		end
+		--/ Disabling timer by setting same condition, but without timer, then calling callback.
+		--/ If callback returned false, then it means it decided not to inteference to movement, then enabling timer again.
+		--/ If callback returned true - don't restore timer cause it could be already done in callback itself.
+		
+		--/ 1) Disabling timer
+		state_mgr.set_state(self.object, self.cur_state_standing, nil, nil, nil)
+		--/ 2) Calling callback
+		if not self.move_cb_info then
+			log("turn_end_callback:obj=[%s],path_look=[%s],ret flag is set, but callback function wasn't registered in move_mgr:reset:<%s>", self.object:name(), self.path_look, "Warning!")
+			self:reset(self.path_walk, self.path_walk_info, self.path_look, self.path_look_info, self.team, self.suggested_state, self.move_cb_info, self.no_validation)
+			if not self.move_cb_info then
+				abort("%s:turn_end_callback:obj=[%s],path_look=[%s],ret flag is set, but callback function wasn't registered in move_mgr:reset", sModule, self.object:name(), self.path_look)
+			end
+		end
+		
+		if self.move_cb_info.func(self.move_cb_info.obj, this.arrival_after_rotation, self.retval_after_rotation, self.last_index, self.log) then
+			--/ Callback decide to take control of the movement, dont restore timer
+			return --/>
+		end
+		--/ Callback didn't take control, need to restore timer:
+		self:update_standing_state(self.patrol_look:point(self.last_look_index), anim_synced_snd)
+	end
+end
+
+function move_mgr:waypoint_callback(oObj, action_type, index)
+	if self.log then log("waypoint_callback:NPC=[%s],index=[%d]", self.object:name(), index) end --/#~#
+	if not (index and index ~= -1) then
+		log("waypoint_callback:NPC=[%s],index=[%s]~?:<%s>", self.object:name(), index, "Error!") --/ is -1 or nil
+		return --/>
+	end
+	if self.log then log("mm:waypoint_callback:NPC=[%s],index=[%s]:[%s]", self.object:name(), index, ">") end --/#~#
+	
+	self.last_index = index
+	
+	if self.patrol_walk:terminal(index) then
+		self.at_terminal_waypoint_flag = true
+	end
+	--/ <SOUND>
+	local suggested_snd = self.path_walk_info[index]["s"]
+	if suggested_snd then
+		local iProb = self.path_walk_info[index]["sp"]
+		if iProb then
+			iProb = tonumber(iProb)
+		else
+			iProb = 100
+		end
+		if iProb == 100 or iProb >= math.random(100) then
+			xr_sound.set_sound(self.object, suggested_snd)
+		else
+			xr_sound.set_sound(self.object, nil)
+		end
+	else
+		xr_sound.set_sound(self.object, self.default_sound)
+	end
+	
+	local suggested_state_moving = self.path_walk_info[index]["a"]
+	if suggested_state_moving then
+		self.cur_state_moving = suggested_state_moving
+	else
+		self.cur_state_moving = self.default_state_moving1
+	end
+	
+	local sRet = self.path_walk_info[index]["ret"]
+	if sRet then
+--		log("waypoint_callback:path_walk_info~>ret=[%s]%s", sRet, "") --/#~#
+		if not self.move_cb_info then
+			log("waypoint_callback:NPC=[%s],path_walk=[%s],ret flag is set, but callback function wasn't registered in move_mgr:reset:<%s>", self.object:name(), self.path_walk, "Warning!")
+			self:reset(self.path_walk, self.path_walk_info, self.path_look, self.path_look_info, self.team, self.suggested_state, self.move_cb_info, self.no_validation)
+			if not self.move_cb_info then
+				abort("%s:waypoint_callback:NPC=[%s],path_walk=[%s],ret flag is set, but callback function wasn't registered in move_mgr:reset", sModule, self.object:name(), self.path_walk)
+			end
+		end
+		if self.move_cb_info.func(self.move_cb_info.obj, this.arrival_before_rotation, tonumber(sRet), index, self.log) then
+			if self.log then log("waypoint_callback:NPC=[%s],path_walk_info~>ret=[%s]:(%s)", self.object:name(), sRet, "<") end --/#~#
+			return --/>
+		end
+	end
+	
+	local sig = self.path_walk_info[index]["sig"]
+	if sig then
+		self:scheme_set_signal(sig)
+	elseif index == #self.path_walk_info -1 then
+		self:scheme_set_signal("path_end")
+	end
+	
+	local suggested_wait_time = self.path_walk_info[index]["t"] --/#+#
+	if suggested_wait_time then
+		if suggested_wait_time == '*' then
+			self.pt_wait_time = nil --/ -1
+		else
+			local time_ms = tonumber(suggested_wait_time)
+			if time_ms and time_ms ~= 0 and (time_ms < 1000 or time_ms > 45000) then --/30000
+				abort("%s:waypoint_callback:NPC=[%s],path_walk=[%s]:flag=[t],incorrect time specified (* or number in interval [1000, 30000] is expected)", sModule, self.object:name(), self.path_walk)
+			end
+			self.pt_wait_time = time_ms
+			if self.log then log("waypoint_callback:NPC=[%s],index=[%s],pt_wait_time=[%s]", self.object:name(), index, time_ms, "") end --/#~#
+		end
+	else
+		self.pt_wait_time = iDefault_wait_time
+	end
+	
+	if self.path_precond and self.path_precond[index] then
+		self.wait_condlist = self.path_precond[index]
+		if xr_logic.pick_section_from_condlist(db.actor, self.object, self.wait_condlist) ~= nil then
+			self.pt_wait_time = iDefault_wait_time
+			self.wait_condlist = nil
+			if self.log then log("waypoint_callback:NPC=[%s] cond met", self.object:name()) end
+		else
+			self.pt_wait_time = 15000
+			if self.log then log("waypoint_callback:NPC=[%s] cond not met", self.object:name()) end
+		end
+	end
+	
+	
+	local stop_probability = self.path_walk_info[index]["p"]
+	
+	if not self.patrol_look or (stop_probability and tonumber(stop_probability) < math.random(100)) then
+		self:update_movement_state() --/ move on
+		if self.log then log("waypoint_callback:NPC=[%s],look=(%s),prob=[%s]:(%s)", self.object:name(), self.patrol_look ~= nil, stop_probability, "<") end --/#~#
+		return --/>
+	end
+	
+	--/ Values of point flags, which we will look:
+	local search_for = self.path_walk_info[index].flags
+	
+	if search_for:get() == 0 then
+		self:update_movement_state() --/ move on
+		if self.log then log("waypoint_callback:NPC=[%s],search_for=0:(%s)", self.object:name(), "<") end --/#~#
+		return --/>
+	end
+	
+	local pt_chosen_idx, num_equal_pts = choose_look_point(self.patrol_look, self.path_look_info, search_for, self.object)
+	if self.log then log("waypoint_callback:NPC=[%s]:pt_chosen_idx=[%s],num_equal_pts=[%s]", self.object:name(), pt_chosen_idx, num_equal_pts, "" ) end --/#~#
+	if pt_chosen_idx then
+		local suggested_anim_set = self.path_look_info and self.path_look_info[pt_chosen_idx]["a"]
+		if suggested_anim_set then
+			self.cur_state_standing = suggested_anim_set
+		else
+			self.cur_state_standing = self.default_state_standing
+		end
+		
+		local suggested_wait_time = self.path_look_info and self.path_look_info[pt_chosen_idx]["t"]
+		if suggested_wait_time then
+			if suggested_wait_time == '*' then
+				self.pt_wait_time = nil --/ -1
+			else
+				local time_ms = tonumber(suggested_wait_time)
+				if time_ms and time_ms ~= 0 and (time_ms < 1000 or time_ms > 45000) then --/30000
+					abort("%s:waypoint_callback:NPC=[%s],path_look=[%s]:flag=[t],incorrect time specified (* or number in interval [1000, 30000] is expected)", sModule, self.object:name(), self.path_look)
+				end
+				if self.log then log("waypoint_callback:chosen:NPC=[%s],index=[%s],pt_wait_time=[%s]", self.object:name(), index, time_ms, "") end --/#~#
+				self.pt_wait_time = time_ms
+			end
+		else
+			self.pt_wait_time = iDefault_wait_time
+		end
+		
+		local retv = self.path_look_info and self.path_look_info[pt_chosen_idx]["ret"]
+		if retv then
+			self.retval_after_rotation = tonumber(retv)
+		else
+			self.retval_after_rotation = nil
+		end
+		
+		if not suggested_snd then --/ in path_walk sound not setted, check, if it's setted on point
+			suggested_snd = self.path_look_info and self.path_look_info[pt_chosen_idx]["s"]
+			if suggested_snd then
+				local iProb = self.path_look_info[pt_chosen_idx]["sp"]
+				if iProb then
+					iProb = tonumber(iProb)
+				else
+					iProb = 100
+				end
+				if iProb == 100 or iProb >= math.random(100) then
+					--xr_sound.set_sound(self.object, nil, true)
+					self.sound_after_anim_start = suggested_snd
+				else
+					self.sound_after_anim_start = nil
+				end
+			end
+		end
+		
+		local look_pos = self.patrol_look:point(pt_chosen_idx)
+		self.last_look_index = pt_chosen_idx
+		self:update_standing_state(look_pos, self.sound_after_anim_start)
+		
+		self.state = iStateStanding
+		
+		--/ Starting update immediately, don't wait execute.
+		--/ Then if we look to side we need - won't be pause in few milliconds on rotatation.
+		self:update()
+	elseif num_equal_pts == 0 then --/#?#
+		log("waypoint_callback:NPC=[%s],path_look=[%s],pt_chosen_idx=[%s],num_equal_pts=[%s]:<%s>", self.object:name(), self.path_look, pt_chosen_idx, num_equal_pts, "Warning!") --/#~#
+	else
+		abort("%s:waypoint_callback:NPC=[%s],path_walk=[%s],index=[%d],cannot find corresponding point(s) on path_look=[%s]", sModule, self.object:name(), self.path_walk, index, self.path_look)
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

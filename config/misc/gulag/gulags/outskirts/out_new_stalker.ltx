@@ -1,0 +1,48 @@
+
+[danger@out_stalker_lager]
+;ignore_distance = 0
+
+[threshold@out_stalker_lager]
+;max_ignore_distance = 5
+
+[threshold@out_stalker_wolf]
+ignore_monster = 1
+
+[hit@out_stalker_new_wolf]
+on_info = {=hit_by_actor} %+esc_wolf_hitted =disable_invulnerability =actor_enemy%
+
+[logic@out_stalker_new_wolf1]
+active = walker@out_stalker_new_wolf1
+threshold = threshold@out_stalker_wolf
+on_hit = hit@out_stalker_new_wolf
+
+[walker@out_stalker_new_wolf]
+path_walk = wolf_walk1
+path_look = wolf_look1
+meet = meet@out_stalker_new_wolf
+danger = danger@out_stalker_lager
+invulnerable = {-esc_wolf_hitted} true
+threshold = threshold@out_stalker_wolf
+def_state_standing = clear_wpn
+
+[logic@out_stalker_new_nimble]
+active = walker@out_stalker_new_nimble
+threshold = threshold@out_stalker_wolf
+on_hit = hit@out_stalker_new_wolf
+
+[walker@out_stalker_new_nimble]
+path_walk = nimble_walk1
+path_look = nimble_look1
+danger = danger@out_stalker_lager
+def_state_standing = clear_wpn
+
+[logic@out_stalker_new_proverb]
+active = kamper@out_stalker_new_proverb
+threshold = threshold@out_stalker_wolf
+on_hit = hit@out_stalker_new_wolf
+
+[kamper@out_stalker_new_proverb]
+path_walk = proverb_walk1
+path_look = proverb_look1
+kamp_name = kamp1
+danger = danger@out_stalker_lager

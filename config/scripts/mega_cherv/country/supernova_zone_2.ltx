@@ -1,0 +1,15 @@
+[logic]
+active = sr_idle@0
+
+[sr_idle@0]
+on_info = {+country_major_job_art8_x} sr_idle@1
+
+[sr_idle@1]
+on_actor_inside = {=check_active_detector(wave_registrator_detector)} sr_timer@timer1
+
+[sr_timer@timer1]
+type = dec
+start_value = 12500
+on_value = 0 | nil %+country_major_job_art8_5 =release%
+on_info = {!check_active_detector(wave_registrator_detector)} sr_idle@1
+string = st_measurements_countdown

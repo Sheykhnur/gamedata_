@@ -1,0 +1,28 @@
+[combat_ignore@oblava_boss]
+
+[logic]
+active = walker@oblava_boss
+combat_ignore = combat_ignore@oblava_boss
+
+[walker@oblava_boss]
+path_walk = mil_oblava_walk
+;show_spot = false
+combat_ignore_cond = {=health_le(0.6)}
+meet = no_meet
+on_info = {=health_le(0.6)} walker@oblava_boss1
+;on_timer = 25000| walker@oblava_boss1
+
+[walker@oblava_boss1]
+path_walk = mil_oblava_blow_no_cover_panic
+show_spot = false
+def_state_moving1 = blow_no_cover_panic
+def_state_moving2 = blow_no_cover_panic
+def_state_moving3 = blow_no_cover_panic
+combat_ignore_cond = always
+meet = no_meet
+on_info = %=release_not_seen%
+on_signal = delete | %=release%
+
+[wounded]
+hp_cover = 0.1|false
+hp_fight = 0.1|true

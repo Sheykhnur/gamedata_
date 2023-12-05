@@ -1,0 +1,47 @@
+[logic@gar_small_hangar_leader]
+active = kamper@gar_small_hangar_leader
+
+[kamper@gar_small_hangar_leader]
+path_walk = leader_walk
+path_look = leader_look
+kamp_name = kamp1
+on_info = {+small_hangar_guard_dead} walker@gar_small_hangar_leader
+meet = meet@gar_small_hangar_leader
+
+[meet@gar_small_hangar_leader]
+use				= true
+use_wpn			= true
+
+[walker@gar_small_hangar_leader]
+path_walk = leader_walk
+path_look = leader_look
+def_state_standing = sit_ass
+meet = meet@gar_small_hangar_leader
+
+[logic@gar_small_hangar_guard]
+active = kamper@gar_small_hangar_guard
+
+[kamper@gar_small_hangar_guard]
+path_walk = guard_walk
+path_look = guard_look
+kamp_name = kamp1
+on_info = {+small_hangar_leader_dead} walker@gar_small_hangar_guard
+
+[walker@gar_small_hangar_guard]
+path_walk = guard_walk
+path_look = guard_look
+def_state_standing = sit_ass
+
+[logic@gar_small_hangar_guard2]
+active = kamper@gar_small_hangar_guard2
+
+[kamper@gar_small_hangar_guard2]
+path_walk = guard_look
+path_look = guard_walk
+kamp_name = kamp1
+on_info = {+small_hangar_leader_dead} walker@gar_small_hangar_guard2
+
+[walker@gar_small_hangar_guard2]
+path_walk = guard_look
+path_look = guard_walk
+def_state_standing = sit_ass

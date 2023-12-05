@@ -1,0 +1,37 @@
+;DOOR TO THE VATS ROOM (WITH A C/S)
+[logic]
+active = ph_door@locked
+
+[ph_door@locked]
+closed = true
+locked = true
+snd_open_start = metal_small_locked
+tip_open = bun_broken_lock
+on_info = {+war_doors_unlocked} ph_door@closed
+on_info2 = {+war_sc3_start -war_sc3_end} ph_door@open_script
+
+[ph_door@closed]
+closed = true
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@open
+on_info = {+war_sc3_start -war_sc3_end} ph_door@open_script
+
+[ph_door@open]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_use = ph_door@closed
+on_info = {+war_sc3_start -war_sc3_end} ph_door@open_script
+
+[ph_door@open_script]
+closed = false
+locked = false
+snd_open_start = metal_small_open
+snd_close_start = metal_small_close_start
+snd_close_stop = metal_small_close_stop
+on_info = {+war_sc3_end} ph_door@open

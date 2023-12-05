@@ -1,0 +1,11 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_actor_inside = {=actor_has_item(wpn_ak74_m0) -gar_sniper_killed -gar_cutscene_end} sr_cutscene %=disable_ui%
+
+[sr_cutscene]
+point = gar_cam_point
+look = gar_cam_look
+cam_effector = gar_sniper
+on_signal = cameff_end | nil %+gar_cutscene_end =enable_ui =release%

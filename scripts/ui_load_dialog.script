@@ -1,0 +1,341 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : ui_load_dialog.script
+ Description: Load Dialog for STALKER (Extended Edition)
+ Copyright  : 2004 © GSC Game World
+ Author     : Serhiy Vynnychenko (narrator@gsc-game.kiev.ua)
+ Editors    : barin (14.08.2010), SkyLoader(06.05.2013)
+ Last edit  : 06.08.2018 (tomilovsenya) – labels change
+--]] ----------------------------------------------------------------------------------------------
+
+--/------------------------------------------------------------------
+--/ VARIABLEs
+--/------------------------------------------------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "load_item" (CUIListBoxItemEx)
+--/ -----------------------------------------------------------------------------------------------
+function load_item:__init() super()
+	
+	self:SetWndRect(0, 0, 500, 22)
+	self:SetColor(GetARGB(255, 255, 255, 255))
+	
+	self.fn = self:GetTextItem()
+	--self.fn:SetAutoDelete(true)
+	--self:AttachChild(self.fn)
+	--self.fn:SetWndRect(0, 0, 230, 22)
+	self.fn:SetText("filename")
+	self.fn:SetFont(GetFontLetterica18Russian())
+	self.fn:SetTextColor(GetARGB(255, 255, 255, 255))
+	self.fn:SetTextAlignment(CGameFont.alLeft)
+	
+	self.fage = self:AddTextField("fileage", 160)
+	--self.fage:SetAutoDelete(true)
+	--self:AttachChild(self.fage)
+	--self.fage:SetWndRect(260, 0, 160, 22)
+	self.fage:SetWndPos(250, 0)
+	--self.fage:SetText()
+	self.fage:SetFont(GetFontLetterica16Russian())
+	self.fage:SetTextColor(GetARGB(255, 255, 255, 255))
+	self.fage:SetTextAlignment(CGameFont.alRight)
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "load_dialog" (CUIScriptWnd)
+--/ -----------------------------------------------------------------------------------------------
+function load_dialog:__init() super()
+	self:InitControls()
+	self:InitCallBacks()
+	self:FillList()
+end
+
+function load_dialog:__finalize()
+end
+
+function load_dialog:reset()
+	self:GetListBox("list_window"):RemoveAll()
+	self:FillList()
+end
+
+function load_dialog:FillList()
+	local f = getFS()
+	local flist = f:file_list_open_ex("$game_saves$", bit_or(FS.FS_ListFiles, FS.FS_RootOnly), "*.sav")
+	local f_cnt = flist:Size()
+	
+	flist:Sort(FS.FS_sort_by_modif_down)
+	
+	for	it = 0, f_cnt - 1 do
+		local file = flist:GetAt(it)
+		local file_name = string.sub(file:NameFull(), 0, (string.len(file:NameFull()) - 4))
+		local date_time = "[ " .. file:ModifDigitOnly() .. " ]"
+		self:AddItemToList(file_name, date_time)
+	end
+end
+
+function load_dialog:InitControls()
+	self:Init(0, 0, 1024, 768)
+	
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_mm_load_dlg.xml")
+	
+	local ctrl = nil
+	
+	local st = xml:InitStatic("back_video", self)
+	st:InitTexture("ui\\ui_vid_back_04")
+	
+	--xml:InitStatic("back_video", self)
+	
+	xml:InitStatic("background", self)
+	--xml:InitStatic("newspaper_video", self)
+	
+	self.form = xml:InitStatic("form", self)
+	
+	xml:InitStatic("form:caption", self.form)
+	
+	ctrl = xml:InitStatic("form:picture", self.form)
+	ctrl:SetStretchTexture(true)
+	ctrl:SetWindowName("static_pict")
+	
+	xml:InitStatic("form:file_info", self.form)
+	
+	self.file_caption = xml:InitStatic("form:file_caption", self.form)
+	self.file_data = xml:InitStatic("form:file_data", self.form)
+	
+	xml:InitFrame("form:list_frame", self.form)
+	
+	self.list_wnd = xml:InitListBox("form:list", self.form)
+	
+	self:Register(self.list_wnd, "list_window")
+	
+	ctrl = xml:Init3tButton("form:btn_load", self.form)
+	self:Register(ctrl, "button_load")
+	
+	ctrl = xml:Init3tButton("form:btn_delete", self.form)
+	self:Register(ctrl, "button_del")
+	
+	ctrl = xml:Init3tButton("form:btn_cancel", self.form)
+	self:Register(ctrl, "button_back")
+	
+	self.message_box = CUIMessageBoxEx()
+	self:Register(self.message_box, "message_box")
+end
+
+function load_dialog:InitCallBacks()
+	self:AddCallback("button_load", ui_events.BUTTON_CLICKED,          self.OnButton_load_clicked, self)
+	self:AddCallback("button_back", ui_events.BUTTON_CLICKED,          self.OnButton_back_clicked, self)
+	self:AddCallback("button_del",  ui_events.BUTTON_CLICKED,          self.OnButton_del_clicked,  self)
+	self:AddCallback("message_box", ui_events.MESSAGE_BOX_YES_CLICKED, self.OnMsgYes, self)
+	self:AddCallback("message_box", ui_events.MESSAGE_BOX_OK_CLICKED,  self.OnMsgYes, self)
+	self:AddCallback("list_window", ui_events.LIST_ITEM_CLICKED,       self.OnListItemClicked, self)
+	self:AddCallback("list_window", ui_events.WINDOW_LBUTTON_DB_CLICK,    self.OnListItemDbClicked, self) --/skyloader: LIST_ITEM_DB_CLICKED for ListWnd only
+end
+
+function file_exist(fname)
+	local f = getFS()
+	local flist = f:file_list_open_ex("$game_saves$", bit_or(FS.FS_ListFiles, FS.FS_RootOnly), fname)
+	
+	return (flist:Size() > 0)
+end
+
+function delete_save_game(filename)
+	local save_file = filename .. ".sav"
+	local dds_file = filename .. ".dds"
+	
+	local f = getFS()
+	f:file_delete("$game_saves$", save_file)
+	
+	if file_exist(dds_file) then
+		f:file_delete("$game_saves$", dds_file)
+	end
+end
+
+function file_data(fname)
+	local f = getFS()
+	local flist = f:file_list_open_ex("$game_saves$", bit_or(FS.FS_ListFiles, FS.FS_RootOnly), fname .. ".sav")
+	local f_cnt = flist:Size()
+	if f_cnt > 0 then
+		local file = flist:GetAt(0)
+		local sg = CSavedGameWrapper(fname)
+		
+		local y, m, d, h, min, sec, ms = 0, 0, 0, 0, 0, 0, 0
+		y, m, d, h, min, sec, ms = sg:game_time():get(y, m, d, h, min, sec, ms)
+		
+		local date_time = string.format("%.2d:%.2d %.2d/%.2d/%.2d", h, min, m, d, y)
+		local health = string.format("%s %d%%", game.translate_string("st_health")..":", sg:actor_health() * 100)
+		local st_level = game.translate_string("st_level")
+		local st_name = game.translate_string(sg:level_name())
+		local st_time = game.translate_string("st_time")
+		local str = string.format("%s: %s\\n%s: %s\\n%s", st_level, st_name, st_time, date_time, health)
+		return str
+	else
+		return "no file data"
+	end
+end
+
+function load_dialog:OnListItemClicked()
+	
+	if self.list_wnd:GetSize() == 0 then
+		return
+	end
+	
+	local picture = self:GetStatic("static_pict")
+	
+	local item = self.list_wnd:GetSelectedItem()
+	
+	if item == nil then
+		self.file_caption:SetText("")
+		self.file_data:SetText("")
+		local rect = picture:GetTextureRect()
+		picture:InitTexture("ui\\ui_noise")
+		picture:SetOriginalRect(rect.x1, rect.y1, rect.x2, rect.y2)
+		return
+	end
+	
+	local item_text = item.fn:GetText()
+	self.file_caption:SetText(item_text)
+	self.file_data:SetText(file_data(item_text))
+	
+	if file_exist(item_text .. ".sav") ~= true then
+		self.list_wnd:Remove(item)
+		return
+	end
+	
+	if file_exist(item_text .. ".dds") then
+		picture:InitTexture(item_text)
+	else
+		local rect = picture:GetTextureRect()
+		picture:InitTexture("ui\\ui_noise")
+		picture:SetOriginalRect(rect.x1, rect.y1, rect.x2, rect.y2)
+	end
+end
+
+function load_dialog:OnListItemDbClicked()
+	self:OnButton_load_clicked()
+end
+
+function load_dialog:OnMsgYes()
+	local index = self.list_wnd:GetSelectedIndex()
+	
+	if index == -1 then
+		return
+	end
+	
+	if self.msgbox_id == 1 then
+		local item = self.list_wnd:GetItem(index)
+		if item then
+			local fname = item.fn:GetText()
+			delete_save_game(fname)
+			self.list_wnd:RemoveItem(index)
+			self:OnListItemClicked()
+		end
+	elseif self.msgbox_id == 2 then
+		self:load_game_internal()
+	end
+	
+	self.msgbox_id = 0
+end
+
+function load_dialog:load_game_internal()
+	if self.list_wnd:GetSize() == 0 then
+		return
+	end
+	
+	local index = self.list_wnd:GetSelectedIndex()
+	if index == -1 then
+		return
+	end
+	
+	local item = self.list_wnd:GetItem(index)
+	local fname = item.fn:GetText()
+	
+	local console = get_console()
+	if alife() == nil then
+		if event then --/#+#
+			event("disconnect"):trigger({act="reload"})
+			event("game_load"):trigger({sav=fname})
+		end
+		console:execute("disconnect ui_load_dialog")
+		console:execute("start server(" .. fname .. "/single/alife/load) client(localhost)")
+	else
+		if event then event("game_load"):trigger({sav=fname}) end --/#+#
+		console:execute("load " .. fname)
+	end
+end
+
+function load_dialog:OnButton_load_clicked()
+	if self.list_wnd:GetSize() == 0 then
+		return
+	end
+	
+	local index = self.list_wnd:GetSelectedIndex()
+	if index == -1 then
+		return
+	end
+	
+	local item = self.list_wnd:GetItem(index)
+	if item then
+		local fname = item.fn:GetText()
+		
+		if valid_saved_game(fname) then
+			if alife() and db.actor:alive() then
+				self.msgbox_id = 2
+				self.message_box:Init("message_box_confirm_load_save")
+				self:GetHolder():start_stop_menu(self.message_box, true)
+			else
+				self:load_game_internal()	
+			end
+		else
+			self.msgbox_id = 0
+			self.message_box:Init("message_box_invalid_saved_game")
+			self:GetHolder():start_stop_menu(self.message_box, true)
+		end
+	end
+end
+
+function load_dialog:OnButton_back_clicked()
+	self:GetHolder():start_stop_menu(self.owner, true)
+	self:GetHolder():start_stop_menu(self, true)
+	self.owner:Show(true)
+end
+
+function load_dialog:OnButton_del_clicked()
+	if self.list_wnd:GetSize() == 0 then
+		return
+	end
+	
+	local index = self.list_wnd:GetSelectedIndex()
+	if index == -1 then
+		return
+	end
+	
+	self.msgbox_id = 1
+	self.message_box:Init("message_box_delete_file_name")
+	self:GetHolder():start_stop_menu(self.message_box, true)
+end
+
+function load_dialog:OnKeyboard(dik, keyboard_action)
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	
+	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+		if dik == DIK_keys.DIK_ESCAPE then
+			self:GetHolder():start_stop_menu(self.owner, true)
+			self:GetHolder():start_stop_menu(self, true)
+			self.owner:Show(true)
+		end
+	end
+	
+	return true
+end
+
+function load_dialog:AddItemToList(file_name, date_time)
+	local _itm = load_item()
+	_itm.fn:SetText(file_name)
+	_itm.fage:SetText(date_time)
+	
+	self.list_wnd:AddItem(_itm)
+end
+--/ ------------------------------------------------------------------------------------------------

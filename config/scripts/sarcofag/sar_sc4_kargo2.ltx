@@ -1,0 +1,45 @@
+[combat_ignore@sar_sc4_kargo2]
+
+[danger@sar_kargo2]
+ignore_types  = grenade, corpse, sound, hit
+ignore_distance  = 0
+
+[logic]
+active = remark@sar_sci42_wait
+combat_ignore = combat_ignore@sar_sc4_kargo2
+danger = danger@sar_kargo2
+
+[remark@sar_sci42_wait]
+anim = wait
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@sar_kargo2
+target = sar_scene_4_crates_walk1, 0
+on_info = {=distance_to_obj_ge_by_name(sar_stalker_0028:3)} walker@sar_sci42_walk
+;on_info = {+sar_cargo_reached} walker@sar_sci42_walk
+;on_info2 = {+sar_cargo_synth} walker@sar_sci42_walk
+
+
+[walker@sar_sci42_walk]
+path_walk = sar_scene_4_crates_walk2
+meet = no_meet
+combat_ignore_cond = always
+danger = danger@sar_kargo2
+on_signal = crate2 | walker@sar_sci4_walk43
+def_state_moving1 = sar_loader
+def_state_moving2 = sar_loader
+def_state_moving3 = sar_loader
+
+[walker@sar_sci4_walk43]
+path_walk = sar_scene_4_crates_walk22
+meet = no_meet
+combat_ignore_cond = always
+on_timer = 1800 | walker@sar_sci4_walk44 %+sar_crates_uploaded2%
+
+[walker@sar_sci4_walk44]
+path_walk = sar_scene4_walk_away2
+meet = no_meet
+combat_ignore_cond = always
+target = sar_scene_4_crates_look2, 0
+on_signal = walkedaway | %+sar_sc4_crates_away%
+on_signal2 = kleft2 | %=release%

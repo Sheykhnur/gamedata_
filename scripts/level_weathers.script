@@ -1,0 +1,894 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : level_weathers.script
+ Description: Weather manager
+ Copyright  : 2011 © LA-team
+ Author     : gr1ph00n & Cromm Cruac
+ Editors    : gr1ph00n, Skyloader(23.02.2013,13.03.2017), Rafa, phobos2077
+ Last edit  : 01.2018 [phobos2077]
+--]] ----------------------------------------------------------------------------------------------
+
+
+--/ ------- VARIABLEs
+local weather_mgr = nil
+
+local sModule = script_name()
+
+local blow_ini = ini_file("misc\\surge_manager.ltx")
+local blow_parameters = la_utils.parse_ini_section_to_array(blow_ini,"la_atmosfear_default_paramaters")
+local blowout_enabled = la_utils.str_to_bool(blow_parameters["opt_blowout_enabled"])
+local bDynamicWeather = false
+
+local blow_idle_wait_min = 48*60*60   -- delay between end of previous blowout and start of the next pre-blowout stage
+local blow_idle_wait_max = 96*60*60   -- (max)
+
+local weather_update_delay = 3600 -- delay between trying to select new weather
+local preblow_check_delay = 3600  -- delay to check again for preblowout if previous check failed
+local blow_check_delay = 360  -- delay to check again for blowout if previous check failed
+local blowout_delay_min = 6000 -- two hours minus 20 minutes, this way players will be able to see full (or almost) transition to af_preblowout
+local blowout_delay_max = 7200 -- two hours
+
+STATIC_WEATHER  = 1
+DYNAMIC_WEATHER = 2
+local MIN_CHANGE_PERIOD = 4
+local MAX_CHANGE_PERIOD = 8
+
+local BLOWOUT_STATE_COUNTDOWN = 'c'
+
+local weather_log = false
+
+local no_transition = {
+
+}
+local all_weathers = {
+	"dark",
+	"dark_w",
+	"dark2",
+	"etalon",
+	"etalon_w",
+	"etalon2",
+	"gsc",
+	"gsc_w",
+	"gsc2",
+	"foggy",
+	"foggy_w",
+	"cloudy",
+	"cloudy_w",
+	"cloudy_rw",
+	"partly",
+	"stormy",
+	"clear",
+
+	"af_clear",
+	"af_partly",
+	"af_foggy_sun",
+	"af_foggy",
+	"af_cloudy_sun",
+	"af_cloudy",
+	"af_rain",
+	"af_thunder",
+	"af_clear_fog",
+
+	"la_oldstyle",
+	"la_oldstyle_2",
+
+	"la_storm",
+	"la_dully",
+	"la_dully_fog",
+	"la_clear",
+	"la_sunny",
+	"la_rain",
+	"la_silenthill_sun",
+	"la_silenthill",
+	"la_bluefog",
+
+	"aa_grey",
+	"aa_foggy",
+
+	"ladc_cloudy",
+	"ladc_dark",
+	"wtc_clear",
+
+	"indoor_fog"
+}
+local inverse_all_weathers = {}
+
+local weather_periods = {
+	"very_good",
+	"good",
+	"neutral",
+	"bad",
+	"very_bad",
+	"neutral2",
+	"good2"
+}
+local inverse_weather_periods = {}
+
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+
+local logd = function(fmt, ...)
+	if weather_log then
+		log(fmt, ...)
+	end
+end
+
+--/ ------- Initialize Module
+function init()
+	for idx,v in ipairs(all_weathers) do
+		inverse_all_weathers[v] = idx
+	end
+	for idx,v in ipairs(weather_periods) do
+		inverse_weather_periods[v] = idx
+	end
+	event("presets"):register(PreSets)
+	log("initing level_weathers")
+end
+
+function set_logging(flag)
+	weather_log = flag
+end
+
+--/ ------- Process
+function PreSets(e)
+	log("presets level_weathers")
+	bDynamicWeather = true
+	get_weather_manager()
+	event("update_1sec"):register(update)
+	event("update"):register(check)
+	event("actor_save"):register(save)
+	if HasVar("sav_"..sModule) then
+		local tbl = GetVar("sav_"..sModule,{})
+		weather_mgr:Load(tbl)
+		DelVar("sav_"..sModule) --/ clear
+		logd("has sav","")
+	else
+		logd("not has sav","")
+		weather_mgr:Activate()
+	end
+end
+
+function get_weather_manager()
+	if not weather_mgr then
+		weather_mgr = DynamicWeatherManager()
+	end
+	return weather_mgr
+end
+
+function update(e)
+	weather_mgr:Update()
+end
+
+function check(e)
+	weather_mgr:Check()
+end
+
+function save(e)
+	weather_mgr:Save()
+end
+
+
+--/ ------ Base Class
+class "WeatherManager"
+
+function WeatherManager:__init(w_type)
+	self.set           = false
+	self.default_indor = "indoor"
+	self.weather_type  = w_type
+	self.blowout_types   = {"wave", "psi_storm"}
+	self.active = true
+	log("WeatherManager:__init: is dynamic = %s : %s", tostring(bDynamicWeather), Get_StrTime()) --/#~#
+end
+
+function WeatherManager:GetType()
+	return self.weather_type
+end
+
+function WeatherManager:IsActive()
+	return self.active == true
+end
+
+function WeatherManager:GetBlowIdleWait()
+	return math.random(blow_idle_wait_min, blow_idle_wait_max)
+end
+
+function WeatherManager:Activate()
+	logd("WeatherManager: Activating")
+	
+	self.active = true
+	self.blowout_active = false
+	self.is_afterblow = false
+	self.is_preblow = false
+
+	self.is_underground = false;
+	self.sr_weather = false;
+	self.no_hours = false;
+	
+	self.next_blowout = Get_PastSeconds() + self:GetBlowIdleWait()
+	logd("Initing first blow time [%d]", self.next_blowout)
+	
+	-- this initiation should only affect "new game" if save is not broken
+	self.current_period = "very_good"
+	self.last_period = "very_good"
+	if bDynamicWeather then
+		self.starting_weather = self:GetWeatherFromPeriod("very_good")
+		self.next_weather = self:GetWeatherFromPeriod("very_good")
+		self.first_init = true
+	else
+		self.starting_weather = all_weathers[math.random(#all_weathers)]
+		self.next_weather    = nil
+	end
+	
+	self.transition      	= self.starting_weather
+	self.weather_update  	= Get_PastSeconds() + weather_update_delay
+	self.period_update  	= Get_PastSeconds() + math.random(MIN_CHANGE_PERIOD, MAX_CHANGE_PERIOD)*60*60
+end
+
+function WeatherManager:Active(bStatus)
+	self.active = bStatus
+	
+	logd("WeatherManager:Activate=(%s): %s", bStatus, Get_StrTime())
+end
+
+function WeatherManager:IsBlowActive()
+	return self.blowout_active == true
+end
+
+function WeatherManager:IsBlowoutActive()
+	return self.blowout_active
+end
+
+function WeatherManager:Load(...)
+	--/ sturb
+end
+
+function WeatherManager:Save(...)
+	--/ sturb
+end
+
+
+
+--/ ------Static Weather
+class "StaticWeatherManager" (WeatherManager)
+
+function StaticWeatherManager:__init() super(STATIC_WEATHER)
+	self.default 		 = "default"
+	self.set 			 = false
+end
+
+function StaticWeatherManager:StartPreblow()
+	if not self.blowout_active and can_start_blowout() then
+		self.active = false
+		local type = self.blowout_types[math.random(#self.blowout_types)]
+		if type == "psi_storm" then
+			--log("type = psi storm")
+			psi_storm_manager.start_psi_storm()
+		elseif type == "wave" then
+			--log("type = wave")
+			surge_manager.start_blowout()
+		end
+		self.blowout_active = true
+	else
+		self.blowout_active = false
+		self.active = true
+		self.next_blowout = Get_PastSeconds() + blow_check_delay -- delay it for some time later
+	end
+end
+
+function StaticWeatherManager:BlowEnd()
+	self.active = true
+	self.blowout_active = false
+	self.next_blowout = Get_PastSeconds() + self:GetBlowIdleWait() -- start blow timer again
+end
+
+function StaticWeatherManager:IsPreblowout()
+	return false
+end
+
+function StaticWeatherManager:IsAfterblowout()
+	return false
+end
+
+function StaticWeatherManager:Update()
+	if self:IsActive() then
+		-- If its time for blowout timer
+		if Get_PastSeconds() >= self.next_blowout then
+			logd("Running start preblow")
+			self:StartPreblow()
+		end
+		
+		--log("level weathers static update active = true")
+		if not self.set then
+			self.set = true
+			level.set_weather(if_then_else(IsUnderground(db.sMapNow), self.default_indor, self.default), true)
+			--log("Update:set weather=[%s] for level=[%s]", level.get_weather(), level.name()) --/#~#
+		end
+	else
+		--log("level weathers static update active = false")
+		--log("time factor = [%s]",tostring(level.get_time_factor()))
+		if not self.set then
+			self.set = true
+			level.set_weather(if_then_else(sr_weather.is_actor_inside(), sr_weather.sr_weather_type(), self.default), true)
+		end
+	end
+end
+
+function StaticWeatherManager:SetImmediately(weather)
+	log("Empty function")
+end
+
+function StaticWeatherManager:Check()
+	--stub
+end
+
+function StaticWeatherManager:Load(tbl)
+	if not (tbl.t and tbl.t == self.weather_type) then 
+		self:Activate()
+		return 
+	end --/>
+	self.active = tbl.a
+	--log("static weather load active = [%s]",tostring(self.active))
+	self.blowout_active = tbl.b
+	--log("static weather load blowout active = [%s]",tostring(self.blowout_active))
+	self.next_blowout = tbl.next_blowout or Get_PastSeconds() + self:GetBlowIdleWait()
+end
+
+function StaticWeatherManager:Save()
+	--log("static weather save blowout active = [%s]",tostring(self.blowout_active))
+	local tbl = {}
+	tbl.t = weather_mgr.weather_type
+	tbl.b = self.blowout_active
+	--log("static weather save active = [%s]",tostring(self.active))
+	tbl.a = self.active
+	tbl.next_blowout = self.next_blowout
+	SetVar("sav_"..sModule,tbl)
+end
+
+
+
+--/ ------Dynamic Weather
+class "DynamicWeatherManager" (WeatherManager)
+
+function DynamicWeatherManager:__init() super(DYNAMIC_WEATHER)
+	self.period_sequences = {}
+	self:LoadConfig()
+end
+
+function DynamicWeatherManager:__finalize()
+	--level.remove_pp_effector(999)
+end
+
+function DynamicWeatherManager:LoadConfig()
+	self.period_sequences = parser.read_section(db.lost_alpha_cfg, "weather_manager_periods", "parse_str_num_list")	
+end
+
+function DynamicWeatherManager:StartBlow()
+	if not self.blowout_active and can_start_blowout() then
+		SetVarA(type_chance, Random.I(0,4))
+		la_actor_sleep.set_time_factor() -- если спали в момент, когда актёр спал
+		self:SaveBeforeBlowout()
+
+		--/ Stop preblow and start blowout
+		log("Stop preblow and start blowout: is_preblow = false; blowout_active = true")
+		self.is_preblow = false
+		self.blowout_active = true
+
+		local type = GetVarA(type_chance, 0)
+		if type >= 0 and type < 3 then
+			logd("type = wave")
+			start_real_timer(2.5,"surge_manager.start_blowout")
+		else
+			logd("type = psi storm")
+			start_real_timer(2.5,"psi_storm_manager.start_psi_storm")
+		end
+		
+	elseif self.is_preblow then
+		self.next_blowout = Get_PastSeconds() + blow_check_delay -- delay blowout for some time later
+		self.blowout_active = false
+		self.is_preblow = false
+		self.is_afterblow = true
+	end
+end
+
+--/ Autosave before blowout
+function DynamicWeatherManager:SaveBeforeBlowout()
+	-- check if we already loaded an autosave
+	if self.is_preblow ~= BLOWOUT_STATE_COUNTDOWN then
+		local console = get_console()
+		-- Make sure weather update is run ASAP after save load
+		self.weather_update = Get_PastSeconds()
+		-- Indicate this is autosave, to prevent duplicate autosaves
+		self.is_preblow = BLOWOUT_STATE_COUNTDOWN
+		level.save_allowed(true)
+		local save_param = user_name().." - "..game.translate_string("st_before_blowout")
+		get_console():execute("save "..save_param)
+	end
+end
+
+function DynamicWeatherManager:BlowEnd()
+	logd("BlowEnd")
+	self.next_blowout = Get_PastSeconds() + self:GetBlowIdleWait() -- start blowout timer again
+	self.blowout_active = false
+	self.is_preblow = false
+	self.is_afterblow = true
+	self.weather_update = 0 -- force update weather
+	level.save_allowed(true)
+	local save_param = user_name().." - "..game.translate_string("st_after_blowout")
+	get_console():execute("save "..save_param)
+	if GetVarA("safe_zone", "out") == "out" then
+		level.save_allowed(false)
+	end
+end
+
+function DynamicWeatherManager:StartPreblow()
+	if not self.is_preblow and not self.blowout_active and can_start_blowout() then
+		logd("Starting preblow")
+		self.is_preblow = true
+		self.next_weather = "af_preblowout"
+		self.weather_update = Get_PastSeconds() + math.random(blowout_delay_min, blowout_delay_max)
+	else
+		self.next_blowout = Get_PastSeconds() + preblow_check_delay -- delay blowout timer for some time later
+	end
+	
+end
+
+function DynamicWeatherManager:IsPreblowout()
+	if not self.is_preblow then
+		return false
+	end
+	local secondsToBlowout = self.weather_update - Get_PastSeconds()
+	return secondsToBlowout < (blowout_delay_min / 2)
+end
+
+function DynamicWeatherManager:IsAfterblowout()
+	return self.is_afterblow
+end
+
+function DynamicWeatherManager:Check()
+	self:HandleNoHours()
+	self:HandleUnderground()
+	self:HandleSrWeather()
+end
+
+function DynamicWeatherManager:Update()
+	if weather_log then
+		log("------")
+		log("Update: Cur time [%s], Select time [%s], NextBlow time [%s], engine.current[0]=[%s], engine.current[1]=[%s], engine.weather() = [%s]",Get_PastSeconds(), self.weather_update, self.next_blowout, level.get_past_wdesc(), level.get_next_wdesc(), level.get_weather(),"--")
+		log("Update: NextW [%s], Past_execution_time %f, Next_execution_time %f, Environment_time %f", self.next_weather, level.get_past_wdesc_execution_time(), level.get_next_wdesc_execution_time(), level.get_weather_game_time(), "--")
+	end
+
+	-- Init engine weather if new game
+	if (self.first_init) then
+		if weather_log then log("Inting engine weather: 1 engine.current[0]=[%s], engine.current[1]=[%s]", level.get_past_wdesc(), level.get_next_wdesc(),"") end
+		
+		-- Hard-set engine weather first
+		level.set_weather(weather_mgr.starting_weather, true)
+		-- This wiil make engine selector to select our next weather when get_next_wdesc_execution_time == get_weather_game_time (will happen at 8:00 with current Lost Alpha new game start time)
+		level.set_weather(weather_mgr.next_weather, false) 
+		
+		if weather_log then log("Inting engine weather: 2 engine.current[0]=[%s], engine.current[1]=[%s]", level.get_past_wdesc(), level.get_next_wdesc(),"") end
+		
+		self.first_init = false
+	end
+
+	-- If its time for blowout timer
+	if Get_PastSeconds() >= self.next_blowout then
+		if weather_log then log("Running start preblow") end
+		self:StartPreblow()
+	end	
+	
+	-- If its time, then select new period
+	if Get_PastSeconds() >= self.period_update then
+		if weather_log then log("Running period update") end
+		self:ChangePeriod()
+	end
+	
+	-- Look its right time to select next weather
+	if Get_PastSeconds() >= self.weather_update then
+		if not self.blowout_active and not self.is_underground and not self.sr_weather and not self.no_hours then	
+			if weather_log then log("Run next weather selector") end
+			self:SelectWeather()
+		end
+		self.weather_update = Get_PastSeconds() + weather_update_delay
+	end
+	
+	if weather_log then log("Try meet cond list to set engine weather, ?(!self.blowout_active) and  ?(!self.is_afterblow) and ?(next_weather %s, != engine.weather %s)", self.next_weather, level.get_weather()) end
+	if not self.blowout_active and not self.is_afterblow and self.next_weather and self.next_weather ~= level.get_weather() then -- select only if not in blowout and next weather is different from engine's current
+		doselect = false
+		
+		if weather_log then log("check time, get_weather_game_time = %s, get_next_wdesc_execution_time = %s", level.get_weather_game_time(), level.get_next_wdesc_execution_time()) end
+		if(level.get_weather_game_time() > level.get_next_wdesc_execution_time() and level.get_weather_game_time() >= 86300.0)then -- special for weather selection time betwean 23:00 and 00:01
+			doselect = true
+			if weather_log then log("special time triggered") end
+		elseif((level.get_weather_game_time() + 100.0 >= level.get_next_wdesc_execution_time()))then -- for weather selection time betwean 00:01 and 23:00
+			doselect = true
+			if weather_log then log("regular time triggered") end
+		end
+		
+		if(doselect)then
+			level.set_weather(self.next_weather, false) -- Set next weather for engine selector
+		end
+	end
+	
+end
+
+function DynamicWeatherManager:ChangePeriod()
+
+	if self.no_hours then
+		self.period_update = Get_PastSeconds() + 3600
+	else		
+		local cp = inverse_weather_periods[self.current_period] or 1
+		local lp = inverse_weather_periods[self.last_period] or 1
+		log("cp = %d",cp)
+		log("lp = %d",lp)
+		log("wp = %d",#weather_periods)
+		
+		if lp <= cp and cp < #weather_periods or cp == 1  then
+			d = 1
+		else
+			d = -1
+		end
+		
+		cp = cp + d
+		self.last_period = self.current_period
+		self.current_period = weather_periods[cp]
+		
+		log("CHANGING PERIOD FROM %s TO %s", self.last_period, self.current_period)
+		
+		self.period_update = Get_PastSeconds() + math.random(MIN_CHANGE_PERIOD, MAX_CHANGE_PERIOD)*60*60	
+	end
+end
+
+function DynamicWeatherManager:SelectWeather()
+	if not self.is_preblow and not self.is_afterblow and not self.blowout_active then -- Critical here to not interupt weather after blowout
+		self.next_weather = self:GetWeatherFromPeriod(self.current_period)
+		
+		log("Selecting next_weather: [%s]", self.next_weather)
+	end
+	
+	-- For handling continious no hours(> 1 hour in a row)
+	if self.no_hours then
+		self.next_weather = self.previous_weather
+
+		if weather_log then log("SelectWeather: Handling no hours, keeping previous weather [%s]", self.next_weather) end
+	end
+
+	if self.is_preblow then
+		if weather_log then log("SelectWeather: it was preblowout, starting blowout") end
+
+		self:StartBlow()
+	elseif self.is_afterblow then
+		if weather_log then log("SelectWeather: it was afterblow, switching to thunder") end
+
+		self.is_afterblow = false
+
+		self.next_weather = "af_thunder"
+		self.last_period = self.current_period
+		self.current_period = weather_periods[4]
+
+		if weather_log then log("CHANGING PERIOD FROM %s TO %s", self.last_period, self.current_period) end
+
+		self.period_update = Get_PastSeconds() + math.random(MIN_CHANGE_PERIOD, MAX_CHANGE_PERIOD)*60*60
+	end
+
+	if weather_log then log("Selected next weather: next [%s], time [%s]", self.next_weather, Get_StrTime()) end
+end
+
+function DynamicWeatherManager:SetImmediately(weather)--for console command "set_weather"
+	log("Section: %s", weather)
+
+	local continue = false
+	for v in ipairs(all_weathers) do
+		if all_weathers[v] == weather or weather == "af_preblowout" then
+			continue = true
+			break
+		end
+	end
+	if not continue then
+		log("Can't find weather section: %s", weather)
+		return
+	end
+
+	log("Immediate transition: [%s]~>[%s]", level.get_weather(), weather)
+	self.next_weather = weather
+	level.set_weather(weather, true)	
+end
+
+function DynamicWeatherManager:GetWeatherFromPeriod(period)
+	local seq = self.period_sequences[self.current_period]
+	
+	local found = false
+	for v in ipairs(weather_periods) do
+		if period == weather_periods[v] then
+			found = true
+			break
+		end
+	end
+	if(found)then
+		seq = self.period_sequences[period]
+		
+		if weather_log then log("Chosing weather from specified period %s", period) end
+	end
+	
+	local sum=0
+	for st,prob in pairs(seq) do
+		sum=sum+prob
+		--log("Get weather form preiod: weather %s probability %s", st, prob)
+	end
+	
+	local rnd=math.random(sum)
+	local next_state
+	for st,prob in pairs(seq) do
+		next_state=st
+		rnd=rnd-prob
+		if (rnd<=0) then
+			break
+		end
+	end
+	if weather_log then log("DRAWING %s FROM %s PERIOD", next_state, self.current_period) end
+	
+	return next_state
+end
+
+function DynamicWeatherManager:HandleUnderground()
+	if IsUnderground(db.sMapNow) then
+		if not self.is_underground then
+			self.is_underground = true
+			logd("HandleUnderground on")
+			self.previous_weather = level.get_weather()
+			self.next_weather = Get_Cfg_String(game_ini(), db.sMapNow, "weathers", "default")
+			level.set_weather(self.next_weather, true)
+			logd("UG weather script [%s] engine [%s]",self.next_weather,level.get_weather(),"")
+		end
+	else
+		if self.is_underground then
+			self.is_underground = false
+
+			self.next_weather = self.previous_weather
+			level.set_weather(self.next_weather, true)	
+			logd("HandleUnderground off")
+		end
+	end
+end
+
+-- TODO: Weather change when entering and exiting Weather Restrictor is instant
+function DynamicWeatherManager:HandleSrWeather()
+	if sr_weather.is_actor_inside() then
+		if not self.sr_weather then
+			self.sr_weather = true
+			logd("HandleSrWeather on")
+			self.previous_weather = level.get_weather()
+			self.next_weather = sr_weather.sr_weather_type()
+			level.set_weather(self.next_weather, true)
+			logd("SR weather script [%s] engine [%s]",self.next_weather,level.get_weather(),"")
+		end
+	else
+		if self.sr_weather then
+			self.sr_weather = false
+			self.next_weather = self.previous_weather
+			level.set_weather(self.next_weather, true)
+			logd("HandleSrWeather off")
+		end
+	end
+end
+
+function DynamicWeatherManager:HandleNoHours()
+	local hours = level.get_time_hours()
+	if no_transition[hours] then
+		if not self.no_hours then
+			self.no_hours = true
+			logd("HandleNoHours on")
+			self.previous_weather = level.get_weather()
+			logd("No transition hours: next weather = [%s]", self.next_weather,"")
+		end
+	elseif self.no_hours then
+		self.no_hours = false
+		if not self.is_underground and not self.sr_weather then
+			logd("No hours ended, Run next weather selector")
+			self:SelectWeather()
+		end
+		logd("HandleNoHours off")
+	end
+end
+
+function DynamicWeatherManager:Load(tbl)
+	if not (tbl.t and tbl.t == self.weather_type) then 
+		self:Activate()
+		return
+	end
+	
+	self.active 			= tbl.w
+	self.is_preblow 		= tbl.p or false -- all these "or" checks are needed in case if game was saved in static mode
+	self.is_afterblow 		= tbl.a or false
+	self.blowout_active 	= tbl.b or false
+	self.next_blowout 		= tbl.next_blowout or Get_PastSeconds() + self:GetBlowIdleWait()
+	
+	self.current_period 	= (tbl.cp) or weather_periods[math.random(#weather_periods)]
+	self.last_period 		= (tbl.lp) or self.current_period
+	self.first_init 		= tbl.first_init or false
+
+	-- Look for next weather variable
+	if(tbl.n)then
+		local isregistered = false
+		for v in ipairs(all_weathers) do
+			if all_weathers[v] == tbl.n or tbl.n == "af_preblowout" then
+				isregistered = true
+				self.next_weather = tbl.n
+				break
+			end
+		end
+		if not(isregistered)then
+--			log("Not registered next weather type in save data or it is null or game save was made in r1")
+			self.next_weather = self:GetWeatherFromPeriod(self.current_period)
+		end
+	end
+	
+	self.previous_weather = tbl.prev_w or "af_cloudy"
+	
+	local hours = level.get_time_hours()
+	
+	-- These are needed to save, otherwise, after loading, weather will not quit from these states
+	self.is_underground 	= tbl.was_underground or false
+	self.sr_weather 		= tbl.was_sr_weather or false
+	self.no_hours			= tbl.was_no_hours or false
+	
+	self.weather_update 	= tbl.s or 0
+	self.period_update 		= tbl.sp or 0
+
+	-- Set engine weather
+	local engine_current 	= tbl.ec or "default_cloudy_10_00"
+	local engine_next 		= tbl.en or "default_cloudy_11_00"
+	
+	local engineweather = tbl.enginecurrent or "af_cloudy"
+	level.set_weather(engineweather, false)
+	
+	level.set_past_wdesc(engine_current)
+	level.set_next_wdesc(engine_next)
+	
+	if weather_log then 
+		log("Loading WState was_underground = [%s], was_sr_weather = [%s], was_no_hours = [%s], blowout_active = [%s], is_preblow = [%s], is_afterblow = [%s]", self.is_underground, self.sr_weather, self.no_hours, self.blowout_active, self.is_preblow, self.is_afterblow)
+		log("Loading engine weather: engine.current[0]=[%s], engine.current[1]=[%s]", level.get_past_wdesc(), level.get_next_wdesc(),"")
+		log("Loading Weather: NextW select=[%s], Next Blowout=[%s], NextP select=[%s], Period=[%s], NextW=[%s], PreviousW=[%s], NeedInit=[%s]", self.weather_update, self.next_blowout, self.period_update, self.current_period, self.next_weather, self.previous_weather, self.first_init, "")
+	end
+end
+
+function DynamicWeatherManager:Save()
+	local tbl = {}
+	
+	tbl.n 				= self.next_weather
+	tbl.prev_w 			= self.previous_weather
+	tbl.enginecurrent 	= level.get_weather()
+
+	tbl.ec 				= level.get_past_wdesc()
+	tbl.en 				= level.get_next_wdesc()
+	
+	tbl.w 				= self.active
+	tbl.b 				= self.blowout_active
+	tbl.p 				= self.is_preblow
+	tbl.a 				= self.is_afterblow
+	tbl.next_blowout 	= self.next_blowout
+	
+	tbl.cp 				= self.current_period
+	tbl.lp 				= self.last_period
+	
+	tbl.s 				= self.weather_update
+	tbl.sp 				= self.period_update
+	tbl.first_init 		= self.first_init
+	
+	tbl.was_underground = self.is_underground
+	tbl.was_sr_weather 	= self.sr_weather
+	tbl.was_no_hours	= self.no_hours
+	
+	tbl.t 				= weather_mgr.weather_type
+	SetVar("sav_"..sModule,tbl)
+	
+	if weather_log then 
+		log("Save WState: was_underground = [%s], was_sr_weather = [%s], was_no_hours = [%s]", tostring(tbl.was_underground), tostring(tbl.was_sr_weather), tostring(tbl.was_no_hours))
+		log("Save Weather: Period=[%s], NextW=[%s], PreviousW=[%s], NextW select = [%s], NextP select = [%s], Engine.current[0]=[%s], Engine.current[1]=[%s], Next Blowout=[%s], NeedInit=[%s]", tbl.cp, tbl.n, tbl.prev_w, tbl.s, tbl.sp, tbl.ec, tbl.en, tbl.next_blowout, tostring(tbl.first_init), "") 
+	end
+end
+
+
+
+--/ ------ Helper Functions
+function start_preblow(t)
+	get_weather_manager():StartPreblow()
+end
+
+function can_start_blowout()
+	if blowout_enabled == false then
+		return false
+	end
+	if db.sMapNow == "la07_military" then
+		if not has_info("mil_blowout_effects") then
+			return false
+		end
+	end
+	
+	--/ level condition for blowout
+	if is_level_blowout_allowed(db.sMapNow) == "false" then
+		logd("level condition not met for blowout")
+		return false --/>
+	end
+	logd("level cond met for blowout")
+	
+	--/ underground level
+	if IsUnderground(db.sMapNow) then
+		logd("is underground")
+		return false --/>
+	end
+	logd("not underground")
+	
+	--/ inside weather space restrictor
+	if sr_weather.is_actor_inside() then
+		logd("is in weather restrictor")
+		return false --/>
+	end
+	logd("not in weather restrictor")
+
+	return true
+end
+
+function is_level_blowout_allowed(lname)
+	local cond,list = false,nil
+	local sCondlist = Get_Cfg_String(blow_ini, lname, "condlist")
+	if sCondlist then
+		logd("sCondlist = [%s]",sCondlist)
+		list = xr_logic.parse_condlist(db.actor, lname, "condlist", sCondlist)
+		logd("list = [%s]",tostring(list))
+	end
+	if list then
+		cond = xr_logic.pick_section_from_condlist(db.actor, db.actor, list)
+	end
+	logd("level condition for [%s] = [%s] and type = [%s]",lname,tostring(cond),type(cond))
+	return cond
+end
+
+function reset_blowout_timer()
+	get_weather_manager().next_blowout = Get_PastSeconds() + self:GetBlowIdleWait()
+end
+
+function get_blowout_mgr()
+	return surge_manager.get_surge_manager()
+end
+
+function get_psi_storm_mgr()
+	return psi_storm_manager.get_psi_storm_manager()
+end
+
+function is_blowout_active()
+	return get_weather_manager():IsBlowoutActive()
+end
+
+function is_preblowout()
+	return get_weather_manager():IsPreblowout()
+end
+
+function is_afterblowout()
+	return get_weather_manager():IsAfterblowout()
+end
+
+function is_any_blowout_period()
+	return (get_weather_manager():IsBlowoutActive() or get_weather_manager():IsAfterblowout() or get_weather_manager():IsPreblowout())
+end
+
+function set_hours(time)
+	if time == 4 or time == 5 then
+		time = 6
+	elseif time == 20 or time == 21 then
+		time = 22
+	end
+	return time
+end
+
+function restart_weather_manager() -- called from engine
+	get_weather_manager():Save()
+	weather_mgr = nil
+	weather_mgr = get_weather_manager()
+	local tbl = GetVar("sav_"..sModule,{})
+	get_weather_manager():Load(tbl)
+	DelVar("sav_"..sModule) --/ clear
+end
+
+function set_weather_manualy(weathertype) --for console command "set_weather"
+	get_weather_manager():SetImmediately(weathertype)
+end
+--/ -----------------------------------------------------------------------------------------------

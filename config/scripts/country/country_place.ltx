@@ -1,0 +1,14 @@
+[logic]
+active = sr_idle@1
+
+[sr_idle@1]
+on_actor_inside = {+country_major_third_mutant_quest_start00} sr_idle@task1 %+country_major_third_mutant_quest_inside =set_community_goodwill_to_actor(military:1000)%
+
+[sr_idle@task1]
+on_info = {+atack_snork_dead3 +atack_karlik_dead3 +atack_plot_dead3} sr_idle@task2 %+country_second_wave_start0%
+
+[sr_idle@task2]
+on_info = {+atack_boar2_dead2 +atack_psydog_dead} sr_idle@task3 %+country_third_wave_start0%
+
+[sr_idle@task3]
+on_npc_in_zone = 10007|mega_cherv_wave_atack_border|nil %+country_major_wave_kontr =release%

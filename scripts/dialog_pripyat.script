@@ -1,0 +1,26 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : dialog_pripyat.script
+ Description: Dialog & InfoPortions Function for pripyat
+ Copyright  : 2011 © LA-team
+ Author     : vintar
+ Editors    : vintar (16.12.2011)
+ Last edit  : 05.04.2013 [...]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ ------------------------------------------------------------------
+--/ VARIABLEs
+--/ ------------------------------------------------------------------
+local sModule = script_name()
+--/ ------------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ ------------------------------------------------------------------
+--/ Process
+--/ ------------------------------------------------------------------
+function give_eco_reward(oSpeaker1, oSpeaker2)
+	dialogs.give_items("ecolog_outfit", 1)
+end
+
+function give_kruglov_flash(oSpeaker1, oSpeaker2)
+	dialogs.relocate_item_section(oSpeaker2, "kruglov_flash", "out")
+end
+--/ -----------------------------------------------------------------------------------------------

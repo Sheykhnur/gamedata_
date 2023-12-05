@@ -1,0 +1,812 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : se_respawn.script
+ Description: Respawner. Схема обновления популяции всего всего всего в симуляции.
+ Copyright  : 2004 © GSC Game World
+ Author     : Диденко Руслан (Stohe)
+ Editor     : barin(21.08.2010)
+ Last edit  : 29.05.2018 [cz07]
+--]] ----------------------------------------------------------------------------------------------
+
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local tIdleSpawnPreset = { --/ game-minutes
+	very_rare	= { 120*60, 160*60 },
+	rare		= { 100*60, 120*60 },
+	seldom		= { 80*60, 94*60 },
+	medium		= { 60*60, 72*60 },
+	often		= { 40*60, 52*60 },
+	very_often	= { 20*60, 36*60 }
+}
+local alife_respawn_only_offline = true
+local population_ltx     = "lost_alpha\\respawn\\population_ctrl.ltx"
+local bPopulationControl = false
+local tPopulations       = {}
+
+local RESPAWN_RADIUS     = (system_ini():r_u32("alife", "switch_distance"))*2.5--/ радиус респауна (330)
+local tRespawners        = {} --/ массив указателей на респавнеры по 'name': Table[obj:name()] = se_obj
+local tRespawnerByParent = {} --/ массив указателей на респавнеры по 'parent': Table[iStoryID] = se_obj (где SID - "parent")
+local tSpawnSections     = {} --/ кешированные общие параметры секций объектов
+local sMapNow,idMapNow --/ текущий уровень
+--/ --------------------------
+local tDbgName = {}
+local bDebug  = false --/ false|true от(в)лючен режим отладки
+local bInit   = false --/ flag of initialization of the module
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Initialize
+--/ -----------------------------------------------------------------
+function init()
+--	log("init:[>]") --/#~#
+	if bInit then return end
+	event("presets"):register(PreSets)
+	bInit = true
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Process (функции)
+--/ -----------------------------------------------------------------------------------------------
+function InitDebug()
+	if db.tDbgName then
+		tDbgName = db.tDbgName
+		bDebug = true
+	end
+end
+function PreSets(e)
+	event("item_take_from_box"):register(OnTake_FromBox)
+	sMapNow,idMapNow = db.sMapNow,db.idMapNow
+	for _,v in pairs(tRespawners) do
+		v:clear_spawned()
+	end
+end
+--/ Проверка взятия актором предмета из ящика смарттерейна
+function OnTake_FromBox(e) --/uo,oBox,oItem,box_id,item_id
+--	log("OnTake_FromBox:box_id=[%s/%s],item_id=[%s]:[%s]", e.box_id, e.box and e.box:story_id(), e.item_id, ">") --/#~#
+	if e.box and e.item_id then
+		local oRespawner = tRespawnerByParent[e.box:story_id()]
+		if oRespawner then --/ актор взял предмет из ящика с респавном смарттерейна (гулага)
+			local bSpawned = oRespawner:clear_spawned_item(e.item_id) --/ чистим список респавнера
+			if bSpawned and math.random() > 0.15 then--/ взят заспавненный предмет
+				if bDebug then log("OnTake_FromBox:=[%s],Sid=[%s],Item=[%s],Respawner=[%s]", e.box:name(), e.box:story_id(), e.item:name(), oRespawner:name(), "") end --/#~#
+				local oSmartTerrain = db.strn_by_respawn and db.strn_by_respawn[oRespawner:name()]
+				if oSmartTerrain and oSmartTerrain.gulag then --/ ящик из гулага
+					local oNPC = oSmartTerrain.gulag:get_nearest_online_obj(db.actor:position())
+					if oNPC and oNPC:see(db.actor) then --/ гулаг не пуст - обижаем его обитателей на актора
+						xr_gulag.setGulagEnemy(oSmartTerrain:name(), db.actor)
+						xr_sound.set_sound_play(oNPC, "reac_box")
+					end
+				end
+			end
+		end
+	end
+end
+
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "se_respawn" (cse_alife_smart_zone)
+--/ -----------------------------------------------------------------------------------------------
+function se_respawn:__init(section) super(section)
+	self.is_enabled = false
+
+	self.spawned_ids = {}
+	self.metka       = "" --/ for debug
+	
+	if not editor() then
+		self.respawn_time = game_timer.GameTimer() --/< game.get_game_time()
+	end
+end
+
+function se_respawn:STATE_Write(packet)
+	cse_alife_smart_zone.STATE_Write(self, packet)
+
+	if self.is_enabled then
+		self.respawn_time:save(packet)
+		self:clear_spawned() --/ проверка/чистка списка заспавненного
+		local size = #self.spawned_ids
+		packet:w_u8(size)
+		
+		for i = 1, size do
+			packet:w_u16(self.spawned_ids[i])
+		end
+	end
+end
+
+function se_respawn:STATE_Read(packet, size)
+	cse_alife_smart_zone.STATE_Read(self, packet, size)
+	
+	if editor() then return end --/>
+	
+	if packet:r_elapsed() > 0 then
+		self.respawn_time:load(packet)
+		self.next_spawn_time_present = true
+		local size = packet:r_u8()
+		for i = 1, size do
+			table.insert(self.spawned_ids, packet:r_u16())
+		end
+	end
+end
+
+function se_respawn:on_register()
+	cse_alife_smart_zone.on_register(self)
+	
+	local ini = self:spawn_ini()
+	if not ini:section_exist("respawn") then
+		abort("%s:on_register: [%s] settings are not set!", sModule, self:name(), "")
+		return --/>
+	elseif bDebug then --/ for debug!
+		self.log = tDbgName[self:name()]
+	end
+	
+	local filename = nil
+	
+	if not editor() then
+		filename = Get_Cfg_String(ini, "respawn", "cfg")
+	end
+	if filename then
+		ini = ini_file(filename)
+		if not ini:section_exist("respawn") then
+			abort("[%s] file '%s' does not exist or invalid!", self:name(), filename)
+			return
+		end
+		--log("se_respawn:on_register: %s [cfg=%s]", tostring(self:name()), tostring(filename))
+	end
+	--log("se_respawn:on_register: %s [cfg=%s]", tostring(self:name()), tostring(filename))
+
+	--/ Вычитываем настройки спауна
+	self.respawn_sections = {} --/ таблица секций спавна объектов с вероятностями
+	--/ если default-ов больше, чем значений в ini, то забить недостающие последним значением из ini
+	local tT = this.parse_names(ini:r_string("respawn", "respawn_section")) --/ таблица секций спавна объектов с вероятностями
+	local i,iCnt = 1,#tT
+	while i <= iCnt do
+		local sSection,iProb = tT[i],1
+		if type(sSection) == 'string' then --/ считана строка(секция)?
+			if tonumber(tT[i+1]) then --/ проверка: следом число(вероятность), а не строка(секция)?
+				iProb = tonumber(tT[i+1]) --/ число
+				i = i +2
+			else
+				i = i +1
+			end
+			local tSection = this.r_spawns(sSection) --/ читаем (и кешируем) общие параметры секции спавна
+			local bCheck = (tSection.check == true and bNoCheck ~= true) --/ флаг: проверять получение спавн-объектом гулаговых работ
+			table.insert( self.respawn_sections, { section=sSection, prob=iProb, check=bCheck } )
+		end
+	end
+	if not next(self.respawn_sections) then
+		abort("%s:on_register: [%s] field='respawn_section'~doesn't exist", sModule, self:name(), "")
+	end
+	self.max_spawn    = Get_Cfg_Num32 (ini, "respawn", "max_spawn",  1) --/ число попыток спавна ('за раз')
+	self.min_count    = Get_Cfg_Num32 (ini, "respawn", "min_count",  0) --/ мин. кол-во заспавненных объектов
+	self.max_count    = Get_Cfg_Num32 (ini, "respawn", "max_count", 10) --/ макс. кол-во (дефолтно 'не лимитированный' спавн -1)
+	if self.max_spawn <= 0 then
+		abort("%s:on_initialize:Respawner=[%s],max_spawn=[%s]", sModule, self:name(), self.max_spawn)
+		return --/>
+	elseif self.max_count == -1 then --/ нелимитированный спавн: каждый спавн по 'max_spawn' попыток
+		self.spawn_attempts = true --/ спавн каждый раз по 'max_spawn' попыток
+	elseif self.max_count < self.min_count then
+		abort("%s:on_initialize:Respawner=[%s],min_count[%s]>max_count[%s]", sModule, self:name(), self.min_count, self.max_count)
+		return --/>
+	end
+	--/ list with path names and probabilities
+	--/ spawn_path = guide_tp_bar_point, 10, guide_tp_swamp_point,5
+	self.spawn_path = parser.r_str_num_list(Get_Cfg_String(ini, "respawn", "spawn_path", ""))
+	
+	self.idle_spawn_min,self.idle_spawn_max = Get_Cfg_2Prm(ini, "respawn", "idle_spawn") --/ читаем времена таймаутов между респавнами
+	if not self.idle_spawn_min then
+		abort("%s:on_initialize:Respawner=[%s],field='idle_spawn'=[%s]<~wrong", sModule, self.respawn_name or self:name(), Get_Cfg_String(ini, "respawn", "idle_spawn", "?"))
+	--/ одноразовый спавн (once): (до заданного кол-ва 'max_spawn')
+	elseif self.idle_spawn_min == "once" then
+		if self.log then log("on_initialize:Respawner(ONE)=[%s]:(%s/%s)%s", self.respawn_name or self:name(), self.idle_spawn_min, self.spawn_once, "") end --/#~#
+		self.metka = "ONE"
+		self.spawn_once = true
+		self.idle_spawn_min = 1
+		self.idle_spawn_max = 1
+	--/ событийный спавн (event): доспавн объектов (до заданного кол-ва 'max_spawn')
+	elseif self.idle_spawn_min == "event" or tonumber(self.idle_spawn_min) == -1 then
+		if self.log then log("on_initialize:Respawner(EVE)=[%s]:(%s/%s)(%s)%s", self.respawn_name or self:name(), self.idle_spawn_min, self.max_count, self.max_spawn, "") end --/#~#
+		self.metka = "EVE"
+		self.spawn_event = true
+		self.idle_spawn_min = -1
+		self.idle_spawn_max = -1
+		self.next_spawn_time_present = false --/#+# метка запрета времени респавна
+	--/ периодический спавн
+	else --/ вычитка пресетов
+		self.metka = "PRD"
+		if tIdleSpawnPreset[self.idle_spawn_min] then
+			self.idle_spawn_max = self.idle_spawn_min
+			self.idle_spawn_min = tIdleSpawnPreset[self.idle_spawn_min][1]
+		else
+			self.idle_spawn_min = tonumber(self.idle_spawn_min)
+		end
+		if not self.idle_spawn_max then
+			self.idle_spawn_max = self.idle_spawn_min
+		elseif tIdleSpawnPreset[self.idle_spawn_max] then
+			self.idle_spawn_max = tIdleSpawnPreset[self.idle_spawn_max][2]
+		else
+			self.idle_spawn_max = tonumber(self.idle_spawn_max)
+		end
+		if not (self.idle_spawn_min and self.idle_spawn_max) then
+			abort("%s:on_initialize:Respawner=[%s],field='idle_spawn'<~wrong", sModule, self.respawn_name or self:name())
+		end
+	end
+	
+	self.parent     = Get_Cfg_Num32 (ini, "respawn", "parent") --/ SID объекта 'в который спавнить'
+	self.item_spawn = Get_Cfg_Bool  (ini, "respawn", "item_spawn", self.parent ~= nil) --/ флаг спавна предметов
+	if self.item_spawn then --/ item respawner
+		self.respawn_radius = Get_Cfg_Num32 (ini, "respawn", "respawn_radius", -1)
+	else --/ alife respawner
+		if alife_respawn_only_offline == true then
+			--/ respawner will be active only in offline mode to avoid
+			--/ situations when actor is witness of alife being spawned
+			self.respawn_radius = -1 --/ отключен онлайновый спавн
+		else --/ дистанция (м) до ГГ деактивации спавна (-1 - отключен онлайновый спавн)
+			self.respawn_radius = Get_Cfg_Num32 (ini, "respawn", "respawn_radius", -1)
+		end
+	end
+	
+	--/ параметры условий и вероятностей спавна:
+	self.str_conditions = Get_Cfg_String(ini, "respawn", "conditions", "70") --/ строка (дефолтно безусловная вероятность 100%)
+	self.conditions     = xr_logic.parse_condlist(self, "respawn", "conditions", self.str_conditions) --/ таблица условий и вероятности
+	
+	--/#+#
+	self.level_name = alife():level_name(game_graph():vertex(self.m_game_vertex_id):level_id())
+	if bPopulationControl then
+		this.read_population(self.level_name)
+	end
+	--/#+# инициализация времени следующего (ре)спавна
+	if not self.next_spawn_time_present then
+		self:setIdleTime()
+		self.next_spawn_time_present = true
+	end
+	
+	--/ сохраняем указатель на респавнер (для коллбэков и сбора статистики)
+	tRespawners[self:name()] = self
+	if self.parent then
+		tRespawnerByParent[self.parent] = self
+	end
+	--/ регистрация респавнера (отметка мапспотом и для статистики)
+	--sim_statistic.register_respawn(self)
+	--if game.developer_mode() then
+	--	self:show_respawn_debug_spot1(true)
+	--end
+	self.is_enabled = true
+	if self.log then log("on_register: "..tostring(self)) end --/#~#
+end
+
+function se_respawn:on_unregister()
+	cse_alife_smart_zone.on_unregister(self)
+--	log("on_unregister:Respawner=[%s/%s]", self:name(), self.id, "") --/#~#
+end
+--/ ---------------------------------------------
+--/ Updates (on&off-line)
+--/ ---------------------------------------------
+--/ offline: обновление в оффлайне (вызов из симулятора)
+function se_respawn:update()
+	cse_alife_smart_zone.update(self)
+	self:execute()
+end
+--/ online update
+function se_respawn:update_online()
+	if self.is_enabled and self.respawn_radius ~= -1 then --/ can be updated only in offline mode
+		if self.respawn_radius <= self.position:distance_to(db.actor:position()) then
+			self:execute()
+		end
+	end
+end
+--/ ---------------------------------------------
+--/ Обновление респавнера. В зависимости от настроек обновляется либо только в офлайне, либо и там и там.
+--/ ---------------------------------------------
+function se_respawn:execute()
+	if self.is_enabled and self.respawn_time:expired() then
+--		log("execute: "..tostring(self)) --/#~#
+		self:setIdleTime()
+		self:spawn()
+		--if game.developer_mode() then
+		--	self:show_respawn_debug_spot1(true)
+		--end
+	end
+end
+
+function se_respawn:setIdleTime()
+	local iTimeIdle,iShift = math.random(self.idle_spawn_min, self.idle_spawn_max),0 --/ вычисляем тайм-аут (sec)
+	if self.idle_spawn_min == self.idle_spawn_max then --/ если нет диапазона:
+		iShift = math.floor(iTimeIdle*0.1) --/ погрешность (10%)
+		iTimeIdle = iTimeIdle + math.random(-iShift,iShift) --/ рандомный тайм-аут (sec)
+	end
+	local h,f = math.modf(iTimeIdle / 60)
+	local m = iTimeIdle - (h * 60)
+	self.respawn_time:reset(h,m,0, 0)
+end
+
+function se_respawn:create(p)
+	local prob = tonumber(p)
+	if not prob then
+		if tostring(p) == 'true' then
+			prob = 80
+		elseif tostring(p) == 'false' then
+			return false --/>
+		else
+			table.print(self.conditions)
+			abort("create:Respawner=[%s/%d]~spawn probability doesn't set:<%s>", self:name(), self.id, "Error!")
+			return false --/>
+		end
+	end
+	
+	if prob == 100 or prob >= Random.I(100) then
+		--/ производим рандомную взвешенную выборку (с учетом уже заспавленного кол-ва)
+		local spawn_section = ""
+		local sum = 0
+		local disallowed = {}
+		
+	--	if self.level_name then --/ == bPopulationControl
+	--		for _,v in pairs(self.respawn_sections) do
+	--			self:checkPopulation(v.section, disallowed)
+	--			sum = sum + v.prob
+	--		end
+	--	else
+			for _,v in ipairs(self.respawn_sections) do
+				sum = sum + v.prob --/ суммарная вероятность для всех секций спавна
+			end
+	--	end
+		sum = utils.RandomI(0, sum)
+		
+		for _,v in pairs(self.respawn_sections) do
+			sum = sum - v.prob
+			if sum <= 0 then
+				if not disallowed[v.section] then
+					spawn_section = v.section
+					break
+				end
+			end
+		end
+		
+		if spawn_section == "" then
+			return false --/>
+		end
+		
+		local sobj,parent_id = nil,nil
+		if self.parent then
+			sobj = alife():story_object(self.parent)
+			parent_id = sobj and sobj.id
+			if not parent_id then
+				abort("SPAWNING [%s], cannot find parent with SID [%s]", self:name(), self.parent)
+				return
+			end
+		end
+		if parent_id then
+			sobj = alife():create(spawn_section, self.position, self.m_level_vertex_id, self.m_game_vertex_id, parent_id)
+		else
+			if self.spawn_path then
+			sum = 0
+			local spawn_path
+				for s,p in pairs(self.spawn_path) do
+					sum = sum + p
+				end
+				
+				sum = utils.RandomI(0, sum)
+				
+				for s,p in pairs(self.spawn_path) do
+					sum = sum - p
+					if sum <= 0 then
+						spawn_path = s
+                				--log("respawner=[%s] set spawn_path=[%s]", self:name(), spawn_path)
+                				break
+					end
+            			end
+				
+				if level.patrol_path_exists(spawn_path) then
+					local ptr = patrol(spawn_path)
+					local point, lv, gv = ptr:point(0), ptr:level_vertex_id(0), ptr:game_vertex_id(0)
+					sobj = alife():create(spawn_section, point, lv, gv)
+				else
+					sobj = alife():create(spawn_section, self.position, self.m_level_vertex_id, self.m_game_vertex_id)
+				end
+			else
+				sobj = alife():create(spawn_section, self.position, self.m_level_vertex_id, self.m_game_vertex_id)
+			end
+		--	if self:name() == "old_village_bloodsucker_respawner" or self:name() == "old_village_zombie_respawner" then
+		--		log("create:SpawnOBJ!else! [%s/%d] spawn_section=[%s]id[%s]smid[%s]", self:name(), self.id, spawn_section, sobj.id, sobj:smart_terrain_id())
+		--	end
+		--	log("create:SpawnOBJ!else! [%s/%d] spawn_section=[%s]id[%s]smid[%s]", self:name(), self.id, spawn_section, sobj.id, sobj:smart_terrain_id())
+			if self.item_spawn == false then
+				sobj.squad = Random.I(100,105)
+				--self:set_logic(sobj) --/#+?# установка логики (если имеется)
+				if tSpawnSections[spawn_section].check == true then
+					sobj:brain():update(false) --/ force object to select smart terrain
+					if self.log then log("rs:(%s):create: npc=[%s/%s] :(%s)", self:name(), spawn_section, sobj.id, "+") end --/#~#
+				end
+			end
+		end
+		
+		table.insert(self.spawned_ids, sobj.id)
+		return true --/>
+	end
+end
+
+function se_respawn:spawn()
+	--/ Чистка: из списка уже заспавненных объектов удаляем мертвых либо уничтоженных (и невалидных)
+	self:clear_spawned()
+	if #self.spawned_ids >= 128 then
+		log("spawn:(%s):spawned_ids=[%s]:<%s>", self:name(), #self.spawned_ids, "Warning!") --/#~#
+		return --/> переполнение
+	end
+	--/ Определяем вероятность спавна:
+	local sProb = "0"
+	if next(self.conditions) then
+		sProb = xr_logic.pick_section_from_condlist(db.actor_proxy, self, self.conditions) or "0"
+	end
+	if sProb == "0" or sProb == "nil" then
+		if self.log then log("rs:spawn:Respawner=[%s]~CANT SPAWN,probability=[%s]:[%s]", self:name(), sProb, "x") end --/#~#
+		--sim_statistic.respawn_enabled(self, false)
+		return --/> не спавним
+	end
+	if self.log then log("rs:spawn:Respawner=[%s/%s],probability=[%s]%s", self:name(), self.id, sProb, "") end --/#~#
+	--/ Анализируется сколько уже заспавнено и выбирается один из механизмов
+	--/ - либо мы доспавниваем до минимального количества, либо спавним с заданной вероятностью
+	if #self.spawned_ids < self.min_count then
+		--/ экстренный спавн минимального количества объектов
+		while #self.spawned_ids < self.min_count do
+			if not self:create(100) then
+				return --/> спавн закончен
+			end
+		end
+	elseif not self.spawn_event  then--/ если не событийный спавн
+		--/ делаем 'max_spawn' попыток заспавнить объект
+		for i = 1, self.max_spawn do
+			--/ спавн по попыткам спавна или если не превышен предел 'max_count'
+			if self.spawn_attempts or #self.spawned_ids < self.max_count then
+				if self:create(xr_logic.pick_section_from_condlist(db.actor_proxy, self, self.conditions) or "0") == false then
+					return --/> спавн закончен
+				end
+			end
+		end
+	end
+end
+
+function se_respawn:spawn_on_demand(sWhoName)
+	if not self.is_enabled then return end --/>
+	if self.online and (self.respawn_radius == -1 or self.respawn_radius > self.position:distance_to(db.actor:position())) then
+		return --/> в онлайне, но актор далеко или отключен онлайновый спавн (-1)
+	end
+	--/ Очистка списка уже заспавненных объектов:
+	self:clear_spawned() --/ удаляем ID мертвых, уничтоженных или изъятых
+	if #self.spawned_ids >= 128 then --/ ограничение по кол-ву
+		log("spawn_on_demand:(%s):spawned_ids=[%s]:<%s>", self:name(), #self.spawned_ids, "Warning!") --/#~#
+		return --/> переполнение
+	end
+	if self.log then log("spawn_on_demand: %s who=[%s]", tostring(self), tostring(sWhoName)) end --/#~#
+	self:setIdleTime()
+	--/ Определяем вероятность спавна:
+	local sProb = "0"
+	if self.conditions and next(self.conditions) then
+		sProb = xr_logic.pick_section_from_condlist(db.actor_proxy, self, self.conditions) or "0"
+	end
+	if sProb ~= "0" and sProb ~= "nil" then
+		if self.log then log("spawn_on_demand:[%s/%s],cnt=[%s]=>[%s],prob=[%s]:(%s)", self:name(), self.id, #self.spawned_ids, self.max_count, sProb, self.max_spawn, "") end --/#~#
+		for i=1,self.max_spawn do --/ делаем 'max_spawn' попыток заспавнить объект(ы)
+			--/ спавн по попыткам спавна или если не превышен предел 'max_count'
+			if self.spawn_attempts or #self.spawned_ids < self.max_count then
+				if not self:create(sProb) then
+					return --/> спавн закончен
+				end
+			end
+		end
+	elseif self.log then log("spawn_on_demand:(%s):probability=[%s] ~ can`t spawn:[%s]", self:name(), sProb, "Info!") --/#~#
+	end
+	if not bind_shelter.binder_check_new() then
+		abort("...")
+	end
+end
+--/ -----------------------------------------------------------------
+--/#+# 
+--/ -----------------------------------------------------------------
+function se_respawn:checkPopulation(section, tDisallowed)
+	if self.item_spawn == false then
+		local tbl = tSpawnSections[section]
+		if tbl.community == "nil" then
+			abort("%s:checkPopulation:respawner=[%s] ~> [%s] community is nil!", sModule, self:name(), section, "Error!")
+		elseif tbl.rank == "nil" then
+			abort("%s:checkPopulation:respawner=[%s] ~> [%s] rank is nil!", sModule, self:name(), section, "Error!")
+		else
+			if not self.level_name then --/ подстраховка
+				self.level_name = alife():level_name(game_graph():vertex(self.m_game_vertex_id):level_id())
+			end
+			local iCount = xr_statistic.getEntityCount(self.level_name, tbl.community, tbl.rank)
+			local sNpcType = tbl.community .."_".. tbl.rank
+			if tPopulations[self.level_name][sNpcType] == nil then
+				tPopulations[self.level_name][sNpcType] = 10
+			end
+			if tPopulations[self.level_name][sNpcType] <= iCount then
+				tDisallowed[section] = true
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------
+--/#+# Set&Change Logic: запись логики заспавненным объектам
+--/ -----------------------------------------------------------------
+function se_respawn:set_logic(soObj)
+	if self.respawn_logic and (IsMonster(soObj) or IsStalker(soObj)) then
+--	log("rs:set_logic:=[%s],Obj=[%s]/[%s],Logic=[%s]:[%s]", self:name(), soObj:name(), soObj:clsid(), self.respawn_logic, ">") --/#~#
+		local logic_ini = ini_file(self.respawn_logic)
+		if logic_ini:section_exist("logic") then
+			local pk = get_netpk(soObj,1) --/ запрос нет-пакета (only 'state')
+			if pk:isOk() then --/ получен доступ к нет-пакету объекта?
+				local data = pk:get() --/ читаем данные из нет-пакета
+				local tCD = data.custom_data:getTable() --/ получаем таблицу кастом-даты
+				if logic_ini:section_exist("smart_terrains") then --/ заменяем гулаг(и)
+					tCD.smart_terrains = Get_IniSection(logic_ini, "smart_terrains", "string")
+					tCD.logic = {cfg = self.respawn_logic}
+--					log("rs:set_logic:Respawner=[%s],Obj=[%s]:Set_CustomData=[%s]", self:name(), soObj:name(), data.custom_data:getString(), "") --/#~#
+				elseif tCD.smart_terrains then --/ гулаг(и) имеется, добавляем|заменяем логику
+					tCD.logic = {cfg = self.respawn_logic} --/ добавляем|заменяем логику
+--					log("rs:set_logic:Respawner=[%s],Obj=[%s],Add_Logic=[%s]", self:name(), soObj:name(), data.custom_data:getString(), "") --/#~#
+				else --/ заменяем логику 'свободной' от гулагов
+					data.custom_data:setString("[smart_terrains]\nnone = true\n[logic]\ncfg = "..self.respawn_logic)
+--					log("rs:set_logic:Respawner=[%s],Obj=[%s],CustomData=[%s]", self:name(), soObj:name(), data.custom_data:getString(), "")
+				end
+				--table.print(data.custom_data:getTable(),sModule..":CustomData|"..soObj:name()) --/#~# for debug
+				pk:set(data) --/< запись в нет-пакет
+				if self.goes_online ~= nil and IsMonster(soObj) then --/#?# and level.object_by_id(soObj.id)
+					se_monster.tNeedBe_OnLine[soObj.id] = (self.goes_online == true) --/ switch monster online/offline (true/false)
+				end
+			else log("rs:set_logic:Respawner=[%s],Obj=[%s]~Wrong_netpk:<%s>", self:name(), soObj:name(), "Warning!")
+			end
+		else log("rs:set_logic:Respawner=[%s],Obj=[%s],logic=[%s]~wrong:<%s>", self:name(), soObj:name(), self.respawn_logic, "Warning!")
+		end
+	end
+end
+--/ ---------------------------------------------
+--/#+# Clearing: очистка списков уже заспавненных объектов
+--/ ---------------------------------------------
+--/ удаление одиночного ID объекта (используется для ящиков с предметами в смарттеррейнах)
+function se_respawn:clear_spawned_item(item_id)
+	if item_id and next(self.spawned_ids) then --/< ID предмета изъятого из ящика
+--		log("clear_spawned_item:Respawner=[%s/%s]:item_id=[%s]:[%s]", self:name(), self.id, item_id, ">") --/#~#
+		for idx,id in ipairs(self.spawned_ids) do
+			if id == item_id then
+				table.remove(self.spawned_ids, idx)
+				return true --/>
+			end
+		end
+	end
+	return false --/>
+end
+--/ удаление идентификаторов объектов (ID): мертвых, уничтоженных, изъятых из ящиков или с невалидными секциями
+function se_respawn:clear_spawned(item_id)
+	if not (self.respawn_sections and next(self.spawned_ids)) or (self.clear_time or 0) > time_global() then
+		return --/> респавнер не инициализирован или его список пуст или тайм-аут
+	end
+	self.clear_time = time_global() + 5000--/ обновляем тайм-аут: проверять 1 раз в 5 секунд
+--	log("clear_spawned:Respawner=[%s/%s],#Obj=[%s]:[%s]", self:name(), self.id, #self.spawned_ids, ">") --/#~#
+	local id,bRemove,bValided,Obj,sSection,idOwner,soOwner
+	--for idx,id in ipairs(self.spawned_ids) do --/ итерация по списку заспавненных ID
+	local iCount = #self.spawned_ids
+	for idx = iCount, 1, -1 do
+		bRemove = false --/ метка для удаления записи из списка
+		id = self.spawned_ids[idx]
+--		log("clear_spawned:Respawner=[%s/%s]:(%s/%s)", self:name(), self.id, idx, id, "") --/#~#
+		Obj = level.object_by_id(id) or alife():object(id) --/ объект в игре?
+		if not Obj then --/ удаленный объекта
+			bRemove = true
+		elseif IsNPC(Obj) then --/ сталкер/монстр?
+			if self.item_spawn then --/ если спавнились предметы
+				bRemove = true
+			elseif Obj.alive and not Obj:alive() then --/ если мертв
+				bRemove = true
+			end
+		elseif self.parent then
+			--/ проверка 'валидности владельца' при спавне 'в ящик'
+			idOwner = Obj.parent_id or (Obj.parent and Obj:parent() and Obj:parent():id()) --/ ID владельца объекта
+			soOwner = idOwner and alife():object(idOwner) --/ текущий владелец предмета
+			if not soOwner then --/ объект не имеет владельца (или не предмет)
+				bRemove = true
+				if self.log then log("clear_spawned:Respawner=[%s/%s]:Obj=[%s]~not_parent~>clear:[%s/%s]:[%s]", self:name(), self.id, Obj:name(), idx, #self.spawned_ids, "x") end --/#~#
+			elseif self.parent ~= soOwner.m_story_id then --/ объект(предмет) уже не в 'своем' ящике
+				bRemove = true
+				local sOwner = (soOwner and ",Owner=["..soOwner:name().."/"..soOwner.id.."],Sid=("..soOwner.m_story_id..")") or ""
+				if self.log then log("clear_spawned:Respawner=[%s/%s](%s):Obj=[%s]%s~>clear:[%s/%s]:[%s]", self:name(), self.id, self.parent, Obj:name(), sOwner, idx, #self.spawned_ids, "x") end --/#~#
+			end
+		end
+		if not bRemove then
+			--/ проверка соответсвия секции объекта списку секций респавнера
+			sSection = (Obj.section and Obj:section()) or (Obj.section_name and Obj:section_name()) or "nil"
+			bValided = false --/ метка (не)соответствия
+			for _,v in ipairs(self.respawn_sections) do
+				if sSection == v.section then --/ секция объекта соответствует списку?
+					bValided = true
+					break
+				end
+			end
+			bRemove = not bValided
+		end
+		if bRemove then --/ чистить?
+			if self.log and Obj then log("clear_spawned:Respawner=[%s/%s] : Del(%s/%s)=[%s] => Obj=[%s]:[%s]", self:name(), self.id, idx, #self.spawned_ids, id, Obj:name(), "x") end --/#~#
+			table.remove(self.spawned_ids, idx)
+		end
+	end
+end
+
+function se_respawn:__tostring() --/#+#
+	return string.format("%s '%s' map=[%s] time_rest=[%s]", self.metka, self:name(), self.level_name, self.respawn_time:diffString() )
+end
+--/ -----------------------------------------------------------------------------------------------
+--/ Spawn: внешние вызовы событийных спавнов
+--/ -----------------------------------------------------------------------------------------------
+function spawn(sRespName,oWho) --/< спавнер (from 'smart_terrain.script' or 'xr_effects.script')
+	if not db.bGameLoaded then return end --/> #?# еще рано...
+	local se_respawner = sRespName and tRespawners[sRespName]
+	local sWhoName = oWho and type(oWho.name) == 'function' and oWho:name() or ""
+	if se_respawner then
+		se_respawner:spawn_on_demand(sWhoName)
+	else
+		log("spawn: [%s] ~Not exists respawner=[%s] :<%s>", sWhoName, sRespName, "Warning!") --/#~#
+	end
+end
+--/ -----------------------------------------------------------------
+--/#+# Контроль численности спавна
+--/ -----------------------------------------------------------------
+function read_population(sLvName)
+	local ltx = ini_file(population_ltx)
+	if ltx:section_exist(sLvName) then
+		if not tPopulations[sLvName] then
+			tPopulations[sLvName] = {}
+			for i = 0, ltx:line_count(sLvName) - 1 do
+				local result, variable, value = ltx:r_line(sLvName, i, "", "")
+				tPopulations[sLvName][variable] = tonumber(value)
+			end
+		end
+	else
+		abort("%s:read_population: section=[%s] not exist in [%s]", sModule, sLvName, population_ltx, "")
+	end
+end
+--/ -----------------------------------------------------------------
+--/ HELPERs
+--/ -----------------------------------------------------------------
+function parse_names(sString)
+	local tRet = {}
+	if sString then --/#fix#
+		for sStr in sString:gmatch('([%w_%-.\\]+)%p*') do
+			table.insert(tRet, sStr)
+		end
+	end --print_table(tRet,sModule..":Parse_Names|") --/#~#
+	return tRet --/>
+end
+
+function r_2params( spawn_ini, sSection, sField, def1, def2 )
+	if spawn_ini:line_exist( sSection, sField ) then
+		--/ если default-ов больше, чем значений в ini, то забить недостающие последним значением из ini
+		local tT = parse_names( spawn_ini:r_string( sSection, sField ) )
+		if tT[1] then
+			if tT[2] then
+				return tT[1], tT[2] --/>
+			end
+			return tT[1], def2 --/>
+		end
+	end
+	return def1, def2 --/>
+end
+
+function r_spawns(sSection)
+	local tSection = tSpawnSections[sSection]
+	if not tSection then --/ секция еще не считывалась
+		--/ Вычитываем настройки секций респавна для объектов спавна и кешируем их
+		local sini = system_ini()
+		local sCommunity  = Get_Cfg_String(sini, sSection, "community", "nil") --/ для статистики
+		local sRank       = Get_Cfg_String(sini, sSection, "spec_rank", "nil") --/ для статистики
+		local bCheck = true --/ флаг: необходимость проверки получения работы в гулагах
+		local sCustomData = Get_Cfg_String(sini, sSection, "custom_data", "")
+		if sCustomData and sCustomData ~= "" then
+			local cfg_ltx = ini_file(sCustomData)
+			if cfg_ltx and cfg_ltx:section_exist("smart_terrains") then
+				if Get_Cfg_String(cfg_ltx, "smart_terrains", "none", "") == "true" or
+					 Get_Cfg_String(cfg_ltx, "smart_terrains", "respawn_check", "") == "false"
+					then
+					bCheck = false
+				end
+			end
+		end
+		tSection = {section=sSection, check = bCheck, community = sCommunity, rank = sRank}
+		tSpawnSections[sSection] = tSection --/ кешируем
+	end
+	return tSection --/>
+end
+
+--/ Show mark
+--self:show_respawn_debug_spot1(true)
+function se_respawn:show_respawn_debug_spot1(param)
+		local section = "respawn_section = \\n"
+			for k,v in pairs(self.respawn_sections) do
+				section = section .. v.section .. "," .. v.prob .. "\\n"
+			end
+		local p1 = self:name() --tostring(alife():object(self.id))
+		local p2 = tostring(self.str_conditions)
+		local p3 = self.idle_spawn_min
+		local p4 = self.idle_spawn_max
+		local p5 = #self.spawned_ids
+		local p6 = self.min_count
+		local p7 = self.max_count
+		local p8 = self.max_spawn
+		local p9 = tostring(self.respawn_time)
+		local str = self.metka.."\\n"..p1.."\\nconditions = "..p2.."\\nidle min/max = "..p3.."/"..p4.."\\nnext "..p9.."\\n"..section.."\\nmin/max/maxspawn = "..p6.."/"..p7.."/"..p8.."\\nspawned = "..p5.."("..p7..")"
+			if self.spot_showed ~= true then
+				level.map_add_object_spot(self.id, "red_location", str)
+			else
+				level.map_change_spot_hint(self.id, "red_location", str)
+			end
+
+		self.spot_showed = true
+		local section, str, p1, p2, p3, p4, p5, p6, p7, p8, p9 = nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil
+end
+
+function se_respawn:show_respawn_debug_spot2(param)
+		local section = "respawn_section = \\n"
+			for k,v in pairs(self.respawn_sections) do
+				section = section .. v.section .. "," .. v.prob .. "\\n"
+			end
+		local spawned = " "
+		local p1 = self:name()
+		local p2 = tostring(self.str_conditions)
+		local p3 = self.idle_spawn_min
+		local p4 = self.idle_spawn_max
+		local p5 = #self.spawned_ids
+		if p5 > 0 then
+			spawned = "\\n"
+			for i,id in ipairs(self.spawned_ids) do
+				spawned = spawned .. id .."\\n"
+				--local se_obj = alife():object(id)
+				--local sect = se_obj.section and se_obj:section() or se_obj:section_name()
+				--spawned = spawned..sect.."["..id.."]\\n"
+			end
+		end
+		local p6 = self.min_count
+		local p7 = self.max_count
+		local p8 = self.max_spawn
+		local p9 = tostring(self.respawn_time)
+		local str = self.metka.."\\n"..p1.."\\nconditions = "..p2.."\\nidle min/max = "..p3.."/"..p4.."\\nnext "..p9.."\\n"..section.."\\nmin/max/maxspawn = "..p6.."/"..p7.."/"..p8.."\\nspawned = "..p5.."("..p7..")"..spawned
+			if self.spot_showed ~= true then
+				level.map_add_object_spot(self.id, "red_location", str)
+			else
+				level.map_change_spot_hint(self.id, "red_location", str)
+			end
+
+		self.spot_showed = true
+		local section, spawned, str, p1, p2, p3, p4, p5, p6, p7, p8, p9 = nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil
+end
+
+--/ -----------------------------------------------------------------
+--/ (rudiments)
+--/ -----------------------------------------------------------------
+function r_bool(spawn_ini, section, line, default)
+	if spawn_ini:line_exist(section, line) then
+		return spawn_ini:r_bool(section, line)
+	end
+	return default
+end
+function r_str(spawn_ini, section, line, default)
+	if spawn_ini:line_exist(section, line) then
+		return spawn_ini:r_string(section, line)
+	end
+	return default
+end
+function r_num(spawn_ini, section, line, default)
+	if spawn_ini:line_exist(section, line) then
+		return spawn_ini:r_float(section, line)
+	end
+	return default
+end
+function r_2nums(spawn_ini, section, line, def1, def2)
+	if spawn_ini:line_exist(section, line) then
+		local t = parse_names(spawn_ini:r_string(section, line))
+		local n = #t
+		if n == 0 then
+			return def1, def2
+		elseif n == 1 then
+			return t[1], def2
+		end
+		return t[1], t[2]
+	end
+	return def1, def2
+end
+--/ ------------------------------------------------------------------------------------------------

@@ -1,0 +1,104 @@
+--[[-----------------------------------------------------------------------------------------------
+ File       : projector.script
+ Description: 
+ Copyright  : 2008 © LA-team
+ Author     : barin (17.08.2008)
+ Editors    : gr1ph00n (11.09.2011)
+ Last edit  : 30.07.2013 [...]
+--]]-----------------------------------------------------------------------------------------------
+
+--[[ TODO:
+1. Запоминать в сэйвы состояние 'IsBroken' и восстанавливать его, дабы разбитый прожектор не светил вновь...
+--]]
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local projectors = {}
+--/ --------------------------
+local sModule = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+--/ Process
+--/ -----------------------------------------------------------------
+function disable_on_spawn(obj, script_control)
+	if not projectors[obj:id()] then
+		local ini = obj:spawn_ini()
+		if not (ini and ini:section_exist("ph_projector")) then
+			reset_action(obj, script_control)
+			action(obj, object(object.turn_off), cond(cond.time_end))
+			obj:script(false, script_control)
+		end
+	end
+end
+
+function get(obj, ...)
+	local obj_id = obj:id()
+	if projectors[obj_id] == nil then
+		this.Projector(obj, ...)
+	end
+	return projectors[obj_id] --/>
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------
+class "Projector"
+--/ -----------------------------------------------------------------
+function Projector:__init(obj, hspeed, vspeed, script_control)
+	self.object = obj
+	self.obj_id = obj:id()
+	self.rot_hspeed = hspeed or 0.52
+	self.rot_vspeed = vspeed or 0.22
+	self.script = script_control or sModule
+	obj:set_callback(callback.hit, self.hit_callback, self)
+	projectors[self.obj_id] = self
+	--self:turn_on() --/#!# включать принудительно!
+end
+
+function Projector:look_at(wp)
+	if self.broken then return end --/>
+	reset_action(self.object, self.script)
+	action(self.object, look(wp, self.rot_hspeed, self.rot_vspeed), cond(cond.look_end))
+end
+
+function Projector:turn_on()
+	if self.broken then return end --/>
+	reset_action(self.object, self.script)
+	action(self.object, object(object.turn_on), cond(cond.time_end))
+end
+
+function Projector:turn_off()
+	reset_action(self.object, self.script)
+	action(self.object, object(object.turn_off), cond(cond.time_end))
+	self.object:script(false, self.script)
+end
+
+function Projector:reset(hspeed, vspeed)
+	self.rot_hspeed = hspeed or 0.52
+	self.rot_vspeed = vspeed or 0.22
+	self.broken = false
+end
+
+function Projector:remove()
+	self:turn_off()
+	if projectors[self.obj_id] then
+		projectors[self.obj_id] = nil
+	end
+end
+
+--/ ------------------------------------------------------------------
+function Projector:hit_callback(victim, amount, local_direction, who, bone_index)
+	if not self.broken and amount > 0.1 then
+		self.broken = true
+		self:turn_off()
+	end
+end
+
+function Projector:id()
+	return self.obj_id
+end
+
+function Projector:IsBroken()
+	return self.broken == true
+end
+--/ ------------------------------------------------------------------------------------------------

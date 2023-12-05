@@ -1,0 +1,74 @@
+[combat_ignore@cordon_gar_military]
+
+[hit@cordon_gar_military]
+on_info = {=hit_by_actor} %+cordon_gar_military_hostile%
+
+[death@cordon_gar_military]
+on_info = {=killed_by_actor} %+cordon_gar_military_hostile%
+on_info2 = {=gulag_inactive(esc_exit_smart)} %+esc_north_post_eliminated%
+
+[logic@esc_exit_smart_patrol1]
+active = patrol@esc_exit_smart_patrol1
+combat_ignore = combat_ignore@cordon_gar_military
+on_hit = hit@cordon_gar_military
+on_death = death@cordon_gar_military
+
+[patrol@esc_exit_smart_patrol1]
+path_walk = patrol1
+path_look = patrol1_look
+commander = true
+formation = line
+danger = danger@esc_exit_smart
+combat_ignore_cond = {-cordon_gar_military_hostile =fighting_actor}
+
+[logic@esc_exit_smart_patrol2]
+active = patrol@esc_exit_smart_patrol2
+combat_ignore = combat_ignore@cordon_gar_military
+on_hit = hit@cordon_gar_military
+on_death = death@cordon_gar_military
+
+[patrol@esc_exit_smart_patrol2]
+path_walk = patrol2
+path_look = patrol2_look
+commander = false
+formation = line
+danger = danger@esc_exit_smart
+combat_ignore_cond = {-cordon_gar_military_hostile =fighting_actor}
+
+[logic@esc_exit_smart_patrol3]
+active = patrol@esc_exit_smart_patrol3
+combat_ignore = combat_ignore@cordon_gar_military
+on_hit = hit@cordon_gar_military
+on_death = death@cordon_gar_military
+
+[patrol@esc_exit_smart_patrol3]
+path_walk = guard1
+path_look = guard_look1
+move_type = walk
+on_signal = reached | patrol@esc_exit_smart_patrol4
+danger = danger@esc_exit_smart
+combat_ignore_cond = {-cordon_gar_military_hostile =fighting_actor}
+
+[patrol@esc_exit_smart_patrol4]
+path_walk = guard2
+path_look = guard_look2
+move_type = walk
+on_signal = reached1 | patrol@esc_exit_smart_patrol3
+danger = danger@esc_exit_smart
+combat_ignore_cond = {-cordon_gar_military_hostile =fighting_actor}
+
+[logic@esc_exit_smart_walking1]
+active = walker@esc_exit_smart_walking1
+combat_ignore = combat_ignore@cordon_gar_military
+on_hit = hit@cordon_gar_military
+on_death = death@cordon_gar_military
+
+[walker@esc_exit_smart_walking1]
+path_walk = walk1
+path_look = walk1_look
+danger = danger@esc_exit_smart
+combat_ignore_cond = {-cordon_gar_military_hostile =fighting_actor}
+
+[danger@esc_exit_smart]
+;ignore_distance = 80
+

@@ -1,0 +1,21 @@
+[combat_ignore@gen_actor]
+
+[logic]
+active = remark@gen_actor_start
+combat_ignore = combat_ignore@gen_actor
+
+[remark@gen_actor_start]
+anim = gen_actor_bunker_zero
+combat_ignore_cond = always
+target = gen2_actor_target, 0
+on_info = {+gen2_actor_shift} remark@gen_actor_play
+meet = no_meet
+
+[remark@gen_actor_play]
+anim = gen_actor_bunker_start
+target = gen2_actor_target, 0
+combat_ignore_cond = always
+meet = no_meet
+;anim_reset = false
+on_timer = 7000 | %+gen2_cam_synth%
+on_info = {+gen2_start_scene_end} %=release%

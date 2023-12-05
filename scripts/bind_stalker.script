@@ -1,0 +1,411 @@
+--[[ ----------------------------------------------------------------------------------------------
+ File       : bind_stalker.script
+ Description: Stalker binding
+ Copyright  : 2004 © GSC Game World
+ Author     : Didenko Ruslan (Stohe)
+ Editors    : barin(17.08.2010), gr1ph(xx.0x.2012), 08.08.2013 [SkyLoader] & bardak`s stash fix included!
+ Last edit  : 14.12.2017 [lox]
+--]] ----------------------------------------------------------------------------------------------
+-- extra check to avoid some problems
+--/ -----------------------------------------------------------------
+--/ VARIABLEs
+--/ -----------------------------------------------------------------
+local anomaly_evade = true --false
+local tDbgName = {}
+local bDebug   = false --/ false|true enabled\disabled debug mode
+local sModule  = script_name()
+--/ -----------------------------------------------------------------
+local log = function(fmt,...) _G.log(sModule..":"..tostring(fmt),...) end
+--/ -----------------------------------------------------------------
+function InitDebug() --/#+#
+	if db.tDbgName then
+		tDbgName = db.tDbgName
+		bDebug = true
+	end
+end
+--/ -----------------------------------------------------------------
+--/ Stalker binding - registering of objects (obj - human`s game object) in binder
+--/ -----------------------------------------------------------------
+function bind(obj)
+	obj:bind_object( this.stalker_binder(obj) )
+end
+--/ -------------------------
+--/ CLASS CONSTRUCTOR
+--/ -----------------------------------------------------------------------------------------------
+class "stalker_binder" (object_binder)
+--/ -----------------------------------------------------------------------------------------------
+function stalker_binder:__init(obj) super(obj)
+	self.loaded             = false
+	self.initialized        = false
+	self.first_update       = true
+	self.treasure_processed = false
+	self.time_update        = 0
+	self.obj_id             = obj:id()
+	self.obj_cid            = obj:clsid()
+	self.log = bDebug and tDbgName[obj:name()] --/ for debug
+	--self.log = obj:name() == "wild_stalker_0007" --/## debug specific npc
+end
+
+function stalker_binder:reload(section)
+	object_binder.reload(self, section)
+end
+
+function stalker_binder:reinit()
+	object_binder.reinit(self)
+	
+	self.st = db.storage[self.obj_id]
+	if self.st then
+		self.st.followers         = {}
+		self.st.help_request_sent = {}
+	else
+		db.storage[self.obj_id] = { followers = {}, help_request_sent = {} }
+		self.st = db.storage[self.obj_id]
+	end
+	if self.log and not self.st.log then --/ for debug
+		self.st.log = self.log
+	end
+	self.st.state_mgr = state_mgr.bind_manager(self.object, self.log)
+	self.st.move_mgr  = move_mgr.move_mgr(self.object, self.log)
+	self.st.move_mgr:initialize()
+	self.planner = self.object:motivation_action_manager() --/#+#
+end
+
+function stalker_binder:net_spawn(server_obj)
+	local se_obj = alife():object(self.obj_id) --/ real server object
+	local ini = system_ini()
+
+	if se_obj then
+		local visual = Get_Cfg_String(ini, self.object:section(), "set_visual", "")
+
+		if visual ~= nil and visual ~= "" then
+			if visual == "actor_visual" then
+				local suit, sect = db.actor:get_current_outfit(), "without_outfit"
+				if suit then
+					sect = suit:section()
+					if sect == "outfit_base" then
+						sect = "without_outfit"
+					end
+				end
+				visual = Get_Cfg_String(ini, sect, "actor_visual")
+				visual = visual:match('(.*)%.ogf') or visual
+			end
+
+			self.object:set_visual(visual)
+		end
+	end
+
+	if not object_binder.net_spawn(self, server_obj) then return false end --/>
+	--/#+#
+	if not se_obj then
+		log("net_spawn:NPC=[%s/%s],se_obj=NIL:<%s>", self.object:name(), self.obj_id, "Warning!")
+		return true --/>
+	end
+	self.treasure_processed = se_obj.treasure_processed
+	self.wounded            = se_obj.wounded
+	--/<
+	db.add_obj(self.object)
+	
+	if self.object:alive() then
+		self:set_callbacks() --/#!#< All CALLBACKs set here
+	else 
+		self.object:set_callback(callback.use_object, self.use_callback, self)
+	end
+	
+	if not self.loaded then
+		local char_ini = self.object:spawn_ini() or ini_file("scripts\\dummy.ltx")
+		xr_info.loadInfo(self.object, char_ini)
+	end
+	
+	if not self.object:alive() then
+		return true
+	end
+	--/ for zombied - anomalies doesn't exist, disabling check
+	if self.object:character_community() == "zombied" or anomaly_evade == false then
+		self.planner:remove_evaluator(stalker_ids.property_anomaly)
+		self.planner:add_evaluator(stalker_ids.property_anomaly, property_evaluator_const(false))
+	end
+
+	--/ loading of VO.
+	xr_sound.load_sound(self.object)
+	--/ initializing of logic
+	xr_gulag.setup_gulag_and_logic_on_spawn(self.object, self.st, se_obj, modules.stype_stalker, self.loaded)
+	
+	event("npc_spawn"):trigger({obj=self.object,obj_id=self.obj_id,obj_cid=self.obj_cid,se_obj=se_obj,binder=self}) --/#+#>
+	return true
+end
+
+function stalker_binder:net_destroy()
+	event("npc_destroy"):trigger({obj=self.object,obj_id=self.obj_id,obj_cid=self.obj_cid}) --/#+#>
+	if self.st and self.st.active_scheme then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "net_destroy", self.object)
+	end
+	db.del_obj(self.object)
+	db.storage[self.obj_id] = nil
+	self:clear_callbacks() --/#+#
+	self.object:set_callback(callback.use_object, nil) --/#+#
+	self.object:set_callback(callback.on_item_drop, nil)
+	self.object:remove_fast_update()
+	object_binder.net_destroy(self)
+end
+
+function stalker_binder:update(delta)
+	object_binder.update(self, delta)
+	
+	if alife():story_object(10000131) then
+	    alife():release(alife():story_object(10000131), true)
+		parser.dbg_print("GUIDERSMOD: Teleport Deleted.")
+	end
+	local bAlive = self.object:alive()
+	if self.first_update then
+		self.first_update = false
+		self.initialized = self.planner:initialized()
+		if bAlive then
+			self.object:set_callback(callback.on_item_take, self.item_take_callback, self)
+		else
+			death_manager.drop_manager(self.object):create_release_item()
+		end
+	elseif not self.initialized then
+		self.initialized = self.planner:initialized()
+	end
+	self.curr_act_id = self.initialized and self.planner:current_action_id() or db.iMax_s32
+	event("npc_update_dbg"):trigger({binder=self}) --/#+#> for debug
+	
+	if bAlive then
+		if self.st.state_mgr then
+			self.st.state_mgr:update()
+			if not (self.st.state_mgr.combat or self.st.state_mgr.alife) and self.st.trade_mgr then
+				self.st.trade_mgr:update()
+			end
+		end
+		self:update_combat_type() --/#+# update 'combat_type' (switching logic)
+		self:update_usability() --/#+# update usability of character
+		xr_sound.update(self.object)
+		if self.object:is_talk_enabled() then
+			self.object:set_tip_text("character_use")
+		else
+			self.object:set_tip_text("")
+		end
+	else
+		if self.st.trade_mgr then
+			self.st.trade_mgr.enabled = false
+		end
+		self.st.state_mgr = nil
+		self.object:set_tip_text_default()
+	end
+	
+	if self.time_update < time_global() then
+		self.time_update = time_global() + 1000
+		sr_light.check_light(self.object)
+	end
+	
+	event("npc_update"):trigger({obj=self.object,obj_id=self.obj_id,delta=delta}) --/#+#>
+end
+
+function stalker_binder:net_save_relevant()
+	return true
+end
+
+function stalker_binder:save(packet)
+	event("npc_save"):trigger({obj=self.object,obj_id=self.obj_id}) --/#+#>
+	xr_logic.issue_event(self.object, self.st["wounded"], "save") --/#+#
+	set_save_marker(packet, "save", false, sModule, self.object)
+	object_binder.save(self, packet)
+	xr_logic.save_obj(self.object, packet)
+	dialog_manager.save(self.object, packet)
+	trade_manager.save(self.object, packet)
+	set_save_marker(packet, "save", true, sModule, self.object)
+end
+
+function stalker_binder:load(reader)
+	set_save_marker(reader, "load", false, sModule, self.object)
+	object_binder.load(self, reader)
+	if reader:r_eof() then
+		abort("%s:load:SAVE_FILE_IS_CORRUPT:Obj=[%s],ID=[%d]:<%s>", sModule, self.object:name(), self.obj_id, "Error!")
+	end
+	self.loaded = true
+	xr_logic.load_obj(self.object, reader)
+	dialog_manager.load(self.object, reader)
+	trade_manager.load(self.object, reader)
+	set_save_marker(reader, "load", true, sModule, self.object)
+	event("npc_load"):trigger({obj=self.object,obj_id=self.obj_id}) --/#+#>
+end
+
+--/------------------------------------------------------------------
+--/ CALLBACKs
+--/------------------------------------------------------------------
+function stalker_binder:set_callbacks()
+	self.object:set_patrol_extrapolate_callback(self.extrapolate_callback, self)
+	self.object:set_callback(callback.hit,        self.hit_callback, self)
+	self.object:set_callback(callback.death,      self.death_callback, self)
+	self.object:set_callback(callback.use_object, self.use_callback, self)
+	self.object:set_callback(callback.sound,      self.hear_callback, self) --/#?# developers rudiment!
+	self.object:set_callback(callback.on_item_drop, self.item_drop_callback, self)
+end
+function stalker_binder:clear_callbacks()
+	self.object:set_patrol_extrapolate_callback(nil)
+	self.object:set_callback(callback.hit,   nil)
+	self.object:set_callback(callback.death, nil)
+	--self.object:set_callback(callback.use_object, nil)
+	self.object:set_callback(callback.sound,	 nil)
+	self.object:set_callback(callback.on_item_take,	 nil)
+end
+
+--[[SkyLoader: info
+Added callback on hit invulnerable npc-s only to catch 'on_hit =' in logic. Use only for logic parameters, hit values in function below return are not accurate because not all calculated in the engine for invulnerable.]]
+function stalker_binder:hit_callback(obj, amount, local_direction, who, bone_index)
+	--if self.log then log("hit_callback:NPC=[%s],amount=[%s],bone=[%s],Who=[%s]", obj and obj:name(), string.short(amount), bone_index, who and who:name(), "") end --/ #~# 
+	
+	local schemes = {"combat_ignore","combat","hit","wounded"}
+	if self.st.active_scheme then table.insert(schemes, 1, self.st.active_scheme) end
+	xr_logic.issue_event_schemes(self.object, schemes, "hit_callback", obj, amount, local_direction, who, bone_index)
+	
+	if amount > 0 then
+		sr_territory.issue_event(self.object, "hit_callback", obj, amount, local_direction, who, bone_index)
+	end
+	event("npc_hit"):trigger({victim=obj,amount=amount,dir=local_direction,who=who,bone=bone_index}) --/#+#>
+end
+
+function stalker_binder:death_callback(victim, who)
+	--if self.log then log("death_callback:NPC=[%s],Who=[%s]", self.object:name(), who and who:name(), "") end --/#~#
+	xr_logic.issue_event_schemes(self.object, {"death","wounded",self.st.active_scheme}, "death_callback", victim, who)
+	
+	sr_territory.issue_event(self.object, "death_callback", victim, who)
+	sr_light.check_light(self.object,self.obj_id)
+	--xr_sound.set_sound(self.object, nil) --skyloader: already fixed stalker sounds after death
+	--stop_play_sound(self.object)
+	
+	event("npc_death"):trigger({victim=victim,who=who}) --/#+#>
+	death_manager.drop_manager(self.object):create_release_item()
+	
+	if actor_stats.remove_from_ranking then
+		local community = self.object:character_community()
+		if community ~= "zombied" and community ~= "monolith" then
+			actor_stats.remove_from_ranking(self.obj_id)
+		end
+	end
+	
+	self:clear_callbacks()
+	self.object:remove_fast_update() --/#?#
+end
+
+function stalker_binder:use_callback(obj, who)
+	if self.object and self.object:alive() then
+		xr_use.notify_on_use(obj, who)
+		if self.st.active_section then
+			xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "use_callback", obj, who)
+		end
+	end
+	event("npc_used"):trigger({obj=self.object,obj_id=self.obj_id,who=who,who_id=who and who:id()}) --/#+#>
+end
+
+function stalker_binder:extrapolate_callback(cur_pt)
+	if self.st and self.st.active_section then
+		xr_logic.issue_event(self.object, self.st[self.st.active_scheme], "extrapolate_callback")
+		self.st.move_mgr:extrapolate_callback(self.object)
+	end
+	
+	local path_name = self.object:patrol()
+	if level.patrol_path_exists(path_name) and get_patrol(path_name):flags(cur_pt):get() == 0 then
+		return true
+	end
+	return false
+end
+--/#+#
+function stalker_binder:hear_callback(obj, who, sound_type, sound_position, sound_power)
+	if self.st and self.st.hear then
+		xr_logic.issue_event(self.object, self.st.hear, "hear_callback", obj, who, sound_type, sound_position, sound_power)
+	end
+end
+
+function stalker_binder:item_drop_callback(oItem, isDestroy)
+	if not isDestroy then
+		event("item_drop_npc"):trigger({item = oItem, npc = self.object})
+	end
+end
+
+function stalker_binder:item_take_callback(oItem, bSpawn)
+	if not bSpawn then
+		event("item_take_npc"):trigger({item = oItem, npc = self.object})
+	end
+end
+
+--/------------------------------------------------------------------
+--/#+?#
+--/------------------------------------------------------------------
+function stalker_binder:on_scheme_switch()
+	self.object:remove_fast_update()
+	if self.st and self.st.logic then
+		for _,v in pairs(self.st.logic) do
+			if v.name:match("^on_timer%d*$") then
+				self.object:set_fast_update(self.fastcall, self)
+				break
+			end
+		end
+	end
+end
+
+function stalker_binder:fastcall()
+	if self.st and self.st.active_scheme then
+		xr_logic.try_switch_to_another_section(self.object, self.st[self.st.active_scheme], db.actor)
+	end
+end
+
+--/------------------------------------------------------------------
+--/#+# Switching logic 'combat_type' (for update)
+--/------------------------------------------------------------------
+function stalker_binder:update_combat_type()
+	if self.st.active_scheme then --/ having active scheme
+		local switched = false
+		if self.curr_act_id == stalker_ids.action_combat_planner then
+			--/ active scheme ' combat' - proceeding Overrides on_combat
+			local overrides = self.st.overrides --xr_logic.generic_scheme_overrides(self.object)
+			if self.st.overrides then
+				if self.st.overrides.on_combat then
+					xr_logic.pick_section_from_condlist(db.actor, self.object, self.st.overrides.on_combat.condlist)
+				end
+				if self.st.combat and self.st.combat.logic then
+					if xr_logic.try_switch_to_another_section(self.object, self.st.combat, db.actor) then
+						switched = true
+					elseif self.st.overrides.combat_type then
+						xr_combat.set_combat_type(self.object, self.st.overrides)
+					end
+				end
+			elseif self.st.combat then
+				xr_combat.set_combat_type(self.object, self.st.combat)
+			end
+		end
+		if not switched then
+			xr_logic.try_switch_to_another_section(self.object, self.st[self.st.active_scheme], db.actor)
+		end
+	elseif self.st.combat then --/ if not active section, then look combat type in section on_combat
+		xr_combat.set_combat_type(self.object, self.st.combat)
+	end
+	--if self.log then log("update_combat_type:NPC=[%s],combat=[%s]", self.object:name(), self.st.combat, "") end --/#~#
+end
+--/------------------------------------------------------------------
+--/#+# Disable\enable talk with Actor (for update)
+--/------------------------------------------------------------------
+function stalker_binder:update_usability() --/#+#
+	if self.object:critically_wounded() or xr_wounded.is_wounded_by_id(self.obj_id) then --/ injured?
+		self.st.wounded.wound_manager:update()
+	else --if self.st then
+		local meet_mgr = self.st.meet and self.st.meet.meet_manager
+		if meet_mgr and meet_mgr.use then
+			if meet_mgr.use == "true" then
+				if ( xr_help_wounded and xr_help_wounded.is_under_help_wounded(self.object) ) or --/ treatment from 'reserved' scheme of curing wounded
+					 ( xr_corpse_detection and xr_corpse_detection.is_under_corpse_detection(self.object) ) --/ gathering from 'reserved' scheme
+					then
+					self.object:disable_talk()
+				else
+					self.object:enable_talk()
+				end
+			elseif meet_mgr.use == "false" then
+				self.object:disable_talk()
+				if self.object:is_talking() then
+					self.object:stop_talk()
+				end
+			end
+		end
+	end
+end
+--/ -----------------------------------------------------------------------------------------------

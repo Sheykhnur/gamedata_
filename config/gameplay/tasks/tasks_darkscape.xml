@@ -1,0 +1,178 @@
+	<game_task id="ds_borov_documents" prio="3">
+		<title>ds_borov_documents_title</title>
+		<objective>
+			<text>ds_borov_documents_title</text>
+			<icon>ui_iconsTask_get_borov_docs</icon>
+			<article>ds_borov_documents</article>
+			<infoportion_complete>ds_borov_documents_done</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_borov_documents_1</text>
+			<map_location_type hint="ds_mine_exit">green_location</map_location_type>
+			<object_story_id>ds_tunnel_exit</object_story_id>
+			<infoportion_complete>ds_tunnel_exit_reached</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_borov_documents_2</text>
+			<infoportion_complete>ds_dolina_reached</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_borov_documents_3</text>
+			<map_location_type hint="ds_borov_docs">green_location</map_location_type>
+			<object_story_id>dolina_borov_doc</object_story_id>
+			<infoportion_complete>ds_borov_documents_have</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_borov_documents_4</text>
+			<map_location_type hint="ds_borov">green_location</map_location_type>
+			<object_story_id>ds_mine_darkstalker_boss</object_story_id>
+			<infoportion_complete>ds_borov_documents_done</infoportion_complete>
+		</objective>
+	</game_task>
+	
+	<game_task id="ds_find_sin_documents" prio="3">
+		<title>ds_find_sin_documents_title</title>
+		<objective>
+			<text>ds_find_sin_documents_title</text>
+			<icon>ui_iconsTask_find_sin_docs</icon>
+			<article>ds_find_sin_documents</article>
+			<infoportion_complete>secret_documents_done</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_find_sin_documents_1</text>
+			<!--map_location_type hint="ds_to_rostok_factory">green_location</map_location_type>
+			<object_story_id>agr_exit_to_ros</object_story_id-->
+			<infoportion_complete>rosf_actor_reached_level</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_find_sin_documents_2</text>
+	   <!-- <map_location_type hint="ds_secret_docs">green_location</map_location_type>
+			<object_story_id>secret_documents</object_story_id> -->
+			<infoportion_complete>secret_documents_have</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_find_sin_documents_3</text>
+			<map_location_type hint="ds_borov">blue_location</map_location_type>
+			<object_story_id>ds_mine_darkstalker_boss</object_story_id>
+			<infoportion_complete>secret_documents_done</infoportion_complete>
+		</objective>
+	</game_task>
+	
+	<game_task id="ds_leave_mines" prio="3">
+		<title>ds_leave_mines_title</title>
+		<objective>
+			<text>ds_leave_mines_title</text>
+			<icon>ui_iconsTask_leave_mines</icon>
+			<article>ds_leave_mines</article>
+			<infoportion_complete>ds_tunnel_exit_reached2</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_leave_mines_1</text>
+			<infoportion_complete>ds_tunnel_exit_reached2</infoportion_complete>
+		</objective>
+	</game_task>
+		
+	<game_task id="ds_attack_group_peace_task" prio="6">
+		<title>ds_attack_group_peace_task_title</title>
+		<objective>
+			<icon>ui_iconsTask_sins_clean_enemy_base</icon>
+			<text>ds_attack_group_peace_task_title</text>
+			<infoportion_complete>ds_attack_group_peace_task_finish</infoportion_complete>
+			<infoportion_fail>ds_attack_group_start</infoportion_fail>
+		</objective>
+		<objective>
+			<text>ds_attack_group_peace_task_text_1</text>
+			<map_location_type hint="ds_borov">blue_location</map_location_type>
+			<object_story_id>ds_mine_darkstalker_boss</object_story_id>
+			<infoportion_complete>ds_veles_peace_task</infoportion_complete>
+			<infoportion_fail>ds_attack_group_start</infoportion_fail>
+			<function_call_complete>task_manager.show_next_podzadanie</function_call_complete>
+		</objective>
+		<objective>
+			<text>ds_attack_group_peace_task_text_2</text>
+			<map_location_type hint="ds_borov">blue_location</map_location_type>
+			<object_story_id>ds_mine_darkstalker_boss</object_story_id>
+			<infoportion_complete>ds_prisoner_task_done</infoportion_complete>
+			<infoportion_fail>ds_attack_group_start</infoportion_fail>
+			<map_location_hidden>1</map_location_hidden>
+			<default_show>0</default_show>
+		</objective>
+		<objective>
+			<text>ds_attack_group_peace_task_text_3</text>
+			<map_location_type hint="gar_dolg_blokpost_leader_name">blue_location</map_location_type>
+			<object_story_id>ds_dolg_leader</object_story_id>
+			<infoportion_complete>ds_attack_group_peace_task_finish</infoportion_complete>
+			<infoportion_fail>ds_attack_group_start</infoportion_fail>
+			<map_location_hidden>1</map_location_hidden>
+		</objective>
+	</game_task>
+
+	<game_task id="ds_veles_peace_task" prio="6">
+		<title>ds_veles_peace_task_title</title>
+		<objective>
+			<icon>ui_iconsTotal_artefact</icon>
+			<text>ds_veles_peace_task_title</text>
+			<article>ds_veles_peace_task</article>
+			<infoportion_complete>ds_prisoner_task_done</infoportion_complete>
+			<infoportion_fail>ds_sin_death</infoportion_fail>
+		</objective>
+		<objective>
+			<text>ds_veles_peace_task_text_1</text>
+			<function_complete>tasks_darkscape.actor_has_any_sin_af</function_complete>
+			<infoportion_fail>ds_sin_death</infoportion_fail>
+			</objective>
+		<objective>
+			<text>ds_veles_peace_task_text_2</text>
+			<map_location_type hint="ds_borov">blue_location</map_location_type>
+			<object_story_id>ds_mine_darkstalker_boss</object_story_id>
+			<infoportion_complete>ds_prisoner_task_done</infoportion_complete>
+			<infoportion_fail>ds_sin_death</infoportion_fail>
+			<map_location_hidden>1</map_location_hidden>
+		</objective>
+	</game_task>
+
+	<game_task id="ds_leader_get_art" prio="6">
+		<title>ds_leader_get_art_title</title>
+		<objective>
+			<icon>ui_iconsTotal_artefact</icon>
+			<text>ds_leader_get_art_title</text>
+			<article>ds_leader_get_art</article>
+			<infoportion_complete>ds_prisoner_task_done</infoportion_complete>
+			<infoportion_fail>ds_sin_death</infoportion_fail>
+		</objective>
+		<objective>
+			<text>ds_leader_get_art_text_1</text>
+			<function_complete>tasks_darkscape.actor_has_moonlight</function_complete>
+			<infoportion_fail>ds_sin_death</infoportion_fail>
+			</objective>
+		<objective>
+			<text>ds_leader_get_art_text_2</text>
+			<infoportion_complete>ds_prisoner_task_done</infoportion_complete>
+			<infoportion_fail>ds_sin_death</infoportion_fail>
+		</objective>
+	</game_task>
+	
+	<game_task id="ds_find_disc" prio="6">
+		<title>ds_find_disc_title</title>
+		<objective>
+			<text>ds_find_disc_title</text>
+			<icon>ui_iconsTask_find_second_disc</icon>
+			<article>ds_find_disc</article>
+			<infoportion_complete>bar_dolg_sin_task_done</infoportion_complete>
+		</objective>
+		<objective>
+			<text>ds_find_disc_1</text>
+			<map_location_type hint="ds_dolg_disc">green_location</map_location_type>
+			<object_story_id>ds_dolg_disc</object_story_id>
+			<infoportion_complete>ds_find_disc_task_done</infoportion_complete>
+			<function_call_complete>task_manager.show_next_podzadanie</function_call_complete>
+		</objective>
+		<objective>
+			<text>ds_return_veronin_1</text>
+			<map_location_type hint="bar_veronin">blue_location</map_location_type>
+			<object_story_id>bar_voronin</object_story_id>
+			<infoportion_complete>bar_dolg_sin_task_done</infoportion_complete>
+			<map_location_hidden>1</map_location_hidden>
+			<default_show>0</default_show>
+		</objective>
+	</game_task>

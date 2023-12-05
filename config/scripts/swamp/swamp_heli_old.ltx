@@ -1,0 +1,59 @@
+[logic]
+active = heli_move@idle
+
+[heli_move@idle]
+path_move = swamp_heli_start_point
+engine_sound = false
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = false
+default_velocity = 60
+on_info = {-swamp_actor_safe +swamp_heli_start} heli_move@path1
+
+[heli_move@path1]
+path_move = swamp_heli_attack_path1
+engine_sound = true
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 60
+combat_enemy = 8104
+on_info = {+actor_in_reeds =is_dead(8104)} heli_move@path2
+on_info2 = {+actor_in_reeds !is_dead(8104)} %=heli_set_enemy(8104)%
+on_info3 = {-actor_in_reeds} %=heli_set_enemy_actor()% heli_move@path2
+
+[heli_move@path2]
+path_move = swamp_heli_attack_path2
+engine_sound = true
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 60
+combat_enemy = 8105
+on_info = {+actor_in_reeds =is_dead(8105)} heli_move@path3
+on_info2 = {+actor_in_reeds !is_dead(8105)} %=heli_set_enemy(8105)%
+on_info3 = {-actor_in_reeds} %=heli_set_enemy_actor()% heli_move@path3 
+
+[heli_move@path3]
+path_move = swamp_heli_attack_path3
+engine_sound = true
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 60
+combat_enemy = 8106
+on_info = {+actor_in_reeds =is_dead(8106)} heli_move@path4
+on_info2 = {+actor_in_reeds !is_dead(8106)} %=heli_set_enemy(8106)%
+on_info3 = {-actor_in_reeds} %=heli_set_enemy_actor()% heli_move@path4 
+
+[heli_move@path4]
+path_move = swamp_heli_attack_path4
+engine_sound = true
+combat_safe_altitude = -10
+combat_use_rocket = false
+combat_use_mgun = true
+default_velocity = 60
+combat_enemy = 8107
+on_info = {+actor_in_reeds =is_dead(8107)} heli_move@path1
+on_info2 = {+actor_in_reeds !is_dead(8107)} %=heli_set_enemy(8107)%
+on_info3 = {-actor_in_reeds} %=heli_set_enemy_actor()% heli_move@path1 

@@ -1,0 +1,17 @@
+[logic]
+active = sr_idle@0
+
+[sr_idle@0]
+on_info = {+country_major_job_mutant2} sr_idle@1
+
+[sr_idle@1]
+on_info = {+country_major_job_mutant2 =counter_equal(side_plot_dead:8)} sr_tip %+country_major_job_mutant2_q%
+
+[sr_tip]
+header = major_message_header
+name = country_major_job_mutant2_tip
+sender = grib
+type = tips
+single = true
+on_signal = tip_sended|nil %=release%
+showtime = 15000

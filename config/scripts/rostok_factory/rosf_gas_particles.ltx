@@ -1,0 +1,13 @@
+[logic]
+active = sr_idle
+
+[sr_idle]
+on_info = {+rosf_gaszone_cleared} nil %=release%, {-rosf_gaszone_cleared +rosf_barman_meet_duty} sr_particle@gas
+
+[sr_particle@gas]
+name = la_particles\toxic_gas_rost
+path = fx_gas
+mode = 3
+looped = true
+path_count = 36
+on_info = {+rosf_gaszone_cleared} nil %=release%
