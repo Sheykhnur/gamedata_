@@ -48,6 +48,10 @@ function ui_tele:InitControls()
 	self.mbox_mode	= 0
 	
 	self:Register(xml:Init3tButton("btn_quit",self),	"btn_quit")
+
+	if naxac.table_loading("coordinates") then
+		this.InitTabs(self)
+	end
 end
 
 function ui_tele:InitCallBacks()
@@ -378,4 +382,82 @@ function give_text:__init() super()
 	self.fage:SetWndRect	(314,0,110,22)
 	self.fage:SetFont		(GetFontLetterica16Russian())
 	self.fage:SetTextColor	(ca,cr,cg,cb)
+end
+
+function InitTabs(parent)
+	local lvl_name = naxac.table_loading("coordinates")
+	local tbl_name = {} --внутренняя таблица имён без повторений
+	local new_name
+	local old_name
+	local name_exist = false
+
+-- Создаём уникальные названия локаций
+	for id=1, #lvl_name do
+		new_name = lvl_name[id].lvl --на каждой итерации задаём начальные значения
+		name_exist = false
+		--log("Iterate level: %s", new_name)
+		if #tbl_name < 1 then --заполняем внутреннюю таблицу первым попавшимся именем
+			table.insert(tbl_name, new_name)
+			old_name = new_name --состариваем имя для дальнейшего сравнения
+			--log("Table insert < 1: %s", new_name)
+		elseif new_name ~= old_name then
+			for i = 1, #tbl_name do --начинаем искать имя во внутренней таблице на предмет совпадения, дабы исключить повтора
+				if new_name ~= tbl_name[i] then --если сейчас имя не равно, это ещё не значит, что оно было не равно на предыдущей итерации
+					new_name = lvl_name[id].lvl
+					old_name = new_name --также состариваем имя, чтобы по выходу было с чем сравнивать (конечный автомат)
+				else name_exist = true --log("Name exist") --взводим переменную, что имя уже попадалось
+				end
+			end
+			if name_exist == false then --если переменная не задана, значит имя не попадалось во внутренней таблице
+				table.insert(tbl_name, new_name)
+				--log("Table insert: %s", new_name)
+			end
+		else old_name = new_name --также состариваем имя, если ни одно из условий не выполнилось для продолжения сравнения
+		end
+	end
+
+--Добавляем на каждую локацию имена сохранённых позиций (сортируем по локациям) и сохраняем в отдельную таблицу
+local LevelNames = {}
+local PositionNames = {}
+
+	for key, value in pairs(tbl_name) do --сортируем по локациям
+	    for index=1, #lvl_name do
+	        if value == lvl_name[index].lvl then
+	            table.insert(PositionNames, lvl_name[index].name)
+	        end
+	    end
+	    LevelNames[key] = {}
+	    LevelNames[key][value] = {}
+	    table.insert(LevelNames[key], value)
+	    table.insert(LevelNames[key][value], PositionNames)
+	    PositionNames = {}
+	end
+	
+	function Enumerate(tbl) --перечисляем объекты. Из-за вложенности таблиц обратиться к полю напрямую не получится
+		for i, d in pairs(tbl) do
+			if type(d) == "table" then
+			  Enumerate(d)
+			else print(d)
+			end
+		  end
+	end
+
+
+	local xPos = 0
+	local yPos = 590
+	
+	local tab = CUITabControl()
+	tab:Init(100, 20, 700, 55)
+	tab:SetAutoDelete(true)
+	tab:SetWindowName("tab_ctrl")
+	tab:AddItem("spawn", "ui_button_tablist", xPos, yPos, 114, 44)
+	parent:AttachChild(tab)
+	--TabControl:AddItem("spawn", "ui_button_tablist", xPos, yPos, 114, 44)
+	--TabControl:AttachChild(self)
+	--[[ for k, v in pairs(tbl_name) do
+		xPos = xPos + 100
+		TabControl:AddItem(v, ui_button_tablist, xPos, yPos, 114, 44)
+		TabControl:AttachChild(self)
+	end ]]
+
 end
