@@ -386,9 +386,11 @@ end
 
 class "InitTabs" (CUITabControl)
 
+local LevelNames
+
 function InitTabs:__init(parent) super()
 	self:InitLevelNames()
-	--self:InitControls(parent)
+	self:InitControls(parent)
 	--self:InitCallBacks()
 end
 	
@@ -426,22 +428,7 @@ function InitTabs:InitLevelNames()
 		end
 	end
 
---Добавляем на каждую локацию имена сохранённых позиций (сортируем по локациям) и сохраняем в отдельную глобальную таблицу
-LevelNames = {}
-local PositionNames = {}
-
-	for key, value in pairs(tbl_name) do --сортируем по локациям
-	    for index=1, #lvl_name do --заполняем таблицу названий уровней
-	        if value == lvl_name[index].lvl then --на каждое совпадение имени уровня добавляем его название в таблицу
-	            table.insert(PositionNames, lvl_name[index].name)
-	        end
-	    end
-	    LevelNames[key] = {}
-	    LevelNames[key][value] = {}
-	    table.insert(LevelNames[key], value)
-	    table.insert(LevelNames[key][value], PositionNames)
-	    PositionNames = {}
-	end
+	LevelNames = tbl_name
 end
 
 function InitTabs:InitControls(parent)
@@ -453,6 +440,8 @@ function InitTabs:InitControls(parent)
 	self:SetWindowName("tab_ctrl")
 	self:AddItem("spawn", "ui_button_tablist", xPos, yPos, 114, 44)
 	parent:AttachChild(self)
+	--self:Enumerate(LevelNames, "EnumLevels")
+	self:Enumerate()
 	--[[ for k, v in pairs(tbl_name) do
 		xPos = xPos + 100
 		TabControl:AddItem(v, ui_button_tablist, xPos, yPos, 114, 44)
@@ -461,14 +450,15 @@ function InitTabs:InitControls(parent)
 
 end
 
-function InitTabs:Enumerate(tbl, var) --перечисляем объекты. Из-за вложенности таблиц, обратиться к полю напрямую не получится
-	for i, d in pairs(tbl) do
-		if type(d) == "table" then
-		  self:Enumerate(d)
-		elseif var == "EnumLevels" then
-			return print(d)
-		elseif var == "EnumPositions" then
-			return print(d)
-		end
-	  end
+function InitTabs:Enumerate(level)
+	local lvl_name = naxac.table_loading("coordinates")
+	local lvl = level or level.name()
+	log("Current level set is: %s", lvl)
+	log("<<<List positions for level>>>")
+
+	for id=1, #lvl_name do
+        if lvl_name[id].lvl == lvl then
+            log("Position is %s", lvl_name[id].name)
+        end
+    end
 end
