@@ -1,3 +1,5 @@
+local LevelNames
+
 function spawn_teleportator()
 		alife():create("teleportator", db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
 end
@@ -8,6 +10,7 @@ function ui_tele:__init() super()
 	self:InitControls()
 	self:InitCallBacks()
 	self:FillList()
+
 end
 
 function ui_tele:InitControls()
@@ -16,7 +19,7 @@ function ui_tele:InitControls()
 	local xml = CScriptXmlInit()
 	xml:ParseFile("ui_savecoord.xml")
 	
-    xml:InitStatic("frame",	self)
+	xml:InitStatic("frame",	self)
 	xml:InitStatic("caption",		self)
 
 	local ctrl
@@ -38,7 +41,8 @@ function ui_tele:InitControls()
 	ctrl = xml:Init3tButton("btn_gotopoint",	self)	
 	self:Register(ctrl, "button_gotopoint")
 	
-	xml:InitFrame("list_frame",		self)
+	xml:InitFrame("list_frame",		self):SetWindowName("list_frame")
+	
 	ctrl = xml:InitList("list", 	self)
 	ctrl:ShowSelectedItem(true)
 	self:Register(ctrl, "list_window")
@@ -52,6 +56,37 @@ function ui_tele:InitControls()
 	if naxac.table_loading("coordinates") then
 		InitTabs(self)
 	end
+
+	--Init tabs
+	local xPos = 0
+	local yPos = 0
+	
+	--[[ Создаём пустое родительское окно (фрейм) для контрола табов. Оно нужно обязательно, чтобы была возможность
+		для захвата фокуса табов. В противном случае, табы будут только рендериться, но ввода и фокуса 
+		он них не будет. Нужен обязательно родитель в виде фрейма или статика. Если бы табы были единственными
+		в главном окне, то можно было бы их приаттачить напрямую с захватом фокуса, но из-за других окон
+		захват фокуса отберёт управление у других. ]]
+	local tab_frame = CUIFrameWindow()
+	tab_frame:Init(100, 620, 800, 180)
+	self:AttachChild(tab_frame)
+
+	self.tabctrl = CUITabControl()
+	self.tabctrl:Init(0, 0, 800, 170)
+	tab_frame:AttachChild(self.tabctrl)
+	self:Register(self.tabctrl, "tab_ctrl") -- 2-й аргумент имя окна в виде строки
+	InitTabs:Enumerate()
+
+	for k, v in pairs(LevelNames) do
+		self.tabctrl:AddItem(game.translate_string(string.lower(v)), "ui_button_tablist", xPos, yPos, 110, 30)
+		xPos = xPos + 115
+		if xPos > 700 then 
+			xPos = 0
+			yPos = yPos + 30
+		end
+	end
+
+	--ctrl.ActiveIdx = ctrl:GetActiveIndex() or 0
+	--ctrl:SetNewActiveTab(1)
 end
 
 function ui_tele:InitCallBacks()
@@ -63,6 +98,16 @@ function ui_tele:InitCallBacks()
 	self:AddCallback("list_window", 	ui_events.LIST_ITEM_DB_CLICKED, 	self.OnListDoubleClicked,			self)
 	self:AddCallback("message_box",		ui_events.MESSAGE_BOX_YES_CLICKED,	self.OnMsgYes,						self)
 	self:AddCallback("btn_quit",		ui_events.BUTTON_CLICKED,			self.on_quit,						self)
+	self:AddCallback("tab_ctrl", 		ui_events.TAB_CHANGED, 				self.OnTabChange, 					self)
+end
+
+function ui_tele:OnTabChange()
+	log("UI_TabChanged")
+	log("Level name by button: %s", self.tabctrl:GetButtonByIndex(self.tabctrl:GetActiveIndex()):GetText())
+end
+
+function ui_tele:Update()
+	CUIScriptWnd.Update(self)
 end
 
 function ui_tele:OnListItemClicked()
@@ -273,8 +318,8 @@ function ui_tele:AddItemToList(posname,lname)
 	list_box:AddItem(_itm)
 end
 
-function ui_tele:OnKeyboard(dik, keyboard_action) --виртуальная функция для обработки событий от клавиатуры
-	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action) --без виртуального окна будет многократный ввод в EditBox
+function ui_tele:OnKeyboard(dik, keyboard_action) --функция для обработки событий от клавиатуры
+	CUIScriptWnd.OnKeyboard(self, dik, keyboard_action) --без неё будет многократный ввод в EditBox
 														--поэтому необходимо перехватить ввод
 	local edit_box = self:GetEditBox("edit_coordname")
 	if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
@@ -286,6 +331,7 @@ function ui_tele:OnKeyboard(dik, keyboard_action) --виртуальная фу�
 	end
 	
 end
+
 -- прочие функции
 function write_to_table(posname,val)
 	if posname then
@@ -386,12 +432,10 @@ end
 
 class "InitTabs" (CUITabControl)
 
-local LevelNames
-
 function InitTabs:__init(parent) super()
 	self:InitLevelNames()
-	self:InitControls(parent)
-	--self:InitCallBacks()
+	--self:InitControls(parent)
+	--self:InitCallBacks(parent)
 end
 	
 function InitTabs:InitLevelNames()
@@ -431,28 +475,41 @@ function InitTabs:InitLevelNames()
 	LevelNames = tbl_name
 end
 
-function InitTabs:InitControls(parent)
+--[[ function InitTabs:InitControls(parent)
 	local xPos = 0
 	local yPos = 590
 	
 	self:Init(100, 20, 700, 55)
 	self:SetAutoDelete(true)
 	self:SetWindowName("tab_ctrl")
-	self:AddItem("spawn", "ui_button_tablist", xPos, yPos, 114, 44)
-	parent:AttachChild(self)
-	--self:Enumerate(LevelNames, "EnumLevels")
+	log("Tab window name is %s", self:WindowName())
+	local WinName = parent:GetTabControl("tab_ctrl")
+	parent:Register(WinName, "tab_ctrl")
 	self:Enumerate()
-	--[[ for k, v in pairs(tbl_name) do
-		xPos = xPos + 100
-		TabControl:AddItem(v, ui_button_tablist, xPos, yPos, 114, 44)
-		TabControl:AttachChild(self)
-	end ]]
+	for k, v in pairs(LevelNames) do
+		self:AddItem(game.translate_string(string.lower(v)), "ui_button_tablist", xPos, yPos, 114, 44)
+		xPos = xPos + 115
+		if xPos > 700 then 
+			xPos = 0
+			yPos = yPos + 45
+		end
+	end
+	parent:AttachChild(self)
+	self.ActiveIdx = self:GetActiveIndex() or 0
+	self:SetNewActiveTab(self.ActiveIdx)
+end ]]
 
+function InitTabs:InitCallBacks(parent)
+	log("InitCallBacks")
 end
 
-function InitTabs:Enumerate(level)
+function InitTabs:OnTabChange()
+	log("UI_TabChanged")
+end
+
+function InitTabs:Enumerate(lvl)
 	local lvl_name = naxac.table_loading("coordinates")
-	local lvl = level or level.name()
+	local lvl = lvl or level.name()
 	log("Current level set is: %s", lvl)
 	log("<<<List positions for level>>>")
 
