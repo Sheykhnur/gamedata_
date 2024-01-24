@@ -21,7 +21,7 @@ local arg = {...}
 		end
 		text = string.gsub(text," ","_")
 		--get_console():execute(text)
-		log("%s", text)
+		--log("%s", text)
 		get_console():execute("flush")
 		if arg[1] ~= nil then
 			for k,val in pairs(arg) do
@@ -47,7 +47,7 @@ end
 -- грузим переменную
 function load_variable(var, val)
 	if var ~= nil and db.actor ~= nil then
-		return xr_logic.pstor_retrieve(db.actor, var, val), log("load_variable: %s ", var)
+		return xr_logic.pstor_retrieve(db.actor, var, val), --log("load_variable: %s ", var)
 	end
 end
 -- удаляем переменную

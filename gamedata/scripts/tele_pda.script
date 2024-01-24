@@ -1,4 +1,5 @@
 local LevelNames
+local CurrentLevelNameTranslated = game.translate_string(string.lower(level.name()))
 
 function spawn_teleportator()
 		alife():create("teleportator", db.actor:position(), db.actor:level_vertex_id(), db.actor:game_vertex_id(), db.actor:id())
@@ -9,8 +10,6 @@ function ui_tele:__init() super()
     this.stop_hud()
 	self:InitControls()
 	self:InitCallBacks()
-	self:FillList()
-
 end
 
 function ui_tele:InitControls()
@@ -53,14 +52,6 @@ function ui_tele:InitControls()
 	
 	self:Register(xml:Init3tButton("btn_quit",self),	"btn_quit")
 
-	if naxac.table_loading("coordinates") then
-		InitTabs(self)
-	end
-
-	--Init tabs
-	local xPos = 0
-	local yPos = 0
-	
 	--[[ Создаём пустое родительское окно (фрейм) для контрола табов. Оно нужно обязательно, чтобы была возможность
 		для захвата фокуса табов. В противном случае, табы будут только рендериться, но ввода и фокуса 
 		он них не будет. Нужен обязательно родитель в виде фрейма или статика. Если бы табы были единственными
@@ -72,21 +63,11 @@ function ui_tele:InitControls()
 
 	self.tabctrl = CUITabControl()
 	self.tabctrl:Init(0, 0, 800, 170)
+	self.tabctrl:SetAutoDelete(true)
 	tab_frame:AttachChild(self.tabctrl)
 	self:Register(self.tabctrl, "tab_ctrl") -- 2-й аргумент имя окна в виде строки
-	InitTabs:Enumerate()
 
-	for k, v in pairs(LevelNames) do
-		self.tabctrl:AddItem(game.translate_string(string.lower(v)), "ui_button_tablist", xPos, yPos, 110, 30)
-		xPos = xPos + 115
-		if xPos > 700 then 
-			xPos = 0
-			yPos = yPos + 30
-		end
-	end
-
-	--ctrl.ActiveIdx = ctrl:GetActiveIndex() or 0
-	--ctrl:SetNewActiveTab(1)
+	self:UpdateTabs()
 end
 
 function ui_tele:InitCallBacks()
@@ -102,12 +83,86 @@ function ui_tele:InitCallBacks()
 end
 
 function ui_tele:OnTabChange()
-	log("UI_TabChanged")
-	log("Level name by button: %s", self.tabctrl:GetButtonByIndex(self.tabctrl:GetActiveIndex()):GetText())
+	local lvl = self.tabctrl:GetButtonByIndex(self.tabctrl:GetActiveIndex()):WindowName()
+	self:ReWriteList(true, lvl)
 end
 
-function ui_tele:Update()
-	CUIScriptWnd.Update(self)
+function ui_tele:UpdateTabs() -- Метод Update() уже занят: он выполняется при каждом обновлении кадра
+	if naxac.table_loading("coordinates") then -- Создаём таблицу уровней
+		self:InitLevelNames()
+	end
+
+	
+	if self.tabctrl:GetTabsCount() > 0 then
+		self.tabctrl:SetNewActiveTab(0) -- Принудительно сбрасываем на нулевой таб перед полным удалением. Иначе если текущий таб не нулевой и мы удаляем всё,
+										-- а потом сразу создадим динамически первую вкладку (с нулевым номером), то при событии переключения (клик 
+										-- по только что созданной вкладке мышью) будет вылет,
+										-- т.к. текущая вкладка (допустим, до удаления это была 9-я вкладка) после удаления не будет существовать, а в памяти будет висеть.
+										-- Движок почему-то не сбрасывает номер текущей вкладки сам при полном их удалении.
+		self.tabctrl:RemoveAll()
+		self.active_idx = 0
+	end
+
+	if #LevelNames ~= 0 then
+		local xPos = 0
+		local yPos = 0
+
+		for k, v in pairs(LevelNames) do
+			local lvlName_translated = game.translate_string(string.lower(v)) -- Переводим скриптовое имя в удобочитаемое
+			self.tabctrl:AddItem(lvlName_translated, "ui_button_tablist", xPos, yPos, 110, 30) -- 1-й аргумент текст, который будет отображаться на кнопке, 2-й имя текстуры
+			self.tabctrl:GetButtonByIndex(k-1):SetWindowName(v) -- Присваиваем кнопке скриптовое имя локации
+			self.tabctrl:GetButtonByIndex(k-1):SetAutoDelete(true)
+			xPos = xPos + 115
+
+			if xPos > 700 then
+				xPos = 0
+				yPos = yPos + 30
+			end
+
+			if lvlName_translated == CurrentLevelNameTranslated then -- Активируем по умолчанию таб с текущей локацией
+				self.active_idx = k - 1
+			end
+		end
+
+		self.tabctrl:SetNewActiveTab(self.active_idx)
+		self:OnTabChange()
+	end
+end
+
+function ui_tele:InitLevelNames()
+	local lvl_name = naxac.table_loading("coordinates")
+	local tbl_name = {} --внутренняя таблица имён без повторений
+	local new_name
+	local old_name
+	local name_exist
+
+	if lvl_name then
+		-- Создаём таблицу со списком локаций без повторов
+		for id = 1, #lvl_name do
+			new_name = lvl_name[id].lvl --задаём имя следующей локации
+			name_exist = false --обнуляем существование нового имени во внутренней таблице
+
+			if #tbl_name < 1 then --инициализируем внутреннюю таблицу первым именем
+				table.insert(tbl_name, new_name)
+				old_name = new_name --состариваем имя для дальнейшего сравнения
+			elseif new_name ~= old_name then --сравниваем с предыдущим циклом
+				--[[перебираем внутреннюю таблицу и, если есть повтор, то взводим соответствующую переменную,
+				иначе добавляем новое имя в таблицу]]
+				for i = 1, #tbl_name do
+					if new_name == tbl_name[i] then
+						name_exist = true --имя уже есть во внутренней таблице
+					end
+				end
+
+				if name_exist == false then
+					table.insert(tbl_name, new_name)
+				end
+
+				old_name = new_name
+			end
+		end
+	end
+	LevelNames = tbl_name
 end
 
 function ui_tele:OnListItemClicked()
@@ -133,22 +188,7 @@ function ui_tele:OnListDoubleClicked()
 	end
 end
 
-function ui_tele:FillList()
-	local coord = naxac.table_loading("coordinates")
-	if #coord > 0 then
-		for i=1,#coord do
-			local posname = coord[i].name
-			--log("posname = coord[%d].%s", i, coord[i].name)
-			local lname = coord[i].lvl
-			--log("lname = coord[%d].%s", i, coord[i].lvl)
-			if posname and lname then
-				self:AddItemToList(posname,lname)
-			end
-		end
-	end
-end
-
-function ui_tele:ReWriteList(val)
+function ui_tele:ReWriteList(val, lvl)
 	local list = self:GetListWnd("list_window")
 	local index = list:GetSize()
 	if index > 0 then
@@ -157,7 +197,7 @@ function ui_tele:ReWriteList(val)
 			list:RemoveItem(itm)
 		end
 	end
-	if val then self:FillList() end
+	if val then self:Enumerate(lvl) end
 end
 
 function ui_tele:on_quit()
@@ -170,19 +210,14 @@ end
 function ui_tele:OnMsgYes()
 	if self.mbox_mode == 1 then
 		self:SaveCoordinate(self.coord_name)
-	
 	elseif self.mbox_mode == 2 then
 		self:delete_coordinate()
-		
 	elseif self.mbox_mode == 3 then
 		self:DeleteAll()
 	end	
 end
 
 function ui_tele:OnButton_save_clicked()
-	local message_box	= self.message_box
-	local main_frame	= self:GetFrameWindow("main_frame")	
-	
 	local edit_box	= self:GetEditBox("edit_coordname")
 	self.coord_name	= edit_box:GetText()
 	
@@ -192,9 +227,11 @@ function ui_tele:OnButton_save_clicked()
 		self:GetHolder():start_stop_menu(self.message_box, true)
 		return
 	end
+
 	if string.len(self.coord_name) > 40 then
 		self.coord_name = string.sub(self.coord_name,1,40)
 	end
+
 	local coord = naxac.table_loading("coordinates")
 	if #coord > 0 then
 		for i=1,#coord do
@@ -266,7 +303,6 @@ function ui_tele:OnButton_teleport_clicked()
 	self.mbox_mode = 0
 	self.message_box:Init("message_box_coordinate_is_absent")
 	self:GetHolder():start_stop_menu(self.message_box, true)
-	return
 end
 
 function ui_tele:GoToSavedPosition(posname)
@@ -286,7 +322,7 @@ end
 
 function ui_tele:delete_coordinate()
 	local list = self:GetListWnd("list_window")
-	if list:GetSize() == 0 then return end
+	if list:GetSize() == 0 then return self:UpdateTabs() end
 	local index = list:GetSelectedItem ()
 	
 	if index == -1 then return end
@@ -297,16 +333,46 @@ function ui_tele:delete_coordinate()
 	
 	list:RemoveItem(index)
 	self:OnListItemClicked()
+	if list:GetSize() == 0 then
+		self:UpdateTabs()
+	else
+		local lvl = self.tabctrl:GetButtonByIndex(self.tabctrl:GetActiveIndex()):WindowName()
+		self:ReWriteList(true, lvl)
+	end
 end
 
 function ui_tele:DeleteAll()
 	self:ReWriteList(false)
 	naxac.del_variable("coordinates")
+	self:UpdateTabs()
 end
 
 function ui_tele:SaveCoordinate(posname)
+	local lvl
 	this.write_to_table(posname,true)
-	self:ReWriteList(true)
+	for key, value in pairs(LevelNames) do
+		if value == level.name() then
+			lvl = true
+		end
+	end
+	if lvl then
+		self:ReWriteList(true)
+	else
+		self:UpdateTabs()
+	end
+end
+
+function ui_tele:Enumerate(lvl)
+	local lvl_name = naxac.table_loading("coordinates")
+	local lvl = lvl or level.name()
+
+	if lvl_name then
+		for id = 1, #lvl_name do
+			if lvl_name[id].lvl == lvl then
+				self:AddItemToList(lvl_name[id].name, lvl_name[id].lvl)
+			end
+		end
+	end
 end
 
 function ui_tele:AddItemToList(posname,lname)
@@ -428,94 +494,4 @@ function give_text:__init() super()
 	self.fage:SetWndRect	(314,0,110,22)
 	self.fage:SetFont		(GetFontLetterica16Russian())
 	self.fage:SetTextColor	(ca,cr,cg,cb)
-end
-
-class "InitTabs" (CUITabControl)
-
-function InitTabs:__init(parent) super()
-	self:InitLevelNames()
-	--self:InitControls(parent)
-	--self:InitCallBacks(parent)
-end
-	
-function InitTabs:InitLevelNames()
-	local lvl_name = naxac.table_loading("coordinates")
-	local tbl_name = {} --внутренняя таблица имён без повторений
-	local new_name
-	local old_name
-	local name_exist
-
--- Создаём таблицу со списком локаций без повторов
-	for id=1, #lvl_name do
-		new_name = lvl_name[id].lvl --задаём имя следующей локации
-		name_exist = false --обнуляем существование нового имени во внутренней таблице
-
-		if #tbl_name < 1 then --инициализируем внутреннюю таблицу первым именем
-			table.insert(tbl_name, new_name)
-			log("Insert %s", new_name)
-			old_name = new_name --состариваем имя для дальнейшего сравнения
-		elseif new_name ~= old_name then --сравниваем с предыдущим циклом
-			--[[перебираем внутреннюю таблицу и, если есть повтор, то взводим соответствующую переменную,
-				иначе добавляем новое имя в таблицу]]
-			for i = 1, #tbl_name do 
-				if new_name == tbl_name[i] then
-					name_exist = true --имя уже есть во внутренней таблице
-				end
-			end
-
-			if name_exist == false then
-				table.insert(tbl_name, new_name)
-				log("Insert %s", new_name)
-			end
-			
-			old_name = new_name
-		end
-	end
-
-	LevelNames = tbl_name
-end
-
---[[ function InitTabs:InitControls(parent)
-	local xPos = 0
-	local yPos = 590
-	
-	self:Init(100, 20, 700, 55)
-	self:SetAutoDelete(true)
-	self:SetWindowName("tab_ctrl")
-	log("Tab window name is %s", self:WindowName())
-	local WinName = parent:GetTabControl("tab_ctrl")
-	parent:Register(WinName, "tab_ctrl")
-	self:Enumerate()
-	for k, v in pairs(LevelNames) do
-		self:AddItem(game.translate_string(string.lower(v)), "ui_button_tablist", xPos, yPos, 114, 44)
-		xPos = xPos + 115
-		if xPos > 700 then 
-			xPos = 0
-			yPos = yPos + 45
-		end
-	end
-	parent:AttachChild(self)
-	self.ActiveIdx = self:GetActiveIndex() or 0
-	self:SetNewActiveTab(self.ActiveIdx)
-end ]]
-
-function InitTabs:InitCallBacks(parent)
-	log("InitCallBacks")
-end
-
-function InitTabs:OnTabChange()
-	log("UI_TabChanged")
-end
-
-function InitTabs:Enumerate(lvl)
-	local lvl_name = naxac.table_loading("coordinates")
-	local lvl = lvl or level.name()
-	log("Current level set is: %s", lvl)
-	log("<<<List positions for level>>>")
-
-	for id=1, #lvl_name do
-        if lvl_name[id].lvl == lvl then
-            log("Position is %s", lvl_name[id].name)
-        end
-    end
 end
